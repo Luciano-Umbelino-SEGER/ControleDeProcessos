@@ -13,5 +13,8 @@ def estatisticas(request):
 def backlog(request):
     return render(request, 'backlog.html')
 
+def cadastrousuarios(request):
+    return render(request, 'usuario/cadastrousuarios.html')
+
 def login(request):
     return render(request, 'usuario/login.html')
