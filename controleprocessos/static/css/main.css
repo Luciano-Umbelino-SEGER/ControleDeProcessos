@@ -2,3 +2,68 @@
 body {
     background-color: azure;
 }
+
+.cabecalho {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.6rem;
+    padding: 0 2rem;
+    background-color: #fff;
+    z-index: 999;
+    padding-left: 0;
+}
+
+.cabecalho__container {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.cabecalho__esquerda {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cabecalho__logo {
+    width: 230px;
+    height: auto;
+    margin: 0;
+    margin-left: 0;
+}
+
+.cabecalho__titulo {
+    font-size: 1.6rem;
+    color: #0077cc;
+    margin: 0;
+}
+
+.cabecalho__navegacao {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.cabecalho__navegacao a {
+    font-size: 1rem;
+    color: #333;
+    text-decoration: none;
+}
+
+.cabecalho__icones {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cabecalho__icone {
+    width: 2rem;
+    height: 2rem;
+    fill: currentColor;
+}

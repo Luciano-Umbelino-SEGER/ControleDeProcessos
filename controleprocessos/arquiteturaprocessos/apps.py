@@ -5,4 +5,5 @@ class ArquiteturaProcessosConfig(AppConfig):
     name = 'arquiteturaprocessos'
 
     def ready(self):
+        # Import necessário para registrar os signals
         import arquiteturaprocessos.signals
