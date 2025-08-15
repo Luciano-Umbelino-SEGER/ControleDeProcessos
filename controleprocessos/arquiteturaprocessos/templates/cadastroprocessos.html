@@ -3,4 +3,17 @@
 
 {% block body %}
     <h3> A página de Cadastro de Processos está no ar! </h3>
+
+
+    <div>
+        <h4>Nome do Macroprocesso:</h4>
+        <p>{{ macro.nome }}</p>
+
+        <h4>Descrição:</h4>
+        <p>{{ macro.descricao }}</p>
+
+        <h4>Data de criação:</h4>
+        <p>{{ macro.data_criacao }}</p>
+    </div>
+
 {% endblock %}

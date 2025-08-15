@@ -1,20 +1,34 @@
+from .models import ArquiteturaProcesso, Macroprocesso, Usuario
 from django.shortcuts import render
+from django.views.generic import TemplateView, ListView, DetailView
 
 # Create your views here.
-def homepage(request):
-    return render(request, 'homepage.html')
+class HomePage(TemplateView):
+    template_name = 'homepage.html'
 
-def cadastroprocessos(request):
-    return render(request, 'cadastroprocessos.html')
+class ArquiteruraProcessos(ListView):
+    template_name = 'arquiteruraprocessos.html'
+    model = ArquiteturaProcesso
 
-def estatisticas(request):
-    return render(request, 'estatisticas.html')
+#class CadastroProcessos(DetailView):
+class CadastroProcessos(ListView):
+    template_name = 'cadastroprocessos.html'
+    model = Macroprocesso
 
-def backlog(request):
-    return render(request, 'backlog.html')
+class Estatisticas(ListView):
+    template_name = 'estatisticas.html'
+    model = ArquiteturaProcesso
 
-def cadastrousuarios(request):
-    return render(request, 'usuario/cadastrousuarios.html')
+class BackLog(ListView):
+    template_name = 'backlog.html'
+    model = ArquiteturaProcesso
 
-def login(request):
-    return render(request, 'usuario/login.html')
+#class CadastroUsuarios(DetailView):
+class CadastroUsuarios(ListView):
+    template_name = 'usuario/cadastrousuarios.html'
+    model = Usuario
+
+#class Login(DetailView):
+class Login(ListView):
+    template_name = 'usuario/login.html'
+    model = Usuario
