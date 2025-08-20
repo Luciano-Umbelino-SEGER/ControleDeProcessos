@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from .models import (
     Perfil, Telefone, Usuario, Macroprocesso, Norma,
-    Atualizacao_Norma, ArquiteturaProcesso, LogAtividade
+    Atualizacao_Norma, ArquiteturaProcesso, LogAcoes
 )
 
 
@@ -48,4 +48,4 @@ admin.site.register(Macroprocesso)
 admin.site.register(Norma, NormaAdmin)
 admin.site.register(Atualizacao_Norma)
 admin.site.register(ArquiteturaProcesso)
-admin.site.register(LogAtividade)
+admin.site.register(LogAcoes)

@@ -1,8 +1,12 @@
-from .models import ArquiteturaProcesso, Macroprocesso, Usuario
-from django.shortcuts import render
-from django.views.generic import TemplateView, ListView, DetailView
+from .models import ArquiteturaProcesso, Macroprocesso, Usuario, LogAcoes
+from django.shortcuts import render, redirect, reverse
+from django.views.generic import TemplateView, ListView, FormView, View
+
 
 # Create your views here.
+class HomePageView(TemplateView):
+    template_name = "homepage.html"
+
 class HomePage(TemplateView):
     template_name = 'homepage.html'
 
@@ -28,7 +32,12 @@ class CadastroUsuarios(ListView):
     template_name = 'usuario/cadastrousuarios.html'
     model = Usuario
 
-#class Login(DetailView):
-class Login(ListView):
-    template_name = 'usuario/login.html'
-    model = Usuario
+#class LogAcoes(listView):
+class LogAcoes(ListView):
+    template_name = 'usuario/logacoes.html'
+    model = LogAcoes
+
+
+
+
+

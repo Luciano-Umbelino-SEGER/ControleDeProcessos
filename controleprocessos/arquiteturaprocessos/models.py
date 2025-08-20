@@ -21,6 +21,9 @@ class Telefone(models.Model):
     numero = models.IntegerField()
     ramal = models.IntegerField()
 
+    def __str__(self):
+        return str(f"{self.ddd} - {self.numero} - {self.ramal}")
+
 class Usuario(AbstractUser):
     setor = models.CharField(max_length=100, null=False, blank=False)
     cargo = models.CharField(max_length=100, null=False, blank=False)
@@ -71,7 +74,7 @@ class ArquiteturaProcesso(models.Model):
     observacao = models.TextField(max_length=1500)
     norma_autualizada = models.BooleanField(default=False) #(23-25 S/N)
 
-class LogAtividade(models.Model):
+class LogAcoes(models.Model):
     data_registro = models.DateTimeField(default=timezone.now)
     usuario = models.ForeignKey("Usuario", on_delete=models.CASCADE)
     area = models.CharField(max_length=100)
