@@ -15,9 +15,22 @@
     </main>
 
     <!--<footer class="bg-[#0097A7] text-[#1F70C2] text-center py-4"> -->
-    <footer class="bg-[#0097A7] text-white text-center py-4">
-        SEGER - GPP | Contato: Tel (27) 3636-5272 | Email: gpp@seg.er.es.gov.br
+    <footer class="bg-[#0097A7] text-white py-4">
+        <div class="container mx-auto flex justify-center items-center relative">
+            <!-- Texto central -->
+            <div class="text-center w-full">
+                SEGER - GPP | Contato: Tel (27) 3636-5272 | Email: gpp@seg.er.es.gov.br
+            </div>
+
+            <!-- Usuário logado no canto direito -->
+            {% if user.is_authenticated %}
+                <div class="absolute right-4">
+                    {{ user.first_name }} {{ user.last_name }} - {{ user.perfil.nome }}
+                </div>
+            {% endif %}
+        </div>
     </footer>
+
 
     <script>
         const nav = document.querySelector('nav');
