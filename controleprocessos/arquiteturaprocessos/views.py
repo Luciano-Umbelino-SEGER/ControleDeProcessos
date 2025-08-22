@@ -1,6 +1,6 @@
-from .models import ArquiteturaProcesso, Macroprocesso, Usuario, LogAcoes
+from .models import ArquiteturaProcesso, Macroprocesso, Usuario, LogAcoes, Telefone
 from django.shortcuts import render, redirect, reverse
-from django.views.generic import TemplateView, ListView, FormView, View
+from django.views.generic import TemplateView, ListView, DetailView, FormView, View
 
 
 # Create your views here.
@@ -30,6 +30,10 @@ class BackLog(ListView):
 #class CadastroUsuarios(DetailView):
 class CadastroUsuarios(ListView):
     template_name = 'usuario/cadastrousuarios.html'
+    model = Usuario
+
+class DetalheUsuario(DetailView):
+    template_name = 'usuario/detalheusuario.html'
     model = Usuario
 
 #class LogAcoes(listView):

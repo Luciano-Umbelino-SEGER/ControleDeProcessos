@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from .views import (HomePageView, HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
-                    CadastroUsuarios, LogAcoes)
+                    CadastroUsuarios, DetalheUsuario, LogAcoes)
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -11,6 +11,7 @@ urlpatterns = [
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     path('backlog/', BackLog.as_view(), name='backlog'),
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
+    path('detalheusuario/<int:pk>', DetalheUsuario.as_view(), name='detalheusuario'),
     path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     path('fazer_login/', auth_views.LoginView.as_view(template_name='usuario/fazer_login.html'), name='fazer_login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout')

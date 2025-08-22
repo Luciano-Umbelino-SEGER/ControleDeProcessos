@@ -17,9 +17,23 @@ class Perfil(models.Model):
 
 class Telefone(models.Model):
     usuario = models.ForeignKey("Usuario", related_name="telefones", on_delete=models.CASCADE)
-    ddd = models.IntegerField()
-    numero = models.IntegerField()
-    ramal = models.IntegerField()
+    ddd = models.CharField(max_length=3)
+    numero = models.CharField(max_length=9)
+    ramal = models.CharField(max_length=5)
+
+    @property
+    def numero_formatado(self):
+        """
+        Retorna o telefone formatado no padrão brasileiro:
+        - Fixo (8 dígitos): (DD) XXXX-XXXX
+        - Celular (9 dígitos): (DD) XXXXX-XXXX
+        """
+        if len(self.numero) == 9:  # celular
+            return f"({self.ddd}) {self.numero[:5]}-{self.numero[5:]} Ramal: {self.ramal}"
+        elif len(self.numero) == 8:  # fixo
+            return f"({self.ddd}) {self.numero[:4]}-{self.numero[4:]} Ramal: {self.ramal}"
+        else:
+            return f"({self.ddd}) {self.numero} Ramal: {self.ramal}"  # caso número inválido
 
     def __str__(self):
         return str(f"{self.ddd} - {self.numero} - {self.ramal}")
@@ -31,7 +45,10 @@ class Usuario(AbstractUser):
     perfil = models.ForeignKey("Perfil", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return f"{self.username} - {self.cargo}"
+        perfil_nome = self.perfil.nome if self.perfil else "Sem perfil"
+        cargo_nome = self.cargo if self.cargo else "Sem cargo"
+        return f"{self.username} - {cargo_nome} - {perfil_nome}"
+
 
 class Macroprocesso(models.Model):
     nome = models.CharField(max_length=200)

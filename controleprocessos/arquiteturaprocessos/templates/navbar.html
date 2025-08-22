@@ -14,8 +14,10 @@
       <a href="{% url 'cadastroprocessos' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Processos</a>
       <a href="{% url 'estatisticas' %}" class="hover:text-blue-800 transition no-underline">Estatísticas</a>
       <a href="{% url 'backlog' %}" class="hover:text-blue-800 transition no-underline">Backlog</a>
-      <a href="{% url 'cadastrousuarios' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Usuários</a>
-      <a href="{% url 'logacoes' %}" class="hover:text-blue-800 transition no-underline">Log de Ações</a>
+      {% if request.user.perfil.nome == 'Administrador' %}
+        <a href="{% url 'cadastrousuarios' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Usuários</a>
+        <a href="{% url 'logacoes' %}" class="hover:text-blue-800 transition no-underline">Log de Ações</a>
+      {% endif %}
     {% endif %}
   </div>
 
@@ -26,13 +28,14 @@
         {% csrf_token %}
         <button type="submit" class="hover:text-blue-800 transition no-underline bg-transparent border-0 cursor-pointer">
           Sair
+          <ion-icon name="log-out-outline" class="text-blue-800 text-2xl"></ion-icon>
         </button>
       </form>
-      <ion-icon name="log-in-outline" class="text-blue-800 text-2xl"></ion-icon>
     {% else %}
-      <a href="{% url 'fazer_login' %}" class="hover:text-blue-800 transition no-underline">Login Gestor</a>
-      <ion-icon name="person-circle-outline" class="text-blue-800 text-2xl"></ion-icon>
-      <ion-icon name="settings-outline" class="text-blue-800 text-2xl"></ion-icon>
+      <a href="{% url 'fazer_login' %}" class="hover:text-blue-800 transition no-underline">Login Gestor
+        <ion-icon name="person-circle-outline" class="text-blue-800 text-2xl"></ion-icon>
+        <ion-icon name="settings-outline" class="text-blue-800 text-2xl"></ion-icon>
+      </a>
     {% endif %}
   </div>
 </nav>
