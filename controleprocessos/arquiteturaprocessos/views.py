@@ -4,9 +4,6 @@ from django.views.generic import TemplateView, ListView, DetailView, FormView, V
 
 
 # Create your views here.
-class HomePageView(TemplateView):
-    template_name = "homepage.html"
-
 class HomePage(TemplateView):
     template_name = 'homepage.html'
 

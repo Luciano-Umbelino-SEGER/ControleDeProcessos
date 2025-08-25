@@ -1,11 +1,14 @@
 from django.contrib import admin
 from django.urls import path
-from .views import (HomePageView, HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
+from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
                     CadastroUsuarios, DetalheUsuario, LogAcoes)
 from django.contrib.auth import views as auth_views
 
+
+app_name = "arquiteturaprocessos"
+
 urlpatterns = [
-    path('', HomePageView.as_view(), name='homepage'),
+    path('', HomePage.as_view(), name='homepage'),
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     path('cadastroprocessos/', CadastroProcessos.as_view(), name='cadastroprocessos'),
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),

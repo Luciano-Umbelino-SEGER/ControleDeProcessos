@@ -136,11 +136,11 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = 'homepage'
+LOGIN_REDIRECT_URL = 'arquiteturaprocessos:homepage'
 
-LOGIN_URL = 'fazer_login'
+LOGIN_URL = 'arquiteturaprocessos:fazer_login'
 
-LOGOUT_REDIRECT_URL = 'homepage'
+LOGOUT_REDIRECT_URL = 'arquiteturaprocessos:homepage'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 
