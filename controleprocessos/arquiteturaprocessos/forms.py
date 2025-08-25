@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
+from .models import Usuario, Telefone
 
 User = get_user_model()
 
@@ -33,3 +35,12 @@ class EmailAuthenticationForm(AuthenticationForm):
             else:
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
+
+class CriarUsuarioForm(UserCreationForm):
+    email = forms.EmailField()
+
+
+    class Meta:
+        model = Usuario
+        fields = ("username", "first_name", "last_name", "email", "setor", "cargo", "funcao", "perfil", "password1", "password2")
+

@@ -1,4 +1,5 @@
 from .models import ArquiteturaProcesso, Macroprocesso, Usuario, LogAcoes, Telefone
+from .forms import CriarUsuarioForm
 from django.shortcuts import render, redirect, reverse
 from django.views.generic import TemplateView, ListView, DetailView, FormView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -48,6 +49,16 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
 
         return super().dispatch(request, *args, **kwargs)
 
+class CriarUsuario(LoginRequiredMixin, FormView):
+    template_name = 'usuario/criarusuario.html'
+    form_class = CriarUsuarioForm
+
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:cadastrousuarios')
 
 class DetalheUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/detalheusuario.html'
