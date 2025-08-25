@@ -14,7 +14,7 @@
       <a href="{% url 'arquiteturaprocessos:cadastroprocessos' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Processos</a>
       <a href="{% url 'arquiteturaprocessos:estatisticas' %}" class="hover:text-blue-800 transition no-underline">Estatísticas</a>
       <a href="{% url 'arquiteturaprocessos:backlog' %}" class="hover:text-blue-800 transition no-underline">Backlog</a>
-      {% if request.user.perfil.nome == 'Administrador' %}
+      {% if request.user.perfil.nome|lower == 'administrador' %}
         <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Usuários</a>
         <a href="{% url 'arquiteturaprocessos:logacoes' %}" class="hover:text-blue-800 transition no-underline">Log de Ações</a>
       {% endif %}

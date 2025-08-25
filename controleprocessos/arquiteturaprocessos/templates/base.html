@@ -9,7 +9,15 @@
 </head>
 <body class="bg-[#F0FFFF] text-gray-100 font-sans min-h-screen flex flex-col">
     {% include 'navbar.html' %}
-
+    {% if messages %}
+      <div class="container mt-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
     <main class="flex-grow container mx-auto px-4 py-6">
         {% block body %} {% endblock %}
     </main>
