@@ -1,12 +1,12 @@
 from django import forms
 from django.forms import inlineformset_factory
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from .models import Usuario, Telefone
 
 User = get_user_model()
+
 
 class EmailAuthenticationForm(AuthenticationForm):
     """
@@ -36,6 +36,7 @@ class EmailAuthenticationForm(AuthenticationForm):
             else:
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
+
 
 class CriarUsuarioForm(UserCreationForm):
     email = forms.EmailField(widget=forms.EmailInput())
@@ -93,7 +94,11 @@ class CriarUsuarioForm(UserCreationForm):
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
 
+
 class TelefoneForm(forms.ModelForm):
+    """
+    Formulário para cadastrar telefones
+    """
     class Meta:
         model = Telefone
         fields = ("ddd", "numero", "ramal")
@@ -101,23 +106,27 @@ class TelefoneForm(forms.ModelForm):
         widgets = {
             "ddd": forms.TextInput(attrs={
                 "class": "w-full border border-gray-300 rounded-md px-3 py-2 text-black",
-                "placeholder": "DDD"
+                "placeholder": "DDD",
+                "maxlength": "3",
             }),
             "numero": forms.TextInput(attrs={
                 "class": "w-full border border-gray-300 rounded-md px-3 py-2 text-black",
-                "placeholder": "Número"
+                "placeholder": "Número",
+                "maxlength": "9",
             }),
             "ramal": forms.TextInput(attrs={
                 "class": "w-full border border-gray-300 rounded-md px-3 py-2 text-black",
-                "placeholder": "Ramal"
+                "placeholder": "Ramal",
+                "maxlength": "5",
             }),
         }
 
+
 # Formset de telefones
 TelefoneFormSet = inlineformset_factory(
-    Usuario, Telefone,
+    Usuario,
+    Telefone,
     form=TelefoneForm,
     extra=1,        # número de linhas iniciais
-    can_delete=True # permite remover
+    can_delete=True # permite remover telefones
 )
-

@@ -43,6 +43,7 @@ class Usuario(AbstractUser):
     cargo = models.CharField(max_length=100, null=False, blank=False)
     funcao = models.CharField(max_length=100, null=False, blank=False)
     perfil = models.ForeignKey("Perfil", null=True, blank=True, on_delete=models.SET_NULL)
+    data_ativacaodesativacao = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         perfil_nome = self.perfil.nome if self.perfil else "Sem perfil"

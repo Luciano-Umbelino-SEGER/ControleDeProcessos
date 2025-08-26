@@ -28,43 +28,81 @@
           <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
         {% endif %}
       </div>
+
+      {% if field.name == "perfil" %}
+      <!-- Status e Data de Ativação/Desativação -->
+      <div class="flex flex-col md:flex-row gap-4 items-center mt-2">
+        <div class="flex flex-col border rounded p-2 items-center">
+          <label class="text-sm font-medium text-blue-800 mb-2 text-center">Status Usuário</label>
+          <div class="flex gap-4">
+            <label class="flex items-center text-blue-800 gap-1">
+              <input type="radio" name="is_active" value="True" {% if user.is_active %}checked{% endif %}> Ativo
+            </label>
+            <label class="flex items-center text-blue-800 gap-1">
+              <input type="radio" name="is_active" value="False" {% if not user.is_active %}checked{% endif %}> Inativo
+            </label>
+          </div>
+        </div>
+
+        <div class="flex flex-col">
+          <label class="text-sm font-medium text-blue-800 mb-1">Data Ativação/Desativação</label>
+          <input type="text" id="data-ativacao" name="data_ativacaodesativacao"
+                 class="border rounded px-2 py-1 bg-gray-100 text-gray-700 max-w-[180px] truncate"
+                 value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}" disabled>
+        </div>
+      </div>
+
+      <!-- Data de Cadastro -->
+      <div class="flex flex-col mt-2">
+        <label class="text-sm font-medium text-blue-800 mb-1">Data Cadastro</label>
+        <input type="text" name="date_joined"
+               class="border rounded px-2 py-1 bg-gray-100 text-gray-700"
+               value="{{ user.date_joined|date:'d/m/Y H:i:s' }}" disabled>
+      </div>
+      {% endif %}
       {% endfor %}
 
       <!-- Telefones -->
-      <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-6">
-        <h3 class="text-lg font-semibold text-blue-800 mb-2">Telefones</h3>
+      <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-1">
+        <h3 class="text-lg font-semibold text-blue-800 mb-1">Telefones</h3>
 
         {{ telefones.management_form }}
-        <div id="telefones-container" class="space-y-4">
+
+        <div id="telefones-container">
           {% for form_tel in telefones %}
-            <div class="telefone-item grid grid-cols-3 gap-4 border p-3 rounded-md bg-gray-50 relative">
-              <button type="button" class="remove-telefone-btn absolute top-1 right-1 text-red-600 font-bold hover:text-red-800">X</button>
-              <div>
+            <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
+              <div class="flex-1">
                 {{ form_tel.ddd.label_tag }}
                 {{ form_tel.ddd }}
               </div>
-              <div>
+              <div class="flex-1">
                 {{ form_tel.numero.label_tag }}
                 {{ form_tel.numero }}
               </div>
-              <div>
+              <div class="flex-1">
                 {{ form_tel.ramal.label_tag }}
                 {{ form_tel.ramal }}
               </div>
-                  {% if form_tel.DELETE %}
-                    {{ form_tel.DELETE.as_hidden }}
-                  {% endif %}
+              <div class="flex items-center">
+                <button type="button" class="remove-telefone-btn" title="Excluir telefone">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z" />
+                  </svg>
+                </button>
               </div>
+              {{ form_tel.id }}
+              {{ form_tel.DELETE.as_hidden }}
+            </div>
           {% endfor %}
         </div>
 
-        <button type="button" id="add-telefone"
-          class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded">
+        <button type="button" id="add-telefone" class="mt-2 bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded">
           + Adicionar Telefone
         </button>
       </div>
 
-      <!-- Botão de envio -->
+      <!-- Botão submit -->
       <div class="col-span-1 md:col-span-2 lg:col-span-3">
         <button type="submit"
           class="bg-blue-600 hover:bg-blue-700 py-2 px-4 w-full text-white text-lg rounded-md">
@@ -75,53 +113,83 @@
   </div>
 </div>
 
-<!-- JS para adicionar e remover telefones dinamicamente -->
-<script>
-function updateRemoveButtons() {
-    document.querySelectorAll('.remove-telefone-btn').forEach((btn) => {
-        btn.onclick = function() {
-            const telefoneDiv = btn.closest('.telefone-item');
-            const deleteInput = telefoneDiv.querySelector('input[type="checkbox"][name$="-DELETE"]');
-            if (deleteInput) {
-                // Marca para exclusão e esconde o formulário
-                deleteInput.checked = true;
-                telefoneDiv.style.display = 'none';
-            } else {
-                // Se não tiver checkbox (novo telefone), remove do DOM
-                telefoneDiv.remove();
-                const totalForms = document.querySelector('#id_telefones-TOTAL_FORMS');
-                totalForms.value = parseInt(totalForms.value) - 1;
-            }
-        };
-    });
-}
+<!-- Template escondido (empty_form) -->
+<div id="empty-form" class="hidden">
+  <div class="telefone-item flex items-end gap-4 border rounded p-3 mb-3 bg-white">
+    <div class="flex-1">
+      {{ telefones.empty_form.ddd.label_tag }}
+      {{ telefones.empty_form.ddd }}
+    </div>
+    <div class="flex-1">
+      {{ telefones.empty_form.numero.label_tag }}
+      {{ telefones.empty_form.numero }}
+    </div>
+    <div class="flex-1">
+      {{ telefones.empty_form.ramal.label_tag }}
+      {{ telefones.empty_form.ramal }}
+    </div>
+    <div class="flex items-center">
+      <button type="button" class="remove-telefone-btn" title="Excluir telefone">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z" />
+        </svg>
+      </button>
+    </div>
+    {{ telefones.empty_form.id }}
+    {{ telefones.empty_form.DELETE.as_hidden }}
+  </div>
+</div>
 
-document.getElementById('add-telefone').addEventListener('click', function() {
+<!-- JS para adicionar/remover e atualizar data -->
+<script>
+(function() {
+  function updateRemoveButtons() {
+    document.querySelectorAll('.remove-telefone-btn').forEach(btn => {
+      btn.onclick = null;
+      btn.addEventListener('click', function() {
+        const telefoneDiv = btn.closest('.telefone-item');
+        if (!telefoneDiv) return;
+        const deleteInput = telefoneDiv.querySelector('input[name$="-DELETE"]');
+        if (deleteInput) {
+          deleteInput.value = 'on';
+          telefoneDiv.style.display = 'none';
+        } else {
+          telefoneDiv.remove();
+        }
+      });
+    });
+  }
+
+  document.getElementById('add-telefone').addEventListener('click', function() {
     const container = document.getElementById('telefones-container');
     const totalForms = document.querySelector('#id_telefones-TOTAL_FORMS');
-    const formNum = parseInt(totalForms.value);
-    const emptyForm = container.querySelector('.telefone-item').cloneNode(true);
-
-    // Limpar valores do clone
-    emptyForm.querySelectorAll('input').forEach(input => {
-        if (input.type !== 'checkbox') input.value = '';
-        if (input.type === 'checkbox') input.checked = false;
-    });
-
-    // Atualizar índices do formset
-    emptyForm.innerHTML = emptyForm.innerHTML.replace(/-\d+-/g, `-${formNum}-`);
-    emptyForm.style.display = 'block';
-
-    container.appendChild(emptyForm);
-
-    // Atualiza TOTAL_FORMS
+    const formNum = parseInt(totalForms.value, 10);
+    const templateHtml = document.getElementById('empty-form').innerHTML;
+    const newHtml = templateHtml.replace(/__prefix__/g, formNum);
+    const temp = document.createElement('div');
+    temp.innerHTML = newHtml;
+    const newItem = temp.firstElementChild;
+    newItem.style.display = 'flex';
+    container.appendChild(newItem);
     totalForms.value = formNum + 1;
-
-    // Atualiza os botões de remover
     updateRemoveButtons();
-});
+  });
 
-// Inicializa os botões de remover existentes
-updateRemoveButtons();
+  updateRemoveButtons();
+
+  // Atualiza data/hora de ativação/desativação
+  const radios = document.querySelectorAll('input[name="is_active"]');
+  const dataAtivacao = document.getElementById('data-ativacao');
+
+  radios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      const now = new Date();
+      const formatted = now.toLocaleDateString('pt-BR') + ' ' +
+                        now.toLocaleTimeString('pt-BR', {hour12: false});
+      dataAtivacao.value = formatted;
+    });
+  });
+})();
 </script>
 {% endblock %}
