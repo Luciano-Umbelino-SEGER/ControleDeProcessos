@@ -1,25 +1,127 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load crispy_forms_tags %}
 
-{% block titulo %}
-Fazer Login
-{% endblock %}
+{% block titulo %}Criar Usuário{% endblock %}
 
 {% block body %}
-<header class="w-[500px] min-h-[40vh] mx-auto bg-blue-50 bg-blend-overlay showcase border-blue-800 border-2 rounded-lg flex justify-center items-center bg-no-repeat">
-    <div class="container showcase d-flex justify-content-center align-items-center min-vh-75 py-5" style="backgroud-color: #F0FFFF">
-      <div class="z-10 h-full py-32 md:py-0 text-blue-800 text-center flex items-center flex-col">
-            <form method="post">
-                {% csrf_token %}
-                <fieldset class="form-group">
-                    <legend class="border-bottom mb-4">Inclusão de Usuário
-                    </legend>
-                    {{ form|crispy }}
-                </fieldset>
-                <button class="bg-blue-600 py-1 my-2 px-3 w-full text-white md:text-lg rounded-md" type="submit">Adicionar Usuário</button>
-            </form>
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] px-4">
+  <div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
+    <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Inclusão de Usuário</h2>
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 p-3 rounded border border-red-300 bg-red-50 text-red-700">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <form method="post" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% csrf_token %}
+
+      <!-- Campos do Usuário -->
+      {% for field in form %}
+      <div class="flex flex-col">
+        <label for="{{ field.id_for_label }}" class="text-sm font-medium text-blue-800 mb-1">
+          {{ field.label }}
+        </label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <!-- Telefones -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-6">
+        <h3 class="text-lg font-semibold text-blue-800 mb-2">Telefones</h3>
+
+        {{ telefones.management_form }}
+        <div id="telefones-container" class="space-y-4">
+          {% for form_tel in telefones %}
+            <div class="telefone-item grid grid-cols-3 gap-4 border p-3 rounded-md bg-gray-50 relative">
+              <button type="button" class="remove-telefone-btn absolute top-1 right-1 text-red-600 font-bold hover:text-red-800">X</button>
+              <div>
+                {{ form_tel.ddd.label_tag }}
+                {{ form_tel.ddd }}
+              </div>
+              <div>
+                {{ form_tel.numero.label_tag }}
+                {{ form_tel.numero }}
+              </div>
+              <div>
+                {{ form_tel.ramal.label_tag }}
+                {{ form_tel.ramal }}
+              </div>
+                  {% if form_tel.DELETE %}
+                    {{ form_tel.DELETE.as_hidden }}
+                  {% endif %}
+              </div>
+          {% endfor %}
         </div>
-    </div>
-</header>
+
+        <button type="button" id="add-telefone"
+          class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded">
+          + Adicionar Telefone
+        </button>
+      </div>
+
+      <!-- Botão de envio -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-3">
+        <button type="submit"
+          class="bg-blue-600 hover:bg-blue-700 py-2 px-4 w-full text-white text-lg rounded-md">
+          Adicionar Usuário
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JS para adicionar e remover telefones dinamicamente -->
+<script>
+function updateRemoveButtons() {
+    document.querySelectorAll('.remove-telefone-btn').forEach((btn) => {
+        btn.onclick = function() {
+            const telefoneDiv = btn.closest('.telefone-item');
+            const deleteInput = telefoneDiv.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteInput) {
+                // Marca para exclusão e esconde o formulário
+                deleteInput.checked = true;
+                telefoneDiv.style.display = 'none';
+            } else {
+                // Se não tiver checkbox (novo telefone), remove do DOM
+                telefoneDiv.remove();
+                const totalForms = document.querySelector('#id_telefones-TOTAL_FORMS');
+                totalForms.value = parseInt(totalForms.value) - 1;
+            }
+        };
+    });
+}
+
+document.getElementById('add-telefone').addEventListener('click', function() {
+    const container = document.getElementById('telefones-container');
+    const totalForms = document.querySelector('#id_telefones-TOTAL_FORMS');
+    const formNum = parseInt(totalForms.value);
+    const emptyForm = container.querySelector('.telefone-item').cloneNode(true);
+
+    // Limpar valores do clone
+    emptyForm.querySelectorAll('input').forEach(input => {
+        if (input.type !== 'checkbox') input.value = '';
+        if (input.type === 'checkbox') input.checked = false;
+    });
+
+    // Atualizar índices do formset
+    emptyForm.innerHTML = emptyForm.innerHTML.replace(/-\d+-/g, `-${formNum}-`);
+    emptyForm.style.display = 'block';
+
+    container.appendChild(emptyForm);
+
+    // Atualiza TOTAL_FORMS
+    totalForms.value = formNum + 1;
+
+    // Atualiza os botões de remover
+    updateRemoveButtons();
+});
+
+// Inicializa os botões de remover existentes
+updateRemoveButtons();
+</script>
 {% endblock %}

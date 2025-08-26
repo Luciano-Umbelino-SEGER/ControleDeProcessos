@@ -1,11 +1,14 @@
 from .models import ArquiteturaProcesso, Macroprocesso, Usuario, LogAcoes, Telefone
-from .forms import CriarUsuarioForm
+from .forms import CriarUsuarioForm, TelefoneFormSet
 from django.shortcuts import render, redirect, reverse
+from django.urls import reverse
 from django.views.generic import TemplateView, ListView, DetailView, FormView, View
+from django.views.generic.edit import FormView
+from django.forms import modelformset_factory
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
-
+from .models import Usuario, Telefone
 # Create your views here.
 class HomePage(TemplateView):
     template_name = 'homepage.html'
@@ -53,12 +56,37 @@ class CriarUsuario(LoginRequiredMixin, FormView):
     template_name = 'usuario/criarusuario.html'
     form_class = CriarUsuarioForm
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.method == 'POST':
+            context['telefones'] = TelefoneFormSet(self.request.POST, prefix='telefones')
+        else:
+            context['telefones'] = TelefoneFormSet(prefix='telefones')
+        return context
+
     def form_valid(self, form):
-        form.save()
-        return super().form_valid(form)
+        context = self.get_context_data()
+        telefones = context['telefones']
+
+        if telefones.is_valid():
+            # Salva usuário
+            self.object = form.save()
+
+            # Salva telefones associados
+            telefones.instance = self.object
+            telefones.save()
+
+            return redirect(self.get_success_url())
+        else:
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form)
+        return render(self.request, self.template_name, context)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
+
 
 class DetalheUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/detalheusuario.html'
