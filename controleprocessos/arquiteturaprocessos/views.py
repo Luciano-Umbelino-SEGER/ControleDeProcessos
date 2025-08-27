@@ -1,6 +1,8 @@
+from datetime import datetime
+from django.utils import timezone
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.views.generic import TemplateView, ListView, DetailView, FormView
+from django.views.generic import TemplateView, ListView, DetailView, CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
@@ -57,7 +59,7 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class CriarUsuario(LoginRequiredMixin, FormView):
+class CriarUsuario(LoginRequiredMixin, CreateView):
     template_name = 'usuario/criarusuario.html'
     form_class = CriarUsuarioForm
 
@@ -73,30 +75,40 @@ class CriarUsuario(LoginRequiredMixin, FormView):
         return context
 
     def form_valid(self, form):
-        """
-        Salva usuário e os telefones vinculados.
-        """
+        print("Entrou no form_valid")
+
         context = self.get_context_data()
         telefones = context['telefones']
 
         if telefones.is_valid():
-            # Salva usuário primeiro
-            self.object = form.save()
+            self.object = form.save(commit=False)
 
-            # Associa o formset ao usuário criado
+            # Captura campos extras
+            is_active = self.request.POST.get("is_active")
+            data_ativacao = self.request.POST.get("data_ativacaodesativacao")
+            date_joined = self.request.POST.get("date_joined")
+
+            print("is_active:", is_active)
+            print("data_ativacaodesativacao:", data_ativacao)
+            print("date_joined:", date_joined)
+
+            self.object.is_active = is_active == "True"
+            self.object.data_ativacaodesativacao = data_ativacao or timezone.now()
+            self.object.date_joined = date_joined or timezone.now()
+
+            self.object.save()
+            print("Usuário salvo com ID:", self.object.pk)
+
             telefones.instance = self.object
             telefones.save()
 
             messages.success(self.request, "Usuário criado com sucesso!")
             return redirect(self.get_success_url())
         else:
-            # Se os telefones forem inválidos, renderiza o form com erros
+            print("Erros no formset de telefones:", telefones.errors)
             return self.render_to_response(self.get_context_data(form=form))
 
     def form_invalid(self, form):
-        """
-        Caso o form principal seja inválido.
-        """
         messages.error(self.request, "Por favor, corrija os erros abaixo.")
         return self.render_to_response(self.get_context_data(form=form))
 

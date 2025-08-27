@@ -17,9 +17,9 @@ class Perfil(models.Model):
 
 class Telefone(models.Model):
     usuario = models.ForeignKey("Usuario", related_name="telefones", on_delete=models.CASCADE)
-    ddd = models.CharField(max_length=3)
-    numero = models.CharField(max_length=9)
-    ramal = models.CharField(max_length=5)
+    ddd = models.CharField(max_length=3, null=True, blank=True)
+    numero = models.CharField(max_length=9, null=True, blank=True)
+    ramal = models.CharField(max_length=5, null=True, blank=True)
 
     @property
     def numero_formatado(self):
@@ -28,20 +28,22 @@ class Telefone(models.Model):
         - Fixo (8 dígitos): (DD) XXXX-XXXX
         - Celular (9 dígitos): (DD) XXXXX-XXXX
         """
+        ramal_str = f" Ramal: {self.ramal}" if self.ramal else ""
+
         if len(self.numero) == 9:  # celular
-            return f"({self.ddd}) {self.numero[:5]}-{self.numero[5:]} Ramal: {self.ramal}"
+            return f"({self.ddd}) {self.numero[:5]}-{self.numero[5:]}{ramal_str}"
         elif len(self.numero) == 8:  # fixo
-            return f"({self.ddd}) {self.numero[:4]}-{self.numero[4:]} Ramal: {self.ramal}"
+            return f"({self.ddd}) {self.numero[:4]}-{self.numero[4:]}{ramal_str}"
         else:
-            return f"({self.ddd}) {self.numero} Ramal: {self.ramal}"  # caso número inválido
+            return f"({self.ddd}) {self.numero}{ramal_str}"  # caso número inválido
 
     def __str__(self):
         return str(f"{self.ddd} - {self.numero} - {self.ramal}")
 
 class Usuario(AbstractUser):
-    setor = models.CharField(max_length=100, null=False, blank=False)
-    cargo = models.CharField(max_length=100, null=False, blank=False)
-    funcao = models.CharField(max_length=100, null=False, blank=False)
+    setor = models.CharField(max_length=100, null=True, blank=True)
+    cargo = models.CharField(max_length=100, null=True, blank=True)
+    funcao = models.CharField(max_length=100, null=True, blank=True)
     perfil = models.ForeignKey("Perfil", null=True, blank=True, on_delete=models.SET_NULL)
     data_ativacaodesativacao = models.DateTimeField(default=timezone.now)
 

@@ -57,7 +57,7 @@
                             </svg>
                         </a>
 
-                        {% if request.user.perfil.nome == 'Administrador' %}
+                        {% if request.user.perfil.nome|lower == 'administrador' %}
                         <!-- Ícone Editar -->
                         <a href="{% url 'arquiteturaprocessos:detalheusuario' usuario.id %}" class="text-yellow-600 hover:text-yellow-800" title="Editar">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 inline text-yellow-600 hover:text-yellow-800">

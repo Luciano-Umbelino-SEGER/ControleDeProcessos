@@ -13,7 +13,7 @@ class EmailAuthenticationForm(AuthenticationForm):
     Formulário de login que permite usar email ou username
     """
     username = forms.CharField(
-        label=_("Email ou Username"),
+        label=_("E-mail ou Username"),
         widget=forms.TextInput(attrs={"autofocus": True})
     )
 
@@ -39,7 +39,7 @@ class EmailAuthenticationForm(AuthenticationForm):
 
 
 class CriarUsuarioForm(UserCreationForm):
-    email = forms.EmailField(widget=forms.EmailInput())
+    email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
 
     class Meta:
         model = Usuario
