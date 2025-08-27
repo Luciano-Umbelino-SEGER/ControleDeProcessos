@@ -2,7 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.views.generic import TemplateView, ListView, DetailView, CreateView
+from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
@@ -43,6 +43,84 @@ class BackLog(LoginRequiredMixin, ListView):
     template_name = 'backlog.html'
     model = ArquiteturaProcesso
 
+
+class VisualizarUsuario(LoginRequiredMixin, DetailView):
+    template_name = 'usuario/criarusuario.html'
+    model = Usuario
+    context_object_name = 'usuario'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        usuario = self.get_object()
+        context['form'] = CriarUsuarioForm(instance=usuario)
+        context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
+        context['modo_visualizacao'] = True
+        return context
+
+class EditarUsuario(LoginRequiredMixin, UpdateView):
+    template_name = 'usuario/criarusuario.html'
+    model = Usuario
+    form_class = CriarUsuarioForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['telefones'] = TelefoneFormSet(self.request.POST, instance=self.object, prefix='telefones')
+        else:
+            context['telefones'] = TelefoneFormSet(instance=self.object, prefix='telefones')
+        context['modo_edicao'] = True
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        telefones = context['telefones']
+        if telefones.is_valid():
+            self.object = form.save()
+            telefones.instance = self.object
+            telefones.save()
+            messages.success(self.request, "Usuário atualizado com sucesso!")
+            return redirect(self.get_success_url())
+        else:
+            messages.error(self.request, "Corrija os erros abaixo.")
+            return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+
+        class ExcluirUsuario(LoginRequiredMixin, DetailView):
+            template_name = 'usuario/criarusuario.html'
+            model = Usuario
+
+            def post(self, request, *args, **kwargs):
+                usuario = self.get_object()
+                usuario.delete()
+                messages.success(request, "Usuário excluído com sucesso!")
+                return redirect('arquiteturaprocessos:cadastrousuarios')
+
+            def get_context_data(self, **kwargs):
+                context = super().get_context_data(**kwargs)
+                usuario = self.get_object()
+                context['form'] = CriarUsuarioForm(instance=usuario)
+                context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
+                context['modo_exclusao'] = True
+                return context
+
+class ExcluirUsuario(LoginRequiredMixin, DetailView):
+    template_name = 'usuario/criarusuario.html'
+    model = Usuario
+
+    def post(self, request, *args, **kwargs):
+        usuario = self.get_object()
+        usuario.delete()
+        messages.success(request, "Usuário excluído com sucesso!")
+        return redirect('arquiteturaprocessos:cadastrousuarios')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        usuario = self.get_object()
+        context['form'] = CriarUsuarioForm(instance=usuario)
+        context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
+        context['modo_exclusao'] = True
+        return context
 
 class CadastroUsuarios(LoginRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'

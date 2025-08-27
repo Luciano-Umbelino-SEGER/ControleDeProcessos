@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.urls import path
 from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
-                    CadastroUsuarios, DetalheUsuario, LogAcoes, CustomLoginView, CriarUsuario)
+                    CadastroUsuarios, DetalheUsuario, LogAcoes, CustomLoginView, CriarUsuario,
+                    VisualizarUsuario, EditarUsuario, ExcluirUsuario)
 from django.contrib.auth import views as auth_views
 
 
@@ -15,6 +16,9 @@ urlpatterns = [
     path('backlog/', BackLog.as_view(), name='backlog'),
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('criarusuario/', CriarUsuario.as_view(), name='criarusuario'),
+    path('usuario/<int:pk>/visualizar/', VisualizarUsuario.as_view(), name='visualizar_usuario'),
+    path('usuario/<int:pk>/editar/', EditarUsuario.as_view(), name='editar_usuario'),
+    path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
     path('detalheusuario/<int:pk>', DetalheUsuario.as_view(), name='detalheusuario'),
     path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     path('fazer_login/', CustomLoginView.as_view(), name='fazer_login'),
