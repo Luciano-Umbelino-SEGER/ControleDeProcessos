@@ -44,22 +44,22 @@
 <label class="text-sm font-medium text-blue-800 mb-2 text-center">Status Usuário</label>
 <div class="flex gap-4">
 <label class="flex items-center text-blue-800 gap-1">
-<input %}="" %}checked{%="" endif="" if="" name="is_active" type="radio" user.is_active="" value="True" {%=""/> Ativo
+<input %}="" %}checked{%="" disabled="disabled" endif="" if="" name="is_active" readonly="readonly" type="radio" user.is_active="" value="True" {%=""/> Ativo
             </label>
 <label class="flex items-center text-blue-800 gap-1">
-<input %}="" %}checked{%="" endif="" if="" name="is_active" not="" type="radio" user.is_active="" value="False" {%=""/> Inativo
+<input %}="" %}checked{%="" disabled="disabled" endif="" if="" name="is_active" not="" readonly="readonly" type="radio" user.is_active="" value="False" {%=""/> Inativo
             </label>
 </div>
 </div>
 <div class="flex flex-col">
 <label class="text-sm font-medium text-blue-800 mb-1">Data Ativação/Desativação</label>
-<input class="border rounded px-2 py-1 bg-gray-100 text-gray-700 max-w-[180px] truncate" disabled="" id="data-ativacao" name="data_ativacaodesativacao" type="text" value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
+<input class="border rounded px-2 py-1 bg-gray-100 text-gray-700 max-w-[180px] truncate" disabled="disabled" id="data-ativacao" name="data_ativacaodesativacao" readonly="readonly" type="text" value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
 </div>
 </div>
 <!-- Data de Cadastro -->
 <div class="flex flex-col mt-2">
 <label class="text-sm font-medium text-blue-800 mb-1">Data Cadastro</label>
-<input class="border rounded px-2 py-1 bg-gray-100 text-gray-700" disabled="" name="date_joined" type="text" value="{{ user.date_joined|date:'d/m/Y H:i:s' }}"/>
+<input class="border rounded px-2 py-1 bg-gray-100 text-gray-700" disabled="disabled" name="date_joined" readonly="readonly" type="text" value="{{ user.date_joined|date:'d/m/Y H:i:s' }}"/>
 </div>
       {% endif %}
       {% endfor %}
@@ -103,13 +103,11 @@
 </div>
 <!-- Botão submit -->
 <div class="col-span-1 md:col-span-2 lg:col-span-3">
-  <div class="flex justify-end space-x-4 mt-0.15">
-      <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="submit">Adicionar Usuário</button><a class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded w-48 text-center" href="{% url 'arquiteturaprocessos:cadastrousuarios' %}">{% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}</a></div></form>
-  </div>
+<div class="flex justify-end space-x-4 mt-0.15">
+<button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="submit">Adicionar Usuário</button><a class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded w-48 text-center" href="{% url 'arquiteturaprocessos:cadastrousuarios' %}">{% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}</a></div></div></form>
+</div>
 </div>
 
-
-</div>
 <!-- Template escondido (empty_form) -->
 <div class="hidden" id="empty-form">
 <div class="telefone-item flex items-end gap-4 border rounded p-3 mb-3 bg-white">
