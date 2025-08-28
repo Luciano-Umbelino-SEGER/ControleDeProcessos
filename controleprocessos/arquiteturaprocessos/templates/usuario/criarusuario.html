@@ -26,7 +26,6 @@
     <form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post">
       {% csrf_token %}
 
-      <!-- Campos do Usuário -->
       {% for field in form %}
       <div class="flex flex-col">
         <label class="text-sm font-medium text-blue-800 mb-1" for="{{ field.id_for_label }}">
@@ -34,7 +33,7 @@
         </label>
 
         {% if modo_visualizacao or modo_exclusao %}
-          {{ field|disable_field:"bg-gray-100 text-black" }}
+          {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
         {% else %}
           {{ field }}
         {% endif %}
@@ -45,7 +44,6 @@
       </div>
 
       {% if field.name == "perfil" %}
-      <!-- Status e Datas -->
       <div class="flex flex-col md:flex-row gap-4 items-center mt-2">
         <div class="flex flex-col border rounded p-2 items-center">
           <label class="text-sm font-medium text-blue-800 mb-2 text-center">Status Usuário</label>
@@ -62,24 +60,22 @@
         </div>
         <div class="flex flex-col">
           <label class="text-sm font-medium text-blue-800 mb-1">Data Ativação/Desativação</label>
-          <input class="border rounded px-2 py-1 bg-gray-100 text-black max-w-[180px] truncate"
+          <input class="border border-gray-800 rounded px-2 py-1 bg-gray-100 text-black max-w-[180px] truncate"
                  {% if modo_visualizacao or modo_exclusao %}disabled readonly{% endif %}
                  id="data-ativacao" name="data_ativacaodesativacao" type="text"
                  value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
         </div>
       </div>
 
-      <!-- Data de Cadastro -->
       <div class="flex flex-col mt-2">
         <label class="text-sm font-medium text-blue-800 mb-1">Data Cadastro</label>
-        <input class="border rounded px-2 py-1 bg-gray-100 text-black"
+        <input class="border border-gray-800 rounded px-2 py-1 bg-gray-100 text-black"
                {% if modo_visualizacao or modo_exclusao %}disabled readonly{% endif %}
                name="date_joined" type="text" value="{{ user.date_joined|date:'d/m/Y H:i:s' }}"/>
       </div>
       {% endif %}
       {% endfor %}
 
-      <!-- Telefones -->
       <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-1">
         <h3 class="text-lg font-semibold text-blue-800 mb-1">Telefones</h3>
 
@@ -91,21 +87,21 @@
             <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
               <div class="flex-1">
                 {% if modo_visualizacao or modo_exclusao %}
-                  {{ form_tel.ddd|disable_field:"bg-gray-100 text-black" }}
+                  {{ form_tel.ddd|disable_field:"bg-gray-100 text-black border border-gray-800" }}
                 {% else %}
                   {{ form_tel.ddd }}
                 {% endif %}
               </div>
               <div class="flex-1">
                 {% if modo_visualizacao or modo_exclusao %}
-                  {{ form_tel.numero|disable_field:"bg-gray-100 text-black" }}
+                  {{ form_tel.numero|disable_field:"bg-gray-100 text-black border border-gray-800" }}
                 {% else %}
                   {{ form_tel.numero }}
                 {% endif %}
               </div>
               <div class="flex-1">
                 {% if modo_visualizacao or modo_exclusao %}
-                  {{ form_tel.ramal|disable_field:"bg-gray-100 text-black" }}
+                  {{ form_tel.ramal|disable_field:"bg-gray-100 text-black border border-gray-800" }}
                 {% else %}
                   {{ form_tel.ramal }}
                 {% endif %}
@@ -126,7 +122,6 @@
             </div>
             {% endfor %}
           {% else %}
-            <!-- Exibir uma linha vazia se não houver telefones -->
             <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
               <div class="flex-1">{{ telefones.empty_form.ddd }}</div>
               <div class="flex-1">{{ telefones.empty_form.numero }}</div>
@@ -143,7 +138,6 @@
         {% endif %}
       </div>
 
-      <!-- Botões finais -->
       <div class="col-span-1 md:col-span-2 lg:col-span-3">
         <div class="flex justify-end space-x-4 mt-0.15">
           {% if not modo_visualizacao %}
