@@ -5,16 +5,16 @@
 
 {% block body %}
 <div class="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] px-4">
-<div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-{% if modo_visualizacao %}
-<h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Visualização de Usuário</h2>
-{% elif modo_edicao %}
-<h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Edição de Usuário</h2>
-{% elif modo_exclusao %}
-<h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Exclusão de Usuário</h2>
-{% else %}
-<h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Inclusão de Usuário</h2>
-{% endif %}
+  <div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
+    {% if modo_visualizacao %}
+        <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Visualização de Usuário</h2>
+    {% elif modo_edicao %}
+        <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Edição de Usuário</h2>
+    {% elif modo_exclusao %}
+        <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Exclusão de Usuário</h2>
+    {% else %}
+        <h2 class="text-2xl font-bold text-center text-blue-800 mb-6">Inclusão de Usuário</h2>
+    {% endif %}
 
     {% if form.non_field_errors %}
       <div class="mb-4 p-3 rounded border border-red-300 bg-red-50 text-red-700">
@@ -28,7 +28,7 @@
       <!-- Campos do Usuário -->
       {% for field in form %}
       <div class="flex flex-col">
-<label class="text-sm font-medium text-blue-800 mb-1" for="{{ field.id_for_label }}">
+        <label class="text-sm font-medium text-blue-800 mb-1" for="{{ field.id_for_label }}">
           {{ field.label }}
         </label>
         {{ field }}
@@ -39,104 +39,145 @@
 
       {% if field.name == "perfil" %}
       <!-- Status e Data de Ativação/Desativação -->
-<div class="flex flex-col md:flex-row gap-4 items-center mt-2">
-<div class="flex flex-col border rounded p-2 items-center">
-<label class="text-sm font-medium text-blue-800 mb-2 text-center">Status Usuário</label>
-<div class="flex gap-4">
-<label class="flex items-center text-blue-800 gap-1">
-<input %}="" %}checked{%="" disabled="disabled" endif="" if="" name="is_active" readonly="readonly" type="radio" user.is_active="" value="True" {%=""/> Ativo
+      <div class="flex flex-col md:flex-row gap-4 items-center mt-2">
+        <div class="flex flex-col border rounded p-2 items-center">
+          <label class="text-sm font-medium text-blue-800 mb-2 text-center">Status Usuário</label>
+          <div class="flex gap-4">
+            <label class="flex items-center text-blue-800 gap-1">
+              <input type="radio" name="is_active" value="True" {% if user.is_active %}checked{% endif %}/> Ativo
             </label>
-<label class="flex items-center text-blue-800 gap-1">
-<input %}="" %}checked{%="" disabled="disabled" endif="" if="" name="is_active" not="" readonly="readonly" type="radio" user.is_active="" value="False" {%=""/> Inativo
+            <label class="flex items-center text-blue-800 gap-1">
+              <input type="radio" name="is_active" value="False" {% if not user.is_active %}checked{% endif %}/> Inativo
             </label>
-</div>
-</div>
-<div class="flex flex-col">
-<label class="text-sm font-medium text-blue-800 mb-1">Data Ativação/Desativação</label>
-<input class="border rounded px-2 py-1 bg-gray-100 text-gray-700 max-w-[180px] truncate" disabled="disabled" id="data-ativacao" name="data_ativacaodesativacao" readonly="readonly" type="text" value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
-</div>
-</div>
-<!-- Data de Cadastro -->
-<div class="flex flex-col mt-2">
-<label class="text-sm font-medium text-blue-800 mb-1">Data Cadastro</label>
-<input class="border rounded px-2 py-1 bg-gray-100 text-gray-700" disabled="disabled" name="date_joined" readonly="readonly" type="text" value="{{ user.date_joined|date:'d/m/Y H:i:s' }}"/>
-</div>
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <label class="text-sm font-medium text-blue-800 mb-1">Data Ativação/Desativação</label>
+          <input class="border rounded px-2 py-1 bg-gray-100 text-black max-w-[180px] truncate" id="data-ativacao" name="data_ativacaodesativacao" type="text" value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
+        </div>
+      </div>
+      <!-- Data de Cadastro -->
+      <div class="flex flex-col mt-2">
+        <label class="text-sm font-medium text-blue-800 mb-1">Data Cadastro</label>
+        <input class="border rounded px-2 py-1 bg-gray-100 text-black" name="date_joined" type="text" value="{{ user.date_joined|date:'d/m/Y H:i:s' }}"/>
+      </div>
       {% endif %}
       {% endfor %}
 
       <!-- Telefones -->
-<div class="col-span-1 md:col-span-2 lg:col-span-3 mt-1">
-<h3 class="text-lg font-semibold text-blue-800 mb-1">Telefones</h3>
-
+      <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-1">
+        <h3 class="text-lg font-semibold text-blue-800 mb-1">Telefones</h3>
         {{ telefones.management_form }}
-
         <div id="telefones-container">
           {% for form_tel in telefones %}
-            <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
-<div class="flex-1">
-                {{ form_tel.ddd.label_tag }}
-                {{ form_tel.ddd }}
-              </div>
-<div class="flex-1">
-                {{ form_tel.numero.label_tag }}
-                {{ form_tel.numero }}
-              </div>
-<div class="flex-1">
-                {{ form_tel.ramal.label_tag }}
-                {{ form_tel.ramal }}
-              </div>
-<div class="flex items-center">
-<button class="remove-telefone-btn" title="Excluir telefone" type="button">
-<svg class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
-              {{ form_tel.id }}
-              {{ form_tel.DELETE.as_hidden }}
+          <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
+            <div class="flex-1">
+              {{ form_tel.ddd.label_tag }}
+              {{ form_tel.ddd }}
             </div>
+            <div class="flex-1">
+              {{ form_tel.numero.label_tag }}
+              {{ form_tel.numero }}
+            </div>
+            <div class="flex-1">
+              {{ form_tel.ramal.label_tag }}
+              {{ form_tel.ramal }}
+            </div>
+            <div class="flex items-center">
+              <button class="remove-telefone-btn" title="Excluir telefone" type="button">
+                <svg class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+              </button>
+            </div>
+            {{ form_tel.id }}
+            {{ form_tel.DELETE.as_hidden }}
+          </div>
           {% endfor %}
         </div>
-<button class="mt-0.15 bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded" id="add-telefone" type="button">
+
+        {% if not modo_visualizacao and not modo_exclusao %}
+        <button class="mt-0.15 bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded" id="add-telefone" type="button">
           + Adicionar Telefone
         </button>
-</div>
-<!-- Botão submit -->
-<div class="col-span-1 md:col-span-2 lg:col-span-3">
-<div class="flex justify-end space-x-4 mt-0.15">
-<button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="submit">Adicionar Usuário</button><a class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded w-48 text-center" href="{% url 'arquiteturaprocessos:cadastrousuarios' %}">{% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}</a></div></div></form>
-</div>
+        {% endif %}
+      </div>
+
+      <!-- Botões finais -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-3">
+        <div class="flex justify-end space-x-4 mt-0.15">
+          {% if not modo_visualizacao %}
+          <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="submit">
+            {% if modo_edicao %}Salvar Alterações{% elif modo_exclusao %}Confirmar Exclusão{% else %}Adicionar Usuário{% endif %}
+          </button>
+          {% endif %}
+
+          <a class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded w-48 text-center" href="{% url 'arquiteturaprocessos:cadastrousuarios' %}">
+            {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Template escondido (empty_form) -->
 <div class="hidden" id="empty-form">
-<div class="telefone-item flex items-end gap-4 border rounded p-3 mb-3 bg-white">
-<div class="flex-1">
+  <div class="telefone-item flex items-end gap-4 border rounded p-3 mb-3 bg-white">
+    <div class="flex-1">
       {{ telefones.empty_form.ddd.label_tag }}
       {{ telefones.empty_form.ddd }}
     </div>
-<div class="flex-1">
+    <div class="flex-1">
       {{ telefones.empty_form.numero.label_tag }}
       {{ telefones.empty_form.numero }}
     </div>
-<div class="flex-1">
+    <div class="flex-1">
       {{ telefones.empty_form.ramal.label_tag }}
       {{ telefones.empty_form.ramal }}
     </div>
-<div class="flex items-center">
-<button class="remove-telefone-btn" title="Excluir telefone" type="button">
-<svg class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-</svg>
-</button>
-</div>
+    <div class="flex items-center">
+      <button class="remove-telefone-btn" title="Excluir telefone" type="button">
+        <svg class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </button>
+    </div>
     {{ telefones.empty_form.id }}
     {{ telefones.empty_form.DELETE.as_hidden }}
   </div>
 </div>
-<!-- JS para adicionar/remover e atualizar data -->
+
+<!-- JS para desabilitar campos, adicionar/remover telefones e atualizar data -->
 <script>
 (function() {
+  const modoVisualizacao = {{ modo_visualizacao|yesno:"true,false" }};
+  const modoExclusao = {{ modo_exclusao|yesno:"true,false" }};
+  const form = document.querySelector('form');
+  const addBtn = document.getElementById('add-telefone');
+
+  if(modoVisualizacao || modoExclusao){
+    // Desabilita todos os campos
+    if(form){
+      form.querySelectorAll('input, select, textarea').forEach(el => {
+        el.setAttribute('readonly', 'readonly');
+        el.setAttribute('disabled', 'disabled');
+        el.classList.add('bg-gray-100','text-black');
+      });
+    }
+    // Oculta botão de adicionar telefone
+    if(addBtn){
+      addBtn.style.display = 'none';
+    }
+    // Oculta botão submit apenas no modo visualização
+    if(modoVisualizacao && form){
+      form.querySelectorAll('button[type="submit"]').forEach(btn => {
+        btn.style.display = 'none';
+      });
+    }
+  }
+
+  // Funções para adicionar/remover telefones
   function updateRemoveButtons() {
     document.querySelectorAll('.remove-telefone-btn').forEach(btn => {
       btn.onclick = null;
@@ -154,27 +195,28 @@
     });
   }
 
-  document.getElementById('add-telefone').addEventListener('click', function() {
-    const container = document.getElementById('telefones-container');
-    const totalForms = document.querySelector('#id_telefones-TOTAL_FORMS');
-    const formNum = parseInt(totalForms.value, 10);
-    const templateHtml = document.getElementById('empty-form').innerHTML;
-    const newHtml = templateHtml.replace(/__prefix__/g, formNum);
-    const temp = document.createElement('div');
-    temp.innerHTML = newHtml;
-    const newItem = temp.firstElementChild;
-    newItem.style.display = 'flex';
-    container.appendChild(newItem);
-    totalForms.value = formNum + 1;
-    updateRemoveButtons();
-  });
+  if(addBtn){
+    addBtn.addEventListener('click', function() {
+      const container = document.getElementById('telefones-container');
+      const totalForms = document.querySelector('#id_telefones-TOTAL_FORMS');
+      const formNum = parseInt(totalForms.value, 10);
+      const templateHtml = document.getElementById('empty-form').innerHTML;
+      const newHtml = templateHtml.replace(/__prefix__/g, formNum);
+      const temp = document.createElement('div');
+      temp.innerHTML = newHtml;
+      const newItem = temp.firstElementChild;
+      newItem.style.display = 'flex';
+      container.appendChild(newItem);
+      totalForms.value = formNum + 1;
+      updateRemoveButtons();
+    });
+  }
 
   updateRemoveButtons();
 
   // Atualiza data/hora de ativação/desativação
   const radios = document.querySelectorAll('input[name="is_active"]');
   const dataAtivacao = document.getElementById('data-ativacao');
-
   radios.forEach(radio => {
     radio.addEventListener('change', () => {
       const now = new Date();
