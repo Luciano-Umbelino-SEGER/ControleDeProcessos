@@ -142,10 +142,11 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
     form_class = CriarUsuarioForm
 
     def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['modo_inclusao'] = True
         """
         Injeta o formset de telefones no contexto.
         """
-        context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['telefones'] = TelefoneFormSet(self.request.POST, prefix='telefones')
         else:

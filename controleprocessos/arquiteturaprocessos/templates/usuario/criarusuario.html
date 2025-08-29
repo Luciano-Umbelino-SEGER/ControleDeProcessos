@@ -3,6 +3,23 @@
 
 {% block titulo %}Criar Usuário{% endblock %}
 
+{% block head %}
+<style>
+  /* Mantém aparência consistente dos campos desabilitados */
+  input[disabled], select[disabled], textarea[disabled] {
+    opacity: 1 !important;
+    background-color: #f3f4f6; /* bg-gray-100 */
+    color: #000 !important;
+    border: 1px solid #1e293b; /* border-gray-800 */
+    cursor: not-allowed;
+    height: 35px; /* altura padronizada */
+    padding-left: 0.5rem; /* espaçamento interno à esquerda */
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+</style>
+{% endblock %}
+
 {% block body %}
 <div class="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] px-4">
   <div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
@@ -23,7 +40,7 @@
       </div>
     {% endif %}
 
-    <form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post">
+    <form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post" >
       {% csrf_token %}
 
       {% for field in form %}
@@ -32,10 +49,19 @@
           {{ field.label }}
         </label>
 
-        {% if modo_visualizacao or modo_exclusao %}
-          {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
+        {# Senha e confirmação só habilitadas no modo_inclusao #}
+        {% if field.name == "password1" or field.name == "password2" %}
+          {% if modo_inclusao %}
+            {{ field }}
+          {% else %}
+            {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
+          {% endif %}
         {% else %}
-          {{ field }}
+          {% if modo_visualizacao or modo_exclusao %}
+            {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
+          {% else %}
+            {{ field }}
+          {% endif %}
         {% endif %}
 
         {% if field.errors %}
@@ -150,8 +176,7 @@
             {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
           </a>
         </div>
-      </div>
-
+      </div>=
     </form>
   </div>
 </div>
