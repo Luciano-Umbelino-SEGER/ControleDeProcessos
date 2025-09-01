@@ -176,8 +176,41 @@
             {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
           </a>
         </div>
-      </div>=
+      </div>
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const addTelefoneBtn = document.getElementById("add-telefone");
+  const telefonesContainer = document.getElementById("telefones-container");
+  const totalFormsInput = document.getElementById("id_telefones-TOTAL_FORMS");
+
+  if (addTelefoneBtn) {
+    addTelefoneBtn.addEventListener("click", function () {
+      let formIndex = parseInt(totalFormsInput.value);
+
+      // pega o template do empty_form e substitui __prefix__
+      let newFormHtml = `{{ telefones.empty_form|safe }}`.replace(/__prefix__/g, formIndex);
+
+      // cria um wrapper para manter o mesmo layout
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("telefone-item", "flex", "items-end", "gap-4", "border", "rounded", "pt-0.15", "pb-3", "px-3", "mb-3", "bg-white");
+      wrapper.innerHTML = newFormHtml;
+
+      telefonesContainer.appendChild(wrapper);
+
+      totalFormsInput.value = formIndex + 1;
+    });
+  }
+
+  // handler para remover telefone
+  telefonesContainer.addEventListener("click", function (e) {
+    if (e.target.closest(".remove-telefone-btn")) {
+      e.target.closest(".telefone-item").remove();
+    }
+  });
+});
+</script>
 {% endblock %}
