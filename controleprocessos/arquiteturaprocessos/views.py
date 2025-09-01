@@ -6,9 +6,10 @@ from django.views.generic import TemplateView, ListView, DetailView, CreateView,
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
+from django.forms import inlineformset_factory
 
-from .models import ArquiteturaProcesso, Macroprocesso, Usuario, LogAcoes
-from .forms import CriarUsuarioForm, TelefoneFormSet
+from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes
+from .forms import CriarUsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet
 
 
 class HomePage(TemplateView):
@@ -57,27 +58,64 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
         context['modo_visualizacao'] = True
         return context
 
+
 class EditarUsuario(LoginRequiredMixin, UpdateView):
     template_name = 'usuario/criarusuario.html'
     model = Usuario
-    form_class = CriarUsuarioForm
+    form_class = EditarUsuarioForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # Formset para edição: apenas telefones existentes, sem linha extra
+        TelefoneFormSetEdicao = inlineformset_factory(
+            Usuario,
+            Telefone,
+            form=TelefoneForm,
+            extra=0,        # sem linha extra
+            can_delete=True
+        )
+
         if self.request.POST:
             context['telefones'] = TelefoneFormSet(self.request.POST, instance=self.object, prefix='telefones')
         else:
-            context['telefones'] = TelefoneFormSet(instance=self.object, prefix='telefones')
+            context['telefones'] = TelefoneFormSetEdicao(instance=self.object, prefix='telefones')
+
         context['modo_edicao'] = True
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         telefones = context['telefones']
+
         if telefones.is_valid():
-            self.object = form.save()
+            self.object = form.save(commit=False)
+
+            # Campos extras do template
+            is_active = self.request.POST.get("is_active")
+            data_ativacao_str = self.request.POST.get("data_ativacaodesativacao")
+            date_joined_str = self.request.POST.get("date_joined")
+
+            # converte strings do formato d/m/Y H:M:S para datetime
+            if data_ativacao_str:
+                self.object.data_ativacaodesativacao = datetime.strptime(data_ativacao_str, "%d/%m/%Y %H:%M:%S")
+            else:
+                self.object.data_ativacaodesativacao = timezone.now()
+
+            if date_joined_str:
+                self.object.date_joined = datetime.strptime(date_joined_str, "%d/%m/%Y %H:%M:%S")
+            else:
+                self.object.date_joined = timezone.now()
+
+            # is_active
+            self.object.is_active = is_active == "True"
+
+            self.object.save()
+
+            # Salva os telefones
             telefones.instance = self.object
             telefones.save()
+
             messages.success(self.request, "Usuário atualizado com sucesso!")
             return redirect(self.get_success_url())
         else:
@@ -85,24 +123,8 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
             return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
+        return reverse('arquiteturaprocessos:cadastrousuarios')
 
-        class ExcluirUsuario(LoginRequiredMixin, DetailView):
-            template_name = 'usuario/criarusuario.html'
-            model = Usuario
-
-            def post(self, request, *args, **kwargs):
-                usuario = self.get_object()
-                usuario.delete()
-                messages.success(request, "Usuário excluído com sucesso!")
-                return redirect('arquiteturaprocessos:cadastrousuarios')
-
-            def get_context_data(self, **kwargs):
-                context = super().get_context_data(**kwargs)
-                usuario = self.get_object()
-                context['form'] = CriarUsuarioForm(instance=usuario)
-                context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
-                context['modo_exclusao'] = True
-                return context
 
 class ExcluirUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/criarusuario.html'
@@ -121,6 +143,7 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
         context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
         context['modo_exclusao'] = True
         return context
+
 
 class CadastroUsuarios(LoginRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'
@@ -144,9 +167,6 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['modo_inclusao'] = True
-        """
-        Injeta o formset de telefones no contexto.
-        """
         if self.request.POST:
             context['telefones'] = TelefoneFormSet(self.request.POST, prefix='telefones')
         else:
@@ -154,37 +174,28 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        print("Entrou no form_valid")
-
         context = self.get_context_data()
         telefones = context['telefones']
 
         if telefones.is_valid():
             self.object = form.save(commit=False)
 
-            # Captura campos extras
+            # Campos extras
             is_active = self.request.POST.get("is_active")
             data_ativacao = self.request.POST.get("data_ativacaodesativacao")
             date_joined = self.request.POST.get("date_joined")
-
-            print("is_active:", is_active)
-            print("data_ativacaodesativacao:", data_ativacao)
-            print("date_joined:", date_joined)
 
             self.object.is_active = is_active == "True"
             self.object.data_ativacaodesativacao = data_ativacao or timezone.now()
             self.object.date_joined = date_joined or timezone.now()
 
             self.object.save()
-            print("Usuário salvo com ID:", self.object.pk)
-
             telefones.instance = self.object
             telefones.save()
 
             messages.success(self.request, "Usuário criado com sucesso!")
             return redirect(self.get_success_url())
         else:
-            print("Erros no formset de telefones:", telefones.errors)
             return self.render_to_response(self.get_context_data(form=form))
 
     def form_invalid(self, form):

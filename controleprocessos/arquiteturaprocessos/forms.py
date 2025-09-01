@@ -3,6 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+
 from .models import Usuario, Telefone
 
 User = get_user_model()
@@ -39,6 +40,10 @@ class EmailAuthenticationForm(AuthenticationForm):
 
 
 class CriarUsuarioForm(UserCreationForm):
+    """
+    Formulário para criação de usuário.
+    Inclui os campos de senha.
+    """
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
 
     class Meta:
@@ -51,8 +56,6 @@ class CriarUsuarioForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # remove ":" automático após labels (opcional)
         self.label_suffix = ""
 
         base = (
@@ -61,7 +64,6 @@ class CriarUsuarioForm(UserCreationForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # autocompletes mais semânticos (melhora UX)
         autocomplete_map = {
             "username": "username",
             "first_name": "given-name",
@@ -71,20 +73,63 @@ class CriarUsuarioForm(UserCreationForm):
             "password2": "new-password",
         }
 
-        # aplica classes e placeholders
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = (existing + " " + base).strip()
-
-            # placeholder só faz sentido em inputs de texto/email/senha
             input_type = getattr(field.widget, "input_type", "")
             if input_type in {"text", "email", "password"}:
                 field.widget.attrs.setdefault("placeholder", field.label)
-
-            # autocompletes
             field.widget.attrs["autocomplete"] = autocomplete_map.get(name, "off")
 
-        # "placeholder" em selects = primeira opção vazia "Selecione..."
+        for name in ["setor", "cargo", "funcao", "perfil"]:
+            f = self.fields.get(name)
+            if isinstance(f, forms.ModelChoiceField):
+                f.empty_label = "Selecione..."
+            elif isinstance(f, forms.ChoiceField):
+                choices = list(f.choices)
+                if not choices or choices[0][0] != "":
+                    f.choices = [("", "Selecione...")] + choices
+
+
+class EditarUsuarioForm(forms.ModelForm):
+    """
+    Formulário para edição de usuário.
+    Não inclui campos de senha.
+    """
+    email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
+
+    class Meta:
+        model = Usuario
+        fields = (
+            "username", "first_name", "last_name", "email",
+            "setor", "cargo", "funcao", "perfil",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label_suffix = ""
+
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 bg-white "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        autocomplete_map = {
+            "username": "username",
+            "first_name": "given-name",
+            "last_name": "family-name",
+            "email": "email",
+        }
+
+        for name, field in self.fields.items():
+            existing = field.widget.attrs.get("class", "")
+            field.widget.attrs["class"] = (existing + " " + base).strip()
+            input_type = getattr(field.widget, "input_type", "")
+            if input_type in {"text", "email"}:
+                field.widget.attrs.setdefault("placeholder", field.label)
+            field.widget.attrs["autocomplete"] = autocomplete_map.get(name, "off")
+
         for name in ["setor", "cargo", "funcao", "perfil"]:
             f = self.fields.get(name)
             if isinstance(f, forms.ModelChoiceField):
