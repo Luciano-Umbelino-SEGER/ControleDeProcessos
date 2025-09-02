@@ -38,11 +38,11 @@ class EmailAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
 
-
 class CriarUsuarioForm(UserCreationForm):
     """
     Formulário para criação de usuário.
     Inclui os campos de senha.
+    Desabilita todos os campos nos modos visualização e exclusão.
     """
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
 
@@ -55,6 +55,9 @@ class CriarUsuarioForm(UserCreationForm):
         )
 
     def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        modo_exclusao = kwargs.pop('modo_exclusao', False)
+
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
 
@@ -89,6 +92,12 @@ class CriarUsuarioForm(UserCreationForm):
                 choices = list(f.choices)
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
+
+        # Desabilita todos os campos se estiver em modo visualização ou exclusão
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+
 
 class EditarUsuarioForm(forms.ModelForm):
     """

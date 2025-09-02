@@ -53,9 +53,12 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
-        context['form'] = CriarUsuarioForm(instance=usuario)
+        context['form'] = CriarUsuarioForm(instance=usuario, modo_visualizacao=True)
         context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
         context['modo_visualizacao'] = True
+        context['modo_inclusao'] = False
+        context['modo_exclusao'] = False
+        context['modo_edicao'] = False
         return context
 
 
@@ -151,9 +154,12 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
-        context['form'] = CriarUsuarioForm(instance=usuario)
+        context['form'] = CriarUsuarioForm(instance=usuario, modo_exclusao=True)
         context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
         context['modo_exclusao'] = True
+        context['modo_visualizacao'] = False
+        context['modo_inclusao'] = False
+        context['modo_edicao'] = False
         return context
 
 
@@ -179,6 +185,9 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['modo_inclusao'] = True
+        context['modo_visualizacao'] = False
+        context['modo_exclusao'] = False
+        context['modo_edicao'] = False
         if self.request.POST:
             context['telefones'] = TelefoneFormSet(self.request.POST, prefix='telefones')
         else:
