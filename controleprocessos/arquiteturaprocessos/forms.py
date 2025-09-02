@@ -90,19 +90,29 @@ class CriarUsuarioForm(UserCreationForm):
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
 
-
 class EditarUsuarioForm(forms.ModelForm):
     """
     Formulário para edição de usuário.
-    Não inclui campos de senha.
+    Inclui campos de senha, mas só os valida no modo inclusão.
     """
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
+    password1 = forms.CharField(
+        label="Senha",
+        widget=forms.PasswordInput(attrs={'placeholder': 'Senha'}),
+        required=False
+    )
+    password2 = forms.CharField(
+        label="Confirmação de Senha",
+        widget=forms.PasswordInput(attrs={'placeholder': 'Confirme a Senha'}),
+        required=False
+    )
 
     class Meta:
         model = Usuario
         fields = (
             "username", "first_name", "last_name", "email",
             "setor", "cargo", "funcao", "perfil",
+            "password1", "password2"
         )
 
     def __init__(self, *args, **kwargs):
@@ -120,13 +130,15 @@ class EditarUsuarioForm(forms.ModelForm):
             "first_name": "given-name",
             "last_name": "family-name",
             "email": "email",
+            "password1": "new-password",
+            "password2": "new-password",
         }
 
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = (existing + " " + base).strip()
             input_type = getattr(field.widget, "input_type", "")
-            if input_type in {"text", "email"}:
+            if input_type in {"text", "email", "password"}:
                 field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = autocomplete_map.get(name, "off")
 
@@ -138,6 +150,20 @@ class EditarUsuarioForm(forms.ModelForm):
                 choices = list(f.choices)
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        # Só valida as senhas se for modo inclusão
+        if self.instance.pk is None:
+            if not password1 or not password2:
+                raise forms.ValidationError("Os campos de senha são obrigatórios.")
+            if password1 != password2:
+                raise forms.ValidationError("As senhas não coincidem.")
+        return cleaned_data
+
 
 
 class TelefoneForm(forms.ModelForm):

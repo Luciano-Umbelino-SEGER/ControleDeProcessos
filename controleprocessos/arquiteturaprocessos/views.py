@@ -62,26 +62,28 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
 class EditarUsuario(LoginRequiredMixin, UpdateView):
     template_name = 'usuario/criarusuario.html'
     model = Usuario
-    form_class = EditarUsuarioForm
+    form_class = EditarUsuarioForm  # ✅ Usando o form correto com validação condicional de senha
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Formset para edição: apenas telefones existentes, sem linha extra
         TelefoneFormSetEdicao = inlineformset_factory(
             Usuario,
             Telefone,
             form=TelefoneForm,
-            extra=0,        # sem linha extra
+            extra=0,
             can_delete=True
         )
 
         if self.request.POST:
-            context['telefones'] = TelefoneFormSet(self.request.POST, instance=self.object, prefix='telefones')
+            context['telefones'] = TelefoneFormSetEdicao(self.request.POST, instance=self.object, prefix='telefones')
         else:
             context['telefones'] = TelefoneFormSetEdicao(instance=self.object, prefix='telefones')
 
         context['modo_edicao'] = True
+        context['modo_inclusao'] = False
+        context['modo_visualizacao'] = False
+        context['modo_exclusao'] = False
         return context
 
     def form_valid(self, form):
@@ -96,23 +98,34 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
             data_ativacao_str = self.request.POST.get("data_ativacaodesativacao")
             date_joined_str = self.request.POST.get("date_joined")
 
-            # converte strings do formato d/m/Y H:M:S para datetime
+            # Datas preenchidas automaticamente
             if data_ativacao_str:
-                self.object.data_ativacaodesativacao = datetime.strptime(data_ativacao_str, "%d/%m/%Y %H:%M:%S")
+                try:
+                    self.object.data_ativacaodesativacao = datetime.strptime(data_ativacao_str, "%d/%m/%Y %H:%M:%S")
+                except ValueError:
+                    self.object.data_ativacaodesativacao = timezone.now()
             else:
                 self.object.data_ativacaodesativacao = timezone.now()
 
             if date_joined_str:
-                self.object.date_joined = datetime.strptime(date_joined_str, "%d/%m/%Y %H:%M:%S")
+                try:
+                    self.object.date_joined = datetime.strptime(date_joined_str, "%d/%m/%Y %H:%M:%S")
+                except ValueError:
+                    self.object.date_joined = timezone.now()
             else:
                 self.object.date_joined = timezone.now()
 
-            # is_active
+            # Atualiza is_active
             self.object.is_active = is_active == "True"
+
+            # Atualiza a senha apenas se o usuário digitou uma nova
+            password1 = form.cleaned_data.get("password1")
+            if password1:
+                self.object.set_password(password1)
 
             self.object.save()
 
-            # Salva os telefones
+            # Salva telefones
             telefones.instance = self.object
             telefones.save()
 
@@ -124,7 +137,6 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
-
 
 class ExcluirUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/criarusuario.html'
