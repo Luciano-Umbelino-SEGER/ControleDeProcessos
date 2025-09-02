@@ -63,7 +63,7 @@ class CriarUsuarioForm(UserCreationForm):
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
-            "text-black placeholder-gray-500 bg-white "
+            "text-black placeholder-gray-500  "
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
@@ -78,7 +78,9 @@ class CriarUsuarioForm(UserCreationForm):
 
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
-            field.widget.attrs["class"] = (existing + " " + base).strip()
+            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
+
             input_type = getattr(field.widget, "input_type", "")
             if input_type in {"text", "email", "password"}:
                 field.widget.attrs.setdefault("placeholder", field.label)
@@ -97,6 +99,10 @@ class CriarUsuarioForm(UserCreationForm):
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
+
+                # Aplica fundo cinza aos campos desabilitados
+                existing_classes = field.widget.attrs.get("class", "")
+                field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
 
 class EditarUsuarioForm(forms.ModelForm):
