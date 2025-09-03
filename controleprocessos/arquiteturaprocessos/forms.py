@@ -3,6 +3,7 @@ from django.forms import inlineformset_factory
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 from .models import Usuario, Telefone
 
@@ -103,6 +104,10 @@ class CriarUsuarioForm(UserCreationForm):
                 # Aplica fundo cinza aos campos desabilitados
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
+
+        if modo_exclusao and self.instance:
+            self.instance.is_active = False
+            self.instance.data_ativacaodesativacao = timezone.now()
 
 
 class EditarUsuarioForm(forms.ModelForm):

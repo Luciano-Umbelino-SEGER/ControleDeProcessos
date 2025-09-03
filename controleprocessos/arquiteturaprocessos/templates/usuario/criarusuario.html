@@ -5,17 +5,64 @@
 
 {% block head %}
 <style>
-  /* Mantém aparência consistente dos campos desabilitados */
   input[disabled], select[disabled], textarea[disabled] {
     opacity: 1 !important;
-    background-color: #f3f4f6; /* bg-gray-100 */
+    background-color: #f3f4f6;
     color: #000 !important;
-    border: 1px solid #1e293b; /* border-gray-800 */
+    border: 1px solid #1e293b;
     cursor: not-allowed;
-    height: 35px; /* altura padronizada */
-    padding-left: 0.5rem; /* espaçamento interno à esquerda */
+    height: 35px;
+    padding-left: 0.5rem;
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 2px solid #1e40af; /* moldura azul */
+    width: 90%;
+    max-width: 400px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+
+  .btn {
+    padding: 0.5rem 1.5rem;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-confirm {
+    background-color: #2563eb; /* azul */
+    color: white;
+  }
+
+  .btn-cancel {
+    background-color: #e5e7eb;
+    color: #1e293b;
   }
 </style>
 {% endblock %}
@@ -40,7 +87,7 @@
       </div>
     {% endif %}
 
-    <form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post">
+    <form id="usuario-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post">
       {% csrf_token %}
 
       {% for field in form %}
@@ -49,7 +96,6 @@
           {{ field.label }}
         </label>
 
-        {# Senha e confirmação sempre visíveis, habilitadas apenas no modo_inclusao #}
         {% if field.name == "password1" or field.name == "password2" %}
           {% if modo_inclusao %}
             {{ field }}
@@ -57,7 +103,6 @@
             {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
           {% endif %}
         {% else %}
-          {# Em modos visualizacao, exclusao e edicao, apenas datas ficam desabilitadas #}
           {% if field.name == "date_joined" or field.name == "data_ativacaodesativacao" %}
             {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
           {% else %}
@@ -80,7 +125,8 @@
                 {% if modo_visualizacao or modo_exclusao %}disabled readonly{% endif %}/> Ativo
             </label>
             <label class="flex items-center text-blue-800 gap-1">
-              <input type="radio" name="is_active" value="False" {% if not user.is_active %}checked{% endif %}
+              <input type="radio" name="is_active" value="False"
+                {% if not user.is_active or modo_exclusao %}checked{% endif %}
                 {% if modo_visualizacao or modo_exclusao %}disabled readonly{% endif %}/> Inativo
             </label>
           </div>
@@ -90,7 +136,7 @@
           <input class="border border-gray-800 rounded px-2 py-1 bg-gray-100 text-black max-w-[180px] truncate"
                  disabled readonly
                  id="data-ativacao" name="data_ativacaodesativacao" type="text"
-                 value="{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
+                 value="{% if modo_exclusao %}{{ now|date:'d/m/Y H:i:s' }}{% else %}{{ user.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}{% endif %}"/>
         </div>
       </div>
 
@@ -109,52 +155,50 @@
         {{ telefones.management_form }}
 
         <div id="telefones-container">
-          {% if telefones|length %}
-            {% for form_tel in telefones %}
-            <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
-              <div class="flex-1">
-                {% if modo_visualizacao or modo_exclusao %}
-                  {{ form_tel.ddd|disable_field:"bg-gray-100 text-black border border-gray-800" }}
-                {% else %}
-                  {{ form_tel.ddd }}
-                {% endif %}
-              </div>
-              <div class="flex-1">
-                {% if modo_visualizacao or modo_exclusao %}
-                  {{ form_tel.numero|disable_field:"bg-gray-100 text-black border border-gray-800" }}
-                {% else %}
-                  {{ form_tel.numero }}
-                {% endif %}
-              </div>
-              <div class="flex-1">
-                {% if modo_visualizacao or modo_exclusao %}
-                  {{ form_tel.ramal|disable_field:"bg-gray-100 text-black border border-gray-800" }}
-                {% else %}
-                  {{ form_tel.ramal }}
-                {% endif %}
-              </div>
-              {% if not modo_visualizacao and not modo_exclusao %}
-              <div class="flex items-center">
-                <button class="remove-telefone-btn" title="Excluir telefone" type="button">
-                  <svg class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" stroke="currentColor"
-                       viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"
-                          stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                  </svg>
-                </button>
-              </div>
+          {% for form_tel in telefones %}
+          <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
+            <div class="flex-1">
+              {% if modo_visualizacao or modo_exclusao %}
+                {{ form_tel.ddd|disable_field:"bg-gray-100 text-black border border-gray-800" }}
+              {% else %}
+                {{ form_tel.ddd }}
               {% endif %}
-              {{ form_tel.id }}
-              {{ form_tel.DELETE.as_hidden }}
             </div>
-            {% endfor %}
-          {% else %}
-            <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
-              <div class="flex-1">{{ telefones.empty_form.ddd }}</div>
-              <div class="flex-1">{{ telefones.empty_form.numero }}</div>
-              <div class="flex-1">{{ telefones.empty_form.ramal }}</div>
+            <div class="flex-1">
+              {% if modo_visualizacao or modo_exclusao %}
+                {{ form_tel.numero|disable_field:"bg-gray-100 text-black border border-gray-800" }}
+              {% else %}
+                {{ form_tel.numero }}
+              {% endif %}
             </div>
-          {% endif %}
+            <div class="flex-1">
+              {% if modo_visualizacao or modo_exclusao %}
+                {{ form_tel.ramal|disable_field:"bg-gray-100 text-black border border-gray-800" }}
+              {% else %}
+                {{ form_tel.ramal }}
+              {% endif %}
+            </div>
+            {% if not modo_visualizacao and not modo_exclusao %}
+            <div class="flex items-center">
+              <button class="remove-telefone-btn" title="Excluir telefone" type="button">
+                <svg class="h-5 w-5 text-red-600 hover:text-red-800" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"
+                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+              </button>
+            </div>
+            {% endif %}
+            {{ form_tel.id }}
+            {{ form_tel.DELETE.as_hidden }}
+          </div>
+          {% empty %}
+          <div class="telefone-item flex items-end gap-4 border rounded pt-0.15 pb-3 px-3 mb-3 bg-white">
+            <div class="flex-1">{{ telefones.empty_form.ddd }}</div>
+            <div class="flex-1">{{ telefones.empty_form.numero }}</div>
+            <div class="flex-1">{{ telefones.empty_form.ramal }}</div>
+          </div>
+          {% endfor %}
         </div>
 
         {% if not modo_visualizacao and not modo_exclusao %}
@@ -168,7 +212,7 @@
       <div class="col-span-1 md:col-span-2 lg:col-span-3">
         <div class="flex justify-end space-x-4 mt-0.15">
           {% if not modo_visualizacao %}
-            <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="submit">
+            <button id="confirm-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="button">
               {% if modo_edicao %}Salvar Alterações{% elif modo_exclusao %}Confirmar Exclusão{% else %}Adicionar Usuário{% endif %}
             </button>
           {% endif %}
@@ -181,6 +225,18 @@
     </form>
   </div>
 </div>
+
+{% if modo_exclusao %}
+<div id="confirmation-modal" class="modal">
+  <div class="modal-content">
+    <p id="modal-message" class="text-gray-800 text-lg"></p>
+    <div class="modal-buttons">
+      <button id="modal-yes" class="btn btn-confirm">Sim</button>
+      <button id="modal-no" class="btn btn-cancel">Não</button>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -200,11 +256,34 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  telefonesContainer.addEventListener("click", function (e) {
+  telefonesContainer.addEventListener("click", function(e) {
     if (e.target.closest(".remove-telefone-btn")) {
       e.target.closest(".telefone-item").remove();
     }
   });
+
+  {% if modo_exclusao %}
+  const modal = document.getElementById("confirmation-modal");
+  const confirmBtn = document.getElementById("confirm-btn");
+  const modalYes = document.getElementById("modal-yes");
+  const modalNo = document.getElementById("modal-no");
+  const form = document.getElementById("usuario-form");
+  const message = document.getElementById("modal-message");
+
+  confirmBtn.addEventListener("click", function () {
+    message.innerText = "Será realizada uma exclusão lógica.\nConfirma a desativação do usuário {{ usuario_nome|escapejs }}?";
+    modal.style.display = "block";
+  });
+
+  modalYes.addEventListener("click", function () {
+    form.submit();
+  });
+
+  modalNo.addEventListener("click", function () {
+    modal.style.display = "none";
+    window.location.href = "{% url 'arquiteturaprocessos:cadastrousuarios' %}";
+  });
+  {% endif %}
 });
 </script>
 {% endblock %}

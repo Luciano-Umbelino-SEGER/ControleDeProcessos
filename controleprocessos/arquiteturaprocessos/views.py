@@ -65,7 +65,7 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
 class EditarUsuario(LoginRequiredMixin, UpdateView):
     template_name = 'usuario/criarusuario.html'
     model = Usuario
-    form_class = EditarUsuarioForm  # ✅ Usando o form correto com validação condicional de senha
+    form_class = EditarUsuarioForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -96,29 +96,13 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
         if telefones.is_valid():
             self.object = form.save(commit=False)
 
-            # Campos extras do template
-            is_active = self.request.POST.get("is_active")
-            data_ativacao_str = self.request.POST.get("data_ativacaodesativacao")
-            date_joined_str = self.request.POST.get("date_joined")
-
-            # Datas preenchidas automaticamente
-            if data_ativacao_str:
-                try:
-                    self.object.data_ativacaodesativacao = datetime.strptime(data_ativacao_str, "%d/%m/%Y %H:%M:%S")
-                except ValueError:
-                    self.object.data_ativacaodesativacao = timezone.now()
-            else:
-                self.object.data_ativacaodesativacao = timezone.now()
-
-            if date_joined_str:
-                try:
-                    self.object.date_joined = datetime.strptime(date_joined_str, "%d/%m/%Y %H:%M:%S")
-                except ValueError:
-                    self.object.date_joined = timezone.now()
-            else:
+            # 🔒 Proteção contra alteração indevida de datas
+            if not self.object.date_joined:
                 self.object.date_joined = timezone.now()
+            # data_ativacaodesativacao não altera no modo edição
 
             # Atualiza is_active
+            is_active = self.request.POST.get("is_active")
             self.object.is_active = is_active == "True"
 
             # Atualiza a senha apenas se o usuário digitou uma nova
@@ -141,27 +125,46 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
 
+
 class ExcluirUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/criarusuario.html'
     model = Usuario
 
     def post(self, request, *args, **kwargs):
+        # Obtém o usuário
         usuario = self.get_object()
-        usuario.delete()
-        messages.success(request, "Usuário excluído com sucesso!")
+
+        # Exclusão lógica: apenas desativa o usuário e registra a data/hora
+        usuario.is_active = False
+        usuario.data_ativacaodesativacao = timezone.now()
+        usuario.save(update_fields=['is_active', 'data_ativacaodesativacao'])
+
+        messages.success(request, f"Usuário {usuario.username} desativado com sucesso!")
         return redirect('arquiteturaprocessos:cadastrousuarios')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
-        context['form'] = CriarUsuarioForm(instance=usuario, modo_exclusao=True)
+        initial_data = {
+            'is_active': usuario.is_active,
+            'data_ativacaodesativacao': usuario.data_ativacaodesativacao.strftime("%d/%m/%Y %H:%M:%S")
+            if usuario.data_ativacaodesativacao else timezone.localtime().strftime("%d/%m/%Y %H:%M:%S")
+        }
+
+        context['form'] = CriarUsuarioForm(instance=usuario, initial=initial_data, modo_exclusao=True)
+
+        # Telefones
         context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
+
+        # Modos
         context['modo_exclusao'] = True
         context['modo_visualizacao'] = False
         context['modo_inclusao'] = False
         context['modo_edicao'] = False
-        return context
+        # **Nome do usuário para o modal**
+        context['usuario_nome'] = usuario.username
 
+        return context
 
 class CadastroUsuarios(LoginRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'
@@ -201,14 +204,10 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
         if telefones.is_valid():
             self.object = form.save(commit=False)
 
-            # Campos extras
-            is_active = self.request.POST.get("is_active")
-            data_ativacao = self.request.POST.get("data_ativacaodesativacao")
-            date_joined = self.request.POST.get("date_joined")
-
-            self.object.is_active = is_active == "True"
-            self.object.data_ativacaodesativacao = data_ativacao or timezone.now()
-            self.object.date_joined = date_joined or timezone.now()
+            # 🔒 Proteção contra alteração indevida de datas
+            self.object.is_active = self.request.POST.get("is_active") == "True"
+            self.object.data_ativacaodesativacao = timezone.now()
+            self.object.date_joined = timezone.now()
 
             self.object.save()
             telefones.instance = self.object
