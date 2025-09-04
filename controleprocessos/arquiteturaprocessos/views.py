@@ -167,10 +167,10 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
         context['modo_edicao'] = False
         return context
 
-
 class CadastroUsuarios(LoginRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'
     model = Usuario
+    context_object_name = 'usuarios'
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -181,6 +181,14 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
             return redirect('arquiteturaprocessos:homepage')
 
         return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        status = self.request.GET.get("status", "ativos")
+
+        if status == "inativos":
+            return Usuario.objects.filter(is_active=False).order_by("perfil__nome", "username")
+        return Usuario.objects.filter(is_active=True).order_by("perfil__nome", "username")
+
 
 
 class CriarUsuario(LoginRequiredMixin, CreateView):
