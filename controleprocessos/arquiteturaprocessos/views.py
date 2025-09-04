@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.forms import inlineformset_factory
 
 from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes
-from .forms import CriarUsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet
+from .forms import CriarUsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm
 
 
 class HomePage(TemplateView):
@@ -18,6 +18,7 @@ class HomePage(TemplateView):
 
 class CustomLoginView(LoginView):
     template_name = 'usuario/fazer_login.html'
+    authentication_form = CustomAuthenticationForm  # ✅ Usa o formulário customizado
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:

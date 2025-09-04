@@ -7,7 +7,40 @@ from django.utils import timezone
 
 from .models import Usuario, Telefone
 
-User = get_user_model()
+UserModel = get_user_model()
+
+
+class CustomAuthenticationForm(AuthenticationForm):
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username and password:
+            try:
+                user = UserModel.objects.get(username=username)
+
+                if not user.check_password(password):
+                    raise forms.ValidationError(
+                        "Usuário ou senha incorretos. Verifique os dados e tente novamente.",
+                        code='invalid_login',
+                    )
+
+                if not user.is_active:
+                    raise forms.ValidationError(
+                        "Usuário está com a conta inativa. Entre em contato com o administrador do sistema.",
+                        code='inactive',
+                    )
+
+                # ✅ ESSENCIAL: define o usuário autenticado
+                self.user_cache = user
+
+            except UserModel.DoesNotExist:
+                raise forms.ValidationError(
+                    "Usuário ou senha incorretos. Verifique os dados e tente novamente.",
+                    code='invalid_login',
+                )
+
+        return self.cleaned_data
 
 
 class EmailAuthenticationForm(AuthenticationForm):
@@ -26,11 +59,11 @@ class EmailAuthenticationForm(AuthenticationForm):
         if input_value and password:
             # tenta encontrar usuário por username ou email
             try:
-                user = User.objects.get(username=input_value)
-            except User.DoesNotExist:
+                user = UserModel.objects.get(username=input_value)
+            except UserModel.DoesNotExist:
                 try:
-                    user = User.objects.get(email=input_value)
-                except User.DoesNotExist:
+                    user = UserModel.objects.get(email=input_value)
+                except UserModel.DoesNotExist:
                     user = None
 
             if user is not None and user.check_password(password):
