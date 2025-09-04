@@ -116,7 +116,7 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
             telefones.instance = self.object
             telefones.save()
 
-            messages.success(self.request, "Usuário atualizado com sucesso!")
+            messages.success(self.request, f"Usuário atualizado com sucesso!")
             return redirect(self.get_success_url())
         else:
             messages.error(self.request, "Corrija os erros abaixo.")
@@ -131,40 +131,42 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
     model = Usuario
 
     def post(self, request, *args, **kwargs):
-        # Obtém o usuário
         usuario = self.get_object()
 
-        # Exclusão lógica: apenas desativa o usuário e registra a data/hora
+        # Exclusão lógica
         usuario.is_active = False
         usuario.data_ativacaodesativacao = timezone.now()
-        usuario.save(update_fields=['is_active', 'data_ativacaodesativacao'])
+        usuario.save()
 
-        messages.success(request, f"Usuário {usuario.username} desativado com sucesso!")
+        messages.success(
+            request,
+            f"Usuário {usuario.get_full_name()} desativado com sucesso!"
+        )
         return redirect('arquiteturaprocessos:cadastrousuarios')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
-        initial_data = {
-            'is_active': usuario.is_active,
-            'data_ativacaodesativacao': usuario.data_ativacaodesativacao.strftime("%d/%m/%Y %H:%M:%S")
-            if usuario.data_ativacaodesativacao else timezone.localtime().strftime("%d/%m/%Y %H:%M:%S")
-        }
 
-        context['form'] = CriarUsuarioForm(instance=usuario, initial=initial_data, modo_exclusao=True)
+        # Atualiza os valores antes de passar para o form
+        usuario.is_active = False
+        usuario.data_ativacaodesativacao = timezone.now()
 
-        # Telefones
+        context['form'] = CriarUsuarioForm(
+            instance=usuario,
+            initial={
+                'is_active': False,
+                'data_ativacaodesativacao': timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+            },
+            modo_exclusao=True
+        )
         context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
-
-        # Modos
         context['modo_exclusao'] = True
         context['modo_visualizacao'] = False
         context['modo_inclusao'] = False
         context['modo_edicao'] = False
-        # **Nome do usuário para o modal**
-        context['usuario_nome'] = usuario.username
-
         return context
+
 
 class CadastroUsuarios(LoginRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'
