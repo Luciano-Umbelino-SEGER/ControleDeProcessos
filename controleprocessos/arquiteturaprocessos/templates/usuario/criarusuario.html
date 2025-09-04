@@ -17,6 +17,50 @@
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
   }
+
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 2px solid #1e40af;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+  .btn {
+    padding: 0.5rem 1.5rem;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-confirm {
+    background-color: #2563eb;
+    color: white;
+  }
+  .btn-cancel {
+    background-color: #e5e7eb;
+    color: #1e293b;
+  }
 </style>
 {% endblock %}
 
@@ -40,7 +84,7 @@
       </div>
     {% endif %}
 
-    <form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post">
+    <form id="usuario-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" method="post">
       {% csrf_token %}
 
       {% for field in form %}
@@ -168,7 +212,9 @@
       <div class="col-span-1 md:col-span-2 lg:col-span-3">
         <div class="flex justify-end space-x-4 mt-0.15">
           {% if not modo_visualizacao %}
-            <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48" type="submit">
+            <button id="confirm-btn"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48"
+              type="{% if modo_exclusao %}button{% else %}submit{% endif %}">
               {% if modo_edicao %}Salvar Alterações{% elif modo_exclusao %}Confirmar Exclusão{% else %}Adicionar Usuário{% endif %}
             </button>
           {% endif %}
@@ -181,6 +227,18 @@
     </form>
   </div>
 </div>
+
+{% if modo_exclusao %}
+<div id="confirmation-modal" class="modal">
+  <div class="modal-content">
+    <p id="modal-message" class="text-gray-800 text-lg"></p>
+    <div class="modal-buttons">
+      <button id="modal-yes" class="btn btn-confirm">Sim</button>
+      <button id="modal-no" class="btn btn-cancel">Não</button>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -205,6 +263,29 @@ document.addEventListener("DOMContentLoaded", function () {
       e.target.closest(".telefone-item").remove();
     }
   });
+
+  {% if modo_exclusao %}
+  const modal = document.getElementById("confirmation-modal");
+  const confirmBtn = document.getElementById("confirm-btn");
+  const modalYes = document.getElementById("modal-yes");
+  const modalNo = document.getElementById("modal-no");
+  const form = document.getElementById("usuario-form");
+  const message = document.getElementById("modal-message");
+
+  confirmBtn.addEventListener("click", function () {
+    message.innerText = "Será realizada uma exclusão lógica.\nConfirma a desativação do usuário {{ form.instance.username|escapejs }}?";
+    modal.style.display = "block";
+  });
+
+  modalYes.addEventListener("click", function () {
+    form.submit();
+  });
+
+  modalNo.addEventListener("click", function () {
+    modal.style.display = "none";
+    window.location.href = "{% url 'arquiteturaprocessos:cadastrousuarios' %}";
+  });
+  {% endif %}
 });
 </script>
 {% endblock %}

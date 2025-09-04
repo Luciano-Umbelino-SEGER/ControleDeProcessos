@@ -116,7 +116,7 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
             telefones.instance = self.object
             telefones.save()
 
-            messages.success(self.request, f"Usuário atualizado com sucesso!")
+            messages.success(self.request, f"Usuário {self.object.get_full_name()} atualizado com sucesso!")
             return redirect(self.get_success_url())
         else:
             messages.error(self.request, "Corrija os erros abaixo.")
@@ -215,7 +215,8 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
             telefones.instance = self.object
             telefones.save()
 
-            messages.success(self.request, "Usuário criado com sucesso!")
+            messages.success(self.request, f"Usuário {self.object.get_full_name()} criado com sucesso!")
+
             return redirect(self.get_success_url())
         else:
             return self.render_to_response(self.get_context_data(form=form))
