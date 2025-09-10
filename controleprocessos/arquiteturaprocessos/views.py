@@ -55,7 +55,14 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
         context['form'] = CriarUsuarioForm(instance=usuario, modo_visualizacao=True)
-        context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
+        TelefoneFormSetVisualizacao = inlineformset_factory(
+            Usuario,
+            Telefone,
+            form=TelefoneForm,
+            extra=0,
+            can_delete=False
+        )
+        context['telefones'] = TelefoneFormSetVisualizacao(instance=usuario, prefix='telefones')
         context['modo_visualizacao'] = True
         context['modo_inclusao'] = False
         context['modo_exclusao'] = False
@@ -161,7 +168,15 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
             },
             modo_exclusao=True
         )
-        context['telefones'] = TelefoneFormSet(instance=usuario, prefix='telefones')
+        TelefoneFormSetExclusao = inlineformset_factory(
+            Usuario,
+            Telefone,
+            form=TelefoneForm,
+            extra=0,
+            can_delete=False
+        )
+        context['telefones'] = TelefoneFormSetExclusao(instance=usuario, prefix='telefones')
+
         context['modo_exclusao'] = True
         context['modo_visualizacao'] = False
         context['modo_inclusao'] = False

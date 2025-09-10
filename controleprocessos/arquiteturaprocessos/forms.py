@@ -229,21 +229,22 @@ class TelefoneForm(forms.ModelForm):
 
         widgets = {
             "ddd": forms.TextInput(attrs={
-                "class": "w-full border border-gray-300 rounded-md px-3 py-2 text-black",
+                "class": "w-full border border-gray-300 rounded-md px-3 h-9 text-black",
                 "placeholder": "DDD",
                 "maxlength": "3",
             }),
             "numero": forms.TextInput(attrs={
-                "class": "w-full border border-gray-300 rounded-md px-3 py-2 text-black",
+                "class": "w-full border border-gray-300 rounded-md px-3 h-9 text-black",
                 "placeholder": "Número",
                 "maxlength": "9",
             }),
             "ramal": forms.TextInput(attrs={
-                "class": "w-full border border-gray-300 rounded-md px-3 py-2 text-black",
+                "class": "w-full border border-gray-300 rounded-md px-3 h-9 text-black",
                 "placeholder": "Ramal",
                 "maxlength": "5",
             }),
         }
+
 
 
 # Formset de telefones
