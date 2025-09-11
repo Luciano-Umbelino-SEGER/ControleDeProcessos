@@ -57,7 +57,8 @@
       {# --- CAMPOS USUÁRIO --- #}
       {% for field in form %}
       <div class="flex flex-col">
-        <label class="text-sm font-medium text-blue-800 mb-1" for="{{ field.id_for_label }}">
+        <label class="text-sm font-medium text-blue-800 mb-1"
+               {% if field.id_for_label %} for="{{ field.id_for_label }}" {% endif %}>
           {{ field.label }}
         </label>
 
