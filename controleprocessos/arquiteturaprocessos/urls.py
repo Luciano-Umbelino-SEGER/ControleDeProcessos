@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.urls import path
 from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
                     CadastroUsuarios, DetalheUsuario, LogAcoes, CustomLoginView, CriarUsuario,
-                    VisualizarUsuario, EditarUsuario, ExcluirUsuario)
+                    VisualizarUsuario, EditarUsuario, ExcluirUsuario, ClassificacaoView,
+                    MacroProcessoView, SubProcessoView, NormaView)
 from django.contrib.auth import views as auth_views
 
 
@@ -22,5 +23,9 @@ urlpatterns = [
     path('detalheusuario/<int:pk>', DetalheUsuario.as_view(), name='detalheusuario'),
     path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     path('fazer_login/', CustomLoginView.as_view(), name='fazer_login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout')
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('estrutura/classificacao/', ClassificacaoView.as_view(), name='classificacao'),
+    path('estrutura/macroprocesso/', MacroProcessoView.as_view(), name='macroprocesso'),
+    path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
+    path('estrutura/norma/', NormaView.as_view(), name='norma')
 ]

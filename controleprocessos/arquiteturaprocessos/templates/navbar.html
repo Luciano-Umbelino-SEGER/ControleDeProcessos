@@ -1,40 +1,35 @@
 {% load static %}
 <nav class="bg-white shadow-md py-2 px-4 flex justify-between items-center">
-  <!-- Logo e título -->
+  <!-- Botão hamburger + Logo + Título -->
   <div class="flex items-center space-x-4">
-    <a href="{% url 'arquiteturaprocessos:homepage' %}" class="flex items-center space-x-2 no-underline">
+    <button @click="open = !open"
+            class="text-gray-700 focus:outline-none">
+        <i class="fas fa-bars text-2xl"></i>
+    </button>
+
+    <a href="{% url 'arquiteturaprocessos:homepage' %}"
+       class="flex items-center space-x-2 no-underline">
       <img src="{% static 'images/Logo_GPP_Azul_Hor.png' %}" alt="Logo GPP" class="h-10">
-      <span class="text-blue-800 font-bold text-lg">ARQUITETURA DE PROCESSOS</span>
+      <span class="text-blue-800 font-bold text-xl">ARQUITETURA DE PROCESSOS</span>
     </a>
   </div>
 
-  <!-- Menu principal -->
-  <div class="flex space-x-6 text-sm font-medium text-[#0E72F5]">
-    {% if request.user.is_authenticated %}
-      <a href="{% url 'arquiteturaprocessos:cadastroprocessos' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Processos</a>
-      <a href="{% url 'arquiteturaprocessos:estatisticas' %}" class="hover:text-blue-800 transition no-underline">Estatísticas</a>
-      <a href="{% url 'arquiteturaprocessos:backlog' %}" class="hover:text-blue-800 transition no-underline">Backlog</a>
-      {% if request.user.perfil.nome|lower == 'administrador' %}
-        <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}" class="hover:text-blue-800 transition no-underline">Cadastro de Usuários</a>
-        <a href="{% url 'arquiteturaprocessos:logacoes' %}" class="hover:text-blue-800 transition no-underline">Log de Ações</a>
-      {% endif %}
-    {% endif %}
-  </div>
-
-  <!-- Área de login/sair e ícones -->
+  <!-- Área de login/sair -->
   <div class="flex items-center space-x-4 font-medium text-[#0E72F5]">
     {% if request.user.is_authenticated %}
       <form method="post" action="{% url 'arquiteturaprocessos:logout' %}">
         {% csrf_token %}
-        <button type="submit" class="hover:text-blue-800 transition no-underline bg-transparent border-0 cursor-pointer">
-          Sair
-          <ion-icon name="log-out-outline" class="text-blue-800 text-2xl"></ion-icon>
+        <button type="submit"
+                class="hover:text-blue-800 transition no-underline bg-transparent border-0 cursor-pointer flex items-center space-x-1">
+          <span>Sair</span>
+          <i class="fas fa-sign-out-alt text-blue-800 text-xl"></i>
         </button>
       </form>
     {% else %}
-      <a href="{% url 'arquiteturaprocessos:fazer_login' %}" class="hover:text-blue-800 transition no-underline">Login Gestor
-        <ion-icon name="person-circle-outline" class="text-blue-800 text-2xl"></ion-icon>
-        <ion-icon name="settings-outline" class="text-blue-800 text-2xl"></ion-icon>
+      <a href="{% url 'arquiteturaprocessos:fazer_login' %}"
+         class="hover:text-blue-800 transition no-underline flex items-center space-x-1">
+        <span>Login Gestor</span>
+        <i class="fas fa-user-circle text-blue-800 text-xl"></i>
       </a>
     {% endif %}
   </div>

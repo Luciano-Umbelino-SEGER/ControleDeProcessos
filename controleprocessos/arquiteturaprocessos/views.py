@@ -281,3 +281,16 @@ class LogAcoes(LoginRequiredMixin, ListView):
             return redirect('arquiteturaprocessos:homepage')
 
         return super().dispatch(request, *args, **kwargs)
+
+
+class ClassificacaoView(TemplateView):
+    template_name = 'arquitetura/estrutura/classificacao.html'
+
+class MacroProcessoView(TemplateView):
+    template_name = 'arquitetura/estrutura/macroprocesso.html'
+
+class SubProcessoView(TemplateView):
+    template_name = 'arquitetura/estrutura/subprocesso.html'
+
+class NormaView(TemplateView):
+    template_name = 'arquitetura/estrutura/norma.html'
