@@ -135,7 +135,7 @@
                         <i class="fas fa-chevron-down ml-auto" x-show="open" x-cloak></i>
                     </button>
                     <div x-show="submenuOpen && open" class="ml-14 space-y-1">
-                        <a href="{% url 'arquiteturaprocessos:classificacao' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Classificação</a>
+                        <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Classificação</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Macroprocesso</a>
                         <a href="{% url 'arquiteturaprocessos:subprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Subprocesso</a>
                         <a href="{% url 'arquiteturaprocessos:norma' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Norma</a>

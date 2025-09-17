@@ -8,13 +8,12 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.forms import inlineformset_factory
 
-from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes
-from .forms import CriarUsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm
+from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes, Classificacao
+from .forms import CriarUsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, CriarClassificacaoForm
 
 
 class HomePage(TemplateView):
     template_name = 'homepage.html'
-
 
 class CustomLoginView(LoginView):
     template_name = 'usuario/fazer_login.html'
@@ -24,6 +23,31 @@ class CustomLoginView(LoginView):
         if request.user.is_authenticated:
             return redirect('arquiteturaprocessos:homepage')
         return super().dispatch(request, *args, **kwargs)
+
+class Classificacoes(LoginRequiredMixin, ListView):
+    model = Classificacao
+    template_name = 'estrutura/classificacoes.html'
+    context_object_name = 'classificacoes'
+    queryset = Classificacao.objects.order_by('nome')
+
+class CriarClassificacao(LoginRequiredMixin, CreateView):
+    template_name = 'estrutura/criar_classificacao.html'
+    form_class = CriarClassificacaoForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['modo_inclusao'] = True
+        context['modo_visualizacao'] = False
+        context['modo_exclusao'] = False
+        context['modo_edicao'] = False
+        return context
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Por favor, corrija os erros abaixo.")
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:classificacoes')
 
 
 class ArquiteruraProcessos(ListView):
@@ -281,10 +305,6 @@ class LogAcoes(LoginRequiredMixin, ListView):
             return redirect('arquiteturaprocessos:homepage')
 
         return super().dispatch(request, *args, **kwargs)
-
-
-class ClassificacaoView(TemplateView):
-    template_name = 'arquitetura/estrutura/classificacao.html'
 
 class MacroProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/macroprocesso.html'

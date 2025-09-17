@@ -73,6 +73,10 @@ class Atualizacao_Norma(models.Model):
     versao = models.CharField(max_length=5)
     descricao = models.TextField(max_length=500)
 
+class Classificacao(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(max_length=500)
+
 
 class ArquiteturaProcesso(models.Model):
     classificacao = models.CharField(max_length=30, choices=LSTA_CLASSIFICACAO)
