@@ -72,7 +72,7 @@ class EmailAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
 
-class CriarUsuarioForm(UserCreationForm):
+class Form_UsuarioForm(UserCreationForm):
     """
     Formulário para criação de usuário.
     Inclui os campos de senha.

@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.forms import inlineformset_factory
 
 from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes, Classificacao
-from .forms import CriarUsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, CriarClassificacaoForm
+from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, CriarClassificacaoForm
 
 
 class HomePage(TemplateView):
@@ -31,7 +31,7 @@ class Classificacoes(LoginRequiredMixin, ListView):
     queryset = Classificacao.objects.order_by('nome')
 
 class CriarClassificacao(LoginRequiredMixin, CreateView):
-    template_name = 'estrutura/criar_classificacao.html'
+    template_name = 'estrutura/form_classificacao.html'
     form_class = CriarClassificacaoForm
 
     def get_context_data(self, **kwargs):
@@ -71,14 +71,14 @@ class BackLog(LoginRequiredMixin, ListView):
 
 
 class VisualizarUsuario(LoginRequiredMixin, DetailView):
-    template_name = 'usuario/criarusuario.html'
+    template_name = 'usuario/form_usuario.html'
     model = Usuario
     context_object_name = 'usuario'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
-        context['form'] = CriarUsuarioForm(instance=usuario, modo_visualizacao=True)
+        context['form'] = Form_UsuarioForm(instance=usuario, modo_visualizacao=True)
         TelefoneFormSetVisualizacao = inlineformset_factory(
             Usuario,
             Telefone,
@@ -95,7 +95,7 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
 
 
 class EditarUsuario(LoginRequiredMixin, UpdateView):
-    template_name = 'usuario/criarusuario.html'
+    template_name = 'usuario/form_usuario.html'
     model = Usuario
     form_class = EditarUsuarioForm
 
@@ -159,7 +159,7 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
 
 
 class ExcluirUsuario(LoginRequiredMixin, DetailView):
-    template_name = 'usuario/criarusuario.html'
+    template_name = 'usuario/form_usuario.html'
     model = Usuario
 
     def post(self, request, *args, **kwargs):
@@ -184,7 +184,7 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
         usuario.is_active = False
         usuario.data_ativacaodesativacao = timezone.now()
 
-        context['form'] = CriarUsuarioForm(
+        context['form'] = Form_UsuarioForm(
             instance=usuario,
             initial={
                 'is_active': False,
@@ -232,8 +232,8 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
 
 
 class CriarUsuario(LoginRequiredMixin, CreateView):
-    template_name = 'usuario/criarusuario.html'
-    form_class = CriarUsuarioForm
+    template_name = 'usuario/form_usuario.html'
+    form_class = Form_UsuarioForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
