@@ -254,7 +254,7 @@ TelefoneFormSet = inlineformset_factory(
     can_delete=True # permite remover telefones
 )
 
-class CriarClassificacaoForm(forms.ModelForm):
+class Form_ClassificacaoForm(forms.ModelForm):
     """
     Formulário para criação de classificação.
     Aplica estilos e controla os modos de visualização, exclusão e edição.

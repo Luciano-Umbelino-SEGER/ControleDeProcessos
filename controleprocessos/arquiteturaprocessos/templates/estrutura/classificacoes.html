@@ -35,9 +35,7 @@
                     <td class="py-3 px-4">{{ classificacao.descricao }}</td>
                     <td class="py-3 px-4 text-right space-x-2">
                         <!-- Ícone Visualizar -->
-                        <!-- Remova ou comente estas linhas temporariamente -->
-                        <!--
-                        <a href="{% url 'classificacoes:exibir' classificacao.pk %}"
+                        <a href="{% url 'arquiteturaprocessos:visualizar_classificacao' classificacao.pk %}"
                            class="text-blue-600 hover:text-blue-800" title="Visualizar">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
                                  stroke="currentColor">
@@ -47,12 +45,10 @@
                                       d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </a>
-                        -->
 
                         {% if request.user.perfil.nome|lower == 'administrador' %}
                         <!-- Ícone Editar -->
-                       <!--
-                        <a href="{% url 'classificacoes:editar' classificacao.pk %}"
+                        <a href="{% url 'arquiteturaprocessos:editar_classificacao' classificacao.pk %}"
                            class="text-yellow-600 hover:text-yellow-800" title="Editar">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                                  class="h-5 w-5 inline">
@@ -62,18 +58,15 @@
                                       clip-rule="evenodd"/>
                             </svg>
                         </a>
-                        -->
 
                         <!-- Ícone Excluir -->
-                        <!--
-                        <a href="{% url 'classificacoes:excluir' classificacao.pk %}"
+                        <a href="{% url 'arquiteturaprocessos:excluir_classificacao' classificacao.pk %}"
                            class="text-red-600 hover:text-red-800" title="Excluir">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
                                  stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
                         </a>
-                        -->
                         {% endif %}
                     </td>
                 </tr>

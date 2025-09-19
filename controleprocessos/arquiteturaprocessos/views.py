@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.forms import inlineformset_factory
 
 from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes, Classificacao
-from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, CriarClassificacaoForm
+from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, Form_ClassificacaoForm
 
 
 class HomePage(TemplateView):
@@ -32,7 +32,7 @@ class Classificacoes(LoginRequiredMixin, ListView):
 
 class CriarClassificacao(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_classificacao.html'
-    form_class = CriarClassificacaoForm
+    form_class = Form_ClassificacaoForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -47,8 +47,73 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
+        return reverse('classificacoes')
+
+class VisualizarClassificacao(LoginRequiredMixin, DetailView):
+    template_name = 'estrutura/form_classificacao.html'
+    model = Classificacao
+    context_object_name = 'classificacao'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        classificacao = self.get_object()
+        context['form'] = Form_ClassificacaoForm(instance=classificacao, modo_visualizacao=True)
+
+        context['modo_visualizacao'] = True
+        context['modo_inclusao'] = False
+        context['modo_exclusao'] = False
+        context['modo_edicao'] = False
+        return context
+
+class EditarClassificacao(LoginRequiredMixin, UpdateView):
+    template_name = 'estrutura/form_classificacao.html'
+    model = Classificacao
+    #form_class = EditarClassificacaoForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['modo_edicao'] = True
+        context['modo_inclusao'] = False
+        context['modo_visualizacao'] = False
+        context['modo_exclusao'] = False
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+
+
+        self.object.save()
+
+        messages.success(self.request, f"Classificação {self.object.get_full_name()} atualizada com sucesso!")
+        return redirect(self.get_success_url())
+
+        messages.error(self.request, "Corrija os erros abaixo.")
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
         return reverse('arquiteturaprocessos:classificacoes')
 
+class ExcluirClassificacao(LoginRequiredMixin, DetailView):
+    template_name = 'estrutura/form_classificacao.html'
+    model = Classificacao
+
+    def post(self, request, *args, **kwargs):
+        classificacao = self.get_object()
+
+        # Exclusão fisica
+        classificacao.delete()
+
+        messages.success(
+            request,
+            f"Classificação {classificacao.get_full_name()} desativado com sucesso!"
+        )
+        return redirect('arquiteturaprocessos:classificacoes')
+
+        context['modo_exclusao'] = True
+        context['modo_visualizacao'] = False
+        context['modo_inclusao'] = False
+        context['modo_edicao'] = False
+        return context
 
 class ArquiteruraProcessos(ListView):
     template_name = 'arquiteruraprocessos.html'
@@ -275,22 +340,6 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
-
-
-class DetalheUsuario(LoginRequiredMixin, DetailView):
-    template_name = 'usuario/detalheusuario.html'
-    model = Usuario
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-
-        if request.user.perfil.nome.casefold() != 'administrador':
-            messages.warning(request, "Você não tem permissão para acessar esta página.")
-            return redirect('arquiteturaprocessos:homepage')
-
-        return super().dispatch(request, *args, **kwargs)
-
 
 class LogAcoes(LoginRequiredMixin, ListView):
     template_name = 'usuario/logacoes.html'
