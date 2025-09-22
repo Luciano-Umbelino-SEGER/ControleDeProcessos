@@ -11,7 +11,6 @@ from django.forms import inlineformset_factory
 from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes, Classificacao
 from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, Form_ClassificacaoForm
 
-
 class HomePage(TemplateView):
     template_name = 'homepage.html'
 
@@ -66,9 +65,10 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
         return context
 
 class EditarClassificacao(LoginRequiredMixin, UpdateView):
-    template_name = 'estrutura/form_classificacao.html'
     model = Classificacao
-    #form_class = EditarClassificacaoForm
+    template_name = 'estrutura/form_classificacao.html'
+    context_object_name = 'classificacao'
+    fields = ['nome', 'descricao']  # <- campos obrigatórios para UpdateView funcionar
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -79,19 +79,17 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        context = self.get_context_data()
+        response = super().form_valid(form)
+        messages.success(self.request, f"Classificação {self.object.nome} atualizada com sucesso!")
+        return response
 
-
-        self.object.save()
-
-        messages.success(self.request, f"Classificação {self.object.get_full_name()} atualizada com sucesso!")
-        return redirect(self.get_success_url())
-
+    def form_invalid(self, form):
         messages.error(self.request, "Corrija os erros abaixo.")
-        return self.render_to_response(self.get_context_data(form=form))
+        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:classificacoes')
+
 
 class ExcluirClassificacao(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_classificacao.html'
