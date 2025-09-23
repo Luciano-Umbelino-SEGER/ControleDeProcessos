@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.forms import inlineformset_factory
 
 from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes, Classificacao
+from django.db.models import Exists, OuterRef
 from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, Form_ClassificacaoForm
 
 class HomePage(TemplateView):
@@ -46,7 +47,7 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
-        return reverse('classificacoes')
+        return reverse('arquiteturaprocessos:classificacoes')
 
 class VisualizarClassificacao(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_classificacao.html'
@@ -68,7 +69,7 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
     context_object_name = 'classificacao'
-    fields = ['nome', 'descricao']  # <- campos obrigatórios para UpdateView funcionar
+    form_class = Form_ClassificacaoForm  # usa o mesmo form da criação
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -90,28 +91,44 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:classificacoes')
 
-
 class ExcluirClassificacao(LoginRequiredMixin, DetailView):
-    template_name = 'estrutura/form_classificacao.html'
     model = Classificacao
+    template_name = 'estrutura/form_classificacao.html'
+    context_object_name = 'classificacao'
 
-    def post(self, request, *args, **kwargs):
-        classificacao = self.get_object()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-        # Exclusão fisica
-        classificacao.delete()
-
-        messages.success(
-            request,
-            f"Classificação {classificacao.get_full_name()} desativado com sucesso!"
-        )
-        return redirect('arquiteturaprocessos:classificacoes')
+        # Só renderiza o formulário se não for POST (evita duplicidade com o modal)
+        if self.request.method != 'POST':
+            context['form'] = Form_ClassificacaoForm(instance=self.get_object(), modo_exclusao=True)
 
         context['modo_exclusao'] = True
         context['modo_visualizacao'] = False
         context['modo_inclusao'] = False
         context['modo_edicao'] = False
         return context
+
+    def post(self, request, *args, **kwargs):
+        classificacao = self.get_object()
+
+        # Verifica se existe associação com algum processo
+        processo_associado = ArquiteturaProcesso.objects.filter(classificacao=classificacao).first()
+
+        if processo_associado:
+            messages.error(
+                request,
+                f"Não é possível excluir a classificação '{classificacao.nome}', pois ela está associada ao processo '{processo_associado.macroprocesso.nome}' — Verifique."
+            )
+            return redirect('arquiteturaprocessos:classificacoes')
+
+        # Exclusão física
+        classificacao.delete()
+        messages.success(
+            request,
+            f"Classificação '{classificacao.nome}' excluída com sucesso!"
+        )
+        return redirect('arquiteturaprocessos:classificacoes')
 
 class ArquiteruraProcessos(ListView):
     template_name = 'arquiteruraprocessos.html'
