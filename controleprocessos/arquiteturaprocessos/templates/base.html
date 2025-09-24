@@ -24,7 +24,15 @@
             });
           },
 
-          toggle() { this.open = !this.open; },
+          toggle() {
+            if (this.open) {
+              this.open = false;
+              this.submenuOpen = false; // 🔒 fecha automaticamente o submenu ao recolher
+            } else {
+              this.open = true;
+            }
+          },
+
           close() { this.open = false; this.submenuOpen = false; }
         }
       }
@@ -52,12 +60,13 @@
                x-cloak>
 
             <!-- Menu items -->
-            <nav class="flex-1 px-2 py-4 space-y-2">
+            <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
 
                 <!-- Cadastro de Processos -->
                 <a href="{% url 'arquiteturaprocessos:cadastroprocessos' %}"
                    class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="close()"
+                   role="menuitem"
                    :title="!open ? 'Cadastro de Processos' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-folder-open text-xl"></i>
@@ -71,6 +80,7 @@
                 <a href="{% url 'arquiteturaprocessos:estatisticas' %}"
                    class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="close()"
+                   role="menuitem"
                    :title="!open ? 'Estatísticas' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-chart-line text-xl"></i>
@@ -84,6 +94,7 @@
                 <a href="{% url 'arquiteturaprocessos:backlog' %}"
                    class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="close()"
+                   role="menuitem"
                    :title="!open ? 'Backlog' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-list-check text-xl"></i>
@@ -99,6 +110,7 @@
                 <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
                    class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="close()"
+                   role="menuitem"
                    :title="!open ? 'Cadastro de Usuários' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-users text-xl"></i>
@@ -112,6 +124,7 @@
                 <a href="{% url 'arquiteturaprocessos:logacoes' %}"
                    class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="close()"
+                   role="menuitem"
                    :title="!open ? 'Log de Ações' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-clipboard-list text-xl"></i>
@@ -122,10 +135,7 @@
                 </a>
 
                 <!-- Estrutura de Processos -->
-                <div>
-                    <!-- Ajuste: quando o sidebar estiver retraído (open == false), ao clicar neste botão
-                         o sidebar será aberto e o submenu será expandido. Quando o sidebar já estiver aberto
-                         o comportamento antigo (alternar submenu) é preservado. -->
+                <div role="menuitem">
                     <button @click="if (!open) { open = true; submenuOpen = true } else { submenuOpen = !submenuOpen }"
                             class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
                             :title="!open ? 'Estrutura de Processos' : ''"
@@ -136,13 +146,14 @@
                         <div x-show="open" x-transition.opacity.duration.300ms class="ml-2 flex-1 text-left">
                             Estrutura de Processos
                         </div>
-                        <i class="fas fa-chevron-down ml-auto" x-show="open" x-cloak></i>
+                        <!-- Ícone dinâmico -->
+                        <i class="fas" :class="submenuOpen && open ? 'fa-chevron-down' : 'fa-chevron-right'" x-show="open" x-cloak></i>
                     </button>
-                    <div x-show="submenuOpen && open" class="ml-14 space-y-1">
-                        <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Classificação</a>
-                        <a href="{% url 'arquiteturaprocessos:macroprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Macroprocesso</a>
-                        <a href="{% url 'arquiteturaprocessos:subprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Subprocesso</a>
-                        <a href="{% url 'arquiteturaprocessos:norma' %}" class="block p-2 rounded hover:bg-[#00796B]" @click="close()">Norma</a>
+                    <div x-show="submenuOpen && open" x-transition.opacity.duration.300ms x-transition.scale.origin.top class="ml-14 space-y-1" role="menu">
+                        <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Classificação</a>
+                        <a href="{% url 'arquiteturaprocessos:macroprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso</a>
+                        <a href="{% url 'arquiteturaprocessos:subprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Subprocesso</a>
+                        <a href="{% url 'arquiteturaprocessos:norma' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Norma</a>
                     </div>
                 </div>
 
