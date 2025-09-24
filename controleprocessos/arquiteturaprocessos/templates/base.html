@@ -123,9 +123,13 @@
 
                 <!-- Estrutura de Processos -->
                 <div>
-                    <button @click="submenuOpen = !submenuOpen"
+                    <!-- Ajuste: quando o sidebar estiver retraído (open == false), ao clicar neste botão
+                         o sidebar será aberto e o submenu será expandido. Quando o sidebar já estiver aberto
+                         o comportamento antigo (alternar submenu) é preservado. -->
+                    <button @click="if (!open) { open = true; submenuOpen = true } else { submenuOpen = !submenuOpen }"
                             class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
-                            :title="!open ? 'Estrutura de Processos' : ''">
+                            :title="!open ? 'Estrutura de Processos' : ''"
+                            :aria-expanded="(submenuOpen && open) ? 'true' : 'false'">
                         <div class="w-12 h-12 flex items-center justify-center">
                             <i class="fas fa-cogs text-xl"></i>
                         </div>
