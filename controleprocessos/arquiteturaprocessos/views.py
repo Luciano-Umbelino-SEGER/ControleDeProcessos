@@ -24,11 +24,13 @@ class CustomLoginView(LoginView):
             return redirect('arquiteturaprocessos:homepage')
         return super().dispatch(request, *args, **kwargs)
 
+
 class Classificacoes(LoginRequiredMixin, ListView):
     model = Classificacao
     template_name = 'estrutura/classificacoes.html'
     context_object_name = 'classificacoes'
     queryset = Classificacao.objects.order_by('nome')
+
 
 class CriarClassificacao(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_classificacao.html'
@@ -42,12 +44,18 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
         context['modo_edicao'] = False
         return context
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Classificação '{self.object.nome}' criada com sucesso!")
+        return response
+
     def form_invalid(self, form):
-        messages.error(self.request, "Por favor, corrija os erros abaixo.")
-        return self.render_to_response(self.get_context_data(form=form))
+        messages.error(self.request, "Não foi possível criar a classificação. Corrija os erros abaixo.")
+        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:classificacoes')
+
 
 class VisualizarClassificacao(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_classificacao.html'
@@ -65,11 +73,12 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
         context['modo_edicao'] = False
         return context
 
+
 class EditarClassificacao(LoginRequiredMixin, UpdateView):
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
     context_object_name = 'classificacao'
-    form_class = Form_ClassificacaoForm  # usa o mesmo form da criação
+    form_class = Form_ClassificacaoForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -81,15 +90,16 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Classificação {self.object.nome} atualizada com sucesso!")
+        messages.success(self.request, f"Classificação '{self.object.nome}' atualizada com sucesso!")
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Corrija os erros abaixo.")
+        messages.error(self.request, "Não foi possível atualizar a classificação. Corrija os erros abaixo.")
         return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:classificacoes')
+
 
 class ExcluirClassificacao(LoginRequiredMixin, DetailView):
     model = Classificacao
@@ -98,8 +108,6 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Só renderiza o formulário se não for POST (evita duplicidade com o modal)
         if self.request.method != 'POST':
             context['form'] = Form_ClassificacaoForm(instance=self.get_object(), modo_exclusao=True)
 
@@ -111,18 +119,15 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         classificacao = self.get_object()
-
-        # Verifica se existe associação com algum processo
         processo_associado = ArquiteturaProcesso.objects.filter(classificacao=classificacao).first()
 
         if processo_associado:
             messages.error(
                 request,
-                f"Não é possível excluir a classificação '{classificacao.nome}', pois ela está associada ao processo '{processo_associado.macroprocesso.nome}' — Verifique."
+                f"Não é possível excluir a classificação '{classificacao.nome}', pois está associada ao processo '{processo_associado.macroprocesso.nome}'."
             )
             return redirect('arquiteturaprocessos:classificacoes')
 
-        # Exclusão física
         classificacao.delete()
         messages.success(
             request,
