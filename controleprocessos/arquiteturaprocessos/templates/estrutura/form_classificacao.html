@@ -51,9 +51,16 @@
     <div class="flex justify-end mt-8 space-x-4">
         {% if not modo_visualizacao %}
             {% if modo_exclusao %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" onclick="abrirModalConfirmacao()" type="button">
+                <button
+                    type="button"
+                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                    @click="$dispatch('abrir-modal-confirmacao', {
+                        url: '{% url 'arquiteturaprocessos:excluir_classificacao' classificacao.id %}',
+                        mensagem: 'Confirma a exclusão da classificação <strong>{{ classificacao.nome }}</strong>?'
+                    })">
                     Confirmar Exclusão
                 </button>
+
             {% elif modo_edicao %}
                 <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
                     Salvar Alterações

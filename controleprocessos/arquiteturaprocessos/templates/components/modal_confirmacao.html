@@ -1,0 +1,32 @@
+<div
+    x-data="{ open: false, actionUrl: '', mensagem: '' }"
+    @abrir-modal-confirmacao.window="open = true; actionUrl = $event.detail.url; mensagem = $event.detail.mensagem"
+    x-show="open"
+    class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50"
+    x-cloak
+>
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96 text-center">
+        <!-- Mensagem dinâmica -->
+        <p class="text-gray-700 text-lg mb-6" x-html="mensagem"></p>
+
+        <!-- Botões centralizados -->
+        <div class="flex justify-center gap-4">
+             <form :action="actionUrl" method="POST">
+                {% csrf_token %}
+                <button
+                    type="submit"
+                    class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                    Sim
+                </button>
+            </form>
+
+            <button
+                @click="open = false"
+                class="px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+            >
+                Não
+            </button>
+        </div>
+    </div>
+</div>
