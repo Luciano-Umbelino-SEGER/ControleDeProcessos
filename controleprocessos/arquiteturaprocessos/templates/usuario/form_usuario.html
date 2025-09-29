@@ -183,11 +183,28 @@
       <div class="col-span-1 md:col-span-2 lg:col-span-3">
         <div class="flex justify-end space-x-4 mt-1">
           {% if not modo_visualizacao %}
-            <button id="confirm-btn"
-              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48"
-              type="{% if modo_exclusao %}button{% else %}submit{% endif %}">
-              {% if modo_edicao %}Salvar Alterações{% elif modo_exclusao %}Confirmar Exclusão{% else %}Adicionar Usuário{% endif %}
-            </button>
+            {% if modo_exclusao %}
+              <button
+                type="button"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48"
+                @click="$dispatch('abrir-modal-confirmacao', {
+                    url: '{% url "arquiteturaprocessos:excluir_usuario" form.instance.id %}',
+                    mensagem: 'Será realizada uma <strong>exclusão lógica</strong>.<br>Confirma a desativação do usuário <strong>{{ form.instance.username }}</strong>?'
+                })">
+                Confirmar Exclusão
+              </button>
+            {% elif modo_edicao %}
+              <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48">
+                Salvar Alterações
+              </button>
+            {% else %}
+              <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48">
+                Adicionar Usuário
+              </button>
+            {% endif %}
+
           {% endif %}
           <a class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded w-48 text-center"
              href="{% url 'arquiteturaprocessos:cadastrousuarios' %}">
@@ -198,18 +215,6 @@
     </form>
   </div>
 </div>
-
-{% if modo_exclusao %}
-<div id="confirmation-modal" class="modal">
-  <div class="modal-content">
-    <p id="modal-message" class="text-gray-800 text-lg"></p>
-    <div class="modal-buttons">
-      <button id="modal-yes" class="btn btn-confirm">Sim</button>
-      <button id="modal-no" class="btn btn-cancel">Não</button>
-    </div>
-  </div>
-</div>
-{% endif %}
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -254,25 +259,6 @@ document.addEventListener("DOMContentLoaded", function () {
       e.target.closest(".telefone-item").remove();
     }
   });
-
-  {% if modo_exclusao %}
-  const modal = document.getElementById("confirmation-modal");
-  const confirmBtn = document.getElementById("confirm-btn");
-  const modalYes = document.getElementById("modal-yes");
-  const modalNo = document.getElementById("modal-no");
-  const form = document.getElementById("usuario-form");
-  const message = document.getElementById("modal-message");
-
-  confirmBtn.addEventListener("click", function () {
-    message.innerText = "Será realizada uma exclusão lógica.\nConfirma a desativação do usuário {{ form.instance.username|escapejs }}?";
-    modal.style.display = "block";
-  });
-  modalYes.addEventListener("click", function () { form.submit(); });
-  modalNo.addEventListener("click", function () {
-    modal.style.display = "none";
-    window.location.href = "{% url 'arquiteturaprocessos:cadastrousuarios' %}";
-  });
-  {% endif %}
 });
 </script>
 {% endblock %}
