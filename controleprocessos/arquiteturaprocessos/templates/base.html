@@ -163,7 +163,8 @@
                     </button>
                     <div x-show="submenuOpen && open" x-transition.opacity.duration.300ms x-transition.scale.origin.top class="ml-14 space-y-1" role="menu">
                         <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Classificação</a>
-                        <a href="{% url 'arquiteturaprocessos:macroprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso</a>
+                        <a href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso Nivel 1</a>
+                        <a href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso Nivel 2</a>
                         <a href="{% url 'arquiteturaprocessos:subprocesso' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Subprocesso</a>
                         <a href="{% url 'arquiteturaprocessos:norma' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Norma</a>
                     </div>

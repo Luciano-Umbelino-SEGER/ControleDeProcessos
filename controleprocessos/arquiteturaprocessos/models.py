@@ -53,12 +53,25 @@ class Usuario(AbstractUser):
         return f"{self.username} - {cargo_nome} - {perfil_nome}"
 
 
-class Macroprocesso(models.Model):
+class MacroprocessoNivel1(models.Model):
     nome = models.CharField(max_length=200)
-    nivel = models.IntegerField()
+    descricao = models.TextField(max_length=500)
 
     def __str__(self):
-        return str(f"{self.nome} - {self.nivel}")
+        return f"{self.nome} - {self.descricao[:60]}..."  # Mostra os primeiros 60 caracteres
+
+
+class MacroprocessoNivel2(models.Model):
+    nome = models.CharField(max_length=200)
+    descricao = models.TextField(max_length=500)
+    macroprocesso_nivel1 = models.ForeignKey(
+        MacroprocessoNivel1,
+        on_delete=models.PROTECT,  # Protege contra exclusão se houver filhos
+        related_name='macroprocessos_nivel2'
+    )
+
+    def __str__(self):
+        return f"{self.nome} - {self.descricao[:60]}... (Nível 1: {self.macroprocesso_nivel1.nome})"
 
 class Norma(models.Model):
     nome = models.CharField(max_length=200)
@@ -80,9 +93,9 @@ class Classificacao(models.Model):
 
 class ArquiteturaProcesso(models.Model):
     classificacao = models.CharField(max_length=30, choices=LSTA_CLASSIFICACAO)
-    macroprocesso_nivel1 = models.ForeignKey("Macroprocesso", related_name="arquiteturas_nivel1", null=True, blank=True,
+    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", related_name="arquiteturas_nivel1", null=True, blank=True,
                                              on_delete=models.SET_NULL)
-    macroprocesso_nivel2 = models.ForeignKey("Macroprocesso", related_name="arquiteturas_nivel2", null=True, blank=True,
+    macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", related_name="arquiteturas_nivel2", null=True, blank=True,
                                              on_delete=models.SET_NULL)
     processo = models.CharField(max_length=500)
     subprocesso = models.CharField(max_length=200)

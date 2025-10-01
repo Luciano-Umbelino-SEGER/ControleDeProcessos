@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from .models import (
-    Perfil, Telefone, Usuario, Macroprocesso, Norma,
-    Atualizacao_Norma, ArquiteturaProcesso, LogAcoes
+    Perfil, Telefone, Usuario, MacroprocessoNivel1, MacroprocessoNivel2, Norma,
+    Atualizacao_Norma, ArquiteturaProcesso, LogAcoes,
 )
 
 
@@ -53,7 +53,8 @@ class NormaAdmin(admin.ModelAdmin):
 admin.site.register(Perfil)
 admin.site.register(Telefone)
 admin.site.register(Usuario, UsuarioAdmin)
-admin.site.register(Macroprocesso)
+admin.site.register(MacroprocessoNivel1)
+admin.site.register(MacroprocessoNivel2)
 admin.site.register(Norma, NormaAdmin)
 admin.site.register(Atualizacao_Norma)
 admin.site.register(ArquiteturaProcesso)

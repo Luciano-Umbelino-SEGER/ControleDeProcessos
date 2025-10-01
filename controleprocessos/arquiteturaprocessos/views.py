@@ -8,7 +8,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.forms import inlineformset_factory
 
-from .models import Usuario, Telefone, ArquiteturaProcesso, Macroprocesso, LogAcoes, Classificacao
+from .models import Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes, Classificacao
 from django.db.models import Exists, OuterRef
 from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, Form_ClassificacaoForm
 
@@ -142,7 +142,7 @@ class ArquiteruraProcessos(ListView):
 
 class CadastroProcessos(LoginRequiredMixin, ListView):
     template_name = 'cadastroprocessos.html'
-    model = Macroprocesso
+    model = MacroprocessoNivel1
 
 
 class Estatisticas(LoginRequiredMixin, ListView):
@@ -377,6 +377,18 @@ class LogAcoes(LoginRequiredMixin, ListView):
 
 class MacroProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/macroprocesso.html'
+
+class MacroProcessoNivel1View(LoginRequiredMixin,ListView):
+    model = MacroprocessoNivel1
+    template_name = 'estrutura/macroprocessonivel1.html'
+    context_object_name = 'macroprocessonivel1'
+    queryset = MacroprocessoNivel1.objects.order_by('nome')
+
+class MacroProcessoNivel2View(LoginRequiredMixin,ListView):
+    model = MacroprocessoNivel2
+    template_name = 'estrutura/macroprocessonivel2.html'
+    context_object_name = 'macroprocessonivel2'
+    queryset = MacroprocessoNivel2.objects.order_by('nome')
 
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
