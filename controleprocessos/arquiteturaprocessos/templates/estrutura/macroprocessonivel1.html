@@ -1,8 +1,77 @@
-{% extends 'base.html' %}
-{% load static %}
-{% include 'navbar.html' %}
+ {% extends 'base.html' %}
+ {% load static %}
+ {% include 'navbar.html' %}
 
-{% block body %}
-    <h3 class="text-blue-800"> A página de Macroprocesso Nivel 1 está no ar! </h3>
-{% endblock %}
+ {% block body %}
+ <div class="py-10 px-4 flex justify-center">
+     <div class="w-full max-w-4xl">
+         <h2 class="text-2xl font-bold text-blue-800 mb-6">Macroprocessos Nível 1</h2>
 
+         {% if request.user.perfil.nome|lower == 'administrador' %}
+             <div class="flex justify-end mb-4">
+                 <a href="{% url 'arquiteturaprocessos:form_macroprocessonivel1' %}"
+                   2" viewBox="0 0 20 20" fill="currentColor">
+                         <path fill-rule="evenodd"
+                               d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                               clip-rule="evenodd"/>
+                     </svg>
+                     Adicionar Macroprocesso Nível 1
+                 </a>
+             </div>
+         {% endif %}
+
+         <div class="overflow-x-auto">
+             <table class="w-full bg-white border border-gray-200 rounded-lg shadow">
+                 text-blue-800">
+                     <tr>
+                         <th class="py-3 px-4 text-left">Classificação</th>
+                         <th class="py-3 px-4 text-left">Macroprocesso Nível 1</th>
+                         <th class="py-3 px-4 text-left">Descrição</th>
+                         <th class="py-3 px-4 text-right">Ações</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     {% for processonivel1 in macroprocessonivel1 %}
+                     <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %}">
+                         <td class="py-3 px-4 align-top">{{ processonivel1.classificacao.nome }}</td>
+                         <td class="py-3 px-4 align-top">{{ processonivel1.nome }}</td>
+                         <td class="py-3 px-4 whitespace-pre-line break-words align-top">{{ processonivel1.descricao }}</td>
+                         <td class="py-3 px-4 text-right align-middle">
+                             <div class="flex justify-end items-center space-x-2 h-full">
+                                 <a href="{% url 'arquiteturaprocessos:visualizar_macroprocessonivel1' processonivel1.pk %}" title="Visualizar" class="text-blue-600 hovere="currentColor">
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                     </svg>
+                                 </a>
+
+                                 {% if request.user.perfil.nome|lower == 'administrador' %}
+                                 <a href="{% url 'arquiteturaprocessos:editar_macroprocessonivel1' processonivel1.pk %lass="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                         <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                                         <path fill-rule="evenodd"
+                                               d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                               clip-rule="evenodd"/>
+                                     </svg>
+                                 </a>
+
+                                 <a href="{% url 'arquiteturaprocessos:excluir_macroprocessonivel1' processonivel1.pk %}" title w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                                     </svg>
+                                 </a>
+                                 {% endif %}
+                             </div>
+                         </td>
+                     </tr>
+                     {% empty %}
+                     <tr>
+                         <td colspan="4" class="py-4 px-4 text-center text-gray-500">Nenhum macroprocesso encontrado.</td>
+                     </tr>
+                     {% endfor %}
+                 </tbody>
+             </table>
+         </div>
+     </div>
+ </div>
+ {% endblock %}

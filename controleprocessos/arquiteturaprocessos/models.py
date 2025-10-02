@@ -52,13 +52,24 @@ class Usuario(AbstractUser):
         cargo_nome = self.cargo if self.cargo else "Sem cargo"
         return f"{self.username} - {cargo_nome} - {perfil_nome}"
 
+class Classificacao(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(max_length=500)
+
+    def __str__(self):
+        return self.nome
 
 class MacroprocessoNivel1(models.Model):
     nome = models.CharField(max_length=200)
     descricao = models.TextField(max_length=500)
+    classificacao = models.ForeignKey(
+        Classificacao,
+        on_delete=models.PROTECT,  # Impede exclusão se houver Macroprocessos associados
+        related_name='macroprocessos_nivel1'
+    )
 
     def __str__(self):
-        return f"{self.nome} - {self.descricao[:60]}..."  # Mostra os primeiros 60 caracteres
+        return f"{self.nome} - {self.descricao[:60]}..."
 
 
 class MacroprocessoNivel2(models.Model):
@@ -85,11 +96,6 @@ class Atualizacao_Norma(models.Model):
     data_atualizacao = models.DateTimeField(default=timezone.now)
     versao = models.CharField(max_length=5)
     descricao = models.TextField(max_length=500)
-
-class Classificacao(models.Model):
-    nome = models.CharField(max_length=100)
-    descricao = models.TextField(max_length=500)
-
 
 class ArquiteturaProcesso(models.Model):
     classificacao = models.CharField(max_length=30, choices=LSTA_CLASSIFICACAO)
