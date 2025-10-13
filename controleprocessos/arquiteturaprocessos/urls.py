@@ -3,7 +3,8 @@ from django.urls import path
 from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
                     CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
-                    ExcluirClassificacao, MacroProcessoNivel1View, MacroProcessoNivel2View, SubProcessoView, NormaView)
+                    ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
+                    EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, SubProcessoView, NormaView)
 from django.contrib.auth import views as auth_views
 
 
@@ -29,6 +30,10 @@ urlpatterns = [
     path('classificacoes/<int:pk>/editar/', EditarClassificacao.as_view(), name='editar_classificacao'),
     path('classificacoes/<int:pk>/excluir/', ExcluirClassificacao.as_view(), name='excluir_classificacao'),
     path('macroprocessonivel1/', MacroProcessoNivel1View.as_view(), name='macroprocessonivel1'),
+    path('form_macroprocessonivel1/', CriarMacroProcessoNivel1.as_view(), name='form_macroprocessonivel1'),
+    path('macroprocessonivel1/<int:pk>/visualizar/', VisualizarMacroProcessoNivel1.as_view(), name='visualizar_macroprocessonivel1'),
+    path('macroprocessonivel1/<int:pk>/editar/', EditarMacroProcessoNivel1.as_view(), name='editar_macroprocessonivel1'),
+    path('macroprocessonivel1/<int:pk>/excluir/', ExcluirMacroProcessoNivel1.as_view(), name='excluir_macroprocessonivel1'),
     path('macroprocessonivel2/', MacroProcessoNivel2View.as_view(), name='macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
     path('estrutura/norma/', NormaView.as_view(), name='norma')

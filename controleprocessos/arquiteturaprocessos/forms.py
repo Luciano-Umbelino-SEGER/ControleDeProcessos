@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
-from .models import Usuario, Telefone, Classificacao
+from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1
 
 UserModel = get_user_model()
 
@@ -296,3 +296,44 @@ class Form_ClassificacaoForm(forms.ModelForm):
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
+class Form_MacroProcessoNivel1Form(forms.ModelForm):
+    """
+    Formulário para criação de Macro Processos de Nivel1.
+    Aplica estilos e controla os modos de visualização, exclusão e edição.
+    """
+    class Meta:
+        model = MacroprocessoNivel1
+        fields = ['nome', 'descricao', 'classificacao']
+
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        modo_exclusao = kwargs.pop('modo_exclusao', False)
+        modo_edicao = kwargs.pop('modo_edicao', False)
+
+        super().__init__(*args, **kwargs)
+        self.label_suffix = ""
+
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        for name, field in self.fields.items():
+            existing = field.widget.attrs.get("class", "")
+            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
+            field.widget.attrs.setdefault("placeholder", field.label)
+            field.widget.attrs["autocomplete"] = "off"
+
+        # Desabilita todos os campos se estiver em modo visualização ou exclusão
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+                existing_classes = field.widget.attrs.get("class", "")
+                field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
+
+        # Se estiver em modo exclusão, pode aplicar lógica adicional
+        if modo_exclusao and self.instance:
+            self.instance.is_active = False
+            self.instance.data_ativacaodesativacao = timezone.now()
