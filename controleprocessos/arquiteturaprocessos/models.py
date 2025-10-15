@@ -77,8 +77,10 @@ class MacroprocessoNivel2(models.Model):
     descricao = models.TextField(max_length=500)
     macroprocesso_nivel1 = models.ForeignKey(
         MacroprocessoNivel1,
-        on_delete=models.PROTECT,  # Protege contra exclusão se houver filhos
-        related_name='macroprocessos_nivel2'
+        on_delete=models.PROTECT,
+        related_name='macroprocessos_nivel2',
+        null=False,
+        blank=False
     )
 
     def __str__(self):

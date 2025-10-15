@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static form_tags %}
+
+{% block titulo %}
+    {% if modo_visualizacao %}
+        Visualização de Macroprocesso Nível 2
+    {% elif modo_edicao %}
+        Edição de Macroprocesso Nível 2
+    {% elif modo_exclusao %}
+        Exclusão de Macroprocesso Nível 2
+    {% else %}
+        Inclusão de Macroprocesso Nível 2
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4">
+<div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
+<h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
+    {% if modo_visualizacao %}
+        Visualização de Macroprocesso Nível 2
+    {% elif modo_edicao %}
+        Edição de Macroprocesso Nível 2
+    {% elif modo_exclusao %}
+        Exclusão de Macroprocesso Nível 2
+    {% else %}
+        Inclusão de Macroprocesso Nível 2
+    {% endif %}
+</h2>
+
+{% if form.non_field_errors %}
+    <div class="text-red-600 mb-4">
+        {{ form.non_field_errors }}
+    </div>
+{% endif %}
+
+<form method="post" id="form-exclusao">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 gap-6">
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-blue-800 mb-1">Classificação</label>
+                <input type="text" readonly
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-black"
+                       value="{{ form.instance.macroprocesso_nivel1.classificacao.nome }}">
+            </div>
+            <div>
+                <label for="id_macroprocesso_nivel1" class="block text-sm font-semibold text-blue-800 mb-1">Macroprocesso Nível 1</label>
+                {{ form.macroprocesso_nivel1 }}
+                {% if form.macroprocesso_nivel1.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.macroprocesso_nivel1.errors|striptags }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label for="id_nome" class="block text-sm font-semibold text-blue-800 mb-1">Nome</label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.nome.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <label for="id_descricao" class="block text-sm font-semibold text-blue-800 mb-1">Descrição</label>
+            {{ form.descricao }}
+            {% if form.descricao.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ form.descricao.errors|striptags }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="flex justify-end mt-8 space-x-4">
+        {% if not modo_visualizacao %}
+            {% if modo_exclusao %}
+                <button
+                    type="button"
+                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                    @click="$dispatch('abrir-modal-confirmacao', {
+                        url: '{% url 'arquiteturaprocessos:excluir_macroprocessonivel2' macroprocessonivel2.id %}',
+                        mensagem: 'Confirma a exclusão do Macroprocesso Nível 2 <strong>{{ macroprocessonivel2.nome }}</strong>?'
+                    })">
+                    Confirmar Exclusão
+                </button>
+            {% elif modo_edicao %}
+                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                    Salvar Alterações
+                </button>
+            {% else %}
+                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                    Adicionar Macroprocesso Nível 2
+                </button>
+            {% endif %}
+        {% endif %}
+
+        {% url
+            {% if modo_visualizacao %}
+                Voltar
+            {% else %}
+                Cancelar
+            {% endif %}
+        </a>
+    </div>
+</form>
+</div>
+</div>
+
+{% if modo_exclusao %}
+<!-- Modal de confirmação de exclusão -->
+<div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-[400px] mx-auto border border-gray-300">
+        <h2 class="text-xl font-semibold mb-4 text-black">
+            Confirma a exclusão do Macroprocesso Nível 2 {{ macroprocessonivel2.nome }}?
+        </h2>
+        <div class="flex justify-center gap-4">
+            <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
+            {% url Não</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

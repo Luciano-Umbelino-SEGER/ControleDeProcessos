@@ -4,7 +4,9 @@ from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisti
                     CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
                     ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
-                    EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, SubProcessoView, NormaView)
+                    EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
+                    VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2,
+                    SubProcessoView, NormaView)
 from django.contrib.auth import views as auth_views
 
 
@@ -35,6 +37,10 @@ urlpatterns = [
     path('macroprocessonivel1/<int:pk>/editar/', EditarMacroProcessoNivel1.as_view(), name='editar_macroprocessonivel1'),
     path('macroprocessonivel1/<int:pk>/excluir/', ExcluirMacroProcessoNivel1.as_view(), name='excluir_macroprocessonivel1'),
     path('macroprocessonivel2/', MacroProcessoNivel2View.as_view(), name='macroprocessonivel2'),
+    path('form_macroprocessonivel2/', CriarMacroProcessoNivel2.as_view(), name='form_macroprocessonivel2'),
+    path('macroprocessonivel2/<int:pk>/visualizar/', VisualizarMacroProcessoNivel2.as_view(), name='visualizar_macroprocessonivel2'),
+    path('macroprocessonivel2/<int:pk>/editar/', EditarMacroProcessoNivel2.as_view(), name='editar_macroprocessonivel2'),
+    path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
     path('estrutura/norma/', NormaView.as_view(), name='norma')
 ]

@@ -11,7 +11,7 @@ from django.forms import inlineformset_factory
 from .models import Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes, Classificacao
 from django.db.models import Exists, OuterRef
 from .forms import Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm, \
-    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form
+    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form
 
 
 class HomePage(TemplateView):
@@ -487,11 +487,116 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:macroprocessonivel1')
 
-class MacroProcessoNivel2View(LoginRequiredMixin,ListView):
+class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
     model = MacroprocessoNivel2
     template_name = 'estrutura/macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
-    queryset = MacroprocessoNivel2.objects.order_by('nome')
+
+    def get_queryset(self):
+        return MacroprocessoNivel2.objects.select_related(
+            'macroprocesso_nivel1', 'macroprocesso_nivel1__classificacao'
+        ).order_by('nome')
+
+class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
+    template_name = 'estrutura/form_macroprocessonivel2.html'
+    form_class = Form_MacroProcessoNivel2Form
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['modo_inclusao'] = True
+        context['modo_visualizacao'] = False
+        context['modo_exclusao'] = False
+        context['modo_edicao'] = False
+        return context
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Macroprocesso de Nível 2 '{self.object.nome}' criado com sucesso!")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Não foi possível criar o Macroprocesso de Nível 2. Corrija os erros abaixo.")
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:macroprocessonivel2')
+
+class VisualizarMacroProcessoNivel2(LoginRequiredMixin, DetailView):
+    template_name = 'estrutura/form_macroprocessonivel2.html'
+    model = MacroprocessoNivel2
+    context_object_name = 'macroprocessonivel2'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        macroprocessonivel2 = self.get_object()
+        context['form'] = Form_MacroProcessoNivel2Form(instance=macroprocessonivel2, modo_visualizacao=True)
+
+        context['modo_visualizacao'] = True
+        context['modo_inclusao'] = False
+        context['modo_exclusao'] = False
+        context['modo_edicao'] = False
+        return context
+
+class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
+    model = MacroprocessoNivel2
+    template_name = 'estrutura/form_macroprocessonivel2.html'
+    context_object_name = 'macroprocessonivel2'
+    form_class = Form_MacroProcessoNivel2Form
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['modo_edicao'] = True
+        context['modo_inclusao'] = False
+        context['modo_visualizacao'] = False
+        context['modo_exclusao'] = False
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Macroprocesso de Nível 2 '{self.object.nome}' atualizado com sucesso!")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Não foi possível atualizar o Macroprocesso de Nível 2. Corrija os erros abaixo.")
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:macroprocessonivel2')
+
+class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
+    model = MacroprocessoNivel2
+    template_name = 'estrutura/form_macroprocessonivel2.html'
+    context_object_name = 'macroprocessonivel2'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.method != 'POST':
+            context['form'] = Form_MacroProcessoNivel2Form(instance=self.get_object(), modo_exclusao=True)
+
+        context['modo_exclusao'] = True
+        context['modo_visualizacao'] = False
+        context['modo_inclusao'] = False
+        context['modo_edicao'] = False
+        return context
+
+    def post(self, request, *args, **kwargs):
+        macroprocessonivel2 = self.get_object()
+
+        # Verifica se há processos associados a esse macroprocesso de nível 2
+        processo_associado = ArquiteturaProcesso.objects.filter(macroprocesso_nivel2=macroprocessonivel2).first()
+
+        if processo_associado:
+            messages.error(
+                request,
+                f"Não é possível excluir o Macroprocesso Nível 2 '{macroprocessonivel2.nome}', pois ele está associado a um ou mais processos na arquitetura."
+            )
+            return redirect('arquiteturaprocessos:macroprocessonivel2')
+
+        macroprocessonivel2.delete()
+        messages.success(
+            request,
+            f"Macroprocesso Nível 2 '{macroprocessonivel2.nome}' excluído com sucesso!"
+        )
+        return redirect('arquiteturaprocessos:macroprocessonivel2')
 
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'

@@ -3,6 +3,73 @@
 {% include 'navbar.html' %}
 
 {% block body %}
-    <h3 class="text-blue-800"> A página de Macroprocesso Nivel 2 está no ar! </h3>
-{% endblock %}
+<div class="py-10 px-4 flex justify-center">
+    <div class="w-full max-w-6xl">
+        <h2 class="text-2xl font-bold text-blue-800 mb-6">Macroprocesso Nível 2</h2>
 
+        {% if request.user.perfil.nome|lower == 'administrador' %}
+            <div class="flex justify-end mb-4">
+                <a href="{% url 'arquiteturaprocessos:form_macroprocessonivel2' %}"
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                    Adicionar Macroprocesso Nivel 2
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="overflow-x-auto">
+            <table class="w-full bg-white border border-gray-200 rounded-lg shadow">
+                <thead class="bg-blue-100 text-blue-800">
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[250px]">Classificação</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[250px]">Macroprocesso Nível 1</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[250px]">Nome</th>
+                        <th class="py-3 px-4 text-left w-[500px]">Descrição</th>
+                        <th class="py-3 px-2 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for macroprocesso in macroprocessonivel2 %}
+                    <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %}">
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ macroprocesso.macroprocesso_nivel1.classificacao.nome }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ macroprocesso.macroprocesso_nivel1.nome }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ macroprocesso.nome }}</td>
+                        <td class="py-3 px-4 whitespace-pre-line break-words align-top">{{ macroprocesso.descricao }}</td>
+                        <td class="py-3 px-2 text-right align-middle">
+                            <div class="flex justify-end items-center space-x-2 h-full">
+                                {% url
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if request.user.perfil.nome|lower == 'administrador' %}
+                                {% url
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path fill-rule="evenodd"
+                                              d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                              stroke-linejoin="round" stroke-width="2" />
+
+                                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"
+                                              stroke-linejoin="round" stroke-width="2" />
+                                    </svg>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-4 px-4 text-center text-gray-500">Nenhum Macroprocesso Nível 2 encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
