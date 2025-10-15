@@ -471,12 +471,12 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         macroprocessonivel = self.get_object()
-        processo_associado = ArquiteturaProcesso.objects.filter(macroprocessonivel1=macroprocessonivel).first()
+        processo_associado = ArquiteturaProcesso.objects.filter(macroprocesso_nivel1=macroprocessonivel).first()
 
         if processo_associado:
             messages.error(
                 request,
-                f"Não é possível excluir o Macroprocesso Nivel 1 '{macroprocessonivel.nome}', pois está associada ao Macroprocesso  '{processo_associado.macroprocesso.nome}'."
+                f"Não é possível excluir o Macroprocesso Nivel 1 '{macroprocessonivel.nome}', pois ele está associado a um ou mais processos na arquitetura."
             )
             return redirect('arquiteturaprocessos:classificacoes')
 
