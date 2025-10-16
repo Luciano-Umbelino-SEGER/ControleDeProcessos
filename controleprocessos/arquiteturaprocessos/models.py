@@ -69,7 +69,7 @@ class MacroprocessoNivel1(models.Model):
     )
 
     def __str__(self):
-        return f"{self.nome} - {self.descricao[:60]}..."
+        return f"{self.nome}"
 
 
 class MacroprocessoNivel2(models.Model):
@@ -84,7 +84,7 @@ class MacroprocessoNivel2(models.Model):
     )
 
     def __str__(self):
-        return f"{self.nome} - {self.descricao[:60]}... (Nível 1: {self.macroprocesso_nivel1.nome})"
+        return f"{self.nome}"
 
 class Norma(models.Model):
     nome = models.CharField(max_length=200)

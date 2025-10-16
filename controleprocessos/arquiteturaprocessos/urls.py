@@ -5,8 +5,8 @@ from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisti
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
                     ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
                     EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
-                    VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2,
-                    SubProcessoView, NormaView)
+                    VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, classificacao_por_macro1,
+                    macroprocessos_por_classificacao, SubProcessoView, NormaView)
 from django.contrib.auth import views as auth_views
 
 
@@ -42,5 +42,7 @@ urlpatterns = [
     path('macroprocessonivel2/<int:pk>/editar/', EditarMacroProcessoNivel2.as_view(), name='editar_macroprocessonivel2'),
     path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
-    path('estrutura/norma/', NormaView.as_view(), name='norma')
+    path('estrutura/norma/', NormaView.as_view(), name='norma'),
+    path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
+    path('api/macroprocessos_por_classificacao/<int:classificacao_id>/', macroprocessos_por_classificacao, name='macroprocessos_por_classificacao'),
 ]
