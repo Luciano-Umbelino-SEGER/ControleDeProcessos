@@ -10,10 +10,11 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse
 
 from .models import Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes, Classificacao
+from django.db.models.deletion import ProtectedError
 from django.db.models import Exists, OuterRef
 from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
                     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form)
-
+from django.views.generic import DetailView
 
 class HomePage(TemplateView):
     template_name = 'homepage.html'
@@ -453,7 +454,7 @@ class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
 
-
+# sua view ajustada
 class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
     model = MacroprocessoNivel1
     template_name = 'estrutura/form_macroprocessonivel1.html'
@@ -472,21 +473,39 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         macroprocessonivel = self.get_object()
-        processo_associado = ArquiteturaProcesso.objects.filter(macroprocesso_nivel1=macroprocessonivel).first()
 
-        if processo_associado:
+        try:
+            # tenta deletar diretamente — se houver FK com on_delete=PROTECT, ProtectedError será lançado
+            macroprocessonivel.delete()
+        except ProtectedError as e:
+            # tenta extrair alguns exemplos de objetos protegidos para uma mensagem mais informativa
+            protected_objs = getattr(e, 'protected_objects', None)
+            if protected_objs:
+                # limita a lista a 3 exemplos para não inundar a mensagem
+                exemplos = ', '.join(str(o) for o in list(protected_objs)[:3])
+                detalhes = f"Exemplos: {exemplos}."
+            else:
+                detalhes = ""
+
             messages.error(
                 request,
-                f"Não é possível excluir o Macroprocesso Nivel 1 '{macroprocessonivel.nome}', pois ele está associado a um ou mais processos na arquitetura."
+                (
+                    f"Não é possível excluir o Macroprocesso Nível 1 '{macroprocessonivel.nome}', "
+                    "pois existem registros relacionados que impedem a exclusão. "
+                    "Remova ou desassocie os itens relacionados antes de tentar novamente. "
+                    f"{detalhes}"
+                )
             )
-            return redirect('arquiteturaprocessos:classificacoes')
+            # redireciona para a lista (ou altere para onde preferir)
+            return redirect('arquiteturaprocessos:macroprocessonivel1')
 
-        macroprocessonivel.delete()
+        # se chegou aqui, exclusão OK
         messages.success(
             request,
-            f"Macroprocesso Nivel 1 '{macroprocessonivel.nome}' excluído com sucesso!"
+            f"Macroprocesso Nível 1 '{macroprocessonivel.nome}' excluído com sucesso!"
         )
         return redirect('arquiteturaprocessos:macroprocessonivel1')
+
 
 class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
     model = MacroprocessoNivel2

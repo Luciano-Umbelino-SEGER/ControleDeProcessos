@@ -337,12 +337,6 @@ class Form_MacroProcessoNivel1Form(forms.ModelForm):
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
-# forms.py
-from django import forms
-from django.utils import timezone
-from .models import MacroprocessoNivel2, MacroprocessoNivel1, Classificacao  # ajuste os imports conforme seu app
-
-
 class Form_MacroProcessoNivel2Form(forms.ModelForm):
     """
     Formulário para criação/edição de Macro Processos de Nível 2.
@@ -383,16 +377,19 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            # preserva classes existentes, adiciona base e bg_color
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
         # Ajustes específicos de widgets/ids
+        # mantém label_from_instance para exibir nome do objeto
         self.fields["macroprocesso_nivel1"].label_from_instance = lambda obj: obj.nome
+        # garante id explícito para macroprocesso_nivel1 (se quiser manter)
         self.fields["macroprocesso_nivel1"].widget.attrs.update({
             "id": "id_macroprocesso_nivel1"
         })
-        # Altura maior para descrição
+        # Altura maior para descrição (preserva as classes já setadas)
         self.fields["descricao"].widget.attrs["class"] += " h-32"
 
         # --- Desabilita campos em visualização/exclusão (igual ao Nível 1) ---
@@ -402,7 +399,7 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
-        # --- (Opcional) Lógica adicional no modo exclusão, se o modelo tiver os campos ---
+        # --- (Opcional) Lógica adicional no modo exclusao, se o modelo tiver os campos ---
         if modo_exclusao and self.instance:
             if hasattr(self.instance, "is_active"):
                 self.instance.is_active = False
@@ -440,4 +437,18 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
         elif self.instance and getattr(self.instance, "pk", None):
             if getattr(self.instance, "macroprocesso_nivel1", None):
                 self.fields["classificacao"].initial = self.instance.macroprocesso_nivel1.classificacao
+
+        # -----------------------
+        # GARANTIA FINAL DE IDS
+        # -----------------------
+        # Aqui asseguramos que **todos** os widgets tenham um atributo 'id'
+        # no formato id_<nome_campo> caso não exista — sem sobrescrever se já houver.
+        for name, field in self.fields.items():
+            existing_id = field.widget.attrs.get("id")
+            if not existing_id:
+                field.widget.attrs["id"] = f"id_{name}"
+            # Assegura também que o atributo name do widget esteja correto (não altera layout)
+            # (normalmente Django já define, mas garantimos para evitar inconsistências)
+            field.widget.attrs.setdefault("name", name)
+
 
