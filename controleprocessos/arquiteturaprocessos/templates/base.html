@@ -231,7 +231,7 @@
             <div class="w-1/3 text-center">
                 SEGER - GPP | Contato: Tel (27) 3636-5272 | Email: gpp@seg.er.es.gov.br
             </div>
-    
+
             <!-- Identificação do usuário à direita -->
             {% if user.is_authenticated %}
                 <div class="w-1/3 text-right">
@@ -240,5 +240,22 @@
             {% endif %}
         </div>
     </footer>
+
+<!-- Alpine.js CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+<!-- Script para fechar mensagens automaticamente -->
+<script>
+  function flashMessages() {
+    return {
+      init() {
+        setTimeout(() => {
+          this.$el.remove();
+        }, 5000);
+      }
+    }
+  }
+</script>
+
 </body>
 </html>
