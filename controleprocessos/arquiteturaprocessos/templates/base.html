@@ -222,11 +222,23 @@
     </div>
 
     <!-- Rodapé fixo -->
-    <footer class="bg-[#0097A7] text-white py-3 text-center fixed bottom-0 w-full">
-        SEGER - GPP | Contato: Tel (27) 3636-5272 | Email: gpp@seg.er.es.gov.br
-        {% if user.is_authenticated %}
-            <span class="ml-4">{{ user.first_name }} {{ user.last_name }} - {{ user.perfil.nome }}</span>
-        {% endif %}
+    <footer class="bg-[#0097A7] text-white py-3 px-4 fixed bottom-0 w-full flex items-center">
+        <div class="flex justify-between w-full">
+            <!-- Espaço à esquerda (vazio) -->
+            <div class="w-1/3"></div>
+
+            <!-- Texto centralizado -->
+            <div class="w-1/3 text-center">
+                SEGER - GPP | Contato: Tel (27) 3636-5272 | Email: gpp@seg.er.es.gov.br
+            </div>
+    
+            <!-- Identificação do usuário à direita -->
+            {% if user.is_authenticated %}
+                <div class="w-1/3 text-right">
+                    {{ user.first_name }} {{ user.last_name }} - {{ user.perfil.nome }}
+                </div>
+            {% endif %}
+        </div>
     </footer>
 </body>
 </html>
