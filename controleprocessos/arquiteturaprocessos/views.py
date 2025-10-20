@@ -148,6 +148,10 @@ class CadastroProcessos(LoginRequiredMixin, ListView):
     template_name = 'cadastroprocessos.html'
     model = MacroprocessoNivel1
 
+class CadastroSubProcessos(LoginRequiredMixin, ListView):
+    template_name = 'cadastrosubprocessos.html'
+    model = MacroprocessoNivel1
+
 
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'

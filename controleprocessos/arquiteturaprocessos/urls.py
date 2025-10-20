@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, Estatisticas, BackLog,
+from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, CadastroSubProcessos, Estatisticas, BackLog,
                     CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
                     ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
@@ -16,6 +16,7 @@ urlpatterns = [
     path('', HomePage.as_view(), name='homepage'),
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     path('cadastroprocessos/', CadastroProcessos.as_view(), name='cadastroprocessos'),
+    path('cadastrosubprocessos/', CadastroSubProcessos.as_view(), name='cadastrosubprocessos'),
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     path('backlog/', BackLog.as_view(), name='backlog'),
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
