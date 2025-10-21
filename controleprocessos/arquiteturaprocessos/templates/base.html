@@ -27,7 +27,7 @@
           toggle() {
             if (this.open) {
               this.open = false;
-              this.submenuOpen = false; // 🔒 fecha automaticamente o submenu ao recolher
+              this.submenuOpen = false;
             } else {
               this.open = true;
             }
@@ -54,7 +54,90 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Ocultar elementos antes do Alpine -->
-    <style>[x-cloak]{display:none !important}</style>
+    <style>
+      [x-cloak]{display:none !important}
+
+      /*
+        Regras CSS localizadas para:
+        - uniformizar fonte (menu + submenu)
+        - compactar espaçamentos entre item principal e subitens
+        - reduzir levemente altura dos botões principais
+        - hover suave e linha divisória sutil
+        IMPORTANTE: não altera HTML nem lógica do template.
+      */
+
+      /* 1) Fonte uniforme para todos os itens do menu (principais e subitens) */
+      aside nav button,
+      aside nav a {
+        font-size: 0.9rem !important;
+        line-height: 1.2rem !important;
+        transition: background-color 150ms ease, filter 150ms ease;
+      }
+
+      /* 2) Altura / padding levemente reduzidos para botões principais (mantendo ícones alinhados) */
+      aside nav button.group,
+      aside nav a.group,
+      aside nav .group {
+        padding-top: 0.36rem !important;
+        padding-bottom: 0.36rem !important;
+      }
+
+      /* 3) Ícones levemente proporcionais */
+      aside nav i.text-xl {
+        font-size: 1.15rem !important;
+      }
+
+      /* 4) Compactar submenus que usam 'ml-14' (é o padrão do seu template) */
+      /*    reduz espaço entre item principal e o primeiro subitem e entre os subitens */
+      aside nav .ml-14 {
+        margin-top: 0.10rem !important;
+        margin-bottom: 0.10rem !important;
+        padding-left: 0.45rem !important; /* mantém o recuo visual */
+      }
+
+      aside nav .ml-14 .block {
+        padding-top: 0.22rem !important;
+        padding-bottom: 0.22rem !important;
+        margin-top: 0.06rem !important;
+        margin-bottom: 0.06rem !important;
+      }
+
+      /* Garante que subitens mantenham o mesmo tamanho de fonte */
+      aside nav .ml-14 .block,
+      aside nav .ml-14 .block > span {
+        font-size: 0.9rem !important;
+        line-height: 1.2rem !important;
+      }
+
+      /* 5) Espaçamento uniforme entre blocos de menu (não fica muito denso) */
+      aside nav > * {
+        margin-bottom: 0.28rem !important;
+      }
+
+      /* 6) Hover mais suave (leve escurecimento) */
+      aside nav button:hover,
+      aside nav a:hover,
+      aside nav .ml-14 .block:hover {
+        filter: brightness(0.95);
+      }
+
+      /* 7) Linha divisória sutil à direita do sidebar */
+      aside {
+        border-right: 1px solid rgba(0,0,0,0.06);
+      }
+
+      /* 8) Ajustes responsivos pequenos para telas muito pequenas */
+      @media (max-width: 640px) {
+        aside nav button,
+        aside nav a {
+          font-size: 0.88rem !important;
+        }
+        aside nav .ml-14 .block {
+          padding-top: 0.2rem !important;
+          padding-bottom: 0.2rem !important;
+        }
+      }
+    </style>
 
     {% block head %}{% endblock %}
 </head>
@@ -74,7 +157,7 @@
             <!-- Menu items -->
             <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
 
-                <!-- Cadastro de Processos (com submenu dinâmico) -->
+                <!-- Cadastro de Processos -->
                 <div role="menuitem" x-data="{ cadastroSubmenuOpen: false }">
                     <button @click="if (!open) { open = true; cadastroSubmenuOpen = true } else { cadastroSubmenuOpen = !cadastroSubmenuOpen }"
                             class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
@@ -152,7 +235,7 @@
                     </div>
                 </a>
 
-                <!-- Estrutura de Processos (sem Subprocesso) -->
+                <!-- Estrutura de Processos -->
                 <div role="menuitem">
                     <button @click="if (!open) { open = true; submenuOpen = true } else { submenuOpen = !submenuOpen }"
                             class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
@@ -170,7 +253,7 @@
                         <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Classificação</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso Nivel 1</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso Nivel 2</a>
-                        <a href="{% url 'arquiteturaprocessos:norma' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Norma</a>
+                        <a href="{% url 'arquiteturaprocessos:norma' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Norma de Procedimento</a>
                     </div>
                 </div>
 
