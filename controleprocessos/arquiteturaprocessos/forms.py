@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
-from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2
+from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, NormaProcedimento
 
 UserModel = get_user_model()
 
@@ -451,4 +451,52 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
+class NormaProcedimentoForm(forms.ModelForm):
+    """
+    Formulário para criação/edição de Normas de Procedimento.
+    Aplica estilos e controla os modos de visualização, exclusão e edição.
+    """
+    class Meta:
+        model = NormaProcedimento
+        fields = [
+            "codigo", "sequencial", "versao", "tema",
+            "emitente", "sistema", "portaria_aprovacao",
+            "vigencia_inicio", "vigencia_fim",
+            "data_elaboracao", "data_aprovacao",
+            "link"
+        ]
 
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop("modo_visualizacao", False)
+        modo_exclusao = kwargs.pop("modo_exclusao", False)
+        modo_edicao = kwargs.pop("modo_edicao", False)
+        super().__init__(*args, **kwargs)
+
+        self.label_suffix = ""
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        # Aplica classes, placeholder e autocomplete para TODOS os campos
+        for name, field in self.fields.items():
+            existing = field.widget.attrs.get("class", "")
+            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
+            field.widget.attrs.setdefault("placeholder", field.label)
+            field.widget.attrs["autocomplete"] = "off"
+
+        # Desabilita campos em visualização/exclusão
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+                existing_classes = field.widget.attrs.get("class", "")
+                field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
+
+        # Lógica adicional no modo exclusão
+        if modo_exclusao and self.instance:
+            if hasattr(self.instance, "is_active"):
+                self.instance.is_active = False
+            if hasattr(self.instance, "data_ativacaodesativacao"):
+                self.instance.data_ativacaodesativacao = timezone.now()

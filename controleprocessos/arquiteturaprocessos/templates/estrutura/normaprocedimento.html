@@ -3,6 +3,80 @@
 {% include 'navbar.html' %}
 
 {% block body %}
-    <h3 class="text-blue-800"> A página de Norma está no ar! </h3>
-{% endblock %}
+<div class="py-10 px-4 flex justify-center">
+    <div class="w-full max-w-[90%]">
+        <h2 class="text-2xl font-bold text-blue-800 mb-6">Normas de Procedimento</h2>
 
+        {% if request.user.perfil.nome|lower == 'administrador' %}
+            <div class="flex justify-end mb-4">
+                <a href="{% url 'arquiteturaprocessos:form_normaprocedimento' %}"
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium roundedd"
+                              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                    Adicionar Norma de Procedimento
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="overflow-x-auto">
+            <table class="min-w-[1200px] w-full bg-white border border-gray-200 rounded-lg shadow">
+                <thead class="bg-blue-100 text-blue-800">
+                    <tr>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[300px]">Norma de Procedimento</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[200px]">Emitente</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[150px]">Sistema</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[150px]">Portaria</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[150px]">Data Aprovação</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap w-[150px]">Link</th>
+                        <th class="py-3 px-2 text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for norma in normasprocedimento %}
+                    <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %}">
+                        <td class="py-3 px-4 align-top whitespace-nowrap">
+                            {{ norma.codigo }} Nº {{ norma.sequencial }} - Versão {{ norma.versao }} - {{ norma.tema }}
+                        </td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ norma.emitente }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ norma.codigo }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ norma.portaria_aprovacao }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ norma.data_aprovacao|date:"d/m/Y" }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">
+                            <a href="{{ norma.link/a>
+                        </td>
+                        <td class="py-3 px-2 text-right align-middle">
+                            <div class="flex justify-end items-center space-x-2 h-full">
+                                <!-- Visualizar -->
+                                {% url
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                       6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                        url 'arquiteturaprocessos:editar_normaprocedimento' norma.pk %}" class="text-yellow-600 hover:text-yellow-800" title="Editar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                                        <path fill-rule="evenodd"
+                                              d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                              clip-rule="evenodd"/>
+                                    </svg>
+                                </a>
+
+                                <!-- Excluir -->
+                                {% url
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                                    </svg                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-4 px-4 text-center text-gray-500">Nenhuma Norma de Procedimento encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

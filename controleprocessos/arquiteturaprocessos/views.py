@@ -9,11 +9,12 @@ from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
 
-from .models import Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes, Classificacao
+from .models import (Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
+                     Classificacao, NormaProcedimento)
 from django.db.models.deletion import ProtectedError
 from django.db.models import Exists, OuterRef
 from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
-                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form)
+                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form, NormaProcedimentoForm)
 from django.views.generic import DetailView
 
 class HomePage(TemplateView):
@@ -510,7 +511,6 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:macroprocessonivel1')
 
-
 class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
     model = MacroprocessoNivel2
     template_name = 'estrutura/macroprocessonivel2.html'
@@ -637,7 +637,118 @@ def macroprocessos_por_classificacao(request, classificacao_id):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-class NormaProcedimentoView(TemplateView):
-    template_name = 'estrutura/normaprocedimento.html'
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.contrib import messages
+from .models import NormaProcedimento
+from .forms import NormaProcedimentoForm
 
+# Listagem
+class NormaProcedimentoView(LoginRequiredMixin, ListView):
+    model = NormaProcedimento
+    template_name = 'estrutura/normaprocedimento.html'
+    context_object_name = 'normasprocedimento'
+
+    def get_queryset(self):
+        return NormaProcedimento.objects.order_by('tema')
+
+# Adicionar
+class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
+    template_name = 'estrutura/form_normaprocedimento.html'
+    form_class = NormaProcedimentoForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False
+        })
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' criada com sucesso!")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Não foi possível criar a Norma de Procedimento. Corrija os erros abaixo.")
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:normaprocedimento')
+
+# Visualizar
+class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
+    template_name = 'estrutura/form_normaprocedimento.html'
+    model = NormaProcedimento
+    context_object_name = 'normaprocedimento'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        norma = self.get_object()
+        context['form'] = NormaProcedimentoForm(instance=norma, modo_visualizacao=True)
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False
+        })
+        return context
+
+# Editar
+class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
+    model = NormaProcedimento
+    template_name = 'estrutura/form_normaprocedimento.html'
+    context_object_name = 'normaprocedimento'
+    form_class = NormaProcedimentoForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False
+        })
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' atualizada com sucesso!")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Não foi possível atualizar a Norma de Procedimento. Corrija os erros abaixo.")
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:normaprocedimento')
+
+# Excluir (com modal)
+class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
+    model = NormaProcedimento
+    template_name = 'estrutura/form_normaprocedimento.html'
+    context_object_name = 'normaprocedimento'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.method != 'POST':
+            context['form'] = NormaProcedimentoForm(instance=self.get_object(), modo_exclusao=True)
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        norma = self.get_object()
+        norma.delete()
+        messages.success(request, f"Norma de Procedimento '{norma.tema}' excluída com sucesso!")
+        return redirect('arquiteturaprocessos:normaprocedimento')
 
