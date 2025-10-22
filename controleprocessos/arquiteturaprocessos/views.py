@@ -637,7 +637,7 @@ def macroprocessos_por_classificacao(request, classificacao_id):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-class NormaView(TemplateView):
-    template_name = 'arquitetura/estrutura/norma.html'
+class NormaProcedimentoView(TemplateView):
+    template_name = 'estrutura/normaprocedimento.html'
 
 
