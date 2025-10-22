@@ -1,6 +1,9 @@
+import uuid
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
+from django.urls import reverse
 
 LSTA_CLASSIFICACAO = (
     ("FINALISTICO", "Finalístico"),
@@ -86,38 +89,177 @@ class MacroprocessoNivel2(models.Model):
     def __str__(self):
         return f"{self.nome}"
 
-class Norma(models.Model):
-    nome = models.CharField(max_length=200)
-    descricao = models.TextField(max_length=500)
-    usuario_cadastro = models.ForeignKey("Usuario", related_name="normas_criadas", on_delete=models.CASCADE)
-    data_criacao = models.DateTimeField(default=timezone.now)
+class NormaProcedimento(models.Model):
+    # PK padrão (BigAutoField) é criada automaticamente
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 
-class Atualizacao_Norma(models.Model):
-    norma = models.ForeignKey("Norma", related_name="atualizacoes", on_delete=models.CASCADE)
-    usuario = models.ForeignKey("Usuario", null=True, blank=True, on_delete=models.SET_NULL)
-    data_atualizacao = models.DateTimeField(default=timezone.now)
-    versao = models.CharField(max_length=5)
-    descricao = models.TextField(max_length=500)
+    # --- Campos que compõem a identificação ---
+    nome = models.CharField(
+        max_length=200,
+        verbose_name="Nome",
+        default="NORMA DE PROCEDIMENTO"
+    )
+
+    codigo = models.CharField(
+        max_length=10,
+        db_index=True,
+        verbose_name="Código",
+        validators=[RegexValidator(r"^[A-Za-z0-9.\-_/]+$", "Use apenas letras, números e . - _ /")],
+        default="SRH"
+    )
+
+    sequencial = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(999)],
+        verbose_name="Sequencial",
+        help_text="Número sequencial (1 a 999)."
+    )
+
+    versao = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(99)],
+        verbose_name="Versão",
+        help_text="Versão (1 a 99)."
+    )
+
+    tema = models.CharField(
+        max_length=150,
+        db_index=True,
+        verbose_name="Tema"
+    )
+
+    # --- Demais campos do cadastro ---
+    emitente = models.CharField(max_length=150, db_index=True, verbose_name="Emitente")
+    sistema = models.CharField(max_length=100, db_index=True, verbose_name="Sistema")
+
+    data_elaboracao = models.DateField(null=True, blank=True, verbose_name="Data de Elaboração")
+    portaria_aprovacao = models.CharField(max_length=150, blank=True, verbose_name="Portaria de Aprovação")
+    data_aprovacao = models.DateField(null=True, blank=True, verbose_name="Data de Aprovação")
+    vigencia_inicio = models.DateField(null=True, blank=True, verbose_name="Início da Vigência")
+    vigencia_fim = models.DateField(null=True, blank=True, verbose_name="Fim da Vigência")
+
+    link = models.URLField(max_length=500, blank=True, verbose_name="Link")
+
+    data_cadastro = models.DateTimeField(auto_now_add=True, editable=False, verbose_name="Data de Cadastro")
+    data_atualizacao = models.DateTimeField(auto_now=True, editable=False, verbose_name="Data de Atualização")
+
+    usuario = models.ForeignKey(
+        "Usuario",
+        on_delete=models.PROTECT,
+        related_name="normas_procedimento_criadas",
+        verbose_name="Usuário"
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        "Usuario",
+        related_name="normas_procedimento_atualizadas",
+        on_delete=models.SET_NULL,  # trocado de PROTECT para SET_NULL
+        null=True,
+        blank=True,
+        verbose_name="Usuário (última atualização)"
+    )
+
+    class Meta:
+        db_table = "norma_procedimento"
+        verbose_name = "Norma de Procedimento"
+        verbose_name_plural = "Normas de Procedimento"
+        # Ordenação coerente com a "identificação interna"
+        ordering = ["nome", "codigo", "sequencial", "versao", "tema"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["codigo", "sequencial", "versao"],
+                name="uq_norma_proc_codigo_seq_versao"
+            ),
+            # (Opcional) Checks no BD — defesa em profundidade:
+            # models.CheckConstraint(check=models.Q(sequencial__gte=1, sequencial__lte=999), name="ck_np_seq_range"),
+            # models.CheckConstraint(check=models.Q(versao__gte=1, versao__lte=99), name="ck_np_versao_range"),
+        ]
+        indexes = [
+            models.Index(fields=["nome"], name="idx_np_nome"),
+            models.Index(fields=["tema"], name="idx_np_tema"),
+            models.Index(fields=["sistema"], name="idx_np_sistema"),
+            models.Index(fields=["emitente"], name="idx_np_emitente"),  # adicionado
+        ]
+
+    # ===== Helpers de formatação com zero à esquerda =====
+    def sequencial_fmt(self) -> str:
+        return f"{self.sequencial:03d}"  # 1 -> "001"
+
+    def versao_fmt(self) -> str:
+        return f"{self.versao:02d}"      # 2 -> "02"
+
+    @property
+    def identificacao_ext(self) -> str:
+        """
+        Ex.: "SRH Nr001 - Versão 01 - Concessão de Diárias"
+        """
+        return f"{self.codigo} Nr{self.sequencial_fmt()} - Versão {self.versao_fmt()} - {self.tema}"
+
+    @property
+    def identificacao_int(self) -> str:
+        """
+        Ex.: "NORMA DE PROCEDIMENTO - SRH-001 - Versão 01 - Concessão de Diárias"
+        """
+        return f"{self.nome} - {self.codigo}-{self.sequencial_fmt()} - Versão {self.versao_fmt()} - {self.tema}"
+
+    def __str__(self):
+        # Mantenha curto para admin/logs
+        return self.identificacao_int
+
+    # def get_absolute_url(self):
+    #     # Ajuste o namespace conforme suas urls.py
+    #     return reverse("arquiteturaprocessos:detalhar_norma_procedimento", args=[self.pk])
+
+    # Validações de datas
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        errors = {}
+
+        if self.vigencia_inicio and self.vigencia_fim and self.vigencia_fim < self.vigencia_inicio:
+            errors["vigencia_fim"] = "Fim da vigência não pode ser anterior ao início."
+
+        if self.data_elaboracao and self.data_aprovacao and self.data_aprovacao < self.data_elaboracao:
+            errors["data_aprovacao"] = "A aprovação não pode ser anterior à elaboração."
+
+        # Se realmente quiser forçar que a última atualização não seja antes da elaboração:
+        if self.data_elaboracao and self.data_atualizacao and self.data_atualizacao < self.data_elaboracao:
+            errors["data_atualizacao"] = "A atualização não pode ser anterior à elaboração."
+
+        if self.vigencia_fim and self.data_atualizacao and self.data_atualizacao > self.vigencia_fim:
+            errors["data_atualizacao"] = "A atualização não pode ser posterior ao fim da vigência."
+
+        if errors:
+            raise ValidationError(errors)
+
+    # Normalizações leves (opcional)
+    def save(self, *args, **kwargs):
+        if self.codigo:
+            self.codigo = self.codigo.strip().upper()
+        if self.emitente:
+            self.emitente = self.emitente.strip()
+        if self.sistema:
+            self.sistema = self.sistema.strip()
+        if self.tema:
+            self.tema = self.tema.strip()
+        super().save(*args, **kwargs)
+
+    # Helper útil
+    def is_vigente(self, on_date=None) -> bool:
+        ref = on_date or timezone.localdate()
+        if not self.vigencia_inicio and not self.vigencia_fim:
+            return False
+        if self.vigencia_inicio and ref < self.vigencia_inicio:
+            return False
+        if self.vigencia_fim and ref > self.vigencia_fim:
+            return False
+        return True
 
 class ArquiteturaProcesso(models.Model):
-    classificacao = models.CharField(max_length=30, choices=LSTA_CLASSIFICACAO)
+    #classificacao = models.CharField(max_length=30, choices=LSTA_CLASSIFICACAO)
     macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", related_name="arquiteturas_nivel1", null=True, blank=True,
                                              on_delete=models.SET_NULL)
     macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", related_name="arquiteturas_nivel2", null=True, blank=True,
                                              on_delete=models.SET_NULL)
-    processo = models.CharField(max_length=500)
-    subprocesso = models.CharField(max_length=200)
-    area_responsavel = models.CharField(max_length=100)
-    gestor = models.CharField(max_length=300)
-    email = models.CharField(max_length=300)
-    ramal = models.IntegerField()
-    norma = models.ForeignKey("Norma", related_name="arquiteturas", null=True, blank=True, on_delete=models.SET_NULL)
-    objetivoprocesso = models.TextField(max_length=1500)
-    versao = models.CharField(max_length=10)
-    data_norma_revisao = models.DateField(default=timezone.now)
-    link_norma_disponivel = models.CharField(max_length=500)
-    observacao = models.TextField(max_length=1500)
-    norma_autualizada = models.BooleanField(default=False) #(23-25 S/N)
+
 
 class LogAcoes(models.Model):
     data_registro = models.DateTimeField(default=timezone.now)
