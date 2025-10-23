@@ -10,64 +10,124 @@
 
 {% block body %}
 <div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-    <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
-        {% if modo_visualizacao %}Visualização de Norma de Procedimento
-        {% elif modo_edicao %}Edição de Norma de Procedimento
-        {% elif modo_exclusao %}Exclusão de Norma de Procedimento
-        {% else %}Inclusão de Norma de Procedimento{% endif %}
-    </h1>
+  <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
+    {% if modo_visualizacao %}Visualização de Norma de Procedimento
+    {% elif modo_edicao %}Edição de Norma de Procedimento
+    {% elif modo_exclusao %}Exclusão de Norma de Procedimento
+    {% else %}Inclusão de Norma de Procedimento{% endif %}
+  </h1>
 
-    {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded mb-4">
-            {{ form.non_field_errors }}
+  {% if form.non_field_errors %}
+    <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded mb-4">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+        <!-- Linha 1 -->
+        <div class="col-span-12 md:col-span-5">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.nome.label }}</label>
+          {{ form.nome }}
         </div>
-    {% endif %}
 
-    <form method="post" class="space-y-6">
-        {% csrf_token %}
-
-        <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {% for field in form %}
-                    <div>
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-blue-700 mb-1">
-                            {{ field.label }}
-                        </label>
-                        {{ field }}
-                        {% if field.errors %}
-                            {% for e in field.errors %}
-                                <p class="text-sm text-red-600">{{ e }}</p>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        </fieldset>
-
-        <div class="flex justify-end gap-3 pt-4">
-            {% if modo_exclusao %}
-                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                    Confirmar Exclusão
-                </button>
-            {% elif modo_edicao %}
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    Salvar Alterações
-                </button>
-            {% elif not modo_visualizacao %}
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    Adicionar Norma de Procedimento
-                </button>
-            {% endif %}
-
-            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-               href="{% url 'arquiteturaprocessos:normaprocedimento' %}">
-                {% if modo_visualizacao %}
-                    Voltar
-                {% else %}
-                    Cancelar
-                {% endif %}
-            </a>
+        <div class="col-span-12 md:col-span-4">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sistema.label }}</label>
+          {{ form.sistema }}
         </div>
-    </form>
+
+        <div class="col-span-12 md:col-span-2">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.codigo.label }}</label>
+          <div class="max-w-[8ch]">{{ form.codigo }}</div>
+        </div>
+
+        <div class="col-span-12 md:col-span-1">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sequencial.label }}</label>
+          <div class="max-w-[10ch]">{{ form.sequencial }}</div>
+        </div>
+
+        <!-- Linha 2 -->
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.tema.label }}</label>
+          {{ form.tema }}
+        </div>
+
+        <div class="col-span-12 md:col-span-4">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.emitente.label }}</label>
+          {{ form.emitente }}
+        </div>
+
+        <div class="col-span-12 md:col-span-2">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.versao.label }}</label>
+          <div class="max-w-[7ch]">{{ form.versao }}</div>
+        </div>
+
+        <!-- Linha 3 -->
+        <div class="col-span-12 md:col-span-3">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.data_elaboracao.label }}</label>
+          <div class="max-w-[16ch]">{{ form.data_elaboracao }}</div>
+        </div>
+
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.portaria_aprovacao.label }}</label>
+          {{ form.portaria_aprovacao }}
+        </div>
+
+        <div class="col-span-12 md:col-span-3">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.data_aprovacao.label }}</label>
+          <div class="max-w-[16ch]">{{ form.data_aprovacao }}</div>
+        </div>
+
+        <!-- Linha 4 -->
+        <div class="col-span-12 md:col-span-3">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.vigencia_inicio.label }}</label>
+          <div class="max-w-[16ch]">{{ form.vigencia_inicio }}</div>
+        </div>
+
+        <div class="col-span-12 md:col-span-3">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.vigencia_fim.label }}</label>
+          <div class="max-w-[16ch]">{{ form.vigencia_fim }}</div>
+        </div>
+
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.link.label }}</label>
+          {{ form.link }}
+        </div>
+
+      </div>
+    </fieldset>
+
+    <!-- Botões -->
+    <div class="flex justify-end mt-8 space-x-4">
+      {% if not modo_visualizacao %}
+        {% if modo_exclusao %}
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+            Confirmar Exclusão
+          </button>
+        {% elif modo_edicao %}
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+            Salvar Alterações
+          </button>
+        {% else %}
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+            Adicionar Norma de Procedimento
+          </button>
+        {% endif %}
+      {% endif %}
+
+      <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+         href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}">
+          {% if modo_visualizacao %}
+          Voltar
+          {% else %}
+          Cancelar
+          {% endif %}
+      </a>
+    </div>
+  </form>
 </div>
 {% endblock %}

@@ -454,21 +454,20 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
-
 class NormaProcedimentoForm(forms.ModelForm):
     """
     Formulário para criação/edição de Normas de Procedimento.
     Aplica estilos e controla os modos de visualização, exclusão e edição.
-    Inclui validações de negócio e normalizações.
+    Inclui validações de negócio e normalizações conforme especificação.
     """
     class Meta:
         model = NormaProcedimento
         fields = [
-            "nome", "codigo", "sequencial", "versao", "tema",
-            "emitente", "sistema", "portaria_aprovacao",
-            "data_elaboracao", "data_aprovacao",
+            "nome", "sistema", "codigo", "sequencial",
+            "tema", "emitente", "versao",
+            "data_elaboracao", "portaria_aprovacao", "data_aprovacao",
             "vigencia_inicio", "vigencia_fim",
-            "link"
+            "link",
         ]
         widgets = {
             "data_elaboracao": forms.DateInput(attrs={"type": "date"}),
@@ -478,6 +477,7 @@ class NormaProcedimentoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Flags de modo (mantendo seu padrão)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
         self.modo_edicao = kwargs.pop("modo_edicao", False)
@@ -490,7 +490,7 @@ class NormaProcedimentoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # Aplica classes, placeholder e autocomplete para TODOS os campos
+        # Aplica classes e placeholders mantendo seu padrão
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
@@ -498,37 +498,46 @@ class NormaProcedimentoForm(forms.ModelForm):
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # Desabilita campos em visualização/exclusão
+        # Placeholders e formato visual
+        self.fields["nome"].widget.attrs.update({"class": self.fields["nome"].widget.attrs["class"] + " uppercase"})
+        self.fields["sistema"].widget.attrs.update({"placeholder": "Sistema"})
+        self.fields["codigo"].widget.attrs.update({"placeholder": "Código", "class": self.fields["codigo"].widget.attrs["class"] + " uppercase"})
+        self.fields["sequencial"].widget.attrs.update({"placeholder": "001", "inputmode": "numeric", "pattern": r"\d{1,3}"})
+        self.fields["tema"].widget.attrs.update({"placeholder": "Tema"})
+        self.fields["emitente"].widget.attrs.update({"placeholder": "Emitente"})
+        self.fields["versao"].widget.attrs.update({"placeholder": "01", "inputmode": "numeric", "pattern": r"\d{1,2}"})
+        self.fields["portaria_aprovacao"].widget.attrs.update({"placeholder": "Portaria de Aprovação"})
+        self.fields["link"].widget.attrs.update({"placeholder": "https://..."})
+
+        # Defaults na inclusão
+        if not self.instance or not self.instance.pk:
+            self.fields["nome"].initial = "NORMA DE PROCEDIMENTO"
+            self.fields["sequencial"].initial = "001"
+            self.fields["versao"].initial = "01"
+
+        # Desabilita campos em visualização/exclusão (estética já tratada por bg cinza)
         if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
-                existing_classes = field.widget.attrs.get("class", "")
-                field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
-        # Lógica adicional no modo exclusão (mantida do seu padrão)
-        if self.modo_exclusao and self.instance:
-            if hasattr(self.instance, "is_active"):
-                self.instance.is_active = False
-            if hasattr(self.instance, "data_ativacaodesativacao"):
-                self.instance.data_ativacaodesativacao = timezone.now()
-
-        # Placeholders específicos
-        self.fields["codigo"].widget.attrs.update({"placeholder": "SRH"})
-        self.fields["sequencial"].widget.attrs.update({"placeholder": "007"})
-        self.fields["versao"].widget.attrs.update({"placeholder": "01"})
-        self.fields["link"].widget.attrs.update({"placeholder": "https://..."})
-
-        # Guarda versão original para validação
+        # Guarda a versão original para regra "não diminuir"
         self._versao_original = None
         if self.instance and self.instance.pk:
             self._versao_original = str(self.instance.versao).zfill(2)
 
-    # ---------------- Validações e normalizações ----------------
+    # ---------------- Normalizações e validações ----------------
+
+    def clean_nome(self):
+        nome = (self.cleaned_data.get("nome") or "").strip().upper()
+        if not nome:
+            raise ValidationError("Informe o Nome.")
+        return nome
 
     def clean_codigo(self):
         codigo = (self.cleaned_data.get("codigo") or "").strip().upper()
+        # Letras/números e _.-, 2 a 20 chars
         if not re.fullmatch(r"[A-Z0-9._-]{2,20}", codigo):
-            raise ValidationError("Código inválido. Use letras/números (2 a 20 caracteres).")
+            raise ValidationError("Código inválido. Use 2 a 20 caracteres (A–Z, 0–9, ponto, hífen ou sublinhado).")
         return codigo
 
     def clean_sequencial(self):
@@ -542,7 +551,6 @@ class NormaProcedimentoForm(forms.ModelForm):
         if not ver.isdigit():
             raise ValidationError("Versão deve conter apenas dígitos.")
         ver = ver.zfill(2)
-        # Regra: não pode diminuir em edição
         if self.instance and self.instance.pk and self._versao_original:
             if int(ver) < int(self._versao_original):
                 raise ValidationError(f"A versão não pode ser menor que {self._versao_original}.")
@@ -565,6 +573,6 @@ class NormaProcedimentoForm(forms.ModelForm):
 
         # vigencia_fim > vigencia_inicio (se informada)
         if vi and vf and vf <= vi:
-            self.add_error("vigencia_fim", "Deve ser maior que Vigência (início).")
+            self.add_error("vigencia_fim", "Deve ser maior que Início da Vigência.")
 
         return cleaned
