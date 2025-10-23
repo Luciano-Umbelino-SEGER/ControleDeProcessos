@@ -158,7 +158,8 @@ class NormaProcedimento(models.Model):
     )
 
     class Meta:
-        db_table = "norma_procedimento"
+        db_table = "arquiteturaprocessos_norma_procedimento"
+        managed = True
         verbose_name = "Norma de Procedimento"
         verbose_name_plural = "Normas de Procedimento"
         # Ordenação coerente com a "identificação interna"

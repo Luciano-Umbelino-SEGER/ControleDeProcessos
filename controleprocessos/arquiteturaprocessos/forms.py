@@ -4,6 +4,9 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from datetime import date
+import re
 
 from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, NormaProcedimento
 
@@ -451,25 +454,33 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
+
 class NormaProcedimentoForm(forms.ModelForm):
     """
     Formulário para criação/edição de Normas de Procedimento.
     Aplica estilos e controla os modos de visualização, exclusão e edição.
+    Inclui validações de negócio e normalizações.
     """
     class Meta:
         model = NormaProcedimento
         fields = [
-            "codigo", "sequencial", "versao", "tema",
+            "nome", "codigo", "sequencial", "versao", "tema",
             "emitente", "sistema", "portaria_aprovacao",
-            "vigencia_inicio", "vigencia_fim",
             "data_elaboracao", "data_aprovacao",
+            "vigencia_inicio", "vigencia_fim",
             "link"
         ]
+        widgets = {
+            "data_elaboracao": forms.DateInput(attrs={"type": "date"}),
+            "data_aprovacao": forms.DateInput(attrs={"type": "date"}),
+            "vigencia_inicio": forms.DateInput(attrs={"type": "date"}),
+            "vigencia_fim": forms.DateInput(attrs={"type": "date"}),
+        }
 
     def __init__(self, *args, **kwargs):
-        modo_visualizacao = kwargs.pop("modo_visualizacao", False)
-        modo_exclusao = kwargs.pop("modo_exclusao", False)
-        modo_edicao = kwargs.pop("modo_edicao", False)
+        self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
+        self.modo_exclusao = kwargs.pop("modo_exclusao", False)
+        self.modo_edicao = kwargs.pop("modo_edicao", False)
         super().__init__(*args, **kwargs)
 
         self.label_suffix = ""
@@ -482,21 +493,78 @@ class NormaProcedimentoForm(forms.ModelForm):
         # Aplica classes, placeholder e autocomplete para TODOS os campos
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
-            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
         # Desabilita campos em visualização/exclusão
-        if modo_visualizacao or modo_exclusao:
+        if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
-        # Lógica adicional no modo exclusão
-        if modo_exclusao and self.instance:
+        # Lógica adicional no modo exclusão (mantida do seu padrão)
+        if self.modo_exclusao and self.instance:
             if hasattr(self.instance, "is_active"):
                 self.instance.is_active = False
             if hasattr(self.instance, "data_ativacaodesativacao"):
                 self.instance.data_ativacaodesativacao = timezone.now()
+
+        # Placeholders específicos
+        self.fields["codigo"].widget.attrs.update({"placeholder": "SRH"})
+        self.fields["sequencial"].widget.attrs.update({"placeholder": "007"})
+        self.fields["versao"].widget.attrs.update({"placeholder": "01"})
+        self.fields["link"].widget.attrs.update({"placeholder": "https://..."})
+
+        # Guarda versão original para validação
+        self._versao_original = None
+        if self.instance and self.instance.pk:
+            self._versao_original = str(self.instance.versao).zfill(2)
+
+    # ---------------- Validações e normalizações ----------------
+
+    def clean_codigo(self):
+        codigo = (self.cleaned_data.get("codigo") or "").strip().upper()
+        if not re.fullmatch(r"[A-Z0-9._-]{2,20}", codigo):
+            raise ValidationError("Código inválido. Use letras/números (2 a 20 caracteres).")
+        return codigo
+
+    def clean_sequencial(self):
+        seq = (self.cleaned_data.get("sequencial") or "").strip()
+        if not seq.isdigit():
+            raise ValidationError("Sequencial deve conter apenas dígitos.")
+        return seq.zfill(3)
+
+    def clean_versao(self):
+        ver = (self.cleaned_data.get("versao") or "").strip()
+        if not ver.isdigit():
+            raise ValidationError("Versão deve conter apenas dígitos.")
+        ver = ver.zfill(2)
+        # Regra: não pode diminuir em edição
+        if self.instance and self.instance.pk and self._versao_original:
+            if int(ver) < int(self._versao_original):
+                raise ValidationError(f"A versão não pode ser menor que {self._versao_original}.")
+        return ver
+
+    def clean(self):
+        cleaned = super().clean()
+        de = cleaned.get("data_elaboracao")
+        da = cleaned.get("data_aprovacao")
+        vi = cleaned.get("vigencia_inicio")
+        vf = cleaned.get("vigencia_fim")
+
+        # data_aprovacao >= data_elaboracao
+        if de and da and da < de:
+            self.add_error("data_aprovacao", "Deve ser maior ou igual à Data de Elaboração.")
+
+        # vigencia_inicio >= data_aprovacao
+        if da and vi and vi < da:
+            self.add_error("vigencia_inicio", "Deve ser maior ou igual à Data de Aprovação.")
+
+        # vigencia_fim > vigencia_inicio (se informada)
+        if vi and vf and vf <= vi:
+            self.add_error("vigencia_fim", "Deve ser maior que Vigência (início).")
+
+        return cleaned

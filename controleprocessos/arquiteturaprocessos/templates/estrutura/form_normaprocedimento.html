@@ -1,334 +1,73 @@
 {% extends 'base.html' %}
-{% load static form_tags %}
+{% load static %}
 
 {% block titulo %}
-{% if modo_visualizacao %}
-Visualização de Macroprocesso Nível 2
-{% elif modo_edicao %}
-Edição de Macroprocesso Nível 2
-{% elif modo_exclusao %}
-Exclusão de Macroprocesso Nível 2
-{% else %}
-Inclusão de Macroprocesso Nível 2
-{% endif %}
+{% if modo_visualizacao %}Visualização de Norma de Procedimento
+{% elif modo_edicao %}Edição de Norma de Procedimento
+{% elif modo_exclusao %}Exclusão de Norma de Procedimento
+{% else %}Inclusão de Norma de Procedimento{% endif %}
 {% endblock %}
 
 {% block body %}
-<div class="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4">
-    <div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-        <h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
-            {% if modo_visualizacao %}
-            Visualização de Macroprocesso Nível 2
-            {% elif modo_edicao %}
-            Edição de Macroprocesso Nível 2
-            {% elif modo_exclusao %}
-            Exclusão de Macroprocesso Nível 2
-            {% else %}
-            Inclusão de Macroprocesso Nível 2
-            {% endif %}
-        </h2>
+<div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
+    <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
+        {% if modo_visualizacao %}Visualização de Norma de Procedimento
+        {% elif modo_edicao %}Edição de Norma de Procedimento
+        {% elif modo_exclusao %}Exclusão de Norma de Procedimento
+        {% else %}Inclusão de Norma de Procedimento{% endif %}
+    </h1>
 
-        {% if form.non_field_errors %}
-        <div class="text-red-600 mb-4">
+    {% if form.non_field_errors %}
+        <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded mb-4">
             {{ form.non_field_errors }}
         </div>
-        {% endif %}
+    {% endif %}
 
-        <form method="post" id="form-exclusao">
-            {% csrf_token %}
-            <div class="grid grid-cols-1 gap-6">
-                <div class="grid grid-cols-12 gap-4">
-                    <div class="col-span-2">
-                        <label for="id_classificacao" class="block text-sm font-semibold text-blue-800 mb-1">
-                            Classificação
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-blue-700 mb-1">
+                            {{ field.label }}
                         </label>
-                        {{ form.classificacao }}
-                        {% if form.classificacao.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.classificacao.errors|striptags }}</p>
+                        {{ field }}
+                        {% if field.errors %}
+                            {% for e in field.errors %}
+                                <p class="text-sm text-red-600">{{ e }}</p>
+                            {% endfor %}
                         {% endif %}
                     </div>
-
-                    <div class="col-span-6">
-                        <label for="id_macroprocesso_nivel1" class="block text-sm font-semibold text-blue-800 mb-1">
-                            Macroprocesso Nível 1
-                        </label>
-                        {{ form.macroprocesso_nivel1 }}
-                        {% if form.macroprocesso_nivel1.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.macroprocesso_nivel1.errors|striptags }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div class="col-span-4">
-                        <label for="id_nome" class="block text-sm font-semibold text-blue-800 mb-1">
-                            Nome
-                        </label>
-                        {{ form.nome }}
-                        {% if form.nome.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.nome.errors|striptags }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div>
-                    <label for="id_descricao" class="block text-sm font-semibold text-blue-800 mb-1">
-                        Descrição
-                    </label>
-                    {{ form.descricao }}
-                    {% if form.descricao.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.descricao.errors|striptags }}</p>
-                    {% endif %}
-                </div>
+                {% endfor %}
             </div>
+        </fieldset>
 
-            <div class="flex justify-end mt-8 space-x-4">
-                {% if not modo_visualizacao %}
-                {% if modo_exclusao %}
-                <button
-                        type="button"
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        @click="$dispatch('abrir-modal-confirmacao', {
-                            url: '{% url 'arquiteturaprocessos:excluir_macroprocessonivel2' macroprocessonivel2.id %}',
-                            mensagem: 'Confirma a exclusão do Macroprocesso Nível 2 <strong>{{ macroprocessonivel2.nome }}</strong>?'
-                        })"
-                >
+        <div class="flex justify-end gap-3 pt-4">
+            {% if modo_exclusao %}
+                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
                     Confirmar Exclusão
                 </button>
-                {% elif modo_edicao %}
-                <button
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        type="submit"
-                >
+            {% elif modo_edicao %}
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                     Salvar Alterações
                 </button>
-                {% else %}
-                <button
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        type="submit"
-                >
-                    Adicionar Macroprocesso Nível 2
+            {% elif not modo_visualizacao %}
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Adicionar Norma de Procedimento
                 </button>
-                {% endif %}
-                {% endif %}
+            {% endif %}
 
-                <a
-                        class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-                        href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}">
-                    {% if modo_visualizacao %}
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+               href="{% url 'arquiteturaprocessos:normaprocedimento' %}">
+                {% if modo_visualizacao %}
                     Voltar
-                    {% else %}
+                {% else %}
                     Cancelar
-                    {% endif %}
-                </a>
-            </div>
-        </form>
-
-    </div>
+                {% endif %}
+            </a>
+        </div>
+    </form>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-    const selectClassificacao = document.getElementById('id_classificacao');
-    const selectMacro1        = document.getElementById('id_macroprocesso_nivel1');
-
-    if (!selectMacro1) return;
-
-    // --- Config ---
-    const ENDPOINT_BASE = '/api/macroprocessos_por_classificacao/'; // com ID: /<id>/
-    const ENDPOINT_ALL  = '/api/macroprocessos_por_classificacao/'; // sem ID => todos
-
-    // --- Estado ---
-    let fullMacro1Cached = null;
-    let suppressBackfill = false;
-
-    function ensurePlaceholder(optionsArray) {
-    const hasPlaceholder = optionsArray.some(o => o.value === '');
-    if (!hasPlaceholder) {
-    optionsArray.unshift({ value: '', text: '---------' });
-    }
-    return optionsArray;
-    }
-
-    // 🔧 buildOptions agora aceita selectedValue para manter seleção quando necessário
-    function buildOptions(optionModels, selectedValue = null) {
-    const options = ensurePlaceholder(optionModels);
-
-    // Limpa as opções de forma segura sem tocar no elemento <select> (preserva o id)
-    while (selectMacro1.options.length > 0) {
-    selectMacro1.remove(0);
-    }
-
-    options.forEach(o => {
-    const opt = document.createElement('option');
-    opt.value = o.value;
-    opt.textContent = o.text;
-    selectMacro1.appendChild(opt);
-    });
-
-    suppressBackfill = true;
-    if (selectedValue !== null && selectedValue !== undefined && selectedValue !== '') {
-    selectMacro1.value = String(selectedValue);
-    // Caso o valor não exista após o filtro, o select fica vazio mesmo
-    if (selectMacro1.value !== String(selectedValue)) {
-    selectMacro1.value = '';
-    }
-    } else {
-    selectMacro1.value = ''; // comportamento padrão quando queremos limpar
-    }
-    suppressBackfill = false;
-    }
-
-
-    function snapshotCurrentOptions() {
-    return Array.from(selectMacro1.options).map(o => ({
-    value: o.value,
-    text: o.textContent
-    }));
-    }
-
-    async function loadAllMacro1(selectedValue = null) {
-    if (fullMacro1Cached && fullMacro1Cached.length > 0) {
-    buildOptions(fullMacro1Cached, selectedValue);
-    return;
-    }
-    try {
-    const resp = await fetch(ENDPOINT_ALL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    if (!resp.ok) throw new Error('Falha ao carregar Macroprocessos (todos).');
-    const data = await resp.json(); // { macroprocessos: [...] } ou lista
-    const list = Array.isArray(data) ? data : (data.macroprocessos || []);
-    const mapped = [{ value: '', text: '---------' }].concat(
-    list.map(m => ({ value: String(m.id), text: m.nome }))
-    );
-    fullMacro1Cached = mapped;
-    buildOptions(mapped, selectedValue);
-    } catch (e) {
-    console.error(e);
-    const fallback = ensurePlaceholder(snapshotCurrentOptions());
-    buildOptions(fallback, selectedValue);
-    }
-    }
-
-    async function loadMacro1ByClassificacao(classificacaoId, selectedValue = null) {
-    try {
-    const url = `${ENDPOINT_BASE}${encodeURIComponent(classificacaoId)}/`;
-    const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    if (!resp.ok) throw new Error('Falha ao carregar Macroprocessos por classificação.');
-    const data = await resp.json(); // { macroprocessos: [{id, nome}] }
-    const list = data.macroprocessos || [];
-    const mapped = [{ value: '', text: '---------' }].concat(
-    list.map(m => ({ value: String(m.id), text: m.nome }))
-    );
-    buildOptions(mapped, selectedValue);
-    } catch (e) {
-    console.error(e);
-    await loadAllMacro1(selectedValue);
-    }
-    }
-
-    // --- Inicialização ---
-    // Captura o valor selecionado que veio do servidor ANTES de qualquer rebuild
-    const initialSelectedMacro1 = selectMacro1.value || null;
-
-    if (selectClassificacao && !selectClassificacao.value) {
-    // Cacheia o estado inicial (todos) e mantém a seleção vinda do servidor
-    fullMacro1Cached = ensurePlaceholder(snapshotCurrentOptions());
-    buildOptions(fullMacro1Cached, initialSelectedMacro1);
-    }
-
-    // --- Eventos ---
-    if (selectClassificacao) {
-    selectClassificacao.addEventListener('change', async function () {
-    const classificacaoId = this.value;
-
-    if (!classificacaoId) {
-    // Usuário limpou a classificação => volta TODOS e limpa seleção
-    await loadAllMacro1(null);
-    return;
-    }
-
-    // Usuário trocou a classificação => filtra e limpa seleção
-    await loadMacro1ByClassificacao(classificacaoId, null);
-    });
-    }
-
-    // Ao selecionar um Macroprocesso manualmente:
-    // 1) Recupera sua Classificação
-    // 2) Preenche a Classificação
-    // 3) Filtra a lista por essa Classificação mantendo o macro selecionado
-    if (selectMacro1) {
-    selectMacro1.addEventListener('change', async function () {
-    if (suppressBackfill) return;
-
-    const macro1Id = this.value;
-    if (!macro1Id) return;
-
-    try {
-    const resp = await fetch(`/api/classificacao_por_macro1/${macro1Id}/`, {
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    if (!resp.ok) throw new Error('Falha ao carregar Classificação do Macroprocesso.');
-    const data = await resp.json(); // { id?: 123, classificacao: "Texto" }
-
-    // Descobre o ID da Classificação
-    let classificacaoId = data.id ? String(data.id) : null;
-    if (!classificacaoId && selectClassificacao) {
-    const texto = data.classificacao;
-    for (let i = 0; i < selectClassificacao.options.length; i++) {
-        if (selectClassificacao.options[i].text === texto) {
-            classificacaoId = selectClassificacao.options[i].value;
-            break;
-        }
-    }
-    }
-    if (!classificacaoId) return;
-
-    // Marca a classificação correspondente (sem disparar change)
-    if (selectClassificacao) {
-    selectClassificacao.value = classificacaoId;
-    }
-
-    // Filtra mantendo o macro selecionado
-    await loadMacro1ByClassificacao(classificacaoId, macro1Id);
-
-    } catch (err) {
-    console.error(err);
-    }
-    });
-    }
-
-    // 🧭 Modo Visualização/Edição (carregamento inicial):
-    // Se já houver Classificação selecionada na renderização do Django,
-    // filtramos por ela preservando o Macroprocesso selecionado que veio do servidor.
-    (async function initOnLoad() {
-    if (selectClassificacao && selectClassificacao.value) {
-    await loadMacro1ByClassificacao(selectClassificacao.value, initialSelectedMacro1);
-    } else if (initialSelectedMacro1 && selectClassificacao) {
-    // Se não veio Classificação mas veio Macroprocesso selecionado,
-    // inferimos a Classificação via API e filtramos mantendo a seleção.
-    try {
-    const resp = await fetch(`/api/classificacao_por_macro1/${initialSelectedMacro1}/`, {
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-    if (resp.ok) {
-    const data = await resp.json();
-    let classificacaoId = data.id ? String(data.id) : null;
-    if (!classificacaoId) {
-        for (let i = 0; i < selectClassificacao.options.length; i++) {
-            if (selectClassificacao.options[i].text === data.classificacao) {
-                classificacaoId = selectClassificacao.options[i].value;
-                break;
-            }
-        }
-    }
-    if (classificacaoId) {
-        selectClassificacao.value = classificacaoId;
-        await loadMacro1ByClassificacao(classificacaoId, initialSelectedMacro1);
-    }
-    }
-    } catch (e) {
-    console.error(e);
-    }
-    }
-    })();
-    });
-</script>
 {% endblock %}
