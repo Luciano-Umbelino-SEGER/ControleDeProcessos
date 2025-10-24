@@ -27,7 +27,8 @@
     {% csrf_token %}
 
     <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <!-- Espaçamento horizontal padrão e uniforme -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
 
         <!-- Linha 1 -->
         <div class="col-span-12 md:col-span-5">
@@ -35,19 +36,27 @@
           {{ form.nome }}
         </div>
 
-        <div class="col-span-12 md:col-span-4">
+        <div class="col-span-12 md:col-span-5">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sistema.label }}</label>
           {{ form.sistema }}
         </div>
 
-        <div class="col-span-12 md:col-span-2">
+        <div class="col-span-12 md:col-span-1">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.codigo.label }}</label>
-          <div class="max-w-[8ch]">{{ form.codigo }}</div>
+          <!-- Largura fixa, alinhado à esquerda -->
+          <div class="w-[8ch]">
+            {{ form.codigo }}
+          </div>
         </div>
 
+        <!-- Sequencial ancorado à direita, mantendo gap entre Código e Sequencial -->
         <div class="col-span-12 md:col-span-1">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sequencial.label }}</label>
-          <div class="max-w-[10ch]">{{ form.sequencial }}</div>
+          <div class="w-full flex justify-end">
+            <div class="w-[10ch]">
+              {{ form.sequencial }}
+            </div>
+          </div>
         </div>
 
         <!-- Linha 2 -->
@@ -56,46 +65,80 @@
           {{ form.tema }}
         </div>
 
-        <div class="col-span-12 md:col-span-4">
+        <div class="col-span-12 md:col-span-5">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.emitente.label }}</label>
           {{ form.emitente }}
         </div>
 
-        <div class="col-span-12 md:col-span-2">
+        <!-- Versão ancorada à direita; mesmo tamanho/comportamento do Sequencial -->
+        <div class="col-span-12 md:col-span-1">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.versao.label }}</label>
-          <div class="max-w-[7ch]">{{ form.versao }}</div>
+          <div class="w-full flex justify-end">
+            <div class="w-[10ch]">
+              {{ form.versao }}
+            </div>
+          </div>
         </div>
 
         <!-- Linha 3 -->
-        <div class="col-span-12 md:col-span-3">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.data_elaboracao.label }}</label>
-          <div class="max-w-[16ch]">{{ form.data_elaboracao }}</div>
+        <!-- Data de Elaboração -->
+        <div class="col-span-12 md:col-span-2">
+          <div class="w-full max-w-[18ch]">
+            <label class="block text-sm font-semibold text-blue-700 mb-1">
+              {{ form.data_elaboracao.label }}
+            </label>
+            {{ form.data_elaboracao }}
+          </div>
         </div>
 
-        <div class="col-span-12 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.portaria_aprovacao.label }}</label>
-          {{ form.portaria_aprovacao }}
+        <!-- Portaria de Aprovação -->
+        <div class="col-span-12 md:col-span-8">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">
+            {{ form.portaria_aprovacao.label }}
+          </label>
+          <div class="w-full">
+            {{ form.portaria_aprovacao }}
+          </div>
         </div>
 
-        <div class="col-span-12 md:col-span-3">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.data_aprovacao.label }}</label>
-          <div class="max-w-[16ch]">{{ form.data_aprovacao }}</div>
+        <!-- Data de Aprovação -->
+        <div class="col-span-12 md:col-span-2">
+          <div class="w-full max-w-[20ch] ml-auto">
+            <label class="block text-sm font-semibold text-blue-700 mb-1">
+              {{ form.data_aprovacao.label }}
+            </label>
+            {{ form.data_aprovacao }}
+          </div>
         </div>
 
         <!-- Linha 4 -->
-        <div class="col-span-12 md:col-span-3">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.vigencia_inicio.label }}</label>
-          <div class="max-w-[16ch]">{{ form.vigencia_inicio }}</div>
+        <div class="col-span-12 md:col-span-2">
+          <div class="w-full max-w-[18ch]">
+            <label class="block text-sm font-semibold text-blue-700 mb-1">
+              {{ form.vigencia_inicio.label }}
+            </label>
+            {{ form.vigencia_inicio }}
+          </div>
         </div>
 
-        <div class="col-span-12 md:col-span-3">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.vigencia_fim.label }}</label>
-          <div class="max-w-[16ch]">{{ form.vigencia_fim }}</div>
+        <!-- Fim da Vigência -->
+        <div class="col-span-12 md:col-start-3 md:col-span-2">
+          <div class="w-full max-w-[18ch]">
+            <label class="block text-sm font-semibold text-blue-700 mb-1">
+              {{ form.vigencia_fim.label }}
+            </label>
+            {{ form.vigencia_fim }}
+          </div>
         </div>
 
-        <div class="col-span-12 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.link.label }}</label>
-          {{ form.link }}
+        <!-- Link (ajuste fino: distância mínima e largura ampliada para alinhamento exato) -->
+        <div class="col-span-12 md:col-start-5 md:col-span-8">
+          <div class="w-full ml-[0.2rem] max-w-[76ch]"> <!-- ajuste fino -->
+            <label class="block text-sm font-semibold text-blue-700 mb-1">
+              {{ form.link.label }}
+            </label>
+            {{ form.link }}
+          </div>
         </div>
 
       </div>
@@ -120,14 +163,58 @@
       {% endif %}
 
       <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-         href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}">
-          {% if modo_visualizacao %}
-          Voltar
-          {% else %}
-          Cancelar
-          {% endif %}
+         href="{% url 'arquiteturaprocessos:normaprocedimento' %}">
+         {% if modo_visualizacao %}
+            Voltar
+         {% else %}
+            Cancelar
+         {% endif %}
       </a>
     </div>
   </form>
 </div>
+
+<!-- JS: comportamento apenas; sem larguras para não conflitar com o layout -->
+<script>
+  (function () {
+    // 1) Evitar "…" no campo Nome
+    const nome = document.getElementById('id_nome');
+    if (nome) {
+      nome.classList?.remove('truncate', 'text-ellipsis', 'whitespace-nowrap', 'overflow-hidden');
+      nome.style.textOverflow = 'clip';
+      nome.style.whiteSpace = 'normal';
+      nome.style.overflow = 'visible';
+    }
+
+    // Utilitário: numérico com zero à esquerda
+    function setupNumericPad(el, maxLen, padLen) {
+      if (!el) return;
+      el.setAttribute('type', 'text');
+      el.setAttribute('inputmode', 'numeric');
+      el.setAttribute('pattern', '[0-9]*');
+      el.setAttribute('autocomplete', 'off');
+      el.maxLength = maxLen;
+      el.addEventListener('input', function () {
+        const onlyDigits = this.value.replace(/\D+/g, '').slice(0, maxLen);
+        if (this.value !== onlyDigits) this.value = onlyDigits;
+      });
+      el.addEventListener('blur', function () {
+        if (this.value) this.value = this.value.padStart(padLen, '0');
+      });
+    }
+
+    // 2) Sequencial (3 dígitos) e Versão (2 dígitos) — mesmo tipo
+    setupNumericPad(document.getElementById('id_sequencial'), 3, 3);
+    setupNumericPad(document.getElementById('id_versao'), 2, 2);
+
+    // 3) Datas: evitar truncamento e manter conteúdo em linha
+    ['id_data_elaboracao', 'id_data_aprovacao', 'id_vigencia_inicio', 'id_vigencia_fim']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.whiteSpace = 'nowrap';
+        }
+      });
+  })();
+</script>
 {% endblock %}
