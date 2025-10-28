@@ -108,10 +108,16 @@ class NormaProcedimento(models.Model):
         default="SRH"
     )
 
-    sequencial = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(999)],
+    sequencial = models.CharField(
+        max_length=3,
+        validators=[
+            RegexValidator(
+                r'^\d{1,3}$',
+                message="Informe um número válido entre 1 e 999 (sem letras ou símbolos)."
+            )
+        ],
         verbose_name="Sequencial",
-        help_text="Número sequencial (1 a 999)."
+        help_text="Número sequencial (001 a 999)."
     )
 
     versao = models.PositiveSmallIntegerField(

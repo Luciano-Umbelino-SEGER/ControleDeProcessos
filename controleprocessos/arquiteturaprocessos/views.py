@@ -654,7 +654,9 @@ class NormaProcedimentoView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return NormaProcedimento.objects.order_by('tema')
 
-# Adicionar
+# -------------------
+# Criar
+# -------------------
 class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_normaprocedimento.html'
     form_class = NormaProcedimentoForm
@@ -670,6 +672,9 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        # Garante que o usuário logado seja registrado
+        if form.instance.usuario_id is None:
+            form.instance.usuario = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' criada com sucesso!")
         return response
@@ -681,7 +686,10 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:normaprocedimento')
 
+
+# -------------------
 # Visualizar
+# -------------------
 class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_normaprocedimento.html'
     model = NormaProcedimento
@@ -699,7 +707,10 @@ class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
         })
         return context
 
+
+# -------------------
 # Editar
+# -------------------
 class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
     model = NormaProcedimento
     template_name = 'estrutura/form_normaprocedimento.html'
@@ -717,6 +728,8 @@ class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        # Atualiza o usuário que está fazendo a alteração
+        form.instance.usuario_atualizacao = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' atualizada com sucesso!")
         return response
@@ -728,7 +741,10 @@ class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:normaprocedimento')
 
-# Excluir (com modal)
+
+# -------------------
+# Excluir
+# -------------------
 class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
     model = NormaProcedimento
     template_name = 'estrutura/form_normaprocedimento.html'
@@ -751,4 +767,5 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
         norma.delete()
         messages.success(request, f"Norma de Procedimento '{norma.tema}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:normaprocedimento')
+
 
