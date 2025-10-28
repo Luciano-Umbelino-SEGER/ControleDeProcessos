@@ -23,17 +23,32 @@
     </div>
   {% endif %}
 
-  <form method="post" class="space-y-6">
+  <form method="post" class="space-y-6" autocomplete="off" data-lpignore="true" data-form-type="other">
     {% csrf_token %}
 
     <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
-      <!-- Espaçamento horizontal padrão e uniforme -->
+      <!-- Layout principal -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
 
         <!-- Linha 1 -->
+        <!-- Campo Nome (versão final sem LastPass e com fundo cinza quando desabilitado) -->
         <div class="col-span-12 md:col-span-5">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.nome.label }}</label>
-          {{ form.nome }}
+          <label for="id_nome" class="block text-sm font-semibold text-blue-700 mb-1">Nome</label>
+          <input
+            type="text"
+            id="id_nome"
+            name="nome"
+            value="{{ form.nome.value|default_if_none:'NORMA DE PROCEDIMENTO' }}"
+            class="w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}"
+            placeholder="Digite o nome"
+            {% if modo_visualizacao or modo_exclusao %}readonly tabindex="-1" style="pointer-events:none; opacity:0.9;"{% endif %}
+            autocomplete="off"
+            data-lpignore="true"
+            data-form-type="other"
+            spellcheck="false"
+          >
+          <!-- Campo invisível “fake” para enganar o LastPass -->
+          <input type="text" style="display:none" aria-hidden="true" autocomplete="off">
         </div>
 
         <div class="col-span-12 md:col-span-5">
@@ -43,13 +58,11 @@
 
         <div class="col-span-12 md:col-span-1">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.codigo.label }}</label>
-          <!-- Largura fixa, alinhado à esquerda -->
           <div class="w-[8ch]">
             {{ form.codigo }}
           </div>
         </div>
 
-        <!-- Sequencial ancorado à direita, mantendo gap entre Código e Sequencial -->
         <div class="col-span-12 md:col-span-1">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sequencial.label }}</label>
           <div class="w-full flex justify-end">
@@ -60,17 +73,23 @@
         </div>
 
         <!-- Linha 2 -->
-        <div class="col-span-12 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.tema.label }}</label>
-          {{ form.tema }}
-        </div>
-
         <div class="col-span-12 md:col-span-5">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.emitente.label }}</label>
-          {{ form.emitente }}
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.tema.label }}</label>
+          <!-- Mesmo tamanho e alinhamento do campo Nome -->
+          <div class="w-full">
+            {{ form.tema }}
+          </div>
         </div>
 
-        <!-- Versão ancorada à direita; mesmo tamanho/comportamento do Sequencial -->
+        <!-- Emitente ampliado: inicia alinhado com Sistema e termina alinhado com Código -->
+        <div class="col-span-12 md:col-start-6 md:col-span-6">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.emitente.label }}</label>
+          <div class="w-full">
+            {{ form.emitente }}
+          </div>
+        </div>
+
+        <!-- Versão -->
         <div class="col-span-12 md:col-span-1">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.versao.label }}</label>
           <div class="w-full flex justify-end">
@@ -81,7 +100,6 @@
         </div>
 
         <!-- Linha 3 -->
-        <!-- Data de Elaboração -->
         <div class="col-span-12 md:col-span-2">
           <div class="w-full max-w-[18ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -91,7 +109,6 @@
           </div>
         </div>
 
-        <!-- Portaria de Aprovação -->
         <div class="col-span-12 md:col-span-8">
           <label class="block text-sm font-semibold text-blue-700 mb-1">
             {{ form.portaria_aprovacao.label }}
@@ -101,7 +118,6 @@
           </div>
         </div>
 
-        <!-- Data de Aprovação -->
         <div class="col-span-12 md:col-span-2">
           <div class="w-full max-w-[20ch] ml-auto">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -121,7 +137,6 @@
           </div>
         </div>
 
-        <!-- Fim da Vigência -->
         <div class="col-span-12 md:col-start-3 md:col-span-2">
           <div class="w-full max-w-[18ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -131,9 +146,8 @@
           </div>
         </div>
 
-        <!-- Link (ajuste fino: distância mínima e largura ampliada para alinhamento exato) -->
         <div class="col-span-12 md:col-start-5 md:col-span-8">
-          <div class="w-full ml-[0.2rem] max-w-[76ch]"> <!-- ajuste fino -->
+          <div class="w-full ml-[0.2rem] max-w-[76ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
               {{ form.link.label }}
             </label>
@@ -174,19 +188,9 @@
   </form>
 </div>
 
-<!-- JS: comportamento apenas; sem larguras para não conflitar com o layout -->
 <script>
   (function () {
-    // 1) Evitar "…" no campo Nome
-    const nome = document.getElementById('id_nome');
-    if (nome) {
-      nome.classList?.remove('truncate', 'text-ellipsis', 'whitespace-nowrap', 'overflow-hidden');
-      nome.style.textOverflow = 'clip';
-      nome.style.whiteSpace = 'normal';
-      nome.style.overflow = 'visible';
-    }
-
-    // Utilitário: numérico com zero à esquerda
+    // Numéricos com zero à esquerda
     function setupNumericPad(el, maxLen, padLen) {
       if (!el) return;
       el.setAttribute('type', 'text');
@@ -203,17 +207,14 @@
       });
     }
 
-    // 2) Sequencial (3 dígitos) e Versão (2 dígitos) — mesmo tipo
     setupNumericPad(document.getElementById('id_sequencial'), 3, 3);
     setupNumericPad(document.getElementById('id_versao'), 2, 2);
 
-    // 3) Datas: evitar truncamento e manter conteúdo em linha
+    // Datas: evitar truncamento
     ['id_data_elaboracao', 'id_data_aprovacao', 'id_vigencia_inicio', 'id_vigencia_fim']
       .forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-          el.style.whiteSpace = 'nowrap';
-        }
+        if (el) el.style.whiteSpace = 'nowrap';
       });
   })();
 </script>

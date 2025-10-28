@@ -457,9 +457,20 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
 class NormaProcedimentoForm(forms.ModelForm):
     """
     Formulário para criação/edição de Normas de Procedimento.
-    Aplica estilos, controla modos de visualização, exclusão e edição,
-    valida dados e garante preenchimento de usuário.
+    Força 'nome' como CharField/TextInput para evitar select/lookup.
     """
+    nome = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={
+            "class": "w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase",
+            "placeholder": "Nome da Norma de Procedimento",
+            "data-lpignore": "true",       # impede LastPass
+            "autocomplete": "new-password",# força ignorar autofill
+            "autocorrect": "off",
+            "autocapitalize": "off",
+            "spellcheck": "false",
+        })
+    )
 
     class Meta:
         model = NormaProcedimento
@@ -478,12 +489,10 @@ class NormaProcedimentoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Recebe usuário logado (necessário para salvar usuario e usuario_atualizacao)
         self.usuario_logado = kwargs.pop("usuario_logado", None)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
         self.modo_edicao = kwargs.pop("modo_edicao", False)
-
         super().__init__(*args, **kwargs)
 
         self.label_suffix = ""
@@ -498,18 +507,20 @@ class NormaProcedimentoForm(forms.ModelForm):
             bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
-            field.widget.attrs["autocomplete"] = "off"
 
-        # Placeholders e inputmode
-        self.fields["nome"].widget.attrs.update({"class": self.fields["nome"].widget.attrs["class"] + " uppercase"})
-        self.fields["sistema"].widget.attrs.update({"placeholder": "Sistema"})
-        self.fields["codigo"].widget.attrs.update({"placeholder": "Código", "class": self.fields["codigo"].widget.attrs["class"] + " uppercase"})
-        self.fields["sequencial"].widget.attrs.update({"placeholder": "001", "inputmode": "numeric", "pattern": r"\d{1,3}"})
-        self.fields["tema"].widget.attrs.update({"placeholder": "Tema"})
-        self.fields["emitente"].widget.attrs.update({"placeholder": "Emitente"})
-        self.fields["versao"].widget.attrs.update({"placeholder": "01", "inputmode": "numeric", "pattern": r"\d{1,2}"})
-        self.fields["portaria_aprovacao"].widget.attrs.update({"placeholder": "Portaria de Aprovação"})
-        self.fields["link"].widget.attrs.update({"placeholder": "https://..."})
+            # 🔒 Desabilita preenchimento automático e LastPass
+            field.widget.attrs.update({
+                "autocomplete": "new-password",
+                "data-lpignore": "true",
+                "autocorrect": "off",
+                "autocapitalize": "off",
+                "spellcheck": "false",
+            })
+
+        # Ajustes específicos
+        self.fields["codigo"].widget.attrs.update({"class": self.fields["codigo"].widget.attrs["class"] + " uppercase"})
+        self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
+        self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
         # Defaults na inclusão
         if not self.instance or not self.instance.pk:
@@ -521,14 +532,12 @@ class NormaProcedimentoForm(forms.ModelForm):
         if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
+                field.widget.attrs["class"] += " bg-gray-100"
 
-        # Guarda a versão original para regra "não diminuir"
-        self._versao_original = None
-        if self.instance and self.instance.pk:
-            self._versao_original = self.instance.versao
+        # Guarda versão original para regra "não diminuir"
+        self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
 
     # ---------------- Normalizações e validações ----------------
-
     def clean_nome(self):
         nome = (self.cleaned_data.get("nome") or "").strip().upper()
         if not nome:
@@ -542,19 +551,16 @@ class NormaProcedimentoForm(forms.ModelForm):
         return codigo
 
     def clean_sequencial(self):
-        seq = self.cleaned_data.get('sequencial')
-        if seq is None or seq == '':
+        seq = self.cleaned_data.get("sequencial")
+        if not seq:
             raise ValidationError("Informe o número sequencial da norma.")
-
         seq = str(seq).strip()
         if not seq.isdigit():
             raise ValidationError("O número sequencial deve conter apenas dígitos (0–9).")
-
         num = int(seq)
-        if num < 1 or num > 999:
+        if not (1 <= num <= 999):
             raise ValidationError("O número sequencial deve estar entre 1 e 999.")
-
-        return num  # mantém como int, zeros à esquerda só na exibição
+        return num
 
     def clean_versao(self):
         ver = self.cleaned_data.get("versao")
@@ -562,22 +568,16 @@ class NormaProcedimentoForm(forms.ModelForm):
             raise ValidationError("Informe a versão da norma.")
         if not isinstance(ver, int):
             raise ValidationError("Versão deve ser um número inteiro.")
-        if ver < 0 or ver > 99:
+        if not (0 <= ver <= 99):
             raise ValidationError("A versão deve estar entre 0 e 99.")
-
-        # Regra "não diminuir"
-        if self.instance and self.instance.pk and self._versao_original is not None:
-            if ver < self._versao_original:
-                raise ValidationError(f"A versão não pode ser menor que {self._versao_original}.")
-
+        if self._versao_original is not None and ver < self._versao_original:
+            raise ValidationError(f"A versão não pode ser menor que {self._versao_original}.")
         return ver
 
     def clean(self):
         cleaned = super().clean()
-        de = cleaned.get("data_elaboracao")
-        da = cleaned.get("data_aprovacao")
-        vi = cleaned.get("vigencia_inicio")
-        vf = cleaned.get("vigencia_fim")
+        de, da = cleaned.get("data_elaboracao"), cleaned.get("data_aprovacao")
+        vi, vf = cleaned.get("vigencia_inicio"), cleaned.get("vigencia_fim")
 
         if de and da and da < de:
             self.add_error("data_aprovacao", "Deve ser maior ou igual à Data de Elaboração.")
@@ -585,11 +585,9 @@ class NormaProcedimentoForm(forms.ModelForm):
             self.add_error("vigencia_inicio", "Deve ser maior ou igual à Data de Aprovação.")
         if vi and vf and vf <= vi:
             self.add_error("vigencia_fim", "Deve ser maior que Início da Vigência.")
-
         return cleaned
 
     def save(self, commit=True):
-        # Preenche usuário e usuário de atualização
         obj = super().save(commit=False)
         if not self.instance.pk and self.usuario_logado:
             obj.usuario = self.usuario_logado
@@ -598,4 +596,6 @@ class NormaProcedimentoForm(forms.ModelForm):
         if commit:
             obj.save()
         return obj
+
+
 
