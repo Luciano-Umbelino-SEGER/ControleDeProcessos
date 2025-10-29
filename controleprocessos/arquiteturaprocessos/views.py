@@ -12,10 +12,12 @@ from django.http import JsonResponse
 from .models import (Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
                      Classificacao, NormaProcedimento)
 from django.db.models.deletion import ProtectedError
+from django.db.models import Q
 from django.db.models import Exists, OuterRef
 from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
                     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form, NormaProcedimentoForm)
-from django.views.generic import DetailView
+from django.core.paginator import Paginator
+
 
 class HomePage(TemplateView):
     template_name = 'homepage.html'
@@ -637,22 +639,41 @@ def macroprocessos_por_classificacao(request, classificacao_id):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
-from django.shortcuts import redirect
-from django.urls import reverse
-from django.contrib import messages
-from .models import NormaProcedimento
-from .forms import NormaProcedimentoForm
-
 # Listagem
 class NormaProcedimentoView(LoginRequiredMixin, ListView):
     model = NormaProcedimento
     template_name = 'estrutura/normaprocedimento.html'
     context_object_name = 'normasprocedimento'
+    paginate_by = 20  # quantidade de registros por página
 
     def get_queryset(self):
-        return NormaProcedimento.objects.order_by('tema')
+        # Obtém o termo de busca enviado pelo usuário
+        termo = self.request.GET.get('q', '').strip()
+
+        # Query base com leve otimização via select_related
+        queryset = (
+            NormaProcedimento.objects
+            .select_related('usuario', 'usuario_atualizacao')
+        )
+
+        # Filtro de busca (tema, emitente, sistema, código)
+        if termo:
+            queryset = queryset.filter(
+                Q(tema__icontains=termo) |
+                Q(emitente__icontains=termo) |
+                Q(sistema__icontains=termo) |
+                Q(codigo__icontains=termo)
+            )
+
+        # Ordenação padrão (tema, código e sequencial)
+        return queryset.order_by('tema', 'codigo', 'sequencial')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # mantém o termo de busca no template
+        context['termo_busca'] = self.request.GET.get('q', '')
+        return context
+
 
 # -------------------
 # Criar

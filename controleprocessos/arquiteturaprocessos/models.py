@@ -207,6 +207,14 @@ class NormaProcedimento(models.Model):
         """
         return f"{self.nome} - {self.codigo}-{self.sequencial_fmt()} - Versão {self.versao_fmt()} - {self.tema}"
 
+    @property
+    def vigencia_inicio_fmt(self):
+        return self.vigencia_inicio.strftime("%d/%m/%Y") if self.vigencia_inicio else ""
+
+    @property
+    def vigencia_fim_fmt(self):
+        return self.vigencia_fim.strftime("%d/%m/%Y") if self.vigencia_fim else ""
+
     def __str__(self):
         # Mantenha curto para admin/logs
         return self.identificacao_int
