@@ -132,16 +132,25 @@
 <!-- Modal PDF -->
 <div id="modalPDF" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 transition-opacity duration-300 ease-out opacity-0">
   <div class="bg-white rounded-2xl shadow-2xl w-11/12 max-w-6xl h-[90vh] flex flex-col transform scale-95 transition-transform duration-300 ease-out">
-    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-blue-600 rounded-t-2xl shadow-md">
+    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-[#0097A7] rounded-t-2xl shadow-md">
       <h3 class="text-lg font-semibold text-white">Visualização da Norma de Procedimento</h3>
+      <!-- Botão Fechar -->
       <div class="relative flex items-center">
-        <button onclick="fecharModalPDF()" class="text-white hover:text-gray-200 text-2xl leading-none relative group">
+        <button onclick="fecharModalPDF()"
+                class="text-white hover:text-gray-100 text-2xl leading-none relative group
+                       transition-all duration-200 hover:scale-110 rounded-full px-2
+                       hover:shadow-[0_0_10px_rgba(0,0,0,0.4)]">
           &times;
-          <span class="absolute left-1/2 -translate-x-1/2 -translate-y-full mb-2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-            Fechar
-          </span>
         </button>
+
+        <!-- Tooltip fixado e visível acima de tudo -->
+        <div class="fixed top-4 right-10 bg-[#f3f3f3] text-black text-xs font-medium
+                    rounded py-1 px-2 shadow opacity-0 group-hover:opacity-100
+                    transition-opacity duration-200 pointer-events-none z-[9999]">
+          Fechar
+        </div>
       </div>
+
     </div>
     <div class="flex-1 overflow-hidden">
       <iframe id="iframePDF" src="" class="w-full h-full border-0"></iframe>

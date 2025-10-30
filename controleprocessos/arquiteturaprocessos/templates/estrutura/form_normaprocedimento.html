@@ -23,7 +23,7 @@
     </div>
   {% endif %}
 
-  <form method="post" class="space-y-6" autocomplete="off" data-lpignore="true" data-form-type="other">
+  <form method="post" class="space-y-6" autocomplete="off" data-lpignore="true" data-form-type="other" id="form-exclusao">
     {% csrf_token %}
 
     <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
@@ -31,7 +31,6 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
 
         <!-- Linha 1 -->
-        <!-- Campo Nome (versão final sem LastPass e com fundo cinza quando desabilitado) -->
         <div class="col-span-12 md:col-span-5">
           <label for="id_nome" class="block text-sm font-semibold text-blue-700 mb-1">Nome</label>
           <input
@@ -47,7 +46,6 @@
             data-form-type="other"
             spellcheck="false"
           >
-          <!-- Campo invisível “fake” para enganar o LastPass -->
           <input type="text" style="display:none" aria-hidden="true" autocomplete="off">
         </div>
 
@@ -75,13 +73,11 @@
         <!-- Linha 2 -->
         <div class="col-span-12 md:col-span-5">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.tema.label }}</label>
-          <!-- Mesmo tamanho e alinhamento do campo Nome -->
           <div class="w-full">
             {{ form.tema }}
           </div>
         </div>
 
-        <!-- Emitente ampliado: inicia alinhado com Sistema e termina alinhado com Código -->
         <div class="col-span-12 md:col-start-6 md:col-span-6">
           <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.emitente.label }}</label>
           <div class="w-full">
@@ -162,7 +158,15 @@
     <div class="flex justify-end mt-8 space-x-4">
       {% if not modo_visualizacao %}
         {% if modo_exclusao %}
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+          <!-- BOTÃO QUE DISPARA O MODAL DE CONFIRMAÇÃO -->
+          <button
+            type="button"
+            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+            @click="$dispatch('abrir-modal-confirmacao', {
+                url: '{% url 'arquiteturaprocessos:excluir_normaprocedimento' normaprocedimento.id %}',
+                mensagem: 'Confirma a exclusão da Norma de Procedimento <strong>{{ normaprocedimento.codigo }} Nº {{ normaprocedimento.sequencial }} - Versão {{ normaprocedimento.versao }} - {{ normaprocedimento.tema }}</strong>?'
+            })"
+          >
             Confirmar Exclusão
           </button>
         {% elif modo_edicao %}
@@ -190,7 +194,6 @@
 
 <script>
   (function () {
-    // Numéricos com zero à esquerda
     function setupNumericPad(el, maxLen, padLen) {
       if (!el) return;
       el.setAttribute('type', 'text');
@@ -210,7 +213,6 @@
     setupNumericPad(document.getElementById('id_sequencial'), 3, 3);
     setupNumericPad(document.getElementById('id_versao'), 2, 2);
 
-    // Datas: evitar truncamento
     ['id_data_elaboracao', 'id_data_aprovacao', 'id_vigencia_inicio', 'id_vigencia_fim']
       .forEach(id => {
         const el = document.getElementById(id);
