@@ -98,10 +98,10 @@ class MacroprocessoNivel2(models.Model):
 
 
 # ============================================================
-# NORMA DE PROCEDIMENTO
+# Modelagem de Processos
 # ============================================================
 
-class NormaProcedimento(models.Model):
+class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 
     nome = models.CharField(max_length=200, verbose_name="Nome", default="NORMA DE PROCEDIMENTO")
@@ -131,7 +131,14 @@ class NormaProcedimento(models.Model):
     vigencia_inicio = models.DateField(null=True, blank=True, verbose_name="Início da Vigência")
     vigencia_fim = models.DateField(null=True, blank=True, verbose_name="Fim da Vigência")
 
-    link = models.URLField(max_length=500, blank=True, verbose_name="Link")
+    link_normaprocedimento = models.URLField(max_length=500, blank=True, verbose_name="Link da Norma de Procedimento")
+
+    documento_modelagem_processo = models.FileField(
+        upload_to='modelagemprocessos/',
+        blank=True,
+        null=True,
+        verbose_name="Documento de Modelagem de Processo"
+    )
 
     data_cadastro = models.DateTimeField(auto_now_add=True, editable=False, verbose_name="Data de Cadastro")
     data_atualizacao = models.DateTimeField(auto_now=True, editable=False, verbose_name="Data de Atualização")
@@ -139,12 +146,12 @@ class NormaProcedimento(models.Model):
     usuario = models.ForeignKey(
         "Usuario",
         on_delete=models.PROTECT,
-        related_name="normas_procedimento_criadas",
+        related_name="modelagens_criadas",
         verbose_name="Usuário"
     )
     usuario_atualizacao = models.ForeignKey(
         "Usuario",
-        related_name="normas_procedimento_atualizadas",
+        related_name="modelagens_atualizadas",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -152,48 +159,124 @@ class NormaProcedimento(models.Model):
     )
 
     class Meta:
-        db_table = "arquiteturaprocessos_norma_procedimento"
-        verbose_name = "Norma de Procedimento"
-        verbose_name_plural = "Normas de Procedimento"
+        db_table = "arquiteturaprocessos_modelagem_processo"
+        verbose_name = "Modelagem de Processo"
+        verbose_name_plural = "Modelagens de Processo"
         ordering = ["nome", "codigo", "sequencial", "versao", "tema"]
         constraints = [
-            models.UniqueConstraint(fields=["codigo", "sequencial", "versao"], name="uq_norma_proc_codigo_seq_versao")
+            models.UniqueConstraint(fields=["codigo", "sequencial", "versao"], name="uq_modelagem_codigo_seq_versao")
         ]
         indexes = [
-            models.Index(fields=["nome"], name="idx_np_nome"),
-            models.Index(fields=["tema"], name="idx_np_tema"),
-            models.Index(fields=["sistema"], name="idx_np_sistema"),
-            models.Index(fields=["emitente"], name="idx_np_emitente"),
+            models.Index(fields=["nome"], name="idx_mp_nome"),
+            models.Index(fields=["tema"], name="idx_mp_tema"),
+            models.Index(fields=["sistema"], name="idx_mp_sistema"),
+            models.Index(fields=["emitente"], name="idx_mp_emitente"),
         ]
 
     def __str__(self):
         return f"{self.nome} - {self.codigo}-{self.sequencial} - V{self.versao} - {self.tema}"
-
 
 # ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================
 
 class Processo(models.Model):
-    classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT, related_name="processos")
-    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.SET_NULL, null=True, blank=True)
-    macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", on_delete=models.SET_NULL, null=True, blank=True)
+    classificacao = models.ForeignKey(
+        "Classificacao",
+        on_delete=models.PROTECT,
+        related_name="processos"
+    )
 
-    nome = models.CharField(max_length=200, verbose_name="Nome do Processo/Subprocesso")
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="subprocessos")
+    macroprocesso_nivel1 = models.ForeignKey(
+        "MacroprocessoNivel1",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
 
-    responsavel = models.ForeignKey("Usuario", on_delete=models.PROTECT, related_name="processos_responsavel")
-    gestor = models.CharField(max_length=150)
-    email = models.EmailField(max_length=150, null=True, blank=True)
-    telefone = models.CharField(max_length=20, null=True, blank=True)
+    macroprocesso_nivel2 = models.ForeignKey(
+        "MacroprocessoNivel2",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
 
-    norma = models.ForeignKey("NormaProcedimento", on_delete=models.SET_NULL, null=True, blank=True)
+    nome = models.CharField(
+        max_length=100,
+        verbose_name="Nome do Processo/Subprocesso"
+    )
 
-    objetivo = models.TextField(verbose_name="Objetivo do Processo")
-    observacao = models.TextField(null=True, blank=True)
+    usuario_cadastro = models.ForeignKey(
+        "Usuario",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="processos_cadastrados",
+        verbose_name="Usuário que efetuou o cadastro"
+    )
 
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    data_atualizacao = models.DateTimeField(auto_now=True)
+    area_responsavel = models.CharField(
+        max_length=100,
+        null = True,
+        blank = True,
+        verbose_name="Área Responsável"
+    )
+
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="subprocessos",
+        verbose_name="Processo Pai"
+    )
+
+    gestor = models.CharField(
+        max_length=150,
+        verbose_name="Gestor"
+    )
+
+    email = models.EmailField(
+        max_length=200,
+        null=True,
+        blank=True,
+        verbose_name="E-mail do Gestor"
+    )
+
+    telefone = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        verbose_name="Telefone/Ramal"
+    )
+
+    norma = models.ForeignKey(
+        "ModelagemProcesso",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Norma de Procedimento"
+    )
+
+    objetivo = models.TextField(
+        verbose_name="Objetivo do Processo"
+    )
+
+    observacao = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Observações"
+    )
+
+    data_criacao = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Criação"
+    )
+
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Data de Atualização"
+    )
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"
@@ -202,8 +285,8 @@ class Processo(models.Model):
         ordering = ["nome"]
 
     def __str__(self):
+        # Exibe hierarquia se for subprocesso
         return f"{self.nome}" if not self.parent else f"{self.parent.nome} > {self.nome}"
-
 
 # ============================================================
 # ARQUITETURA / LOG

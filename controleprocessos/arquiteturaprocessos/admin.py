@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
 from .models import (Perfil, Telefone, Usuario, MacroprocessoNivel1, MacroprocessoNivel2,
-                     NormaProcedimento, ArquiteturaProcesso, LogAcoes,)
+                     ModelagemProcesso, ArquiteturaProcesso, LogAcoes,)
 
 # -------------------- Inline de Telefones --------------------
 class TelefoneInline(admin.TabularInline):
@@ -39,8 +39,8 @@ class UsuarioAdmin(BaseUserAdmin):
 
 
 # -------------------- Admin de Normas de Procedimento --------------------
-@admin.register(NormaProcedimento)
-class NormaProcedimentoAdmin(admin.ModelAdmin):
+@admin.register(ModelagemProcesso)
+class ModelagemProcessoAdmin(admin.ModelAdmin):
     list_display = (
         "sequencial_formatado",
         "versao_formatada",
@@ -100,7 +100,7 @@ class NormaProcedimentoAdmin(admin.ModelAdmin):
     versao_formatada.admin_order_field = "versao_num"
 
     def identificacao(self, obj):
-        return obj.identificacao_int
+        return f"{obj.nome} - {obj.codigo}-{self.sequencial_formatado(obj)} V{self.versao_formatada(obj)}"
     identificacao.short_description = "Identificação"
     identificacao.admin_order_field = "nome"
 
@@ -109,7 +109,6 @@ class NormaProcedimentoAdmin(admin.ModelAdmin):
             obj.usuario = request.user
         obj.usuario_atualizacao = request.user
         super().save_model(request, obj, form, change)
-
 
 # -------------------- Registro de Outros Modelos --------------------
 admin.site.register(Perfil)

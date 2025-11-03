@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
                 ('macroprocesso_nivel1', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='arquiteturaprocessos.macroprocessonivel1')),
                 ('macroprocesso_nivel2', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='arquiteturaprocessos.macroprocessonivel2')),
                 ('norma', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='arquiteturaprocessos.normaprocedimento')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='subprocessos', to='arquiteturaprocessos.processo')),
+                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='subprocessos', to='arquiteturaprocessos.processos')),
                 ('responsavel', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='processos_responsavel', to=settings.AUTH_USER_MODEL)),
             ],
             options={

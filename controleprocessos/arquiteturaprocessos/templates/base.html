@@ -158,24 +158,18 @@
             <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
 
                 <!-- Cadastro de Processos -->
-                <div role="menuitem" x-data="{ cadastroSubmenuOpen: false }">
-                    <button @click="if (!open) { open = true; cadastroSubmenuOpen = true } else { cadastroSubmenuOpen = !cadastroSubmenuOpen }"
-                            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
-                            :title="!open ? 'Cadastro de Processos' : ''"
-                            :aria-expanded="(cadastroSubmenuOpen && open) ? 'true' : 'false'">
-                        <div class="w-12 h-12 flex items-center justify-center">
-                            <i class="fas fa-folder-open text-xl"></i>
-                        </div>
-                        <div x-show="open" x-transition.opacity.duration.300ms class="ml-2 flex-1 text-left">
-                            Cadastro de Processos
-                        </div>
-                        <i class="fas" :class="cadastroSubmenuOpen && open ? 'fa-chevron-down' : 'fa-chevron-right'" x-show="open" x-cloak></i>
-                    </button>
-                    <div x-show="cadastroSubmenuOpen && open" x-transition.opacity.duration.300ms x-transition.scale.origin.top class="ml-14 space-y-1" role="menu">
-                        <a href="{% url 'arquiteturaprocessos:cadastroprocessos' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Processos</a>
-                        <a href="{% url 'arquiteturaprocessos:cadastrosubprocessos' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Subprocessos</a>
+                <a href="{% url 'arquiteturaprocessos:processos' %}"
+                   class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+                   @click="close()"
+                   role="menuitem"
+                   :title="!open ? 'Cadastro de Processos' : ''">
+                    <div class="w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-folder-open text-xl"></i>
                     </div>
-                </div>
+                    <div x-show="open" x-transition.opacity.duration.300ms class="ml-2">
+                        Cadastro de Processos
+                    </div>
+                </a>
 
                 <!-- Estatísticas -->
                 <a href="{% url 'arquiteturaprocessos:estatisticas' %}"
@@ -253,7 +247,7 @@
                         <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Classificação</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso Nivel 1</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Macroprocesso Nivel 2</a>
-                        <a href="{% url 'arquiteturaprocessos:normaprocedimento' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Norma de Procedimento</a>
+                        <a href="{% url 'arquiteturaprocessos:normaprocedimento' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="close()">Modelagem Processos</a>
                     </div>
                 </div>
 

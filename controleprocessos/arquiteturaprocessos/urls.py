@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.urls import path
-from .views import (HomePage, ArquiteruraProcessos, CadastroProcessos, CadastroSubProcessos, Estatisticas, BackLog,
+from .views import (HomePage, ArquiteruraProcessos, CadastroSubProcessos, Estatisticas, BackLog,
                     CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
                     ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
                     EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
                     VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, NormaProcedimentoView,
                     CriarNormaProcedimento, VisualizarNormaProcedimento, EditarNormaProcedimento, ExcluirNormaProcedimento,
-                    classificacao_por_macro1, macroprocessos_por_classificacao, SubProcessoView)
+                    ProcessoView, CriarProcesso, classificacao_por_macro1, macroprocessos_por_classificacao, SubProcessoView)
 from django.contrib.auth import views as auth_views
 
 
@@ -16,8 +16,6 @@ app_name = "arquiteturaprocessos"
 urlpatterns = [
     path('', HomePage.as_view(), name='homepage'),
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
-    path('cadastroprocessos/', CadastroProcessos.as_view(), name='cadastroprocessos'),
-    path('cadastrosubprocessos/', CadastroSubProcessos.as_view(), name='cadastrosubprocessos'),
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     path('backlog/', BackLog.as_view(), name='backlog'),
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
@@ -49,6 +47,9 @@ urlpatterns = [
     path('normaprocedimento/<int:pk>/visualizar/', VisualizarNormaProcedimento.as_view(), name='visualizar_normaprocedimento'),
     path('normaprocedimento/<int:pk>/editar/', EditarNormaProcedimento.as_view(), name='editar_normaprocedimento'),
     path('normaprocedimento/<int:pk>/excluir/', ExcluirNormaProcedimento.as_view(), name='excluir_normaprocedimento'),
+    path('processos/', ProcessoView.as_view(), name='processos'),
+    path('form_processo/', CriarProcesso.as_view(), name='form_processo'),
+    path('cadastrosubprocessos/', CadastroSubProcessos.as_view(), name='cadastrosubprocessos'),
     path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
     path('api/macroprocessos_por_classificacao/<int:classificacao_id>/', macroprocessos_por_classificacao, name='macroprocessos_por_classificacao'),
 ]

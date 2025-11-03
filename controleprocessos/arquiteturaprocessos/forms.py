@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from datetime import date
 import re
 
-from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, NormaProcedimento
+from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, ModelagemProcesso
 
 UserModel = get_user_model()
 
@@ -473,13 +473,13 @@ class NormaProcedimentoForm(forms.ModelForm):
     )
 
     class Meta:
-        model = NormaProcedimento
+        model = ModelagemProcesso
         fields = [
             "nome", "sistema", "codigo", "sequencial",
             "tema", "emitente", "versao",
             "data_elaboracao", "portaria_aprovacao", "data_aprovacao",
             "vigencia_inicio", "vigencia_fim",
-            "link",
+            "link_normaprocedimento",
         ]
         widgets = {
             "data_elaboracao": forms.DateInput(attrs={"type": "date"}),

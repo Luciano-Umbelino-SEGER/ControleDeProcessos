@@ -14,99 +14,107 @@
 {% endblock %}
 
 {% block body %}
-<div class="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4">
-<div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-<h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
-    {% if modo_visualizacao %}
-        Visualização de Macroprocesso Nivel 1
-    {% elif modo_edicao %}
-        Edição de Macroprocesso Nivel 1
-    {% elif modo_exclusao %}
-        Exclusão de Macroprocesso Nivel 1
-    {% else %}
-        Inclusão de Macroprocesso Nivel 1
-    {% endif %}
-</h2>
-
-{% if form.non_field_errors %}
-    <div class="text-red-600 mb-4">
-        {{ form.non_field_errors }}
-    </div>
-{% endif %}
-
-<form method="post" id="form-exclusao">
-    {% csrf_token %}
-    <div class="grid grid-cols-1 gap-6">
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label for="id_classificacao" class="block text-sm font-semibold text-blue-800 mb-1">Classificação</label>
-                {{ form.classificacao }}
-                {% if form.classificacao.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.classificacao.errors|striptags }}</p>
-                {% endif %}
-            </div>
-            <div>
-                <label for="id_nome" class="block text-sm font-semibold text-blue-800 mb-1">Nome</label>
-                {{ form.nome }}
-                {% if form.nome.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ form.nome.errors|striptags }}</p>
-                {% endif %}
-            </div>
-        </div>
-        <div>
-            <label for="id_descricao" class="block text-sm font-semibold text-blue-800 mb-1">Descrição</label>
-            {{ form.descricao }}
-            {% if form.descricao.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ form.descricao.errors|striptags }}</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="flex justify-end mt-8 space-x-4">
-        {% if not modo_visualizacao %}
-            {% if modo_exclusao %}
-                <button
-                    type="button"
-                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                    @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:excluir_macroprocessonivel1' macroprocessonivel1.id %}',
-                        mensagem: 'Confirma a exclusão do Macroprocesso Nivel 1 <strong>{{ macroprocessonivel1.nome }}</strong>?'
-                    })">
-                    Confirmar Exclusão
-                </button>
-            {% elif modo_edicao %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-                    Salvar Alterações
-                </button>
-            {% else %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-                    Adicionar Macroprocesso Nivel 1
-                </button>
-            {% endif %}
+<div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
+    <h2 class="text-xl md:text-2xl font-bold text-blue-800 text-center mb-6">
+        {% if modo_visualizacao %}
+            Visualização de Macroprocesso Nivel 1
+        {% elif modo_edicao %}
+            Edição de Macroprocesso Nivel 1
+        {% elif modo_exclusao %}
+            Exclusão de Macroprocesso Nivel 1
+        {% else %}
+            Inclusão de Macroprocesso Nivel 1
         {% endif %}
+    </h2>
 
-        <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition" href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}">
-            {% if modo_visualizacao %}
-                Voltar
-            {% else %}
-                Cancelar
+    {% if form.non_field_errors %}
+        <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded mb-4">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <form method="post" id="form-exclusao">
+        {% csrf_token %}
+
+        <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+                <div class="col-span-12 md:col-span-3">
+                    <label for="id_classificacao" class="block text-sm font-semibold text-blue-800 mb-1">Classificação</label>
+                    {{ form.classificacao }}
+                    {% if form.classificacao.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.classificacao.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="col-span-12 md:col-span-9">
+                    <label for="id_nome" class="block text-sm font-semibold text-blue-800 mb-1">Nome</label>
+                    {{ form.nome }}
+                    {% if form.nome.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.nome.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="col-span-12">
+                    <label for="id_descricao" class="block text-sm font-semibold text-blue-800 mb-1">Descrição</label>
+                    {{ form.descricao }}
+                    {% if form.descricao.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.descricao.errors|striptags }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="flex justify-end mt-8 space-x-4">
+            {% if not modo_visualizacao %}
+                {% if modo_exclusao %}
+                    <button
+                        type="button"
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                        @click="$dispatch('abrir-modal-confirmacao', {
+                            url: '{% url 'arquiteturaprocessos:excluir_macroprocessonivel1' macroprocessonivel1.id %}',
+                            mensagem: 'Confirma a exclusão do Macroprocesso Nivel 1 <strong>{{ macroprocessonivel1.nome }}</strong>?'
+                        })">
+                        Confirmar Exclusão
+                    </button>
+                {% elif modo_edicao %}
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                        Salvar Alterações
+                    </button>
+                {% else %}
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                        Adicionar Macroprocesso Nivel 1
+                    </button>
+                {% endif %}
             {% endif %}
-        </a>
-    </div>
-</form>
-</div>
+
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+               href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}">
+               {% if modo_visualizacao %}
+                   Voltar
+               {% else %}
+                   Cancelar
+               {% endif %}
+            </a>
+        </div>
+    </form>
 </div>
 
 {% if modo_exclusao %}
-<!-- Modal de confirmação de exclusão -->
 <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-[400px] mx-auto border border-gray-300">
         <h2 class="text-xl font-semibold mb-4 text-black">
-            Confirma a exclusão da macroprocesso nivel 1 {{ macroprocessonivel1.nome }}?
+            Confirma a exclusão do Macroprocesso Nivel 1 {{ macroprocessonivel1.nome }}?
         </h2>
         <div class="flex justify-center gap-4">
-            <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
-            {% url Não</a>
+            <button type="submit" form="form-exclusao"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                Sim
+            </button>
+            <a href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}"
+                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
+                Não
+            </a>
         </div>
     </div>
 </div>

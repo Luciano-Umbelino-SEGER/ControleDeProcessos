@@ -1,7 +1,7 @@
 from datetime import datetime
 from django.utils import timezone
 from django.shortcuts import render, redirect
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
@@ -10,7 +10,7 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse
 
 from .models import (Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
-                     Classificacao, NormaProcedimento)
+                     Classificacao, ModelagemProcesso, Processo)
 from django.db.models.deletion import ProtectedError
 from django.db.models import Q
 from django.db.models import Exists, OuterRef
@@ -145,15 +145,6 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
 class ArquiteruraProcessos(ListView):
     template_name = 'arquiteruraprocessos.html'
     model = ArquiteturaProcesso
-
-
-class CadastroProcessos(LoginRequiredMixin, ListView):
-    template_name = 'cadastroprocessos.html'
-    model = MacroprocessoNivel1
-
-class CadastroSubProcessos(LoginRequiredMixin, ListView):
-    template_name = 'cadastrosubprocessos.html'
-    model = MacroprocessoNivel1
 
 
 class Estatisticas(LoginRequiredMixin, ListView):
@@ -641,7 +632,7 @@ class SubProcessoView(TemplateView):
 
 # Listagem
 class NormaProcedimentoView(LoginRequiredMixin, ListView):
-    model = NormaProcedimento
+    model = ModelagemProcesso
     template_name = 'estrutura/normaprocedimento.html'
     context_object_name = 'normasprocedimento'
     paginate_by = 20  # quantidade de registros por página
@@ -652,7 +643,7 @@ class NormaProcedimentoView(LoginRequiredMixin, ListView):
 
         # Query base com leve otimização via select_related
         queryset = (
-            NormaProcedimento.objects
+            ModelagemProcesso.objects
             .select_related('usuario', 'usuario_atualizacao')
         )
 
@@ -673,7 +664,6 @@ class NormaProcedimentoView(LoginRequiredMixin, ListView):
         # mantém o termo de busca no template
         context['termo_busca'] = self.request.GET.get('q', '')
         return context
-
 
 # -------------------
 # Criar
@@ -713,8 +703,8 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
 # -------------------
 class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_normaprocedimento.html'
-    model = NormaProcedimento
-    context_object_name = 'normaprocedimento'
+    model = ModelagemProcesso
+    context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -728,14 +718,13 @@ class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
         })
         return context
 
-
 # -------------------
 # Editar
 # -------------------
 class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
-    model = NormaProcedimento
+    model = ModelagemProcesso
     template_name = 'estrutura/form_normaprocedimento.html'
-    context_object_name = 'normaprocedimento'
+    context_object_name = 'modelagemprocesso'
     form_class = NormaProcedimentoForm
 
     def get_context_data(self, **kwargs):
@@ -762,14 +751,13 @@ class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:normaprocedimento')
 
-
 # -------------------
 # Excluir
 # -------------------
 class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
-    model = NormaProcedimento
+    model = ModelagemProcesso
     template_name = 'estrutura/form_normaprocedimento.html'
-    context_object_name = 'normaprocedimento'
+    context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -788,5 +776,39 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
         norma.delete()
         messages.success(request, f"Norma de Procedimento '{norma.tema}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:normaprocedimento')
+
+class ProcessoView(LoginRequiredMixin, ListView):
+    model = Processo
+    template_name = 'processos/processos.html'  # nova pasta processos
+    context_object_name = 'processos'
+    paginate_by = 20  # quantidade de registros por página
+
+    # Caso queira ordenar por nome:
+    ordering = ['nome']
+
+class CriarProcesso(LoginRequiredMixin, CreateView):
+    model = Processo
+    template_name = 'processos/form_processo.html'
+    fields = [
+        'nome',
+        'classificacao',
+        'macroprocesso_nivel1',
+        'macroprocesso_nivel2',
+        'area_responsavel',
+        'gestor',
+        'norma',
+        'parent',
+    ]
+    success_url = reverse_lazy('arquiteturaprocessos:processos')
+
+    def form_valid(self, form):
+        form.instance.responsavel = self.request.user
+        return super().form_valid(form)
+
+
+
+class CadastroSubProcessos(LoginRequiredMixin, ListView):
+    template_name = 'cadastrosubprocessos.html'
+    model = MacroprocessoNivel1
 
 
