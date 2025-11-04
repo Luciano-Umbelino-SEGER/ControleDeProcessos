@@ -454,7 +454,7 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
-class NormaProcedimentoForm(forms.ModelForm):
+class Form_ModelagemProcessoForm(forms.ModelForm):
     """
     Formulário para criação/edição de Normas de Procedimento.
     Força 'nome' como CharField/TextInput para evitar select/lookup.

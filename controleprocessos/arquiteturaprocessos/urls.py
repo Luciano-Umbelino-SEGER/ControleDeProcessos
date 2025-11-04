@@ -5,8 +5,8 @@ from .views import (HomePage, ArquiteruraProcessos, CadastroSubProcessos, Estati
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
                     ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
                     EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
-                    VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, NormaProcedimentoView,
-                    CriarNormaProcedimento, VisualizarNormaProcedimento, EditarNormaProcedimento, ExcluirNormaProcedimento,
+                    VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, ModelagemProcessoView,
+                    CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, classificacao_por_macro1, macroprocessos_por_classificacao, SubProcessoView)
 from django.contrib.auth import views as auth_views
 
@@ -42,11 +42,11 @@ urlpatterns = [
     path('macroprocessonivel2/<int:pk>/editar/', EditarMacroProcessoNivel2.as_view(), name='editar_macroprocessonivel2'),
     path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
-    path('normaprocedimento/', NormaProcedimentoView.as_view(), name='normaprocedimento'),
-    path('form_normaprocedimento/', CriarNormaProcedimento.as_view(), name='form_normaprocedimento'),
-    path('normaprocedimento/<int:pk>/visualizar/', VisualizarNormaProcedimento.as_view(), name='visualizar_normaprocedimento'),
-    path('normaprocedimento/<int:pk>/editar/', EditarNormaProcedimento.as_view(), name='editar_normaprocedimento'),
-    path('normaprocedimento/<int:pk>/excluir/', ExcluirNormaProcedimento.as_view(), name='excluir_normaprocedimento'),
+    path('modelagemprocessos/', ModelagemProcessoView.as_view(), name='modelagemprocessos'),
+    path('form_modelagemprocesso/', CriarModelagemProcesso.as_view(), name='form_modelagemprocesso'),
+    path('modelagemprocesso/<int:pk>/visualizar/', VisualizarModelagemProcesso.as_view(), name='visualizar_modelagemprocesso'),
+    path('modelagemprocesso/<int:pk>/editar/', EditarModelagemProcesso.as_view(), name='editar_modelagemprocesso'),
+    path('modelagemprocesso/<int:pk>/excluir/', ExcluirModelagemProcesso.as_view(), name='excluir_modelagemprocesso'),
     path('processos/', ProcessoView.as_view(), name='processos'),
     path('form_processo/', CriarProcesso.as_view(), name='form_processo'),
     path('cadastrosubprocessos/', CadastroSubProcessos.as_view(), name='cadastrosubprocessos'),

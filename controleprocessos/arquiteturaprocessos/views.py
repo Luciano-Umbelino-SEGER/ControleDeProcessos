@@ -15,7 +15,7 @@ from django.db.models.deletion import ProtectedError
 from django.db.models import Q
 from django.db.models import Exists, OuterRef
 from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
-                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form, NormaProcedimentoForm)
+                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form, Form_ModelagemProcessoForm)
 from django.core.paginator import Paginator
 
 
@@ -631,10 +631,10 @@ class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
 # Listagem
-class NormaProcedimentoView(LoginRequiredMixin, ListView):
+class ModelagemProcessoView(LoginRequiredMixin, ListView):
     model = ModelagemProcesso
-    template_name = 'estrutura/normaprocedimento.html'
-    context_object_name = 'normasprocedimento'
+    template_name = 'estrutura/modelagemprocessos.html'
+    context_object_name = 'modelagemprocessos'
     paginate_by = 20  # quantidade de registros por página
 
     def get_queryset(self):
@@ -668,9 +668,9 @@ class NormaProcedimentoView(LoginRequiredMixin, ListView):
 # -------------------
 # Criar
 # -------------------
-class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
-    template_name = 'estrutura/form_normaprocedimento.html'
-    form_class = NormaProcedimentoForm
+class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
+    template_name = 'estrutura/form_modelagemprocesso.html'
+    form_class = Form_ModelagemProcessoForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -687,29 +687,29 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
         if form.instance.usuario_id is None:
             form.instance.usuario = self.request.user
         response = super().form_valid(form)
-        messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' criada com sucesso!")
+        messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' criada com sucesso!")
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível criar a Norma de Procedimento. Corrija os erros abaixo.")
+        messages.error(self.request, "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo.")
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:normaprocedimento')
+        return reverse('arquiteturaprocessos:ModelagemProcesso')
 
 
 # -------------------
 # Visualizar
 # -------------------
-class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
-    template_name = 'estrutura/form_normaprocedimento.html'
+class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
+    template_name = 'estrutura/form_modelagemprocesso.html'
     model = ModelagemProcesso
     context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         norma = self.get_object()
-        context['form'] = NormaProcedimentoForm(instance=norma, modo_visualizacao=True)
+        context['form'] = Form_ModelagemProcessoForm(instance=norma, modo_visualizacao=True)
         context.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
@@ -721,11 +721,11 @@ class VisualizarNormaProcedimento(LoginRequiredMixin, DetailView):
 # -------------------
 # Editar
 # -------------------
-class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
+class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     model = ModelagemProcesso
-    template_name = 'estrutura/form_normaprocedimento.html'
+    template_name = 'estrutura/form_modelagemprocesso.html'
     context_object_name = 'modelagemprocesso'
-    form_class = NormaProcedimentoForm
+    form_class = Form_ModelagemProcessoForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -749,20 +749,20 @@ class EditarNormaProcedimento(LoginRequiredMixin, UpdateView):
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:normaprocedimento')
+        return reverse('arquiteturaprocessos:ModelagemProcesso')
 
 # -------------------
 # Excluir
 # -------------------
-class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
+class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     model = ModelagemProcesso
-    template_name = 'estrutura/form_normaprocedimento.html'
+    template_name = 'estrutura/form_modelagemprocesso.html'
     context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.method != 'POST':
-            context['form'] = NormaProcedimentoForm(instance=self.get_object(), modo_exclusao=True)
+            context['form'] = Form_ModelagemProcessoForm(instance=self.get_object(), modo_exclusao=True)
         context.update({
             'modo_exclusao': True,
             'modo_visualizacao': False,
@@ -774,8 +774,8 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         norma = self.get_object()
         norma.delete()
-        messages.success(request, f"Norma de Procedimento '{norma.tema}' excluída com sucesso!")
-        return redirect('arquiteturaprocessos:normaprocedimento')
+        messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
+        return redirect('arquiteturaprocessos:modelagemprocesso')
 
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo

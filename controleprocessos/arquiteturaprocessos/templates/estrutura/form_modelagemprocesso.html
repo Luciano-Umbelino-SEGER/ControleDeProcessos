@@ -2,19 +2,19 @@
 {% load static %}
 
 {% block titulo %}
-{% if modo_visualizacao %}Visualização de Norma de Procedimento
-{% elif modo_edicao %}Edição de Norma de Procedimento
-{% elif modo_exclusao %}Exclusão de Norma de Procedimento
-{% else %}Inclusão de Norma de Procedimento{% endif %}
+{% if modo_visualizacao %}Visualização de Modelagem de Processos
+{% elif modo_edicao %}Edição de Modelagem de Processos
+{% elif modo_exclusao %}Exclusão de Modelagem de Processos
+{% else %}Inclusão de Modelagem de Processos{% endif %}
 {% endblock %}
 
 {% block body %}
 <div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
   <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
-    {% if modo_visualizacao %}Visualização de Norma de Procedimento
-    {% elif modo_edicao %}Edição de Norma de Procedimento
-    {% elif modo_exclusao %}Exclusão de Norma de Procedimento
-    {% else %}Inclusão de Norma de Procedimento{% endif %}
+    {% if modo_visualizacao %}Visualização de Modelagem de Processos
+    {% elif modo_edicao %}Edição de Modelagem de Processos
+    {% elif modo_exclusao %}Exclusão de Modelagem de Processos
+    {% else %}Inclusão de Modelagem de Processos{% endif %}
   </h1>
 
   {% if form.non_field_errors %}
@@ -37,7 +37,7 @@
             type="text"
             id="id_nome"
             name="nome"
-            value="{{ form.nome.value|default_if_none:'NORMA DE PROCEDIMENTO' }}"
+            value="{{ form.nome.value|default_if_none:'MODELAGEM DE PROCESSOS' }}"
             class="w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}"
             placeholder="Digite o nome"
             {% if modo_visualizacao or modo_exclusao %}readonly tabindex="-1" style="pointer-events:none; opacity:0.9;"{% endif %}
@@ -163,8 +163,8 @@
             type="button"
             class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
             @click="$dispatch('abrir-modal-confirmacao', {
-                url: '{% url 'arquiteturaprocessos:excluir_normaprocedimento' normaprocedimento.id %}',
-                mensagem: 'Confirma a exclusão da Norma de Procedimento <strong>{{ normaprocedimento.codigo }} Nº {{ normaprocedimento.sequencial }} - Versão {{ normaprocedimento.versao }} - {{ normaprocedimento.tema }}</strong>?'
+                url: '{% url 'arquiteturaprocessos:excluir_modelagemprocesso' modelagemprocesso.id %}',
+                mensagem: 'Confirma a exclusão da Modelagem de Processo <strong>{{ modelagemprocesso.codigo }} Nº {{ modelagemprocesso.sequencial }} - Versão {{ modelagemprocesso.versao }} - {{ modelagemprocesso.tema }}</strong>?'
             })"
           >
             Confirmar Exclusão
@@ -175,13 +175,13 @@
           </button>
         {% else %}
           <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-            Adicionar Norma de Procedimento
+            Adicionar Modelagem
           </button>
         {% endif %}
       {% endif %}
 
       <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-         href="{% url 'arquiteturaprocessos:normaprocedimento' %}">
+         href="{% url 'arquiteturaprocessos:modelagemprocessos' %}">
          {% if modo_visualizacao %}
             Voltar
          {% else %}
