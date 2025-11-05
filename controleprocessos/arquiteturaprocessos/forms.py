@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import date
 import re
-
 from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, ModelagemProcesso
 
 UserModel = get_user_model()
@@ -454,6 +453,11 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
+import re
+from django import forms
+from django.core.exceptions import ValidationError
+from .models import ModelagemProcesso
+
 class Form_ModelagemProcessoForm(forms.ModelForm):
     """
     Formulário para criação/edição de Normas de Procedimento.
@@ -464,8 +468,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         widget=forms.TextInput(attrs={
             "class": "w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase",
             "placeholder": "Nome da Norma de Procedimento",
-            "data-lpignore": "true",       # impede LastPass
-            "autocomplete": "new-password",# força ignorar autofill
+            "data-lpignore": "true",
+            "autocomplete": "new-password",
             "autocorrect": "off",
             "autocapitalize": "off",
             "spellcheck": "false",
@@ -474,13 +478,13 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
     class Meta:
         model = ModelagemProcesso
-        fields = [
-            "nome", "sistema", "codigo", "sequencial",
-            "tema", "emitente", "versao",
-            "data_elaboracao", "portaria_aprovacao", "data_aprovacao",
-            "vigencia_inicio", "vigencia_fim",
-            "link_normaprocedimento",
-        ]
+        # 🔴 NÃO use '__all__' aqui; exclua os campos controlados pelo sistema
+        exclude = (
+            'usuario',              # setado programaticamente
+            'data_cadastro',        # auto_now_add
+            'data_atualizacao',     # auto_now
+            'usuario_atualizacao',  # setado em edição
+        )
         widgets = {
             "data_elaboracao": forms.DateInput(attrs={"type": "date"}),
             "data_aprovacao": forms.DateInput(attrs={"type": "date"}),
@@ -490,6 +494,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.usuario_logado = kwargs.pop("usuario_logado", None)
+        self.modo_inclusao = kwargs.pop("modo_inclusao", False)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
         self.modo_edicao = kwargs.pop("modo_edicao", False)
@@ -507,8 +512,6 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
-
-            # 🔒 Desabilita preenchimento automático e LastPass
             field.widget.attrs.update({
                 "autocomplete": "new-password",
                 "data-lpignore": "true",
@@ -522,11 +525,22 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
+        # Arquivo PDF
+        if "documento_modelagem_processo" in self.fields:
+            fwidget = self.fields["documento_modelagem_processo"].widget
+            fwidget.attrs.setdefault("tabindex", "0")
+            fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
+
         # Defaults na inclusão
         if not self.instance or not self.instance.pk:
             self.fields["nome"].initial = "NORMA DE PROCEDIMENTO"
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
+
+        # 🔑 Setar 'usuario' ANTES da validação (somente na criação)
+        if self.usuario_logado and (not self.instance or not self.instance.pk):
+            # importante: isso garante que o Model.clean() e validações vejam 'usuario'
+            self.instance.usuario = self.usuario_logado
 
         # Desabilita campos em visualização/exclusão
         if self.modo_visualizacao or self.modo_exclusao:
@@ -534,7 +548,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
 
-        # Guarda versão original para regra "não diminuir"
+        # Guarda versão original para valid. "não diminuir"
         self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
 
     # ---------------- Normalizações e validações ----------------
@@ -568,8 +582,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             raise ValidationError("Informe a versão da norma.")
         if not isinstance(ver, int):
             raise ValidationError("Versão deve ser um número inteiro.")
-        if not (0 <= ver <= 99):
-            raise ValidationError("A versão deve estar entre 0 e 99.")
+        if not (1 <= ver <= 99):
+            raise ValidationError("A versão deve estar entre 1 e 99.")
         if self._versao_original is not None and ver < self._versao_original:
             raise ValidationError(f"A versão não pode ser menor que {self._versao_original}.")
         return ver
@@ -587,15 +601,32 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             self.add_error("vigencia_fim", "Deve ser maior que Início da Vigência.")
         return cleaned
 
+    def clean_documento_modelagem_processo(self):
+        f = self.cleaned_data.get('documento_modelagem_processo')
+        if not f:
+            return f
+        content_type = getattr(f, 'content_type', '') or ''
+        is_pdf_type = content_type in ('application/pdf', 'application/x-pdf')
+        is_pdf_name = f.name.lower().endswith('.pdf')
+        if not (is_pdf_type or is_pdf_name):
+            raise forms.ValidationError('Envie um arquivo PDF válido (.pdf).')
+        return f
+
     def save(self, commit=True):
         obj = super().save(commit=False)
-        if not self.instance.pk and self.usuario_logado:
+
+        # Defesa extra para criação
+        if self.usuario_logado and not obj.usuario_id:
             obj.usuario = self.usuario_logado
-        if self.usuario_logado:
+
+        # Em edição, registra o usuário responsável pela última alteração
+        if self.usuario_logado and obj.pk:
             obj.usuario_atualizacao = self.usuario_logado
+
         if commit:
             obj.save()
         return obj
+
 
 
 

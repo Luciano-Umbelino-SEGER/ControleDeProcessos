@@ -9,6 +9,9 @@ from .views import (HomePage, ArquiteruraProcessos, CadastroSubProcessos, Estati
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, classificacao_por_macro1, macroprocessos_por_classificacao, SubProcessoView)
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 
 app_name = "arquiteturaprocessos"
@@ -52,4 +55,4 @@ urlpatterns = [
     path('cadastrosubprocessos/', CadastroSubProcessos.as_view(), name='cadastrosubprocessos'),
     path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
     path('api/macroprocessos_por_classificacao/<int:classificacao_id>/', macroprocessos_por_classificacao, name='macroprocessos_por_classificacao'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

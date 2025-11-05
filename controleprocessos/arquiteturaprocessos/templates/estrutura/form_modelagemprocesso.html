@@ -105,15 +105,6 @@
           </div>
         </div>
 
-        <div class="col-span-12 md:col-span-8">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">
-            {{ form.portaria_aprovacao.label }}
-          </label>
-          <div class="w-full">
-            {{ form.portaria_aprovacao }}
-          </div>
-        </div>
-
         <div class="col-span-12 md:col-span-2">
           <div class="w-full max-w-[20ch] ml-auto">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -123,7 +114,16 @@
           </div>
         </div>
 
-        <!-- Linha 4 -->
+        <!-- 👇 Ajuste principal: de md:col-span-8 para md:col-span-4 + max-w -->
+        <div class="col-span-12 md:col-span-4 min-w-0">
+          <label class="block text-sm font-semibold text-blue-700 mb-1">
+            {{ form.portaria_aprovacao.label }}
+          </label>
+          <div class="w-full">
+            {{ form.portaria_aprovacao }}
+          </div>
+        </div>
+
         <div class="col-span-12 md:col-span-2">
           <div class="w-full max-w-[18ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -133,7 +133,7 @@
           </div>
         </div>
 
-        <div class="col-span-12 md:col-start-3 md:col-span-2">
+        <div class="col-span-12 md:col-span-2">
           <div class="w-full max-w-[18ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
               {{ form.vigencia_fim.label }}
@@ -142,12 +142,119 @@
           </div>
         </div>
 
+
+        <!-- Linha 4 -->
+        <!-- ===== Documento de Modelagem de Processo (PDF) ===== -->
+        <style>
+          /* Input overlay: ocupa toda a caixa, é focável/clicável e aceita drop */
+          .pdf-dropzone input[type="file"]{
+            position:absolute; inset:0; width:100%; height:100%;
+            opacity:0; cursor:pointer; z-index:10; display:block !important;
+          }
+        </style>
+
+        <div class="col-span-12 md:col-start-1 md:col-span-4">
+          <div class="w-full">
+            <label class="block text-sm font-semibold text-blue-700 mb-1">
+              Documento de Modelagem de Processo (PDF)
+            </label>
+
+            <!-- Caixa com o MESMO visual dos inputs e foco azul -->
+            <div
+              x-data="{
+                fileName:'', error:'', over:false,
+                init(){
+                  // localiza o input gerado pelo Django
+                  const inp = this.$el.querySelector('input[type=file]');
+                  if(!inp) return;
+
+                  // garante foco por TAB e visibilidade para o navegador (sem hidden/sr-only)
+                  inp.hidden = false;
+                  inp.classList?.remove('hidden','sr-only');
+                  inp.style.display = 'block';
+                  inp.tabIndex = 0;
+
+                  // restringe a PDF (frontend) — backend já valida
+                  inp.setAttribute('accept','.pdf,application/pdf');
+
+                  // foco/blur -> anel azul (além do :focus-within)
+                  inp.addEventListener('focus', () => this.$el.classList.add('ring-2','ring-blue-500','border-blue-300'));
+                  inp.addEventListener('blur',  () => this.$el.classList.remove('ring-2','ring-blue-500','border-blue-300'));
+
+                  // change -> mostra nome e valida tipo
+                  const onChange = (e) => {
+                    this.error = '';
+                    const f = e.target.files && e.target.files[0];
+                    if(!f){ this.fileName=''; return; }
+                    const ok = (f.type === 'application/pdf') || f.name.toLowerCase().endsWith('.pdf');
+                    if(!ok){
+                      this.error = 'Este campo aceita apenas arquivos PDF (.pdf).';
+                      e.target.value = '';      // limpa seleção inválida
+                      this.fileName = '';
+                      return;
+                    }
+                    this.fileName = f.name;      // exibe nome ao lado do ícone
+                  };
+                  inp.addEventListener('change', onChange);
+
+                  // Drag & Drop nativo NO INPUT (não no contêiner)
+                  ['dragenter','dragover'].forEach(ev =>
+                    inp.addEventListener(ev, (e)=>{ e.preventDefault(); this.over=true; })
+                  );
+                  ['dragleave','dragend'].forEach(ev =>
+                    inp.addEventListener(ev, ()=>{ this.over=false; })
+                  );
+                  inp.addEventListener('drop', (e)=>{
+                    // impedir comportamento padrão evita navegação e mantém o arquivo no input
+                    e.preventDefault();
+                    this.over=false;
+                    // alguns navegadores já disparam 'change'; reforçamos para atualizar o nome
+                    setTimeout(()=> inp.dispatchEvent(new Event('change', {bubbles:true})), 0);
+                  });
+                }
+              }"
+              class="relative pdf-dropzone
+                     w-full rounded-md border border-dashed border-gray-300 bg-white shadow-sm
+                     px-3 py-2 text-gray-700 transition
+                     focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-300"
+              :class="over ? 'ring-2 ring-blue-500 border-blue-300' : ''">
+
+              <!-- Conteúdo visual (o input overlay está por cima e recebe TAB/click/drop) -->
+              <div class="flex items-center gap-2 pointer-events-none select-none">
+                <!-- Ícone mais visível, levemente maior -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <!-- bandeja + seta para cima -->
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 15a3 3 0 003 3h10a3 3 0 003-3"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v8m0-8l-3 3m3-3l3 3"/>
+                </svg>
+                <span class="truncate" x-text="fileName || 'Clique ou arraste para enviar o PDF'"></span>
+              </div>
+
+              <!-- Input file real do Form (overlay absoluto ocupando toda a área) -->
+              <div class="absolute inset-0">
+                {{ form.documento_modelagem_processo }}
+              </div>
+            </div>
+
+            <!-- Mensagem de erro (não-PDF) -->
+            <p x-show="error" x-text="error" class="mt-1 text-sm text-red-600"></p>
+            {% if form.documento_modelagem_processo.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.documento_modelagem_processo.errors|striptags }}</p>
+            {% endif %}
+          </div>
+        </div>
+        <!-- ===== /Documento de Modelagem de Processo (PDF) ===== -->
+
+        <!-- Link da Norma de Procedimento – colunas 5..12 (mantido) -->
         <div class="col-span-12 md:col-start-5 md:col-span-8">
           <div class="w-full ml-[0.2rem] max-w-[76ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
               {{ form.link_normaprocedimento.label }}
             </label>
             {{ form.link_normaprocedimento }}
+            {% if form.link_normaprocedimento.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.link_normaprocedimento.errors|striptags }}</p>
+            {% endif %}
           </div>
         </div>
 

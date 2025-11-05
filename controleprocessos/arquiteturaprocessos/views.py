@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView
@@ -671,31 +672,46 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
 class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_modelagemprocesso.html'
     form_class = Form_ModelagemProcessoForm
+    # Use a URL da listagem corretamente nomeada no seu urls.py
+    success_url = reverse_lazy('arquiteturaprocessos:modelagemprocessos')
+
+    def get_form_kwargs(self):
+        """Passa flags de modo e o usuário logado para o Form (como seu Form espera)."""
+        kwargs = super().get_form_kwargs()
+        kwargs.update({
+            'usuario_logado': self.request.user,
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
+        return kwargs
 
     def get_context_data(self, **kwargs):
+        """Mantém as mesmas flags no contexto para o template, caso use condicionais."""
         context = super().get_context_data(**kwargs)
         context.update({
             'modo_inclusao': True,
             'modo_visualizacao': False,
             'modo_exclusao': False,
-            'modo_edicao': False
+            'modo_edicao': False,
         })
         return context
 
     def form_valid(self, form):
-        # Garante que o usuário logado seja registrado
-        if form.instance.usuario_id is None:
-            form.instance.usuario = self.request.user
+        """Apenas dispara a mensagem de sucesso. O seu Form já seta usuário ao salvar."""
         response = super().form_valid(form)
         messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' criada com sucesso!")
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo.")
+        """Mostra o aviso + lista dos erros por campo, para ficar claro o que corrigir."""
+        messages.error(
+            self.request,
+            mark_safe("Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo:" + form.errors.as_ul())
+        )
         return super().form_invalid(form)
 
-    def get_success_url(self):
-        return reverse('arquiteturaprocessos:ModelagemProcesso')
 
 
 # -------------------

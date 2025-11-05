@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.urls import reverse
 
 LSTA_CLASSIFICACAO = (
@@ -131,12 +131,13 @@ class ModelagemProcesso(models.Model):
     vigencia_inicio = models.DateField(null=True, blank=True, verbose_name="Início da Vigência")
     vigencia_fim = models.DateField(null=True, blank=True, verbose_name="Fim da Vigência")
 
-    link_normaprocedimento = models.URLField(max_length=500, blank=True, verbose_name="Link da Norma de Procedimento")
+    link_normaprocedimento = models.URLField(max_length=500, blank=True, null=True, verbose_name="Link Norma de Procedimento")
 
     documento_modelagem_processo = models.FileField(
         upload_to='modelagemprocessos/',
         blank=True,
         null=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
         verbose_name="Documento de Modelagem de Processo"
     )
 
