@@ -1,153 +1,149 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags %}
 {% include 'navbar.html' %}
 
 {% block body %}
 <div class="py-10 px-4 flex justify-center">
-    <div class="w-full max-w-[95%]">
+  <div class="w-full max-w-[95%]">
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">Modelagem de Processos</h2>
 
-        <h2 class="text-2xl font-bold text-blue-800 mb-6">Modelagem de Processos</h2>
+    {% if request.user.perfil.nome|lower == 'administrador' %}
+    <div class="flex justify-end mb-4">
+      <a href="{% url 'arquiteturaprocessos:form_modelagemprocesso' %}"
+         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clip-rule="evenodd"/>
+        </svg>
+        Adicionar Modelagem
+      </a>
+    </div>
+    {% endif %}
 
-        {% if request.user.perfil.nome|lower == 'administrador' %}
-            <div class="flex justify-end mb-4">
-                <a href="{% url 'arquiteturaprocessos:form_modelagemprocesso' %}"
-                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                              clip-rule="evenodd"/>
-                    </svg>
-                    Adicionar Modelagem
+    <!-- Tabela responsiva -->
+    <div class="overflow-x-auto">
+      <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow">
+        <thead class="bg-blue-100 text-blue-800">
+          <tr>
+            <th class="py-3 px-4 text-left w-[25%]">Nome</th>
+            <th class="py-3 px-4 text-left w-[25%]">Modelo</th>
+            <th class="py-3 px-4 text-left w-[25%]">Norma</th>
+            <th class="py-3 px-4 text-left w-[20%]">Emitente</th>
+            <th class="py-3 px-4 text-left w-[20%]">Sistema</th>
+            <th class="py-3 px-4 text-left w-[10%]">Portaria</th>
+            <th class="py-3 px-4 text-left w-[8%]">Data Aprovação</th>
+            <th class="py-3 px-4 text-left w-[8%]">Início Vigência</th>
+            <th class="py-3 px-4 text-left w-[8%]">Fim Vigência</th>
+            <th class="py-3 px-2 text-right w-[5%]">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for modelagem in modelagemprocessos %}
+          <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %} hover:bg-blue-100 transition-colors">
+            <td class="py-3 px-4 align-top break-words">{{ modelagem.nome }}</td>
+            <!-- Campo Modelo -->
+            <td class="py-3 px-4 align-top break-words">
+                {% if modelagem.documento_modelagem_processo %}
+                    <button
+                        onclick="abrirModalDocumento('http://127.0.0.1:8000{{ modelagem.documento_modelagem_processo.url }}', '{{ modelagem.documento_modelagem_processo|filename }}')"
+                        class="text-blue-600 hover:underline cursor-pointer">
+                        {{ modelagem.documento_modelagem_processo|filename }}
+                    </button>
+                {% endif %}
+            </td>
+            <!-- Campo Norma -->
+            <td class="py-3 px-4 align-top break-words">
+              {% if modelagem.link_normaprocedimento %}
+                <button type="button"
+                        onclick="abrirModalDocumento('{{ modelagem.link_normaprocedimento }}', '{{ modelagem.link_normaprocedimento|filename }}')"
+                        class="text-blue-600 hover:underline cursor-pointer">
+                  {{ modelagem.link_normaprocedimento|filename }}
+                </button>
+              {% endif %}
+            </td>
+
+            <td class="py-3 px-4 align-top break-words">{{ modelagem.emitente }}</td>
+            <td class="py-3 px-4 align-top break-words">{{ modelagem.codigo }} - {{ modelagem.sistema }}</td>
+            <td class="py-3 px-4 align-top break-words">{{ modelagem.portaria_aprovacao }}</td>
+            <td class="py-3 px-4 align-top whitespace-nowrap">
+              {% if modelagem.data_aprovacao %}{{ modelagem.data_aprovacao|date:"d/m/Y" }}{% endif %}
+            </td>
+            <td class="py-3 px-4 align-top whitespace-nowrap">
+              {% if modelagem.vigencia_inicio %}{{ modelagem.vigencia_inicio|date:"d/m/Y" }}{% endif %}
+            </td>
+            <td class="py-3 px-4 align-top whitespace-nowrap">
+              {% if modelagem.vigencia_fim %}{{ modelagem.vigencia_fim|date:"d/m/Y" }}{% endif %}
+            </td>
+
+            <td class="py-3 px-2 text-right align-middle">
+              <div class="flex justify-end items-center space-x-2 h-full">
+                <a href="{% url 'arquiteturaprocessos:visualizar_modelagemprocesso' modelagem.pk %}"
+                   title="Visualizar" class="text-blue-600 hover:text-blue-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                       viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
                 </a>
-            </div>
-        {% endif %}
 
-        <!-- Tabela responsiva -->
-        <div class="overflow-x-auto">
-            <table class="text-sm" class="w-full bg-white border border-gray-200 rounded-lg shadow">
-                <thead class="bg-blue-100 text-blue-800">
-                    <tr>
-                        <th class="py-3 px-4 text-left w-[25%]">Nome</th>
-                        <th class="py-3 px-4 text-left w-[25%]">Modelo</th>
-                        <th class="py-3 px-4 text-left w-[25%]">Norma</th>
-                        <th class="py-3 px-4 text-left w-[20%]">Emitente</th>
-                        <th class="py-3 px-4 text-left w-[20%]">Sistema</th>
-                        <th class="py-3 px-4 text-left w-[10%]">Portaria</th>
-                        <th class="py-3 px-4 text-left w-[8%]">Data Aprovação</th>
-                        <th class="py-3 px-4 text-left w-[8%]">Início Vigência</th>
-                        <th class="py-3 px-4 text-left w-[8%]">Fim Vigência</th>
-                        <th class="py-3 px-2 text-right w-[5%]">Ações</th>
-                    </tr>
-                </thead>
+                {% if request.user.perfil.nome|lower == 'administrador' %}
+                <a href="{% url 'arquiteturaprocessos:editar_modelagemprocesso' modelagem.pk %}"
+                   class="text-yellow-600 hover:text-yellow-800" title="Editar">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                       viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                    <path fill-rule="evenodd"
+                          d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                </a>
 
-                <tbody>
-                    {% for modelagem in modelagemprocessos %}
-                    <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %} hover:bg-blue-100 transition-colors">
-                        <td class="py-3 px-4 align-top break-words">{{ modelagem.nome }}</td>
-                        <td class="py-3 px-4 align-top break-words">link-Nome Modelo</td>
-                        <td class="py-3 px-4 align-top break-words">{{ modelagem.nome }}-{{ modelagem.codigo}} {{ modelagem.sequencial }}</td>
-                        <td class="py-3 px-4 align-top break-words">{{ modelagem.emitente }}</td>
-                        <td class="py-3 px-4 align-top break-words">{{ modelagem.codigo }} - {{ modelagem.sistema }}</td>
-                        <td class="py-3 px-4 align-top break-words">{{ modelagem.portaria_aprovacao }}</td>
-                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ modelagem.data_aprovacao|date:"d/m/Y" }}</td>
-                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ modelagem.vigencia_inicio|date:"d/m/Y" }}</td>
-                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ modelagem.vigencia_fim|date:"d/m/Y" }}</td>
-
-                        <td class="py-3 px-2 text-right align-middle">
-                            <div class="flex justify-end items-center space-x-2 h-full">
-                                <a href="{% url 'arquiteturaprocessos:visualizar_modelagemprocesso' modelagem.pk %}"
-                                   title="Visualizar" class="text-blue-600 hover:text-blue-800">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                </a>
-
-                                {% if request.user.perfil.nome|lower == 'administrador' %}
-                                    <a href="{% url 'arquiteturaprocessos:editar_modelagemprocesso' modelagem.pk %}"
-                                       class="text-yellow-600 hover:text-yellow-800" title="Editar">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                             viewBox="0 0 24 24" stroke="currentColor">
-                                            <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                                            <path fill-rule="evenodd"
-                                                  d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
-                                                  clip-rule="evenodd"/>
-                                        </svg>
-                                    </a>
-
-                                    <a href="{% url 'arquiteturaprocessos:excluir_modelagemprocesso' modelagem.pk %}"
-                                       class="text-red-600 hover:text-red-800" title="Excluir">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                             viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
-                                        </svg>
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="py-4 px-4 text-center text-gray-500">
-                            Nenhuma modelagem de Procedimento encontrada.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Paginação -->
-        {% if is_paginated %}
-        <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
-            <div>
-                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-            </div>
-            <div class="flex space-x-2">
-                {% if page_obj.has_previous %}
-                    <a href="?page=1" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
-                    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+                <a href="{% url 'arquiteturaprocessos:excluir_modelagemprocesso' modelagem.pk %}"
+                   class="text-red-600 hover:text-red-800" title="Excluir">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                       viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                  </svg>
+                </a>
                 {% endif %}
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="py-4 px-4 text-center text-gray-500">
+              Nenhuma modelagem de Procedimento encontrada.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-</div>
 
-<!-- Modal PDF -->
-<div id="modalPDF" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 transition-opacity duration-300 ease-out opacity-0">
-  <div class="bg-white rounded-2xl shadow-2xl w-11/12 max-w-6xl h-[90vh] flex flex-col transform scale-95 transition-transform duration-300 ease-out">
-    <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-[#0097A7] rounded-t-2xl shadow-md">
-      <h3 class="text-lg font-semibold text-white">Visualização de Modelagem de Processos</h3>
-      <!-- Botão Fechar -->
-      <div class="relative flex items-center">
-        <button onclick="fecharModalPDF()"
-                class="text-white hover:text-gray-100 text-2xl leading-none relative group
-                       transition-all duration-200 hover:scale-110 rounded-full px-2
-                       hover:shadow-[0_0_10px_rgba(0,0,0,0.4)]">
-          &times;
-        </button>
-
-        <!-- Tooltip fixado e visível acima de tudo -->
-        <div class="fixed top-4 right-10 bg-[#f3f3f3] text-black text-xs font-medium
-                    rounded py-1 px-2 shadow opacity-0 group-hover:opacity-100
-                    transition-opacity duration-200 pointer-events-none z-[9999]">
-          Fechar
-        </div>
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
+      <div>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+      <div class="flex space-x-2">
+        {% if page_obj.has_previous %}
+          <a href="?page=1" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+        {% endif %}
       </div>
-
     </div>
-    <div class="flex-1 overflow-hidden">
-      <iframe id="iframePDF" src="" class="w-full h-full border-0"></iframe>
-    </div>
+    {% endif %}
   </div>
 </div>
+
+{% include 'components/modal_documento_processo.html' %}
 {% endblock %}

@@ -135,6 +135,7 @@ class ModelagemProcesso(models.Model):
 
     documento_modelagem_processo = models.FileField(
         upload_to='modelagemprocessos/',
+        max_length=500,
         blank=True,
         null=True,
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],

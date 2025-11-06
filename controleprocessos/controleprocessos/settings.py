@@ -132,7 +132,7 @@ STATICFILES_DIRS = [
 
 # Media files (PDFs, uploads, etc.)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'controleprocessos', 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -157,3 +157,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #EMAIL_USE_TLS = True
 #EMAIL_HOST_USER = '<EMAIL>'
 #EMAIL_HOST_PASSWORD = '<PASSWORD>'
+
+# Permitir que o site carregue PDFs no próprio domínio via iframe
+X_FRAME_OPTIONS = 'SAMEORIGIN'

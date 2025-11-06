@@ -1,14 +1,74 @@
-<!-- components/modal_documento_processo.html -->
-<div id="{{ id_modal }}" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden z-50">
-    <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-3xl">
-        <!-- Cabeçalho -->
-        <div class="flex justify-between items-center border-b p-4">
-            <h2 class="text-lg font-semibold text-gray-700">{{ titulo }}</h2>
-            <button onclick="document.getElementById('{{ id_modal }}').classList.add('hidden')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-        </div>
-        <!-- Conteúdo -->
-        <div class="p-4">
-            {{ link_pdf }}</iframe>
-        </div>
+<!-- COMPONENTE: Modal moderno para exibição de documentos PDF -->
+<div id="modalDocumento"
+     class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 transition-opacity duration-300 ease-out">
+  <div id="conteudoModal"
+       class="bg-white rounded-2xl shadow-2xl border-4 border-[#0097A7] w-11/12 max-w-5xl h-[90vh]
+              flex flex-col relative overflow-hidden transform scale-95 opacity-0 transition-all duration-300 ease-out">
+
+    <!-- Cabeçalho -->
+    <div class="bg-[#0097A7] text-white px-6 py-3 flex justify-between items-center">
+      <h3 id="tituloDocumento" class="font-semibold text-lg">Visualização de Documento</h3>
+      <button onclick="fecharModalDocumento()" class="hover:text-gray-300 transition" title="Fechar">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
+
+    <!-- Conteúdo (iframe PDF) -->
+    <div class="flex-1 bg-gray-100">
+      <iframe id="iframeDocumento" src="" class="w-full h-full border-none"></iframe>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="bg-gray-50 text-right px-6 py-3 border-t border-[#0097A7]">
+      <button onclick="fecharModalDocumento()"
+              class="px-4 py-2 bg-[#0097A7] text-white font-medium rounded-lg shadow hover:bg-[#008494] transition">
+        Fechar
+      </button>
+    </div>
+  </div>
 </div>
+
+<!-- Script de controle do modal -->
+<script>
+  function abrirModalDocumento(url, titulo) {
+    console.log("📂 URL recebida no abrirModalDocumento:", url); // <-- ADICIONE ESTA LINHA
+    const modal = document.getElementById('modalDocumento');
+    const conteudo = document.getElementById('conteudoModal');
+    const iframe = document.getElementById('iframeDocumento');
+    const tituloElem = document.getElementById('tituloDocumento');
+
+    // Define o conteúdo
+    iframe.src = url;
+    tituloElem.textContent = titulo || 'Documento';
+
+    // Mostra o modal com fade-in + zoom-in
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Delay para animação suave
+    setTimeout(() => {
+      conteudo.classList.remove('scale-95', 'opacity-0');
+      conteudo.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function fecharModalDocumento() {
+    const modal = document.getElementById('modalDocumento');
+    const conteudo = document.getElementById('conteudoModal');
+    const iframe = document.getElementById('iframeDocumento');
+
+    // Animação de fechamento (fade + zoom out)
+    conteudo.classList.remove('scale-100', 'opacity-100');
+    conteudo.classList.add('scale-95', 'opacity-0');
+
+    // Após a animação, esconde o modal
+    setTimeout(() => {
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+      iframe.src = ''; // limpa o iframe
+    }, 250);
+  }
+</script>
