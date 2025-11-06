@@ -33,22 +33,137 @@
 
 <!-- Script de controle do modal -->
 <script>
+  /*
+   * Configuração do prefixo da rota do viewer via Django,
+   * para não depender de hardcode de caminhos.
+   * Isso garante que, mesmo se seu app estiver sob um prefixo,
+   * a URL gerada será correta.
+   *
+   * Ex.: se urls.py tiver path('', include('arquiteturaprocessos.urls')),
+   *      isso vira algo como "/doc/pdf/__PATH__/"
+   *     se estiver com prefixo "arquiteturaprocessos/", vira
+   *      "/arquiteturaprocessos/doc/pdf/__PATH__/"
+   */
+  window.VIEWER_URL_PLACEHOLDER = "__PATH__";
+  try {
+    window.VIEWER_URL_TEMPLATE = "{% url 'arquiteturaprocessos:visualizar_pdf' path='__PATH__' %}";
+  } catch (e) {
+    // Fallback (se este template não tiver acesso ao namespace/URL tag por algum motivo)
+    window.VIEWER_URL_TEMPLATE = "/doc/pdf/__PATH__/";
+  }
+
+  // Utilitário: codifica cada segmento para manter barras e suportar espaços/acentos
+  function _encodePathSegments(path) {
+    return path
+      .split('/')
+      .filter(Boolean)
+      .map(s => encodeURIComponent(s))
+      .join('/');
+  }
+
+  // Monta a URL final do viewer substituindo apenas o placeholder pelo path codificado.
+  function _montarUrlViewer(pathRelativoDentroDoMedia) {
+    const tpl = window.VIEWER_URL_TEMPLATE || "/doc/pdf/__PATH__/";
+    const ph  = window.VIEWER_URL_PLACEHOLDER || "__PATH__";
+    const encoded = _encodePathSegments(pathRelativoDentroDoMedia);
+    // Garante que não acumulamos barras duplicadas
+    return tpl.replace(ph, encoded).replace(/([^:]\/)\/+/g, '$1');
+  }
+
+  // Converte qualquer entrada (URL absoluta/relativa, /media/... ou path puro do modelo)
+  // para a rota do viewer. Se for uma URL externa (outro domínio/porta), retorna a URL externa como está.
+  function _resolverUrlParaIframe(urlEntrada) {
+    const origin = window.location.origin;
+    const mediaPrefix = '/media/';
+    let urlFinal = null;
+
+    // 1) Se já vier no formato do viewer (/doc/pdf/...), mantenha
+    try {
+      const u = new URL(urlEntrada, origin);
+      const pathname = u.pathname;
+
+      // Detecta se já é a rota do viewer (com ou sem prefixo do app)
+      if (pathname.includes('/doc/pdf/')) {
+        urlFinal = `${pathname}${u.search || ''}${u.hash || ''}`;
+        console.debug('[viewer] Já é rota /doc/pdf, mantendo:', urlFinal);
+        return urlFinal;
+      }
+
+      // Mesma origem? (somente nesse caso convertemos /media/ -> /doc/pdf/)
+      if (u.origin === origin) {
+        if (pathname.startsWith(mediaPrefix)) {
+          // Remove /media/ e monta a rota do viewer
+          const relativo = decodeURIComponent(pathname.slice(mediaPrefix.length));
+          urlFinal = _montarUrlViewer(relativo);
+          console.debug('[viewer] Convertido de /media/ para viewer:', urlFinal);
+          return urlFinal;
+        }
+
+        // Pode ser um caminho relativo interno (sem /media/ explícito)
+        // Ex.: "modelagemprocessos/arquivo.pdf"
+        // Se não houver /media/, assumimos que é path relativo ao MEDIA_ROOT
+        if (!pathname.startsWith('/')) {
+          const relativo = decodeURIComponent(pathname);
+          urlFinal = _montarUrlViewer(relativo);
+          console.debug('[viewer] Caminho relativo tratado como MEDIA:', urlFinal);
+          return urlFinal;
+        }
+
+        // Se caiu aqui, é mesma origem mas não está sob /media/.
+        // Provavelmente é uma URL de página; nesse caso tentamos direto (pode não ser PDF).
+        console.debug('[viewer] Mesma origem mas não é /media/ nem /doc/pdf/. Usando direto:', u.href);
+        return u.href;
+      } else {
+        // 2) URL externa (outro host/porta): tenta abrir direto no iframe
+        // (Se o servidor externo tiver X-Frame-Options bloqueando, o navegador impedirá.)
+        console.debug('[viewer] URL externa detectada. Usando direto:', u.href);
+        return u.href;
+      }
+    } catch (e) {
+      // 3) Fallback quando urlEntrada não parseia como URL (string simples)
+      // Pode ser: "/media/..." ou "modelagemprocessos/arquivo.pdf"
+      console.debug('[viewer] Fallback de parsing. String recebida:', urlEntrada);
+      let s = String(urlEntrada || '');
+      if (s.startsWith(mediaPrefix)) {
+        // Remove "/media/"
+        s = s.slice(mediaPrefix.length);
+      } else {
+        // Remove host + /media/ se presente
+        s = s.replace(/^https?:\/\/[^/]+\/media\//, '');
+        // Remove barras iniciais
+        s = s.replace(/^\/+/, '');
+      }
+      try { s = decodeURIComponent(s); } catch (_) {}
+      urlFinal = _montarUrlViewer(s);
+      console.debug('[viewer] Fallback convertido para viewer:', urlFinal);
+      return urlFinal;
+    }
+  }
+
   function abrirModalDocumento(url, titulo) {
-    console.log("📂 URL recebida no abrirModalDocumento:", url); // <-- ADICIONE ESTA LINHA
+    console.log("📂 URL recebida no abrirModalDocumento:", url);
     const modal = document.getElementById('modalDocumento');
     const conteudo = document.getElementById('conteudoModal');
     const iframe = document.getElementById('iframeDocumento');
     const tituloElem = document.getElementById('tituloDocumento');
 
-    // Define o conteúdo
-    iframe.src = url;
+    if (!modal || !conteudo || !iframe || !tituloElem) {
+      console.error('[viewer] Elementos do modal não encontrados. Verifique os IDs: modalDocumento, conteudoModal, iframeDocumento, tituloDocumento.');
+      return;
+    }
+
+    // ✅ Único ajuste: resolver a URL para a rota segura, quando aplicável
+    const urlIframe = _resolverUrlParaIframe(url);
+    iframe.src = urlIframe;
+
+    // Título (inalterado)
     tituloElem.textContent = titulo || 'Documento';
 
-    // Mostra o modal com fade-in + zoom-in
+    // Mostra o modal com fade-in + zoom-in (inalterado)
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
-    // Delay para animação suave
+    // Delay para animação suave (inalterado)
     setTimeout(() => {
       conteudo.classList.remove('scale-95', 'opacity-0');
       conteudo.classList.add('scale-100', 'opacity-100');
@@ -60,11 +175,16 @@
     const conteudo = document.getElementById('conteudoModal');
     const iframe = document.getElementById('iframeDocumento');
 
-    // Animação de fechamento (fade + zoom out)
+    if (!modal || !conteudo || !iframe) {
+      console.error('[viewer] Elementos do modal não encontrados ao fechar.');
+      return;
+    }
+
+    // Animação de fechamento (fade + zoom out) (inalterado)
     conteudo.classList.remove('scale-100', 'opacity-100');
     conteudo.classList.add('scale-95', 'opacity-0');
 
-    // Após a animação, esconde o modal
+    // Após a animação, esconde o modal (inalterado)
     setTimeout(() => {
       modal.classList.remove('flex');
       modal.classList.add('hidden');
@@ -72,3 +192,4 @@
     }, 250);
   }
 </script>
+

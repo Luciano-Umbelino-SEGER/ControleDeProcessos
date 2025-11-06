@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.forms import inlineformset_factory
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 
 from .models import (Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
                      Classificacao, ModelagemProcesso, Processo)
@@ -18,7 +18,38 @@ from django.db.models import Exists, OuterRef
 from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
                     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form, Form_ModelagemProcessoForm)
 from django.core.paginator import Paginator
+from django.conf import settings
+from django.views.decorators.clickjacking import xframe_options_sameorigin  # ou xframe_options_exempt
+from pathlib import Path
+import mimetypes
 
+@xframe_options_sameorigin  # permite ser exibido em <iframe> quando a página for da mesma origem
+def visualizar_pdf(request, path):
+    """
+    Serve com segurança um PDF do MEDIA_ROOT para ser exibido em <iframe>.
+    'path' deve ser relativo ao MEDIA_ROOT (ex.: 'modelagemprocessos/arquivo.pdf').
+    """
+    # Monta caminho absoluto com segurança
+    media_root = Path(settings.MEDIA_ROOT).resolve()
+    file_path = (media_root / path).resolve()
+
+    # Evita path traversal e garante existência do arquivo
+    if not str(file_path).startswith(str(media_root)) or not file_path.exists() or not file_path.is_file():
+        raise Http404("Arquivo não encontrado")
+
+    # (Opcional) restringir a PDFs; comente se precisar abrir outros tipos
+    ctype, _ = mimetypes.guess_type(str(file_path))
+    if ctype != 'application/pdf':
+        raise Http404("Tipo de arquivo não permitido")
+
+    # Responder 'inline' para o navegador renderizar
+    response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{file_path.name}"'
+
+    # (Opcional, moderno) Reforçar CSP para iframes da mesma origem
+    response['Content-Security-Policy'] = "frame-ancestors 'self'"
+
+    return response
 
 class HomePage(TemplateView):
     template_name = 'homepage.html'

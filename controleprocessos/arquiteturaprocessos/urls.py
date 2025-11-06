@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path
+from . import views
 from .views import (HomePage, ArquiteruraProcessos, CadastroSubProcessos, Estatisticas, BackLog,
                     CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
@@ -17,6 +18,7 @@ from django.conf.urls.static import static
 app_name = "arquiteturaprocessos"
 
 urlpatterns = [
+    path('doc/pdf/<path:path>/', views.visualizar_pdf, name='visualizar_pdf'),
     path('', HomePage.as_view(), name='homepage'),
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
