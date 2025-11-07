@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
@@ -662,24 +663,18 @@ def macroprocessos_por_classificacao(request, classificacao_id):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
+# -------------------
 # Listagem
+# -------------------
 class ModelagemProcessoView(LoginRequiredMixin, ListView):
     model = ModelagemProcesso
     template_name = 'estrutura/modelagemprocessos.html'
     context_object_name = 'modelagemprocessos'
-    paginate_by = 20  # quantidade de registros por página
+    paginate_by = 20
 
     def get_queryset(self):
-        # Obtém o termo de busca enviado pelo usuário
         termo = self.request.GET.get('q', '').strip()
-
-        # Query base com leve otimização via select_related
-        queryset = (
-            ModelagemProcesso.objects
-            .select_related('usuario', 'usuario_atualizacao')
-        )
-
-        # Filtro de busca (tema, emitente, sistema, código)
+        queryset = ModelagemProcesso.objects.select_related('usuario', 'usuario_atualizacao')
         if termo:
             queryset = queryset.filter(
                 Q(tema__icontains=termo) |
@@ -687,13 +682,10 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
                 Q(sistema__icontains=termo) |
                 Q(codigo__icontains=termo)
             )
-
-        # Ordenação padrão (tema, código e sequencial)
         return queryset.order_by('tema', 'codigo', 'sequencial')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # mantém o termo de busca no template
         context['termo_busca'] = self.request.GET.get('q', '')
         return context
 
@@ -703,11 +695,9 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
 class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_modelagemprocesso.html'
     form_class = Form_ModelagemProcessoForm
-    # Use a URL da listagem corretamente nomeada no seu urls.py
     success_url = reverse_lazy('arquiteturaprocessos:modelagemprocessos')
 
     def get_form_kwargs(self):
-        """Passa flags de modo e o usuário logado para o Form (como seu Form espera)."""
         kwargs = super().get_form_kwargs()
         kwargs.update({
             'usuario_logado': self.request.user,
@@ -719,7 +709,6 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         return kwargs
 
     def get_context_data(self, **kwargs):
-        """Mantém as mesmas flags no contexto para o template, caso use condicionais."""
         context = super().get_context_data(**kwargs)
         context.update({
             'modo_inclusao': True,
@@ -730,20 +719,18 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        """Apenas dispara a mensagem de sucesso. O seu Form já seta usuário ao salvar."""
+        form.instance.usuario = self.request.user
+        form.instance.data_cadastro = timezone.now()
         response = super().form_valid(form)
         messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' criada com sucesso!")
         return response
 
     def form_invalid(self, form):
-        """Mostra o aviso + lista dos erros por campo, para ficar claro o que corrigir."""
         messages.error(
             self.request,
-            mark_safe("Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo:" + form.errors.as_ul())
+            "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo: " + str(form.errors)
         )
         return super().form_invalid(form)
-
-
 
 # -------------------
 # Visualizar
@@ -785,8 +772,15 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        # Atualiza o usuário que está fazendo a alteração
-        form.instance.usuario_atualizacao = self.request.user
+        obj = form.instance
+        obj.usuario_atualizacao = self.request.user
+        obj.data_atualizacao = timezone.now()
+
+        if 'documento_modelagem_processo' in form.changed_data:
+            antigo = self.get_object().documento_modelagem_processo
+            if antigo and os.path.isfile(antigo.path):
+                os.remove(antigo.path)
+
         response = super().form_valid(form)
         messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' atualizada com sucesso!")
         return response
@@ -820,6 +814,8 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         norma = self.get_object()
+        if norma.documento_modelagem_processo and os.path.isfile(norma.documento_modelagem_processo.path):
+            os.remove(norma.documento_modelagem_processo.path)
         norma.delete()
         messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:modelagemprocesso')

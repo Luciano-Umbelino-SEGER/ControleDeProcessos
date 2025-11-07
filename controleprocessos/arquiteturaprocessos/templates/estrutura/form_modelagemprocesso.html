@@ -23,7 +23,7 @@
     </div>
   {% endif %}
 
-  <form method="post" class="space-y-6" autocomplete="off" data-lpignore="true" data-form-type="other" id="form-exclusao">
+  <form method="post" class="space-y-6" autocomplete="off" data-lpignore="true" data-form-type="other" id="form-exclusao" enctype="multipart/form-data">
     {% csrf_token %}
 
     <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
@@ -282,7 +282,7 @@
           </button>
         {% else %}
           <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-            Adicionar Modelagem
+            Adicionar Modelo
           </button>
         {% endif %}
       {% endif %}

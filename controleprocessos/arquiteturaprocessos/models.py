@@ -96,11 +96,9 @@ class MacroprocessoNivel2(models.Model):
     def __str__(self):
         return f"{self.nome}"
 
-
 # ============================================================
 # Modelagem de Processos
 # ============================================================
-
 class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 

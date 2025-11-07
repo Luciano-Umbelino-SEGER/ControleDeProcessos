@@ -453,16 +453,7 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
-import re
-from django import forms
-from django.core.exceptions import ValidationError
-from .models import ModelagemProcesso
-
 class Form_ModelagemProcessoForm(forms.ModelForm):
-    """
-    Formulário para criação/edição de Normas de Procedimento.
-    Força 'nome' como CharField/TextInput para evitar select/lookup.
-    """
     nome = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
@@ -478,12 +469,11 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
     class Meta:
         model = ModelagemProcesso
-        # 🔴 NÃO use '__all__' aqui; exclua os campos controlados pelo sistema
         exclude = (
-            'usuario',              # setado programaticamente
-            'data_cadastro',        # auto_now_add
-            'data_atualizacao',     # auto_now
-            'usuario_atualizacao',  # setado em edição
+            'usuario',
+            'data_cadastro',
+            'data_atualizacao',
+            'usuario_atualizacao',
         )
         widgets = {
             "data_elaboracao": forms.DateInput(attrs={"type": "date"}),
@@ -520,38 +510,30 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 "spellcheck": "false",
             })
 
-        # Ajustes específicos
         self.fields["codigo"].widget.attrs.update({"class": self.fields["codigo"].widget.attrs["class"] + " uppercase"})
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
-        # Arquivo PDF
         if "documento_modelagem_processo" in self.fields:
             fwidget = self.fields["documento_modelagem_processo"].widget
             fwidget.attrs.setdefault("tabindex", "0")
             fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
 
-        # Defaults na inclusão
         if not self.instance or not self.instance.pk:
             self.fields["nome"].initial = "NORMA DE PROCEDIMENTO"
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
 
-        # 🔑 Setar 'usuario' ANTES da validação (somente na criação)
         if self.usuario_logado and (not self.instance or not self.instance.pk):
-            # importante: isso garante que o Model.clean() e validações vejam 'usuario'
             self.instance.usuario = self.usuario_logado
 
-        # Desabilita campos em visualização/exclusão
         if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
 
-        # Guarda versão original para valid. "não diminuir"
         self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
 
-    # ---------------- Normalizações e validações ----------------
     def clean_nome(self):
         nome = (self.cleaned_data.get("nome") or "").strip().upper()
         if not nome:
@@ -614,18 +596,14 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-
-        # Defesa extra para criação
         if self.usuario_logado and not obj.usuario_id:
             obj.usuario = self.usuario_logado
-
-        # Em edição, registra o usuário responsável pela última alteração
         if self.usuario_logado and obj.pk:
             obj.usuario_atualizacao = self.usuario_logado
-
         if commit:
             obj.save()
         return obj
+
 
 
 
