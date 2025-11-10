@@ -170,54 +170,64 @@
             <!-- Caixa com o MESMO visual dos inputs e foco azul -->
             <div
               x-data="{
-                fileName:'', error:'', over:false,
-                init(){
-                  // localiza o input gerado pelo Django
+                fileName: '',
+                error: '',
+                over: false,
+                init() {
                   const inp = this.$el.querySelector('input[type=file]');
-                  if(!inp) return;
+                  if (!inp) return;
 
-                  // garante foco por TAB e visibilidade para o navegador (sem hidden/sr-only)
                   inp.hidden = false;
-                  inp.classList?.remove('hidden','sr-only');
+                  inp.classList.remove('hidden', 'sr-only');
                   inp.style.display = 'block';
                   inp.tabIndex = 0;
+                  inp.setAttribute('accept', '.pdf,application/pdf');
 
-                  // restringe a PDF (frontend) — backend já valida
-                  inp.setAttribute('accept','.pdf,application/pdf');
-
-                  // foco/blur -> anel azul (além do :focus-within)
+                  // foco/blur do input
                   inp.addEventListener('focus', () => this.$el.classList.add('ring-2','ring-blue-500','border-blue-300'));
-                  inp.addEventListener('blur',  () => this.$el.classList.remove('ring-2','ring-blue-500','border-blue-300'));
+                  inp.addEventListener('blur', () => this.$el.classList.remove('ring-2','ring-blue-500','border-blue-300'));
 
                   // change -> mostra nome e valida tipo
-                  const onChange = (e) => {
+                  inp.addEventListener('change', (e) => {
                     this.error = '';
                     const f = e.target.files && e.target.files[0];
-                    if(!f){ this.fileName=''; return; }
+                    if (!f) { this.fileName = ''; return; }
                     const ok = (f.type === 'application/pdf') || f.name.toLowerCase().endsWith('.pdf');
-                    if(!ok){
+                    if (!ok) {
                       this.error = 'Este campo aceita apenas arquivos PDF (.pdf).';
-                      e.target.value = '';      // limpa seleção inválida
+                      e.target.value = '';
                       this.fileName = '';
                       return;
                     }
-                    this.fileName = f.name;      // exibe nome ao lado do ícone
-                  };
-                  inp.addEventListener('change', onChange);
+                    this.fileName = f.name;
+                  });
 
-                  // Drag & Drop nativo NO INPUT (não no contêiner)
-                  ['dragenter','dragover'].forEach(ev =>
-                    inp.addEventListener(ev, (e)=>{ e.preventDefault(); this.over=true; })
-                  );
-                  ['dragleave','dragend'].forEach(ev =>
-                    inp.addEventListener(ev, ()=>{ this.over=false; })
-                  );
-                  inp.addEventListener('drop', (e)=>{
-                    // impedir comportamento padrão evita navegação e mantém o arquivo no input
+                  // --- Corrigido: eventos de drag-and-drop no container ---
+                  const dropzone = this.$el;
+                  ['dragenter', 'dragover'].forEach(ev => {
+                    dropzone.addEventListener(ev, (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      this.over = true;
+                    });
+                  });
+                  ['dragleave', 'dragend'].forEach(ev => {
+                    dropzone.addEventListener(ev, (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      this.over = false;
+                    });
+                  });
+                  dropzone.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    this.over=false;
-                    // alguns navegadores já disparam 'change'; reforçamos para atualizar o nome
-                    setTimeout(()=> inp.dispatchEvent(new Event('change', {bubbles:true})), 0);
+                    e.stopPropagation();
+                    this.over = false;
+                    const file = e.dataTransfer?.files?.[0];
+                    if (!file) return;
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    inp.files = dt.files;
+                    inp.dispatchEvent(new Event('change', { bubbles: true }));
                   });
                 }
               }"
@@ -225,20 +235,16 @@
                      w-full rounded-md border border-dashed border-gray-300 bg-white shadow-sm
                      px-3 py-2 text-gray-700 transition
                      focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-300"
-              :class="over ? 'ring-2 ring-blue-500 border-blue-300' : ''">
+              :class="over ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50' : ''">
 
-              <!-- Conteúdo visual (o input overlay está por cima e recebe TAB/click/drop) -->
               <div class="flex items-center gap-2 pointer-events-none select-none">
-                <!-- Ícone mais visível, levemente maior -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <!-- bandeja + seta para cima -->
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 15a3 3 0 003 3h10a3 3 0 003-3"/>
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v8m0-8l-3 3m3-3l3 3"/>
                 </svg>
                 <span class="truncate" x-text="fileName || 'Clique ou arraste para enviar o PDF'"></span>
               </div>
 
-              <!-- Input file real do Form (overlay absoluto ocupando toda a área) -->
               <div class="absolute inset-0">
                 {{ form.documento_modelagem_processo }}
               </div>
