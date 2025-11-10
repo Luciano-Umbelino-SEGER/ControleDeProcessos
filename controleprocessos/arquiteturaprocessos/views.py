@@ -682,12 +682,22 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
                 Q(sistema__icontains=termo) |
                 Q(codigo__icontains=termo)
             )
-        return queryset.order_by('tema', 'codigo', 'sequencial')
+        queryset = queryset.order_by('tema', 'codigo', 'sequencial')
+
+        # 🔹 Formata o sequencial com zeros à esquerda (para exibição na lista)
+        for obj in queryset:
+            if obj.sequencial is not None:
+                try:
+                    obj.sequencial = f"{int(obj.sequencial):03}"
+                except (TypeError, ValueError):
+                    obj.sequencial = obj.sequencial
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['termo_busca'] = self.request.GET.get('q', '')
         return context
+
 
 # -------------------
 # Criar
@@ -709,12 +719,26 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         return kwargs
 
     def get_context_data(self, **kwargs):
+        from django.db.models import Max
+        from .models import ModelagemProcesso
+
         context = super().get_context_data(**kwargs)
+
+        ultimo_sequencial = ModelagemProcesso.objects.aggregate(Max('sequencial'))['sequencial__max'] or 0
+
+        try:
+            proximo_sequencial = int(ultimo_sequencial) + 1
+        except (TypeError, ValueError):
+            proximo_sequencial = 1
+
+        sequencial_formatado = f"{proximo_sequencial:03}"
+
         context.update({
             'modo_inclusao': True,
             'modo_visualizacao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
+            'proximo_sequencial': sequencial_formatado,
         })
         return context
 
@@ -732,6 +756,7 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         )
         return super().form_invalid(form)
 
+
 # -------------------
 # Visualizar
 # -------------------
@@ -742,8 +767,15 @@ class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        norma = self.get_object()
-        context['form'] = Form_ModelagemProcessoForm(instance=norma, modo_visualizacao=True)
+        obj = self.get_object()
+
+        # 🔹 Formata o sequencial
+        try:
+            obj.sequencial = f"{int(obj.sequencial):03}"
+        except (TypeError, ValueError):
+            pass
+
+        context['form'] = Form_ModelagemProcessoForm(instance=obj, modo_visualizacao=True)
         context.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
@@ -751,6 +783,7 @@ class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
             'modo_edicao': False
         })
         return context
+
 
 # -------------------
 # Editar
@@ -763,11 +796,18 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        modelagem = self.get_object()
+
+        # Garante exibição com zeros à esquerda no campo sequencial
+        if modelagem.sequencial is not None:
+            modelagem.sequencial = f"{int(modelagem.sequencial):03d}"
+
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
-            'modo_exclusao': False
+            'modo_exclusao': False,
+            'form': Form_ModelagemProcessoForm(instance=modelagem, modo_edicao=True),
         })
         return context
 
@@ -782,15 +822,15 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
                 os.remove(antigo.path)
 
         response = super().form_valid(form)
-        messages.success(self.request, f"Norma de Procedimento '{self.object.tema}' atualizada com sucesso!")
+        messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' atualizada com sucesso!")
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível atualizar a Norma de Procedimento. Corrija os erros abaixo.")
+        messages.error(self.request, "Não foi possível atualizar a Modelagem de Processo. Corrija os erros abaixo.")
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:ModelagemProcesso')
+        return reverse('arquiteturaprocessos:modelagemprocessos')
 
 # -------------------
 # Excluir
@@ -802,8 +842,16 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        obj = self.get_object()
+
+        # 🔹 Formata o sequencial
+        try:
+            obj.sequencial = f"{int(obj.sequencial):03}"
+        except (TypeError, ValueError):
+            pass
+
         if self.request.method != 'POST':
-            context['form'] = Form_ModelagemProcessoForm(instance=self.get_object(), modo_exclusao=True)
+            context['form'] = Form_ModelagemProcessoForm(instance=obj, modo_exclusao=True)
         context.update({
             'modo_exclusao': True,
             'modo_visualizacao': False,
@@ -819,6 +867,7 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         norma.delete()
         messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:modelagemprocesso')
+
 
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
