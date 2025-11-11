@@ -1,12 +1,15 @@
+import os
+import re
 from django import forms
 from django.forms import inlineformset_factory
+from django.forms.widgets import FileInput
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import date
-import re
+
 from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, ModelagemProcesso
 
 UserModel = get_user_model()
@@ -497,6 +500,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
+        # Ajusta classes e atributos para todos os campos
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
@@ -510,28 +514,45 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 "spellcheck": "false",
             })
 
+        # Ajustes específicos para alguns campos
         self.fields["codigo"].widget.attrs.update({"class": self.fields["codigo"].widget.attrs["class"] + " uppercase"})
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
+        # Ajuste para o campo documento_modelagem_processo
         if "documento_modelagem_processo" in self.fields:
             fwidget = self.fields["documento_modelagem_processo"].widget
             fwidget.attrs.setdefault("tabindex", "0")
             fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
 
+            # ✅ Remove ClearableFileInput nos modos edição/visualização/exclusão
+            from django.forms.widgets import FileInput
+            import os
+            if self.modo_edicao or self.modo_visualizacao or self.modo_exclusao:
+                self.fields["documento_modelagem_processo"].widget = FileInput(attrs=fwidget.attrs)
+
+                # Se houver arquivo, exibir apenas o nome no placeholder
+                if self.instance and self.instance.documento_modelagem_processo:
+                    nome_arquivo = os.path.basename(self.instance.documento_modelagem_processo.name)
+                    self.fields["documento_modelagem_processo"].widget.attrs["placeholder"] = nome_arquivo
+
+        # Valores iniciais para inclusão
         if not self.instance or not self.instance.pk:
             self.fields["nome"].initial = "NORMA DE PROCEDIMENTO"
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
 
+        # Define usuário logado
         if self.usuario_logado and (not self.instance or not self.instance.pk):
             self.instance.usuario = self.usuario_logado
 
+        # Desabilita campos nos modos visualização/exclusão
         if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
 
+        # Guarda versão original para validação
         self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
 
     def clean_nome(self):
