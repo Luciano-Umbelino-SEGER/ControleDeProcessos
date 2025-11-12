@@ -479,10 +479,11 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             'usuario_atualizacao',
         )
         widgets = {
-            "data_elaboracao": forms.DateInput(attrs={"type": "date"}),
-            "data_aprovacao": forms.DateInput(attrs={"type": "date"}),
-            "vigencia_inicio": forms.DateInput(attrs={"type": "date"}),
-            "vigencia_fim": forms.DateInput(attrs={"type": "date"}),
+            # ✅ Ajuste 1: inclui o formato ISO (YYYY-MM-DD) para inputs tipo=date
+            "data_elaboracao": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
+            "data_aprovacao": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
+            "vigencia_inicio": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
+            "vigencia_fim": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -492,6 +493,12 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
         self.modo_edicao = kwargs.pop("modo_edicao", False)
         super().__init__(*args, **kwargs)
+
+        # ✅ Ajuste 2: garante que as datas sejam exibidas no formato aceito pelo input[type=date]
+        for field_name in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
+            field = self.fields.get(field_name)
+            if field and getattr(self.instance, field_name):
+                field.initial = getattr(self.instance, field_name).strftime("%Y-%m-%d")
 
         self.label_suffix = ""
         base = (
@@ -624,6 +631,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         if commit:
             obj.save()
         return obj
+
 
 
 
