@@ -130,41 +130,74 @@
 
         <!-- ===== Documento de Modelagem de Processo (PDF) ===== -->
         <style>
-          .pdf-dropzone input[type="file"]{
-            position:absolute; inset:0; width:100%; height:100%;
-            opacity:0; cursor:pointer; z-index:10; display:block !important;
+          /* Input invisível — captura clique e drag sem interferir no layout */
+          .pdf-dropzone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 10;
+            display: block !important;
+            pointer-events: auto;      /* mantém clique e drag funcionando */
+            contain: layout paint;     /* isola o elemento, não afeta renderização do span */
           }
+
+          /* Área visível do campo (com ícone + nome do arquivo) */
+          .file-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            min-width: 0;              /* necessário para truncar dentro de flex */
+            overflow: hidden;
+            padding: 0.5rem 0.75rem;
+            border: 1px dashed #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          }
+
+          .file-display .file-name {
+            flex: 1;
+            min-width: 0;              /* impede o texto de expandir o container */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;   /* mostra “...” quando o texto é longo */
+            color: black;
+          }
+
           .icon-visualizar {
             transition: color 0.15s ease-in-out, transform 0.15s ease-in-out;
             cursor: pointer;
             display: inline-flex;
           }
+
           .icon-visualizar:hover {
             transform: scale(1.05);
           }
         </style>
 
+        {% with file_name=form.instance.documento_modelagem_processo.name|default_if_none:"" %}
         <div class="col-span-12 md:col-start-1 md:col-span-4">
           <div class="w-full">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
               Documento de Modelagem de Processo (PDF)
             </label>
 
-            <!-- container flex para manter campo + ícone na mesma linha -->
             <div class="flex items-center space-x-2">
-              <!-- area visível que mostra nome do arquivo (ou instrução) -->
-              <div class="relative flex-grow pdf-dropzone"
+              <div class="relative flex-1 pdf-dropzone"
                    :class="over ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50' : ''"
                    x-data="{
-                     // pega o nome bruto enviado pelo servidor (escapejs para segurança)
                      fileName: (function(){
-                       const v = '{{ form.instance.documento_modelagem_processo.name|default:''|escapejs }}';
-                       // se houver caminho, remove só o prefixo 'modelagemprocessos/' no JS (mais robusto que cut)
-                       return v ? v.replace(/^modelagemprocessos\\//, '') : '';
+                       const v = '{{ file_name|escapejs }}';
+                       return v ? v.replace(/^.*[\\\/]/, '') : '';
                      })(),
                      error: '',
                      over: false,
                      readonlyMode: {% if modo_visualizacao or modo_exclusao %}true{% else %}false{% endif %},
+
                      init() {
                        const inp = this.$el.querySelector('input[type=file]');
                        if (!inp) return;
@@ -172,42 +205,37 @@
                        inp.setAttribute('accept', '.pdf,application/pdf');
 
                        if (this.readonlyMode) {
-                         // no readonly, escondemos o input para evitar sobrescrever
                          inp.style.display = 'none';
                          inp.disabled = true;
                        } else {
-                         inp.hidden = false;
-                         inp.classList.remove('hidden','sr-only');
-                         inp.style.display = 'block';
                          inp.tabIndex = 0;
 
-                         inp.addEventListener('focus', () => this.$el.classList.add('ring-2','ring-blue-500','border-blue-300'));
-                         inp.addEventListener('blur', () => this.$el.classList.remove('ring-2','ring-blue-500','border-blue-300'));
-
                          inp.addEventListener('change', (e) => {
-                           this.error = '';
-                           const f = e.target.files && e.target.files[0];
-                           if (!f) { this.fileName = 'Click ou arraste para enviar o PDF'; return; }
-                           const ok = (f.type === 'application/pdf') || f.name.toLowerCase().endsWith('.pdf');
+                           const f = e.target.files?.[0];
+                           if (!f) { this.fileName = ''; return; }
+
+                           const ok = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
                            if (!ok) {
-                             this.error = 'Este campo aceita apenas arquivos PDF (.pdf).';
+                             this.error = 'Apenas arquivos PDF são aceitos.';
                              e.target.value = '';
-                             this.fileName = 'Click ou arraste para enviar o PDF';
+                             this.fileName = '';
                              return;
                            }
+
+                           this.error = '';
                            this.fileName = f.name;
                          });
 
                          // drag/drop
                          const dropzone = this.$el;
-                         ['dragenter','dragover'].forEach(ev => {
-                           dropzone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); this.over = true; });
-                         });
-                         ['dragleave','dragend'].forEach(ev => {
-                           dropzone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); this.over = false; });
-                         });
+                         ['dragenter','dragover'].forEach(ev =>
+                           dropzone.addEventListener(ev, e => { e.preventDefault(); this.over = true; })
+                         );
+                         ['dragleave','dragend'].forEach(ev =>
+                           dropzone.addEventListener(ev, e => { e.preventDefault(); this.over = false; })
+                         );
                          dropzone.addEventListener('drop', (e) => {
-                           e.preventDefault(); e.stopPropagation(); this.over = false;
+                           e.preventDefault(); this.over = false;
                            const file = e.dataTransfer?.files?.[0];
                            if (!file) return;
                            const dt = new DataTransfer();
@@ -219,28 +247,41 @@
                      }
                    }">
 
-                <!-- visible label area (not covered visually because input is transparent) -->
-                <div class="flex items-center gap-2 pointer-events-none select-none px-3 py-2 border border-dashed border-gray-300 rounded-md bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 w-full">
-                  <svg aria-hidden="true" class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M4 15a3 3 0 003 3h10a3 3 0 003-3" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <path d="M12 7v8m0-8l-3 3m3-3l3 3" stroke-linecap="round" stroke-linejoin="round"></path>
+                <!-- Área visível (ícone + nome do arquivo) -->
+                <div class="file-display"
+                     style="display:flex;align-items:center;gap:0.5rem;width:100%;overflow:hidden;min-width:0;
+                            padding:0.5rem 0.75rem;border:1px dashed #d1d5db;border-radius:0.375rem;
+                            background:white;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                  <svg aria-hidden="true" class="h-6 w-6 flex-shrink-0 text-gray-600"
+                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M4 15a3 3 0 003 3h10a3 3 0 003-3"
+                          stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M12 7v8m0-8l-3 3m3-3l3 3"
+                          stroke-linecap="round" stroke-linejoin="round"></path>
                   </svg>
-                  <!-- mostra o nome do arquivo ou instrução -->
-                  <span class="truncate" x-text="fileName || (readonlyMode ? '—' : 'Click ou arraste para enviar o PDF')"></span>
+
+                  <span class="file-name"
+                        style="display:block;flex:1;min-width:0;white-space:nowrap;overflow:hidden;
+                               text-overflow:ellipsis;color:black;line-height:1.25rem;"
+                        x-text="fileName || (readonlyMode ? '—' : 'Click ou arraste para enviar o PDF')">
+                  </span>
                 </div>
 
-                <!-- input file overlay (invisible, captura clicks/drops) -->
+
+                <!-- Input invisível (captura clique e drag/drop) -->
                 <div class="absolute inset-0">
                   {{ form.documento_modelagem_processo }}
                 </div>
               </div>
 
-              <!-- ícone de visualizar, exibido apenas se houver arquivo no backend -->
+              <!-- Ícone de visualizar (se houver arquivo no backend) -->
               {% if form.instance.documento_modelagem_processo %}
                 <a href="{{ form.instance.documento_modelagem_processo.url }}" target="_blank"
                    class="text-blue-500 hover:text-blue-700 icon-visualizar"
                    title="Visualizar" rel="noopener noreferrer">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                       viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                       class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -256,6 +297,7 @@
             {% endif %}
           </div>
         </div>
+        {% endwith %}
         <!-- ===== /Documento de Modelagem de Processo (PDF) ===== -->
 
         <!-- Link da Norma de Procedimento -->
