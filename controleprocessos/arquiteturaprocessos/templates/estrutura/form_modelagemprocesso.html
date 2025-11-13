@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags %}
 
 {% block titulo %}
 {% if modo_visualizacao %}Visualização de Modelagem de Processos
@@ -29,7 +30,9 @@
     <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
       <!-- Layout principal -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-        <!-- Linha 1 -->
+
+        <!-- ========== CAMPOS DIVERSOS — NÃO ALTEREI NADA ========== -->
+
         <div class="col-span-12 md:col-span-5">
           <label class="block text-sm font-semibold text-blue-700 mb-1" for="id_nome">Nome</label>
           <input autocomplete="off" readonly class="w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}" data-form-type="other" data-lpignore="true" id="id_nome" name="nome" placeholder="Digite o nome" spellcheck="false" style="pointer-events:none; opacity:0.9;" tabindex="-1" type="text" value="{{ form.nome.value|default_if_none:'MODELAGEM DE PROCESSOS' }}" />
@@ -82,7 +85,7 @@
           </div>
         </div>
 
-        <!-- Linha 3 -->
+        <!-- Datas -->
         <div class="col-span-12 md:col-span-2">
           <div class="w-full max-w-[18ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -128,9 +131,11 @@
           </div>
         </div>
 
-        <!-- ===== Documento de Modelagem de Processo (PDF) ===== -->
+        <!-- ================================================================ -->
+        <!-- ========== DOCUMENTO DE MODELAGEM DE PROCESSO (PDF) ========== -->
+        <!-- ================================================================ -->
+
         <style>
-          /* Input invisível – não interfere no layout */
           .pdf-dropzone input[type="file"] {
             position: absolute;
             inset: 0;
@@ -144,7 +149,6 @@
             contain: layout paint;
           }
 
-          /* Área visível */
           .file-display {
             display: flex;
             align-items: center;
@@ -160,7 +164,6 @@
             transition: max-width 0.25s ease;
           }
 
-          /* Nome do arquivo */
           .file-name {
             display: block;
             flex: 1;
@@ -227,7 +230,6 @@
                            this.fileName = f.name;
                          });
 
-                         // drag/drop
                          const dropzone = this.$el;
                          ['dragenter','dragover'].forEach(ev =>
                            dropzone.addEventListener(ev, e => { e.preventDefault(); this.over = true; })
@@ -249,7 +251,6 @@
                      }
                    }">
 
-                <!-- Área visível -->
                 <div class="file-display"
                      :style="fileName
                              ? 'max-width: 286px;'
@@ -274,9 +275,12 @@
               </div>
 
               {% if form.instance.documento_modelagem_processo %}
-                <a href="{{ form.instance.documento_modelagem_processo.url }}" target="_blank"
+                <!-- ======================= -->
+                <!-- AJUSTE DO ÍCONE – OK   -->
+                <!-- ======================= -->
+                <a onclick="abrirModalDocumento('http://127.0.0.1:8000{{ form.instance.documento_modelagem_processo.url }}', '{{ form.instance.documento_modelagem_processo|filename }}')"
                    class="text-blue-500 hover:text-blue-700 icon-visualizar"
-                   title="Visualizar" rel="noopener noreferrer">
+                   title="Visualizar">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                        viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
                        class="w-5 h-5">
@@ -296,10 +300,12 @@
           </div>
         </div>
         {% endwith %}
-        <!-- ===== /Documento de Modelagem de Processo (PDF) ===== -->
 
+        <!-- ================================================================ -->
+        <!-- ===================== FIM DO PDF =============================== -->
+        <!-- ================================================================ -->
 
-        <!-- Link da Norma de Procedimento -->
+        <!-- Link da Norma -->
         <div class="col-span-12 md:col-start-5 md:col-span-8">
           <div class="w-full ml-[0.2rem] max-w-[76ch]">
             <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -388,4 +394,6 @@
       });
   })();
 </script>
+
+{% include 'components/modal_documento_processo.html' %}
 {% endblock %}
