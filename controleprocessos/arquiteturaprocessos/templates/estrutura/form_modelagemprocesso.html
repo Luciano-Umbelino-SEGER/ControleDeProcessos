@@ -320,9 +320,9 @@
               </div>
 
               {% if form.link_normaprocedimento.value %}
-                <a href="{{ form.link_normaprocedimento.value }}" target="_blank"
-                   class="text-blue-500 hover:text-blue-700 icon-visualizar"
-                   title="Visualizar" rel="noopener noreferrer">
+                <a  onclick="abrirModalDocumento('{{ form.link_normaprocedimento.value }}', '{{ form.link_normaprocedimento.value|filename }}')"
+                    class="text-blue-500 hover:text-blue-700 icon-visualizar"
+                    title="Visualizar">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
