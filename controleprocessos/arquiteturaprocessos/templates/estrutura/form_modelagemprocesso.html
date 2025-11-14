@@ -191,115 +191,129 @@
               Documento de Modelagem de Processo (PDF)
             </label>
 
-            <div class="flex items-center space-x-2">
+            <!-- Componente Alpine único e autocontido -->
+            <div x-data="{
+                fileName: (function(){
+                  const v = '{{ file_name|escapejs }}';
+                  return v ? v.replace(/^.*[\\\/]/, '') : '';
+                })(),
+                fileObjectURL: (function(){
+                  {% if form.instance.documento_modelagem_processo %}
+                    return 'http://127.0.0.1:8000{{ form.instance.documento_modelagem_processo.url|escapejs }}';
+                  {% else %}
+                    return '';
+                  {% endif %}
+                })(),
+                error: '',
+                over: false,
+                readonlyMode: {% if modo_visualizacao or modo_exclusao %}true{% else %}false{% endif %},
 
-              <div class="relative pdf-dropzone flex-1"
-                   x-data="{
-                     fileName: (function(){
-                       const v = '{{ file_name|escapejs }}';
-                       return v ? v.replace(/^.*[\\\/]/, '') : '';
-                     })(),
-                     error: '',
-                     over: false,
-                     readonlyMode: {% if modo_visualizacao or modo_exclusao %}true{% else %}false{% endif %},
+                init() {
+                  const inp = this.$el.querySelector('input[type=file]');
+                  const dz = this.$el.querySelector('.pdf-dropzone');
+                  if (!inp) return;
 
-                     init() {
-                       const inp = this.$el.querySelector('input[type=file]');
-                       if (!inp) return;
+                  inp.setAttribute('accept', '.pdf,application/pdf');
 
-                       inp.setAttribute('accept', '.pdf,application/pdf');
+                  if (this.readonlyMode) {
+                    inp.style.display = 'none';
+                    inp.disabled = true;
+                    return;
+                  }
 
-                       if (this.readonlyMode) {
-                         inp.style.display = 'none';
-                         inp.disabled = true;
-                       } else {
-                         inp.tabIndex = 0;
+                  // mudança via input
+                  inp.addEventListener('change', () => {
+                    const f = inp.files?.[0];
+                    if (!f) {
+                      this.fileName = '';
+                      this.fileObjectURL = '';
+                      return;
+                    }
+                    const ok = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+                    if (!ok) {
+                      this.error = 'Apenas arquivos PDF são aceitos.';
+                      inp.value = '';
+                      this.fileName = '';
+                      this.fileObjectURL = '';
+                      return;
+                    }
+                    this.error = '';
+                    this.fileName = f.name;
+                    try { this.fileObjectURL = URL.createObjectURL(f); } catch (e) { this.fileObjectURL = ''; }
+                  });
 
-                         inp.addEventListener('change', (e) => {
-                           const f = e.target.files?.[0];
-                           if (!f) { this.fileName = ''; return; }
-                           const ok = f.type === 'application/pdf' ||
-                                      f.name.toLowerCase().endsWith('.pdf');
-                           if (!ok) {
-                             this.error = 'Apenas arquivos PDF são aceitos.';
-                             e.target.value = '';
-                             this.fileName = '';
-                             return;
-                           }
-                           this.error = '';
-                           this.fileName = f.name;
-                         });
+                  // drag & drop
+                  ['dragenter','dragover'].forEach(ev =>
+                    dz.addEventListener(ev, e => { e.preventDefault(); this.over = true; })
+                  );
+                  ['dragleave','dragend'].forEach(ev =>
+                    dz.addEventListener(ev, e => { e.preventDefault(); this.over = false; })
+                  );
+                  dz.addEventListener('drop', e => {
+                    e.preventDefault();
+                    this.over = false;
+                    const file = e.dataTransfer?.files?.[0];
+                    if (!file) return;
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    inp.files = dt.files;
+                    inp.dispatchEvent(new Event('change', { bubbles: true }));
+                  });
+                }
+              }" class="">
 
-                         const dropzone = this.$el;
-                         ['dragenter','dragover'].forEach(ev =>
-                           dropzone.addEventListener(ev, e => { e.preventDefault(); this.over = true; })
-                         );
-                         ['dragleave','dragend'].forEach(ev =>
-                           dropzone.addEventListener(ev, e => { e.preventDefault(); this.over = false; })
-                         );
-                         dropzone.addEventListener('drop', (e) => {
-                           e.preventDefault();
-                           this.over = false;
-                           const file = e.dataTransfer?.files?.[0];
-                           if (!file) return;
-                           const dt = new DataTransfer();
-                           dt.items.add(file);
-                           inp.files = dt.files;
-                           inp.dispatchEvent(new Event('change', { bubbles: true }));
-                         });
-                       }
-                     }
-                   }">
+              <div class="flex items-center space-x-2">
 
-                <div class="file-display"
-                     :style="fileName
-                             ? 'max-width: 286px;'
-                             : 'max-width: 314px;'">
+                <div class="relative pdf-dropzone flex-1">
 
-                  <svg aria-hidden="true" class="h-6 w-6 flex-shrink-0 text-gray-600"
-                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M4 15a3 3 0 003 3h10a3 3 0 003-3"
-                          stroke-linecap="round" stroke-linejoin="round"></path>
-                    <path d="M12 7v8m0-8l-3 3m3-3l3 3"
-                          stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
+                  <div class="file-display"
+                       :style="fileName ? 'max-width: 286px;' : 'max-width: 314px;'">
 
-                  <span class="file-name"
-                        x-text="fileName || (readonlyMode ? '—' : 'Click ou arraste para enviar o PDF')">
-                  </span>
+                    <svg aria-hidden="true" class="h-6 w-6 flex-shrink-0 text-gray-600"
+                         fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M4 15a3 3 0 003 3h10a3 3 0 003-3"
+                            stroke-linecap="round" stroke-linejoin="round"></path>
+                      <path d="M12 7v8m0-8l-3 3m3-3l3 3"
+                            stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+
+                    <span class="file-name"
+                          x-text="fileName || (readonlyMode ? '—' : 'Click ou arraste para enviar o PDF')">
+                    </span>
+                  </div>
+
+                  <!-- input original (mantido) -->
+                  <div class="absolute inset-0">
+                    {{ form.documento_modelagem_processo }}
+                  </div>
                 </div>
 
-                <div class="absolute inset-0">
-                  {{ form.documento_modelagem_processo }}
-                </div>
+                <!-- Ícone do olho — aparece somente quando há nome e URL (salvo ou temporário) -->
+                <template x-if="fileName && fileObjectURL">
+                  <a @click="abrirModalDocumento(fileObjectURL, fileName)"
+                     class="text-blue-500 hover:text-blue-700 icon-visualizar"
+                     title="Visualizar">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                         viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                         class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  </a>
+                </template>
+
               </div>
 
-              {% if form.instance.documento_modelagem_processo %}
-                <!-- ======================= -->
-                <!-- AJUSTE DO ÍCONE – OK   -->
-                <!-- ======================= -->
-                <a onclick="abrirModalDocumento('http://127.0.0.1:8000{{ form.instance.documento_modelagem_processo.url }}', '{{ form.instance.documento_modelagem_processo|filename }}')"
-                   class="text-blue-500 hover:text-blue-700 icon-visualizar"
-                   title="Visualizar">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                       viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-                       class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                </a>
-              {% endif %}
-            </div>
+              <!-- Mensagens de erro -->
+              <p class="mt-1 text-sm text-red-600" x-show="error" x-text="error"></p>
 
-            <p class="mt-1 text-sm text-red-600" x-show="error" x-text="error"></p>
-            {% if form.documento_modelagem_processo.errors %}
-              <p class="mt-1 text-sm text-red-600">{{ form.documento_modelagem_processo.errors|striptags }}</p>
-            {% endif %}
+            </div>
           </div>
         </div>
         {% endwith %}
+
 
         <!-- ================================================================ -->
         <!-- ===================== FIM DO PDF =============================== -->
@@ -393,6 +407,13 @@
         if (el) el.style.whiteSpace = 'nowrap';
       });
   })();
+</script>
+
+<script>
+  document.addEventListener("alpine:init", () => {
+    // Nenhum código global é necessário.
+    // O comportamento está 100% encapsulado no componente Alpine pdfField.
+  });
 </script>
 
 {% include 'components/modal_documento_processo.html' %}

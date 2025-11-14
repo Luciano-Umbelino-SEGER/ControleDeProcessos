@@ -153,7 +153,10 @@
     }
 
     // ✅ Único ajuste: resolver a URL para a rota segura, quando aplicável
-    const urlIframe = _resolverUrlParaIframe(url);
+    let urlIframe = url;
+    if (!url.startsWith("blob:")) {
+        urlIframe = _resolverUrlParaIframe(url);
+    }
     iframe.src = urlIframe;
 
     // Título (inalterado)
