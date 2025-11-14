@@ -1,14 +1,15 @@
 from django.contrib import admin
 from django.urls import path
 from . import views
-from .views import (HomePage, ArquiteruraProcessos, CadastroSubProcessos, Estatisticas, BackLog,
+from .views import (HomePage, ArquiteruraProcessos, Estatisticas, BackLog,
                     CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
                     ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
                     ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
                     EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
                     VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, ModelagemProcessoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
-                    ProcessoView, CriarProcesso, classificacao_por_macro1, macroprocessos_por_classificacao, SubProcessoView)
+                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, classificacao_por_macro1,
+                    macroprocessos_por_classificacao, SubProcessoView)
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -54,7 +55,9 @@ urlpatterns = [
     path('modelagemprocesso/<int:pk>/excluir/', ExcluirModelagemProcesso.as_view(), name='excluir_modelagemprocesso'),
     path('processos/', ProcessoView.as_view(), name='processos'),
     path('form_processo/', CriarProcesso.as_view(), name='form_processo'),
-    path('cadastrosubprocessos/', CadastroSubProcessos.as_view(), name='cadastrosubprocessos'),
+    path('processo/<int:pk>/visualizar/', VisualizarProcesso.as_view(), name='visualizar_processo'),
+    path('processo/<int:pk>/editar/', EditarProcesso.as_view(), name='editar_processo'),
+    path('processo/<int:pk>/excluir/', ExcluirProcesso.as_view(), name='excluir_processo'),
     path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
     path('api/macroprocessos_por_classificacao/<int:classificacao_id>/', macroprocessos_por_classificacao, name='macroprocessos_por_classificacao'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

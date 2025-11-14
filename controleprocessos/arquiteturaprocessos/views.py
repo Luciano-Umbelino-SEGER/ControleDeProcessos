@@ -663,9 +663,9 @@ def macroprocessos_por_classificacao(request, classificacao_id):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-# -------------------
-# Listagem
-# -------------------
+# -------------------------------#
+# Listagem - Modelagem Processos #
+# -------------------------------#
 class ModelagemProcessoView(LoginRequiredMixin, ListView):
     model = ModelagemProcesso
     template_name = 'estrutura/modelagemprocessos.html'
@@ -699,9 +699,9 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
         return context
 
 
-# -------------------
-# Criar
-# -------------------
+# -----------------------------#
+# Criar Modelarem de Processos #
+# -----------------------------#
 class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_modelagemprocesso.html'
     form_class = Form_ModelagemProcessoForm
@@ -757,9 +757,9 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         return super().form_invalid(form)
 
 
-# -------------------
-# Visualizar
-# -------------------
+# ----------------------------------#
+# Visualizar Modelarem de Processos #
+# ----------------------------------#
 class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_modelagemprocesso.html'
     model = ModelagemProcesso
@@ -785,9 +785,9 @@ class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
         return context
 
 
-# -------------------
-# Editar
-# -------------------
+# ------------------------------#
+# Editar Modelarem de Processos #
+# ------------------------------#
 class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
@@ -832,10 +832,9 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:modelagemprocessos')
 
-
-# -------------------
-# Excluir
-# -------------------
+# -------------------------------#
+# Excluir Modelarem de Processos #
+# -------------------------------#
 class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
@@ -869,39 +868,67 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
-
+# -------------------------------#
+# Listagem - Processos           #
+# -------------------------------#
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
     template_name = 'processos/processos.html'  # nova pasta processos
     context_object_name = 'processos'
     paginate_by = 20  # quantidade de registros por página
-
-    # Caso queira ordenar por nome:
     ordering = ['nome']
 
+    def get_queryset(self):
+        # Retorna apenas os processos pai
+        queryset = (
+            Processo.objects
+            .filter(parent__isnull=True)
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "modelagem_processo",
+            )
+            .order_by("nome")
+        )
+        return queryset
+
+# --------------------------------#
+# Criar Processo                  #
+# --------------------------------#
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
     template_name = 'processos/form_processo.html'
-    fields = [
-        'nome',
-        'classificacao',
-        'macroprocesso_nivel1',
-        'macroprocesso_nivel2',
-        'area_responsavel',
-        'gestor',
-        'norma',
-        'parent',
-    ]
+    fields = '__all__'  # depois podemos ajustar se quiser
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
-    def form_valid(self, form):
-        form.instance.responsavel = self.request.user
-        return super().form_valid(form)
+
+# --------------------------------#
+# Visualizar Processo             #
+# --------------------------------#
+class VisualizarProcesso(LoginRequiredMixin, DetailView):
+    model = Processo
+    template_name = 'processos/form_processo.html'
+    context_object_name = 'processo'
 
 
+# --------------------------------#
+# Editar Processo                 #
+# --------------------------------#
+class EditarProcesso(LoginRequiredMixin, UpdateView):
+    model = Processo
+    template_name = 'processos/form_processo.html'
+    fields = '__all__'
+    success_url = reverse_lazy('arquiteturaprocessos:processos')
 
-class CadastroSubProcessos(LoginRequiredMixin, ListView):
-    template_name = 'cadastrosubprocessos.html'
-    model = MacroprocessoNivel1
+
+# --------------------------------#
+# Excluir Processo                #
+# --------------------------------#
+class ExcluirProcesso(LoginRequiredMixin, DetailView):
+    model = Processo
+    template_name = 'processos/form_processo.html'
+    context_object_name = 'processo'
+
 
 

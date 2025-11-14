@@ -303,12 +303,12 @@ class Processo(models.Model):
         verbose_name="Telefone/Ramal"
     )
 
-    norma = models.ForeignKey(
+    modelagem_processo = models.ForeignKey(
         "ModelagemProcesso",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Norma de Procedimento"
+        verbose_name="Modelagem de Processo"
     )
 
     objetivo = models.TextField(
