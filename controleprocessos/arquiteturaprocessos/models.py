@@ -1,6 +1,8 @@
+import os
 import uuid
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.urls import reverse
@@ -99,6 +101,23 @@ class MacroprocessoNivel2(models.Model):
 # ============================================================
 # Modelagem de Processos
 # ============================================================
+def mp_upload_to(instance, filename):
+    """
+    Gera um nome único para cada arquivo enviado.
+    Evita sobrescrever e preserva a extensão original.
+    """
+    nome, ext = os.path.splitext(filename)
+    ext = ext.lower()
+
+    # Gera código único curto (8 chars)
+    codigo = uuid.uuid4().hex[:8]
+
+    # Normaliza o nome
+    nome = nome.replace(" ", "_").replace("–", "-")
+
+    novo_nome = f"{nome}_{codigo}{ext}"
+    return f"modelagemprocessos/{novo_nome}"
+
 class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 
@@ -132,7 +151,7 @@ class ModelagemProcesso(models.Model):
     link_normaprocedimento = models.URLField(max_length=500, blank=True, null=True, verbose_name="Link Norma de Procedimento")
 
     documento_modelagem_processo = models.FileField(
-        upload_to='modelagemprocessos/',
+        upload_to=mp_upload_to,
         max_length=500,
         blank=True,
         null=True,
@@ -172,6 +191,40 @@ class ModelagemProcesso(models.Model):
             models.Index(fields=["sistema"], name="idx_mp_sistema"),
             models.Index(fields=["emitente"], name="idx_mp_emitente"),
         ]
+
+    def save(self, *args, **kwargs):
+        """
+        Se o arquivo for alterado, remove o arquivo antigo do servidor.
+        """
+
+        # Detecta alteração do arquivo durante edição
+        try:
+            old = ModelagemProcesso.objects.get(pk=self.pk)
+        except ModelagemProcesso.DoesNotExist:
+            old = None
+
+        super().save(*args, **kwargs)
+
+        # Se não havia registro anterior, nada a deletar
+        if not old:
+            return
+
+        # Se o arquivo foi trocado, apagar o antigo
+        if old.documento_modelagem_processo and old.documento_modelagem_processo != self.documento_modelagem_processo:
+            old_path = old.documento_modelagem_processo.path
+            if os.path.isfile(old_path):
+                os.remove(old_path)
+
+    def delete(self, *args, **kwargs):
+        """
+        Ao excluir o registro, remove também o arquivo do servidor.
+        """
+        if self.documento_modelagem_processo:
+            path = self.documento_modelagem_processo.path
+            if os.path.isfile(path):
+                os.remove(path)
+
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nome} - {self.codigo}-{self.sequencial} - V{self.versao} - {self.tema}"

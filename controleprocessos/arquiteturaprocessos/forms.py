@@ -456,6 +456,7 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
+
 class Form_ModelagemProcessoForm(forms.ModelForm):
     nome = forms.CharField(
         required=True,
@@ -479,7 +480,6 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             'usuario_atualizacao',
         )
         widgets = {
-            # ✅ Ajuste 1: inclui o formato ISO (YYYY-MM-DD) para inputs tipo=date
             "data_elaboracao": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
             "data_aprovacao": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
             "vigencia_inicio": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
@@ -494,7 +494,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         self.modo_edicao = kwargs.pop("modo_edicao", False)
         super().__init__(*args, **kwargs)
 
-        # ✅ Ajuste 2: garante que as datas sejam exibidas no formato aceito pelo input[type=date]
+        # Ajuste datas
         for field_name in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
             field = self.fields.get(field_name)
             if field and getattr(self.instance, field_name):
@@ -507,12 +507,13 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # Ajusta classes e atributos para todos os campos
+        # Ajuste de classes
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
+
             field.widget.attrs.update({
                 "autocomplete": "new-password",
                 "data-lpignore": "true",
@@ -521,24 +522,28 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 "spellcheck": "false",
             })
 
-        # Ajustes específicos para alguns campos
-        self.fields["codigo"].widget.attrs.update({"class": self.fields["codigo"].widget.attrs["class"] + " uppercase"})
+        # Ajuste campo código
+        self.fields["codigo"].widget.attrs.update({
+            "class": self.fields["codigo"].widget.attrs["class"] + " uppercase"
+        })
+
+        # Ajuste sequencial e versão
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
-        # Ajuste para o campo documento_modelagem_processo
+        # Ajuste PDF
         if "documento_modelagem_processo" in self.fields:
+            from django.forms.widgets import FileInput
+            import os
+
             fwidget = self.fields["documento_modelagem_processo"].widget
             fwidget.attrs.setdefault("tabindex", "0")
             fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
 
-            # ✅ Remove ClearableFileInput nos modos edição/visualização/exclusão
-            from django.forms.widgets import FileInput
-            import os
+            # Remover ClearableFileInput
             if self.modo_edicao or self.modo_visualizacao or self.modo_exclusao:
                 self.fields["documento_modelagem_processo"].widget = FileInput(attrs=fwidget.attrs)
 
-                # Se houver arquivo, exibir apenas o nome no placeholder
                 if self.instance and self.instance.documento_modelagem_processo:
                     nome_arquivo = os.path.basename(self.instance.documento_modelagem_processo.name)
                     self.fields["documento_modelagem_processo"].widget.attrs["placeholder"] = nome_arquivo
@@ -549,18 +554,20 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
 
-        # Define usuário logado
+        # usuário
         if self.usuario_logado and (not self.instance or not self.instance.pk):
             self.instance.usuario = self.usuario_logado
 
-        # Desabilita campos nos modos visualização/exclusão
+        # Desabilita nos modos somente leitura
         if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
 
-        # Guarda versão original para validação
+        # Guarda versão original
         self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
+
+    # ----- VALIDATIONS -----
 
     def clean_nome(self):
         nome = (self.cleaned_data.get("nome") or "").strip().upper()
@@ -623,14 +630,25 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         return f
 
     def save(self, commit=True):
+        """
+        Ajuste cirúrgico: delega ao model a exclusão e renomeação do arquivo.
+        Apenas associa usuários corretamente.
+        """
         obj = super().save(commit=False)
+
+        # Atribui usuário criador
         if self.usuario_logado and not obj.usuario_id:
             obj.usuario = self.usuario_logado
+
+        # Atribui usuário de atualização
         if self.usuario_logado and obj.pk:
             obj.usuario_atualizacao = self.usuario_logado
+
         if commit:
             obj.save()
+
         return obj
+
 
 
 

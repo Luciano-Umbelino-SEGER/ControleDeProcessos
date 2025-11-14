@@ -798,7 +798,7 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         modelagem = self.get_object()
 
-        # Garante exibição com zeros à esquerda no campo sequencial
+        # Exibição formatada (opcional)
         if modelagem.sequencial is not None:
             modelagem.sequencial = f"{int(modelagem.sequencial):03d}"
 
@@ -807,7 +807,10 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
-            'form': Form_ModelagemProcessoForm(instance=modelagem, modo_edicao=True),
+            'form': Form_ModelagemProcessoForm(
+                instance=modelagem,
+                modo_edicao=True,
+            ),
         })
         return context
 
@@ -816,10 +819,7 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
         obj.usuario_atualizacao = self.request.user
         obj.data_atualizacao = timezone.now()
 
-        if 'documento_modelagem_processo' in form.changed_data:
-            antigo = self.get_object().documento_modelagem_processo
-            if antigo and os.path.isfile(antigo.path):
-                os.remove(antigo.path)
+        # REMOVIDO: não apagar arquivo aqui — o model.save() faz isso corretamente
 
         response = super().form_valid(form)
         messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' atualizada com sucesso!")
@@ -831,6 +831,7 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:modelagemprocessos')
+
 
 # -------------------
 # Excluir
@@ -866,7 +867,7 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
             os.remove(norma.documento_modelagem_processo.path)
         norma.delete()
         messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
-        return redirect('arquiteturaprocessos:modelagemprocesso')
+        return redirect('arquiteturaprocessos:modelagemprocessos')
 
 
 class ProcessoView(LoginRequiredMixin, ListView):
