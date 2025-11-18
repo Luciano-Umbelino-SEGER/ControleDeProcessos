@@ -10,7 +10,8 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import date
 
-from .models import Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, ModelagemProcesso
+from .models import (Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
+                     ModelagemProcesso, Processo)
 
 UserModel = get_user_model()
 
@@ -649,7 +650,58 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
         return obj
 
+class Form_ProcessoForm(forms.ModelForm):
+    classificacao = forms.ModelChoiceField(
+        queryset=Classificacao.objects.all(),
+        label="Classificação",
+        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+    )
+    macroprocesso_nivel1 = forms.ModelChoiceField(
+        queryset=MacroprocessoNivel1.objects.all(),
+        label="Macroprocesso Nível 1",
+        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+    )
+    macroprocesso_nivel2 = forms.ModelChoiceField(
+        queryset=MacroprocessoNivel2.objects.all(),
+        label="Macroprocesso Nível 2",
+        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+    )
+    modelagem_processo = forms.ModelChoiceField(
+        queryset=ModelagemProcesso.objects.all(),
+        label="Modelagem / Norma de Procedimento",
+        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+    )
 
+    class Meta:
+        model = Processo
+        exclude = ("usuario_cadastro", "usuario_atualizacao", "data_criacao", "data_atualizacao")
+        widgets = {
+            "nome": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Nome do Processo"}),
+            "objetivo": forms.Textarea(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2 h-32", "placeholder": "Objetivo"}),
+            "observacao": forms.Textarea(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2 h-32", "placeholder": "Observações"}),
+            "gestor": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Gestor"}),
+            "email": forms.EmailInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "E-mail do Gestor"}),
+            "telefone": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Telefone/Ramal"}),
+            "area_responsavel": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Área Responsável"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        modo_exclusao = kwargs.pop('modo_exclusao', False)
+        modo_edicao = kwargs.pop('modo_edicao', False)
+        super().__init__(*args, **kwargs)
+        self.label_suffix = ""
+        base = "w-full border border-gray-300 rounded-md px-3 py-2 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        for name, field in self.fields.items():
+            existing = field.widget.attrs.get("class", "")
+            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
+            field.widget.attrs.setdefault("placeholder", field.label)
+            field.widget.attrs["autocomplete"] = "off"
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+                field.widget.attrs["class"] += " bg-gray-100"
 
 
 

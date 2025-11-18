@@ -231,115 +231,51 @@ class ModelagemProcesso(models.Model):
 
 # ============================================================
 # PROCESSO / SUBPROCESSO
-# ============================================================
+# ===========================================================
+from django.core.exceptions import ValidationError
+from django.db import models
 
 class Processo(models.Model):
-    classificacao = models.ForeignKey(
-        "Classificacao",
-        on_delete=models.PROTECT,
-        related_name="processos"
-    )
+    nome = models.CharField(max_length=100, verbose_name="Nome do Processo")
+    gestor = models.CharField(max_length=150, verbose_name="Gestor")
+    email = models.EmailField(max_length=200, null=True, blank=True, verbose_name="E-mail do Gestor")
+    telefone = models.CharField(max_length=20, null=True, blank=True, verbose_name="Telefone/Ramal")
+    objetivo = models.TextField(verbose_name="Objetivo do Processo")
+    observacao = models.TextField(null=True, blank=True, verbose_name="Observações")
 
-    macroprocesso_nivel1 = models.ForeignKey(
-        "MacroprocessoNivel1",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
+    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
+    data_atualizacao = models.DateTimeField(auto_now=True, verbose_name="Data de Atualização")
 
-    macroprocesso_nivel2 = models.ForeignKey(
-        "MacroprocessoNivel2",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
-    )
+    classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT, related_name="processos", verbose_name="Classificação")
+    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Macroprocesso Nível 1")
+    macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Macroprocesso Nível 2")
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="subprocessos", verbose_name="Processo Pai")
 
-    nome = models.CharField(
-        max_length=100,
-        verbose_name="Nome do Processo/Subprocesso"
-    )
+    area_responsavel = models.CharField(max_length=100, null=True, blank=True, verbose_name="Área Responsável")
+    usuario_cadastro = models.ForeignKey("Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="processos_cadastrados", verbose_name="Usuário que efetuou o cadastro")
+    usuario_atualizacao = models.ForeignKey("Usuario", on_delete=models.SET_NULL, null=True, blank=True, related_name="processos_atualizados", verbose_name="Usuário que efetuou a última atualização")
 
-    usuario_cadastro = models.ForeignKey(
-        "Usuario",
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="processos_cadastrados",
-        verbose_name="Usuário que efetuou o cadastro"
-    )
-
-    area_responsavel = models.CharField(
-        max_length=100,
-        null = True,
-        blank = True,
-        verbose_name="Área Responsável"
-    )
-
-    parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="subprocessos",
-        verbose_name="Processo Pai"
-    )
-
-    gestor = models.CharField(
-        max_length=150,
-        verbose_name="Gestor"
-    )
-
-    email = models.EmailField(
-        max_length=200,
-        null=True,
-        blank=True,
-        verbose_name="E-mail do Gestor"
-    )
-
-    telefone = models.CharField(
-        max_length=20,
-        null=True,
-        blank=True,
-        verbose_name="Telefone/Ramal"
-    )
-
-    modelagem_processo = models.ForeignKey(
-        "ModelagemProcesso",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Modelagem de Processo"
-    )
-
-    objetivo = models.TextField(
-        verbose_name="Objetivo do Processo"
-    )
-
-    observacao = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name="Observações"
-    )
-
-    data_criacao = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Data de Criação"
-    )
-
-    data_atualizacao = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Data de Atualização"
-    )
+    modelagem_processo = models.ForeignKey("ModelagemProcesso", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Modelagem / Norma de Procedimento")
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"
         verbose_name = "Processo / Subprocesso"
         verbose_name_plural = "Processos / Subprocessos"
         ordering = ["nome"]
+        indexes = [
+            models.Index(fields=["nome"], name="idx_processo_nome"),
+            models.Index(fields=["gestor"], name="idx_processo_gestor"),
+        ]
 
     def __str__(self):
-        # Exibe hierarquia se for subprocesso
         return f"{self.nome}" if not self.parent else f"{self.parent.nome} > {self.nome}"
+
+    def clean(self):
+        errors = {}
+        if self.parent and self.parent_id == self.id:
+            errors['parent'] = "O processo pai não pode ser o próprio processo."
+        if errors:
+            raise ValidationError(errors)
 
 # ============================================================
 # ARQUITETURA / LOG

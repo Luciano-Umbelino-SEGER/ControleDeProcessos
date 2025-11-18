@@ -16,3 +16,15 @@ def disable_field(field, css_classes="bg-gray-100 text-black"):
         "class": css_classes
     }
     return mark_safe(field.as_widget(attrs=attrs))
+
+@register.filter(name='add_class')
+def add_class(field, css_class):
+    """
+    Adiciona classes CSS ao widget de um campo do formulário.
+    Uso: {{ field|add_class:"minha-classe" }}
+    """
+    existing_classes = field.field.widget.attrs.get("class", "")
+    new_class = f"{existing_classes} {css_class}".strip()
+
+    return field.as_widget(attrs={**field.field.widget.attrs, "class": new_class})
+

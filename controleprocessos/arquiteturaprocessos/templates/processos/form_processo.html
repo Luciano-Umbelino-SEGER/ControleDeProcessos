@@ -1,223 +1,307 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load form_tags %}
 
 {% block titulo %}
-{% if modo_visualizacao %}Visualização de Norma de Procedimento
-{% elif modo_edicao %}Edição de Norma de Procedimento
-{% elif modo_exclusao %}Exclusão de Norma de Procedimento
-{% else %}Inclusão de Norma de Procedimento{% endif %}
+    {% if modo_visualizacao %}Visualização de Processos
+    {% elif modo_edicao %}Edição de Processos
+    {% elif modo_exclusao %}Exclusão de Processos
+    {% else %}Inclusão de Processos{% endif %}
 {% endblock %}
 
 {% block body %}
-<div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-  <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
-    {% if modo_visualizacao %}Visualização de Norma de Procedimento
-    {% elif modo_edicao %}Edição de Norma de Procedimento
-    {% elif modo_exclusao %}Exclusão de Norma de Procedimento
-    {% else %}Inclusão de Norma de Procedimento{% endif %}
-  </h1>
 
-  {% if form.non_field_errors %}
-    <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded mb-4">
-      {{ form.non_field_errors }}
-    </div>
-  {% endif %}
+<div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
 
-  <form method="post" class="space-y-6" autocomplete="off" data-lpignore="true" data-form-type="other" id="form-exclusao">
-    {% csrf_token %}
+    <!-- Título -->
+    <h2 class="text-2xl font-bold text-center mb-8 text-blue-800">
+        {% if modo_visualizacao %}Visualização de Processos
+        {% elif modo_edicao %}Edição de Processos
+        {% elif modo_exclusao %}Exclusão de Processos
+        {% else %}Inclusão de Processos{% endif %}
+    </h2>
 
-    <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
-      <!-- Layout principal -->
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+    {% if form.non_field_errors %}
+        <div class="text-red-600 mb-4">{{ form.non_field_errors }}</div>
+    {% endif %}
 
-        <!-- Linha 1 -->
-        <div class="col-span-12 md:col-span-5">
-          <label for="id_nome" class="block text-sm font-semibold text-blue-700 mb-1">Nome</label>
-          <input
-            type="text"
-            id="id_nome"
-            name="nome"
-            value="{{ form.nome.value|default_if_none:'NORMA DE PROCEDIMENTO' }}"
-            class="w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}"
-            placeholder="Digite o nome"
-            {% if modo_visualizacao or modo_exclusao %}readonly tabindex="-1" style="pointer-events:none; opacity:0.9;"{% endif %}
-            autocomplete="off"
-            data-lpignore="true"
-            data-form-type="other"
-            spellcheck="false"
-          >
-          <input type="text" style="display:none" aria-hidden="true" autocomplete="off">
-        </div>
+    <form method="post">
+        {% csrf_token %}
 
-        <div class="col-span-12 md:col-span-5">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sistema.label }}</label>
-          {{ form.sistema }}
-        </div>
+        <!-- LINHA 1 -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
 
-        <div class="col-span-12 md:col-span-1">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.codigo.label }}</label>
-          <div class="w-[8ch]">
-            {{ form.codigo }}
-          </div>
-        </div>
-
-        <div class="col-span-12 md:col-span-1">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.sequencial.label }}</label>
-          <div class="w-full flex justify-end">
-            <div class="w-[10ch]">
-              {{ form.sequencial }}
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Classificação</label>
+                {{ form.classificacao }}
             </div>
-          </div>
-        </div>
 
-        <!-- Linha 2 -->
-        <div class="col-span-12 md:col-span-5">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.tema.label }}</label>
-          <div class="w-full">
-            {{ form.tema }}
-          </div>
-        </div>
-
-        <div class="col-span-12 md:col-start-6 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.emitente.label }}</label>
-          <div class="w-full">
-            {{ form.emitente }}
-          </div>
-        </div>
-
-        <!-- Versão -->
-        <div class="col-span-12 md:col-span-1">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">{{ form.versao.label }}</label>
-          <div class="w-full flex justify-end">
-            <div class="w-[10ch]">
-              {{ form.versao }}
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
+                {{ form.macroprocesso_nivel1 }}
             </div>
-          </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
+                {{ form.macroprocesso_nivel2 }}
+            </div>
+
         </div>
 
-        <!-- Linha 3 -->
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[18ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              {{ form.data_elaboracao.label }}
-            </label>
-            {{ form.data_elaboracao }}
-          </div>
+        <!-- LINHA 2 -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Processo</label>
+                {{ form.parent }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Subprocesso</label>
+                {{ form.nome }}
+            </div>
+
         </div>
 
-        <div class="col-span-12 md:col-span-8">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">
-            {{ form.portaria_aprovacao.label }}
-          </label>
-          <div class="w-full">
-            {{ form.portaria_aprovacao }}
-          </div>
+        <!-- LINHA 3 -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Objetivo</label>
+                {{ form.objetivo|add_class:"h-20" }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Observação</label>
+                {{ form.observacao|add_class:"h-20" }}
+            </div>
+
         </div>
 
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[20ch] ml-auto">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              {{ form.data_aprovacao.label }}
-            </label>
-            {{ form.data_aprovacao }}
-          </div>
+        <!-- LINHA 4 -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
+                {{ form.area_responsavel }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Gestor</label>
+                {{ form.gestor }}
+            </div>
+
         </div>
 
-        <!-- Linha 4 -->
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[18ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              {{ form.vigencia_inicio.label }}
-            </label>
-            {{ form.vigencia_inicio }}
-          </div>
+        <!-- LINHA 5 -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
+                {{ form.telefone }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">E-mail</label>
+                {{ form.email }}
+            </div>
+
         </div>
 
-        <div class="col-span-12 md:col-start-3 md:col-span-2">
-          <div class="w-full max-w-[18ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              {{ form.vigencia_fim.label }}
-            </label>
-            {{ form.vigencia_fim }}
-          </div>
+        <!-- LINHA 6 – Modelo de Processo -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Modelo de Processo</label>
+                <select id="id_modelagem_processo" name="modelagem_processo"
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500">
+
+                    <option value="">---------</option>
+
+                    {% for m in modelos_processo %}
+                        <option value="{{ m.id }}"
+                                data-tema="{{ m.tema }}"
+                                data-versao="{{ m.versao }}"
+                                data-emitente="{{ m.emitente }}"
+                                data-sistema="{{ m.sistema }}"
+                                data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}">
+                            {{ m }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Tema</label>
+                <input id="tema_modelo" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
+                       value="">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Versão</label>
+                <input id="versao_modelo" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
+                       value="">
+            </div>
+
         </div>
 
-        <div class="col-span-12 md:col-start-5 md:col-span-8">
-          <div class="w-full ml-[0.2rem] max-w-[76ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              {{ form.link.label }}
-            </label>
-            {{ form.link }}
-          </div>
+        <!-- LINHA 7 – Derivados da Modelagem -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Emitente</label>
+                <input id="emitente_modelo" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Sistema</label>
+                <input id="sistema_modelo" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Inicio de Vigência</label>
+                <input id="vigencia_modelo" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
         </div>
 
-      </div>
-    </fieldset>
+        <!-- LINHA 8 – Norma de Procedimento -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
 
-    <!-- Botões -->
-    <div class="flex justify-end mt-8 space-x-4">
-      {% if not modo_visualizacao %}
-        {% if modo_exclusao %}
-          <!-- BOTÃO QUE DISPARA O MODAL DE CONFIRMAÇÃO -->
-          <button
-            type="button"
-            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-            @click="$dispatch('abrir-modal-confirmacao', {
-                url: '{% url 'arquiteturaprocessos:excluir_normaprocedimento' normaprocedimento.id %}',
-                mensagem: 'Confirma a exclusão da Norma de Procedimento <strong>{{ normaprocedimento.codigo }} Nº {{ normaprocedimento.sequencial }} - Versão {{ normaprocedimento.versao }} - {{ normaprocedimento.tema }}</strong>?'
-            })"
-          >
-            Confirmar Exclusão
-          </button>
-        {% elif modo_edicao %}
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-            Salvar Alterações
-          </button>
-        {% else %}
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-            Adicionar Norma de Procedimento
-          </button>
-        {% endif %}
-      {% endif %}
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Norma de Procedimento</label>
 
-      <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-         href="{% url 'arquiteturaprocessos:normaprocedimento' %}">
-         {% if modo_visualizacao %}
-            Voltar
-         {% else %}
-            Cancelar
-         {% endif %}
-      </a>
-    </div>
-  </form>
+                <select id="norma_procedimento" name="norma_procedimento"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500">
+
+                    <option value="">---------</option>
+
+                    {% for n in normas_procedimento %}
+                        <option value="{{ n.id }}"
+                                data-tema="{{ n.tema }}"
+                                data-versao="{{ n.versao }}"
+                                data-emitente="{{ n.emitente }}"
+                                data-sistema="{{ n.sistema }}"
+                                data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}">
+                            {{ n }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Tema</label>
+                <input id="tema_norma" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Versão</label>
+                <input id="versao_norma" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+        </div>
+
+        <!-- LINHA 9 – Emitente / Sistema / Vigência (Normas) -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Emitente</label>
+                <input id="emitente_norma" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Sistema</label>
+                <input id="sistema_norma" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Inicio de Vigência</label>
+                <input id="vigencia_norma" type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+            </div>
+
+        </div>
+
+        <!-- LINHA 10 – Auditoria -->
+        <div class="grid grid-cols-4 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Data Cadastro</label>
+                <input type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
+                       value="{{ processo.data_criacao|date:'d/m/Y H:i' }}">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
+                <input type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
+                       value="{{ processo.usuario_cadastro }}">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Data Atualização</label>
+                <input type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
+                       value="{{ processo.data_atualizacao|date:'d/m/Y H:i' }}">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
+                <input type="text" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
+                       value="{{ processo.usuario_atualizacao }}">
+            </div>
+
+        </div>
+
+        <!-- BOTÕES -->
+        <div class="flex justify-end mt-8 space-x-4">
+
+            {% if not modo_visualizacao %}
+                {% if modo_exclusao %}
+                    <button
+                        class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
+                        type="button">
+                        Confirmar Exclusão
+                    </button>
+
+                {% elif modo_edicao %}
+                    <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            type="submit">
+                        Salvar Alterações
+                    </button>
+
+                {% else %}
+                    <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            type="submit">
+                        Adicionar Processo
+                    </button>
+                {% endif %}
+            {% endif %}
+
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+               href="{% url 'arquiteturaprocessos:processos' %}">
+               {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+            </a>
+
+        </div>
+
+    </form>
 </div>
 
-<script>
-  (function () {
-    function setupNumericPad(el, maxLen, padLen) {
-      if (!el) return;
-      el.setAttribute('type', 'text');
-      el.setAttribute('inputmode', 'numeric');
-      el.setAttribute('pattern', '[0-9]*');
-      el.setAttribute('autocomplete', 'off');
-      el.maxLength = maxLen;
-      el.addEventListener('input', function () {
-        const onlyDigits = this.value.replace(/\D+/g, '').slice(0, maxLen);
-        if (this.value !== onlyDigits) this.value = onlyDigits;
-      });
-      el.addEventListener('blur', function () {
-        if (this.value) this.value = this.value.padStart(padLen, '0');
-      });
-    }
+<!-- JS CENTRALIZADO -->
+<script src="{% static 'js/processos.js' %}"></script>
 
-    setupNumericPad(document.getElementById('id_sequencial'), 3, 3);
-    setupNumericPad(document.getElementById('id_versao'), 2, 2);
-
-    ['id_data_elaboracao', 'id_data_aprovacao', 'id_vigencia_inicio', 'id_vigencia_fim']
-      .forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.whiteSpace = 'nowrap';
-      });
-  })();
-</script>
 {% endblock %}

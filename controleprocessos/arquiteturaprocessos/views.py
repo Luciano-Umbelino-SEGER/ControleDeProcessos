@@ -17,7 +17,8 @@ from django.db.models.deletion import ProtectedError
 from django.db.models import Q
 from django.db.models import Exists, OuterRef
 from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
-                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form, Form_ModelagemProcessoForm)
+                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
+                    Form_ModelagemProcessoForm, Form_ProcessoForm)
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_sameorigin  # ou xframe_options_exempt
@@ -896,12 +897,27 @@ class ProcessoView(LoginRequiredMixin, ListView):
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
+
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
     template_name = 'processos/form_processo.html'
-    fields = '__all__'  # depois podemos ajustar se quiser
+    form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False
+        })
+        return context
+
+    def form_valid(self, form):
+        form.instance.usuario_cadastro = self.request.user
+        messages.success(self.request, f"Processo '{form.instance.nome}' criado com sucesso!")
+        return super().form_valid(form)
 
 # --------------------------------#
 # Visualizar Processo             #
@@ -911,24 +927,70 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
     template_name = 'processos/form_processo.html'
     context_object_name = 'processo'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        processo = self.get_object()
+        context['form'] = Form_ProcessoForm(instance=processo, modo_visualizacao=True)
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False
+        })
+        return context
 
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
+
 class EditarProcesso(LoginRequiredMixin, UpdateView):
     model = Processo
     template_name = 'processos/form_processo.html'
-    fields = '__all__'
+    form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False
+        })
+        return context
+
+    def form_valid(self, form):
+        form.instance.usuario_atualizacao = self.request.user
+        messages.success(self.request, f"Processo '{form.instance.nome}' atualizado com sucesso!")
+        return super().form_valid(form)
 
 # --------------------------------#
 # Excluir Processo                #
 # --------------------------------#
+
 class ExcluirProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
     context_object_name = 'processo'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        processo = self.get_object()
+        context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        processo = self.get_object()
+        processo.delete()
+        messages.success(request, f"Processo '{processo.nome}' excluído com sucesso!")
+        return redirect('arquiteturaprocessos:processos')
+
 
 
 
