@@ -649,18 +649,6 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:macroprocessonivel2')
 
-def classificacao_por_macro1(request, macro1_id):
-    try:
-        macro1 = MacroprocessoNivel1.objects.get(id=macro1_id)
-        return JsonResponse({'classificacao': macro1.classificacao.nome})
-    except MacroprocessoNivel1.DoesNotExist:
-        return JsonResponse({'classificacao': ''})
-
-def macroprocessos_por_classificacao(request, classificacao_id):
-    macroprocessos = MacroprocessoNivel1.objects.filter(classificacao_id=classificacao_id)
-    data = [{'id': m.id, 'nome': m.nome} for m in macroprocessos]
-    return JsonResponse({'macroprocessos': data})
-
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 

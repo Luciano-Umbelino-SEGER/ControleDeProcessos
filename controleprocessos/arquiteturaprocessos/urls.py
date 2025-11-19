@@ -8,8 +8,10 @@ from .views import (HomePage, ArquiteruraProcessos, Estatisticas, BackLog,
                     EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
                     VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, ModelagemProcessoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
-                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, classificacao_por_macro1,
-                    macroprocessos_por_classificacao, SubProcessoView)
+                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView)
+from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
+                        macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos,)
+
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -70,7 +72,17 @@ urlpatterns = [
     path('processo/<int:pk>/visualizar/', VisualizarProcesso.as_view(), name='visualizar_processo'),
     path('processo/<int:pk>/editar/', EditarProcesso.as_view(), name='editar_processo'),
     path('processo/<int:pk>/excluir/', ExcluirProcesso.as_view(), name='excluir_processo'),
-    # Por Classificação
+    # Endpoints - APIs
+    # --> Classificação → Macro1
     path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
+    # --> Macro1 → Classificação
     path('api/macroprocessos_por_classificacao/<int:classificacao_id>/', macroprocessos_por_classificacao, name='macroprocessos_por_classificacao'),
+    # --> Macro1 → Macro2
+    path('api/macro2_por_macro1/<int:macro1_id>/', macro2_por_macro1, name='macro2_por_macro1'),
+    # --> Macro2 → Macro1 + Classificação
+    path('api/macro1_e_classificacao_por_macro2/<int:macro2_id>/', macro1_e_classificacao_por_macro2, name='macro1_e_classificacao_por_macro2'),
+    # --> Macro1 → Tods
+    path('api/macro1_todos/', macro1_todos, name='macro1_todos'),
+    # --> Macro2 → Tods
+    path('api/macro2_todos/', macro2_todos, name='macro2_todos'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
