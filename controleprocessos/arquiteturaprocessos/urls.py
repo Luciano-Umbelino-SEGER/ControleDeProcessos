@@ -10,7 +10,7 @@ from .views import (HomePage, ArquiteruraProcessos, Estatisticas, BackLog,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
-                        macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos,)
+                        macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 
 from django.contrib.auth import views as auth_views
 from django.conf import settings
@@ -85,4 +85,6 @@ urlpatterns = [
     path('api/macro1_todos/', macro1_todos, name='macro1_todos'),
     # --> Macro2 → Tods
     path('api/macro2_todos/', macro2_todos, name='macro2_todos'),
+    # --> Todos Processos Pai
+    path('api/processos_pai/', processos_pai, name='processos_pai'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

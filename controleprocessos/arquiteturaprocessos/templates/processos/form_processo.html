@@ -25,7 +25,7 @@
         <div class="text-red-600 mb-4">{{ form.non_field_errors }}</div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" id="form-processo">
         {% csrf_token %}
 
         <!-- LINHA 1 -->
@@ -48,21 +48,54 @@
 
         </div>
 
-        <!-- LINHA 2 -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
+        <!-- LINHA 2 + RADIOBUTTONS -->
+        <!-- LINHA 2 – PROCESSO / SUBPROCESSO -->
+        <div class="mb-4 -mt-2">
+            <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" id="rb_processo" name="tipo_registro" value="processo" checked>
+                    <span id="lbl_processo" class="font-medium text-blue-700">Processo</span>
+                </label>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Processo</label>
-                {{ form.parent }}
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" id="rb_subprocesso" name="tipo_registro" value="subprocesso">
+                    <span id="lbl_subprocesso" class="font-medium text-gray-400">Subprocesso</span>
+                </label>
             </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Subprocesso</label>
-                {{ form.nome }}
-            </div>
-
         </div>
 
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <!-- Campo PROCESSO -->
+            <div>
+                <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">Processo</label>
+
+                <!-- Campo visível (input) -->
+                <input id="processo_input_visible" type="text"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2"
+                       placeholder="Nome do Processo">
+
+                <!-- Campo oculto do Django -->
+                {{ form.parent }}
+
+                <!-- Campo SELECT (aparece só quando for subprocesso) -->
+                <div id="processo_select_container" class="hidden mt-2">
+                    <select id="processo_select_visible"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="">---------</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Campo SUBPROCESSO -->
+            <div>
+                <label id="lbl_campo_subprocesso" class="block text-sm font-medium text-gray-400">Subprocesso</label>
+
+                {{ form.nome }}
+            </div>
+        </div>
+
+        <!-- RESTANTE DO TEMPLATE: (mantive igual ao original) -->
         <!-- LINHA 3 -->
         <div class="grid grid-cols-2 gap-6 mb-6">
 

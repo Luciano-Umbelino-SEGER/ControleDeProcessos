@@ -1,7 +1,7 @@
 # controleprocessos/arquiteturaprocessos/api_views.py
 
 from django.http import JsonResponse
-from .models import (MacroprocessoNivel1, MacroprocessoNivel2,)
+from .models import (MacroprocessoNivel1, MacroprocessoNivel2, Processo)
 
 # ======================
 #  Endpoints - APIs
@@ -76,3 +76,10 @@ def macro2_todos(request):
     """
     items = MacroprocessoNivel2.objects.values("id", "nome")
     return JsonResponse({"macro2": list(items)})
+
+def processos_pai(request):
+    """
+    Retorna processos que são pais (parent is null).
+    """
+    items = Processo.objects.filter(parent__isnull=True).order_by('nome').values('id', 'nome')
+    return JsonResponse({"processos_pai": list(items)})
