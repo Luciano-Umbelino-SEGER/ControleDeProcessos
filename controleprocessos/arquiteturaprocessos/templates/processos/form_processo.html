@@ -48,10 +48,10 @@
 
         </div>
 
-        <!-- LINHA 2 + RADIOBUTTONS -->
         <!-- LINHA 2 – PROCESSO / SUBPROCESSO -->
         <div class="mb-4 -mt-2">
             <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
+
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="radio" id="rb_processo" name="tipo_registro" value="processo" checked>
                     <span id="lbl_processo" class="font-medium text-blue-700">Processo</span>
@@ -61,6 +61,7 @@
                     <input type="radio" id="rb_subprocesso" name="tipo_registro" value="subprocesso">
                     <span id="lbl_subprocesso" class="font-medium text-gray-400">Subprocesso</span>
                 </label>
+
             </div>
         </div>
 
@@ -70,18 +71,22 @@
             <div>
                 <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">Processo</label>
 
-                <!-- Campo visível (input) -->
+                <!-- Input visível (modo Processo) -->
                 <input id="processo_input_visible" type="text"
-                       class="w-full border border-gray-300 rounded-md px-3 py-2"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-black
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                        placeholder="Nome do Processo">
 
-                <!-- Campo oculto do Django -->
-                {{ form.parent }}
+                <!-- Campo original Django (oculto visualmente mas funcional) -->
+                <div class="hidden">
+                    {{ form.parent }}
+                </div>
 
-                <!-- Campo SELECT (aparece só quando for subprocesso) -->
+                <!-- SELECT (modo Subprocesso) -->
                 <div id="processo_select_container" class="hidden mt-2">
                     <select id="processo_select_visible"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            class="w-full border border-gray-300 rounded-md px-3 py-2
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black">
                         <option value="">---------</option>
                     </select>
                 </div>
@@ -95,21 +100,21 @@
             </div>
         </div>
 
-        <!-- RESTANTE DO TEMPLATE: (mantive igual ao original) -->
         <!-- LINHA 3 -->
         <div class="grid grid-cols-2 gap-6 mb-6">
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Objetivo</label>
-                {{ form.objetivo|add_class:"focus:ring-2 focus:ring-blue-500" }}
+                {{ form.objetivo|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Observação</label>
-                {{ form.observacao|add_class:"focus:ring-2 focus:ring-blue-500" }}
+                {{ form.observacao|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
             </div>
 
         </div>
+
 
         <!-- LINHA 4 -->
         <div class="grid grid-cols-2 gap-6 mb-6">

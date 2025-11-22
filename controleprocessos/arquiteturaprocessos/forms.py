@@ -676,7 +676,7 @@ class Form_ProcessoForm(forms.ModelForm):
         model = Processo
         exclude = ("usuario_cadastro", "usuario_atualizacao", "data_criacao", "data_atualizacao")
         widgets = {
-            "nome": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Nome do Processo"}),
+            "nome": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Nome do Subprocesso"}),
             "objetivo": forms.Textarea(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Objetivo", "rows": "2",}),
             "observacao": forms.Textarea(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Observações", "rows": "2",}),
             "gestor": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Gestor"}),
