@@ -72,8 +72,9 @@
                 <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">Processo</label>
 
                 <!-- Input visível (modo Processo) -->
-               <input id="processo_input_visible" type="text"
-                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-10"
+                <input id="processo_input_visible" type="text"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
+                              focus:ring-2 focus:ring-blue-500 focus:outline-none"
                        placeholder="Nome do Processo">
 
                 <!-- Campo original Django (oculto visualmente mas funcional) -->
@@ -82,9 +83,10 @@
                 </div>
 
                 <!-- SELECT (modo Subprocesso) -->
-                <div id="processo_select_container" class="hidden mt-2">
+                <div id="processo_select_container" class="hidden">
                     <select id="processo_select_visible"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-10">
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
+                                   focus:ring-2 focus:ring-blue-500">
                         <option value="">---------</option>
                     </select>
                 </div>
@@ -97,6 +99,7 @@
                 {{ form.nome }}
             </div>
         </div>
+
 
         <!-- LINHA 3 -->
         <div class="grid grid-cols-2 gap-6 mb-6">
