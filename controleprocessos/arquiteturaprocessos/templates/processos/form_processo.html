@@ -116,18 +116,17 @@
 
         </div>
 
-
         <!-- LINHA 4 -->
         <div class="grid grid-cols-2 gap-6 mb-6">
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
-                {{ form.area_responsavel }}
+                {{ form.area_responsavel|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Gestor</label>
-                {{ form.gestor }}
+                {{ form.gestor|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
             </div>
 
         </div>
@@ -137,26 +136,26 @@
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
-                {{ form.telefone }}
+                {{ form.telefone|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">E-mail</label>
-                {{ form.email }}
+                {{ form.email|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
             </div>
 
         </div>
 
         <!-- LINHA 6 – Modelo de Processo -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
+            <!-- Modelo -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Modelo de Processo</label>
                 <select id="id_modelagem_processo" name="modelagem_processo"
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500">
-
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
+                               focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     <option value="">---------</option>
-
                     {% for m in modelos_processo %}
                         <option value="{{ m.id }}"
                                 data-tema="{{ m.tema }}"
@@ -170,56 +169,62 @@
                 </select>
             </div>
 
+            <!-- Tema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
-                <input id="tema_modelo" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
-                       value="">
+                <input id="tema_modelo" type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
+            <!-- Versão -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
-                <input id="versao_modelo" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
-                       value="">
+                <input id="versao_modelo" type="text" readonly tabindex="-1"
+                       class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
         </div>
 
         <!-- LINHA 7 – Derivados da Modelagem -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
+            <!-- Emitente -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                <input id="emitente_modelo" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <input id="emitente_modelo" type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
+            <!-- Sistema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                <input id="sistema_modelo" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <input id="sistema_modelo" type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
+            <!-- Início de Vigência -->
             <div>
-                <label class="block text-sm font-medium text-blue-700">Inicio de Vigência</label>
-                <input id="vigencia_modelo" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
+                <input id="vigencia_modelo" type="text" readonly tabindex="-1"
+                       class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
         </div>
 
         <!-- LINHA 8 – Norma de Procedimento -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-[2fr_1.2fr_150px] gap-6 mb-6">
 
+            <!-- Norma -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Norma de Procedimento</label>
-
                 <select id="norma_procedimento" name="norma_procedimento"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500">
-
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-black focus:ring-2 focus:ring-blue-500">
                     <option value="">---------</option>
-
                     {% for n in normas_procedimento %}
                         <option value="{{ n.id }}"
                                 data-tema="{{ n.tema }}"
@@ -230,44 +235,47 @@
                             {{ n }}
                         </option>
                     {% endfor %}
-
                 </select>
-
             </div>
 
+            <!-- Tema (Normas) -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
-                <input id="tema_norma" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <input id="tema_norma" type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
             </div>
 
+            <!-- Versão (Normas) -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
-                <input id="versao_norma" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <input id="versao_norma" type="text" readonly tabindex="-1"
+                       class="w-[150px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
             </div>
 
         </div>
 
         <!-- LINHA 9 – Emitente / Sistema / Vigência (Normas) -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-[2fr_1.2fr_150px] gap-6 mb-6">
 
+            <!-- Emitente -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                <input id="emitente_norma" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <input id="emitente_norma" type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
             </div>
 
+            <!-- Sistema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                <input id="sistema_norma" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <input id="sistema_norma" type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
             </div>
 
+            <!-- Início de Vigência -->
             <div>
-                <label class="block text-sm font-medium text-blue-700">Inicio de Vigência</label>
-                <input id="vigencia_norma" type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2">
+                <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
+                <input id="vigencia_norma" type="text" readonly tabindex="-1"
+                       class="w-[150px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
             </div>
 
         </div>
