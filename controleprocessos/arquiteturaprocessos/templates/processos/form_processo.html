@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags %}
 {% load form_tags %}
 
 {% block titulo %}
@@ -157,15 +158,16 @@
                                focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     <option value="">---------</option>
                     {% for m in modelos_processo %}
-                        <option value="{{ m.id }}"
-                                data-tema="{{ m.tema }}"
-                                data-versao="{{ m.versao }}"
-                                data-emitente="{{ m.emitente }}"
-                                data-sistema="{{ m.sistema }}"
-                                data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}">
-                            {{ m }}
-                        </option>
+                    <option value="{{ m.id }}"
+                            data-tema="{{ m.tema }}"
+                            data-versao="{{ m.versao }}"
+                            data-emitente="{{ m.emitente }}"
+                            data-sistema="{{ m.sistema }}"
+                            data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}">
+                        {{ m.documento_modelagem_processo|filename }}
+                    </option>
                     {% endfor %}
+
                 </select>
             </div>
 
@@ -227,14 +229,14 @@
                                focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     <option value="">---------</option>
                     {% for n in normas_procedimento %}
-                        <option value="{{ n.id }}"
-                                data-tema="{{ n.tema }}"
-                                data-versao="{{ n.versao }}"
-                                data-emitente="{{ n.emitente }}"
-                                data-sistema="{{ n.sistema }}"
-                                data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}">
-                            {{ n }}
-                        </option>
+                    <option value="{{ n.id }}"
+                            data-tema="{{ n.tema }}"
+                            data-versao="{{ n.versao }}"
+                            data-emitente="{{ n.emitente }}"
+                            data-sistema="{{ n.sistema }}"
+                            data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}">
+                        {{ n.link_normaprocedimento|filename }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -286,36 +288,43 @@
 
         </div>
 
-
         <!-- LINHA 10 – Auditoria -->
-        <div class="grid grid-cols-4 gap-6 mb-6">
+        <div class="grid grid-cols-[180px_1fr_180px_1fr] gap-6 mb-6">
 
+            <!-- Cadastro -->
             <div>
-                <label class="block text-sm font-medium text-blue-700">Data Cadastro</label>
-                <input type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
-                       value="{{ processo.data_criacao|date:'d/m/Y H:i' }}">
+                <label class="block text-sm font-medium text-blue-700">Cadastro</label>
+                <input type="text" readonly tabindex="-1"
+                       class="w-[180px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black"
+                       value="{{ cadastro_data }}">
             </div>
 
+            <!-- Responsável Cadastro -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
-                <input type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
-                       value="{{ processo.usuario_cadastro }}">
+                <input type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black"
+                       value="{{ cadastro_user }}">
             </div>
 
+            <!-- Atualização -->
             <div>
-                <label class="block text-sm font-medium text-blue-700">Data Atualização</label>
-                <input type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
-                       value="{{ processo.data_atualizacao|date:'d/m/Y H:i' }}">
+                <label class="block text-sm font-medium text-blue-700">Atualização</label>
+                <input type="text" readonly tabindex="-1"
+                       class="w-[180px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black"
+                       value="{{ atualizacao_data }}">
             </div>
 
+            <!-- Responsável Atualização -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
-                <input type="text" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2"
-                       value="{{ processo.usuario_atualizacao }}">
+                <input type="text" readonly tabindex="-1"
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black"
+                       value="{{ atualizacao_user }}">
             </div>
 
         </div>

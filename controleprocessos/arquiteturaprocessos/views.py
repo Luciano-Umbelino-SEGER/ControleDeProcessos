@@ -53,6 +53,27 @@ def visualizar_pdf(request, path):
 
     return response
 
+def get_modelagem_filtrada():
+    hoje = timezone.now().date()
+
+    modelos = ModelagemProcesso.objects.filter(
+        documento_modelagem_processo__isnull=False
+    ).exclude(
+        documento_modelagem_processo=""
+    ).filter(
+        Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje)
+    ).order_by("id")
+
+    normas = ModelagemProcesso.objects.filter(
+        link_normaprocedimento__isnull=False
+    ).exclude(
+        link_normaprocedimento=""
+    ).filter(
+        Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje)
+    ).order_by("id")
+
+    return modelos, normas
+
 class HomePage(TemplateView):
     template_name = 'homepage.html'
 
@@ -894,11 +915,21 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        agora_local = timezone.localtime(timezone.now())
+        modelos, normas = get_modelagem_filtrada()
+        context["modelos_processo"] = modelos
+        context["normas_procedimento"] = normas
+
         context.update({
             'modo_inclusao': True,
             'modo_visualizacao': False,
             'modo_exclusao': False,
-            'modo_edicao': False
+            'modo_edicao': False,
+
+            # dados da auditoria - inclusao
+            'cadastro_data': agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+            'cadastro_user': self.request.user.get_full_name() or self.request.user.username,
         })
         return context
 
@@ -918,6 +949,11 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
+
+        modelos, normas = get_modelagem_filtrada()
+        context["modelos_processo"] = modelos
+        context["normas_procedimento"] = normas
+
         context['form'] = Form_ProcessoForm(instance=processo, modo_visualizacao=True)
         context.update({
             'modo_visualizacao': True,
@@ -926,6 +962,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
             'modo_edicao': False
         })
         return context
+
 
 # --------------------------------#
 # Editar Processo                 #
@@ -939,11 +976,24 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        processo = self.get_object()
+
+        modelos, normas = get_modelagem_filtrada()
+        context["modelos_processo"] = modelos
+        context["normas_procedimento"] = normas
+
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
-            'modo_exclusao': False
+            'modo_exclusao': False,
+
+            # dados da auditoria — modo edição
+            'cadastro_data': timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else "",
+            'cadastro_user': processo.usuario_cadastro,
+
+            'agora_local': timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
+            'atualizacao_user': self.request.user.get_full_name() or self.request.user.username,
         })
         return context
 
@@ -964,6 +1014,11 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
+
+        modelos, normas = get_modelagem_filtrada()
+        context["modelos_processo"] = modelos
+        context["normas_procedimento"] = normas
+
         context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
         context.update({
             'modo_exclusao': True,
