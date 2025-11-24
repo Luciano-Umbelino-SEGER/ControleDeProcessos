@@ -217,13 +217,14 @@
         </div>
 
         <!-- LINHA 8 – Norma de Procedimento -->
-        <div class="grid grid-cols-[2fr_1.2fr_150px] gap-6 mb-6">
+        <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
             <!-- Norma -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Norma de Procedimento</label>
                 <select id="norma_procedimento" name="norma_procedimento"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-black focus:ring-2 focus:ring-blue-500">
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
+                               focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     <option value="">---------</option>
                     {% for n in normas_procedimento %}
                         <option value="{{ n.id }}"
@@ -242,43 +243,49 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
                 <input id="tema_norma" type="text" readonly tabindex="-1"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
             <!-- Versão (Normas) -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
                 <input id="versao_norma" type="text" readonly tabindex="-1"
-                       class="w-[150px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
+                       class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
         </div>
 
         <!-- LINHA 9 – Emitente / Sistema / Vigência (Normas) -->
-        <div class="grid grid-cols-[2fr_1.2fr_150px] gap-6 mb-6">
+        <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
             <!-- Emitente -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Emitente</label>
                 <input id="emitente_norma" type="text" readonly tabindex="-1"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
             <!-- Sistema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Sistema</label>
                 <input id="sistema_norma" type="text" readonly tabindex="-1"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
             <!-- Início de Vigência -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
                 <input id="vigencia_norma" type="text" readonly tabindex="-1"
-                       class="w-[150px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 pointer-events-none">
+                       class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                              pointer-events-none focus:outline-none text-black">
             </div>
 
         </div>
+
 
         <!-- LINHA 10 – Auditoria -->
         <div class="grid grid-cols-4 gap-6 mb-6">
