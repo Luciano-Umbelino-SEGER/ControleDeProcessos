@@ -153,22 +153,59 @@
             <!-- Modelo -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Modelo de Processo</label>
-                <select id="id_modelagem_processo" name="modelagem_processo"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                               focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    <option value="">---------</option>
-                    {% for m in modelos_processo %}
-                    <option value="{{ m.id }}"
-                            data-tema="{{ m.tema }}"
-                            data-versao="{{ m.versao }}"
-                            data-emitente="{{ m.emitente }}"
-                            data-sistema="{{ m.sistema }}"
-                            data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}">
-                        {{ m.documento_modelagem_processo|filename }}
-                    </option>
-                    {% endfor %}
 
-                </select>
+                <!-- Container flex igual ao modelo -->
+                <div class="flex items-center space-x-2"
+                     x-data="{
+                        url: '{{ form.instance.modelagem_processo.documento_modelagem_processo.url|default:'' }}',
+                        hasFile() { return this.url !== '' && this.url !== 'None'; },
+                        update(selectEl) {
+                            const opt = selectEl.options[selectEl.selectedIndex];
+                            this.url = opt?.dataset?.url || '';
+                        }
+                     }">
+
+                    <!-- Select reduzido para abrir espaço para o ícone -->
+                    <div class="flex-1 min-w-0">
+                        <select id="id_modelagem_processo" name="modelagem_processo"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
+                                       focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                @change="update($el)">
+                            <option value="">---------</option>
+
+                            {% for m in modelos_processo %}
+                            <option value="{{ m.id }}"
+                                    data-tema="{{ m.tema }}"
+                                    data-versao="{{ m.versao }}"
+                                    data-emitente="{{ m.emitente }}"
+                                    data-sistema="{{ m.sistema }}"
+                                    data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
+                                    data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}">
+                                {{ m.documento_modelagem_processo|filename }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Ícone do olho fora do select -->
+                    <template x-if="hasFile()">
+                        <button type="button"
+                                class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                @click="abrirModalDocumento(url, 'Documento de Modelagem de Processo')"
+                                title="Visualizar Documento">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 fill="none" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke="currentColor"
+                                 class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </button>
+                    </template>
+
+                </div>
             </div>
 
             <!-- Tema -->
@@ -224,21 +261,59 @@
             <!-- Norma -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Norma de Procedimento</label>
-                <select id="norma_procedimento" name="norma_procedimento"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                               focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    <option value="">---------</option>
-                    {% for n in normas_procedimento %}
-                    <option value="{{ n.id }}"
-                            data-tema="{{ n.tema }}"
-                            data-versao="{{ n.versao }}"
-                            data-emitente="{{ n.emitente }}"
-                            data-sistema="{{ n.sistema }}"
-                            data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}">
-                        {{ n.link_normaprocedimento|filename }}
-                    </option>
-                    {% endfor %}
-                </select>
+
+                <!-- Container flex para ícone igual ao ModelagemProcesso -->
+                <div class="flex items-center space-x-2"
+                     x-data="{
+                        url: '',
+                        hasFile() { return this.url !== '' && this.url !== 'None'; },
+                        update(selectEl) {
+                            const opt = selectEl.options[selectEl.selectedIndex];
+                            this.url = opt?.dataset?.url || '';
+                        }
+                     }">
+
+                    <!-- Select reduzido para abrir espaço ao ícone -->
+                    <div class="flex-1 min-w-0">
+                        <select id="norma_procedimento" name="norma_procedimento"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
+                                       focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                @change="update($el)">
+                            <option value="">---------</option>
+
+                            {% for n in normas_procedimento %}
+                            <option value="{{ n.id }}"
+                                    data-tema="{{ n.tema }}"
+                                    data-versao="{{ n.versao }}"
+                                    data-emitente="{{ n.emitente }}"
+                                    data-sistema="{{ n.sistema }}"
+                                    data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
+                                    data-url="{{ n.link_normaprocedimento }}">
+                                {{ n.link_normaprocedimento|filename }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Ícone do olho fora do select -->
+                    <template x-if="hasFile()">
+                        <button type="button"
+                                class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                @click="abrirModalDocumento(url, 'Norma de Procedimento')"
+                                title="Visualizar Documento">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 fill="none" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke="currentColor"
+                                 class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </button>
+                    </template>
+
+                </div>
             </div>
 
             <!-- Tema (Normas) -->
@@ -258,6 +333,7 @@
             </div>
 
         </div>
+
 
         <!-- LINHA 9 – Emitente / Sistema / Vigência (Normas) -->
         <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
@@ -366,5 +442,6 @@
 
 <!-- JS CENTRALIZADO -->
 <script src="{% static 'js/processos.js' %}"></script>
+{% include 'components/modal_documento_processo.html' %}
 
 {% endblock %}
