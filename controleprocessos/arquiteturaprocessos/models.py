@@ -244,7 +244,7 @@ class Processo(models.Model):
     observacao = models.TextField(null=True, blank=True, verbose_name="Observações")
 
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
-    data_atualizacao = models.DateTimeField(auto_now=True, verbose_name="Data de Atualização")
+    data_atualizacao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Atualização")
 
     classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT, related_name="processos", verbose_name="Classificação")
     macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Macroprocesso Nível 1")
