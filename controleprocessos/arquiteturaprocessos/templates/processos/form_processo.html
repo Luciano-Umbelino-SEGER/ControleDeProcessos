@@ -190,7 +190,8 @@
                     <!-- Ícone do olho fora do select -->
                     <template x-if="hasFile()">
                         <button type="button"
-                                class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                class="text-blue-600 hover:text-blue-800 icon-visualizar focus:outline-none focus:ring-0"
+                                style="outline: none !important;"
                                 @click="abrirModalDocumento(url, 'Documento de Modelagem de Processo')"
                                 title="Visualizar Documento">
                             <svg xmlns="http://www.w3.org/2000/svg"
@@ -204,7 +205,6 @@
                             </svg>
                         </button>
                     </template>
-
                 </div>
             </div>
 
@@ -298,7 +298,8 @@
                     <!-- Ícone do olho fora do select -->
                     <template x-if="hasFile()">
                         <button type="button"
-                                class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                class="text-blue-600 hover:text-blue-800 icon-visualizar focus:outline-none focus:ring-0"
+                                style="outline: none !important;"
                                 @click="abrirModalDocumento(url, 'Norma de Procedimento')"
                                 title="Visualizar Documento">
                             <svg xmlns="http://www.w3.org/2000/svg"
@@ -312,7 +313,6 @@
                             </svg>
                         </button>
                     </template>
-
                 </div>
             </div>
 
@@ -333,7 +333,6 @@
             </div>
 
         </div>
-
 
         <!-- LINHA 9 – Emitente / Sistema / Vigência (Normas) -->
         <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
@@ -411,26 +410,36 @@
             {% if not modo_visualizacao %}
                 {% if modo_exclusao %}
                     <button
-                        class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
+                        class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition
+                               focus:outline-none focus:ring-2 focus:ring-red-400"
+                        style="outline:none !important;"
                         type="button">
                         Confirmar Exclusão
                     </button>
 
                 {% elif modo_edicao %}
-                    <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                            type="submit">
+                    <button
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition
+                               focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        style="outline:none !important;"
+                        type="submit">
                         Salvar Alterações
                     </button>
 
                 {% else %}
-                    <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                            type="submit">
+                    <button
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition
+                               focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        style="outline:none !important;"
+                        type="submit">
                         Adicionar Processo
                     </button>
                 {% endif %}
             {% endif %}
 
-            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition
+                      focus:outline-none focus:ring-2 focus:ring-blue-400"
+               style="outline:none !important;"
                href="{% url 'arquiteturaprocessos:processos' %}">
                {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
             </a>
