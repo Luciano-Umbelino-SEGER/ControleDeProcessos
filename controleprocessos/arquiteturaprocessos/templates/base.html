@@ -172,9 +172,11 @@
         </aside>
         {% endif %}
 
-        <main :class="request.user.is_authenticated ? (sidebarOpen ? 'ml-1' : 'ml-1') : ''"
-              class="flex-1 transition-all duration-300 bg-[#F0FFFF] px-1 py-6">
-            {% if messages %}
+        <main class="flex-1 transition-all duration-300 bg-[#F0FFFF] px-1 py-6
+           {% if request.user.is_authenticated %}
+               ml-1
+           {% endif %}">
+          {% if messages %}
             <div class="container mt-3 space-y-2">
                 {% for message in messages %}
                 <div x-data="{ init() { setTimeout(() => this.$el.remove(), 5000) } }" x-init="init()"
@@ -210,6 +212,5 @@
             {% endif %}
         </div>
     </footer>
-
 </body>
 </html>
