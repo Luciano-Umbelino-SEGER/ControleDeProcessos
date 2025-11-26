@@ -26,6 +26,18 @@
         <div class="text-red-600 mb-4">{{ form.non_field_errors }}</div>
     {% endif %}
 
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>Erros ao salvar o processo:</strong>
+        <ul>
+            {% for field, errors in form.errors.items %}
+                <li><strong>{{ field }}:</strong> {{ errors|striptags }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+
     <form method="post" id="form-processo">
         {% csrf_token %}
 
@@ -97,8 +109,17 @@
             <div>
                 <label id="lbl_campo_subprocesso" class="block text-sm font-medium text-gray-400">Subprocesso</label>
 
-                {{ form.nome }}
+                <!-- Campo visível (não vinculado ao Django) -->
+                <input id="subprocesso_input_visible"
+                       type="text"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
+                              focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                       placeholder="Nome do Subprocesso">
+
+                <!-- Campo Django (oculto, será preenchido via JS) -->
+                <input type="hidden" id="id_nome" name="nome" value="{{ form.nome.value|default:'' }}">
             </div>
+
         </div>
 
 

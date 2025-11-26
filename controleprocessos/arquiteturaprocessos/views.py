@@ -912,6 +912,14 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
+    # garante que o form venha no modo correto
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["modo_visualizacao"] = False
+        kwargs["modo_exclusao"] = False
+        kwargs["modo_edicao"] = False
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -927,7 +935,6 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             "modo_exclusao": False,
             "modo_edicao": False,
 
-            # auditoria da inclusão (apenas para exibição)
             "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
             "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
         })
@@ -935,28 +942,13 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        """Processamento final antes de salvar o novo Processo"""
 
         processo = form.instance
 
-        # ----------------------------------------
-        # 1. Auditoria da Inclusão
-        # ----------------------------------------
         processo.usuario_cadastro = self.request.user
-
-        # usuário_atualizacao e data_atualizacao
-        # devem ficar NULL na inclusão (conforme regra oficial)
         processo.usuario_atualizacao = None
         processo.data_atualizacao = None
 
-        # ----------------------------------------
-        # 2. Nesta etapa NÃO fazemos validações,
-        # pois elas estarão todas no Form.clean()
-        # ----------------------------------------
-
-        # ----------------------------------------
-        # 3. Mensagem de sucesso
-        # ----------------------------------------
         messages.success(
             self.request,
             f"Processo '{processo.nome}' criado com sucesso!"
@@ -964,6 +956,12 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
         return super().form_valid(form)
 
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Há erros no formulário. Verifique os campos destacados."
+        )
+        return super().form_invalid(form)
 
 # --------------------------------#
 # Visualizar Processo             #
