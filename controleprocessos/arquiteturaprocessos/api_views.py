@@ -21,7 +21,6 @@ def classificacao_por_macro1(request, macro1_id):
         })
 
 
-
 def macroprocessos_por_classificacao(request, classificacao_id):
     """
     Retorna Macroprocessos de Nivel 1 associados a uma Classificação.

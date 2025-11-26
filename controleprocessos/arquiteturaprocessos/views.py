@@ -906,7 +906,6 @@ class ProcessoView(LoginRequiredMixin, ListView):
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
-
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -918,25 +917,53 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
         agora_local = timezone.localtime(timezone.now())
         modelos, normas = get_modelagem_filtrada()
-        context["modelos_processo"] = modelos
-        context["normas_procedimento"] = normas
 
         context.update({
-            'modo_inclusao': True,
-            'modo_visualizacao': False,
-            'modo_exclusao': False,
-            'modo_edicao': False,
+            "modelos_processo": modelos,
+            "normas_procedimento": normas,
 
-            # dados da auditoria - inclusao
-            'cadastro_data': agora_local.strftime("%d/%m/%Y %H:%M:%S"),
-            'cadastro_user': self.request.user.get_full_name() or self.request.user.username,
+            "modo_inclusao": True,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+
+            # auditoria da inclusão (apenas para exibição)
+            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+            "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
         })
+
         return context
 
     def form_valid(self, form):
-        form.instance.usuario_cadastro = self.request.user
-        messages.success(self.request, f"Processo '{form.instance.nome}' criado com sucesso!")
+        """Processamento final antes de salvar o novo Processo"""
+
+        processo = form.instance
+
+        # ----------------------------------------
+        # 1. Auditoria da Inclusão
+        # ----------------------------------------
+        processo.usuario_cadastro = self.request.user
+
+        # usuário_atualizacao e data_atualizacao
+        # devem ficar NULL na inclusão (conforme regra oficial)
+        processo.usuario_atualizacao = None
+        processo.data_atualizacao = None
+
+        # ----------------------------------------
+        # 2. Nesta etapa NÃO fazemos validações,
+        # pois elas estarão todas no Form.clean()
+        # ----------------------------------------
+
+        # ----------------------------------------
+        # 3. Mensagem de sucesso
+        # ----------------------------------------
+        messages.success(
+            self.request,
+            f"Processo '{processo.nome}' criado com sucesso!"
+        )
+
         return super().form_valid(form)
+
 
 # --------------------------------#
 # Visualizar Processo             #

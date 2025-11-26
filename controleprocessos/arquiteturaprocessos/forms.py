@@ -650,58 +650,122 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
         return obj
 
+# ----------------------------#
+# Processos                   #
+# ----------------------------#
 class Form_ProcessoForm(forms.ModelForm):
+    # -----------------------------
+    # Campos extras (não estão no model)
+    # -----------------------------
+    tipo_processo = forms.ChoiceField(
+        choices=[("processo", "Processo"), ("subprocesso", "Subprocesso")],
+        widget=forms.RadioSelect(attrs={"class": "mr-2"}),
+        required=True,
+        label="Tipo"
+    )
+
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),
-        label="Classificação",
-        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+        label="Classificação"
     )
+
     macroprocesso_nivel1 = forms.ModelChoiceField(
         queryset=MacroprocessoNivel1.objects.all(),
-        label="Macroprocesso Nível 1",
-        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+        label="Macroprocesso Nível 1"
     )
+
     macroprocesso_nivel2 = forms.ModelChoiceField(
         queryset=MacroprocessoNivel2.objects.all(),
         label="Macroprocesso Nível 2",
-        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+        required=False
     )
+
     modelagem_processo = forms.ModelChoiceField(
         queryset=ModelagemProcesso.objects.all(),
-        label="Modelagem / Norma de Procedimento",
-        widget=forms.Select(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"})
+        required=False,
+        label="Modelagem / Norma de Procedimento"
     )
 
     class Meta:
         model = Processo
         exclude = ("usuario_cadastro", "usuario_atualizacao", "data_criacao", "data_atualizacao")
         widgets = {
-            "nome": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Nome do Subprocesso"}),
-            "objetivo": forms.Textarea(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Objetivo", "rows": "2",}),
-            "observacao": forms.Textarea(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Observações", "rows": "2",}),
-            "gestor": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Gestor"}),
-            "email": forms.EmailInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "E-mail do Gestor"}),
-            "telefone": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Telefone/Ramal"}),
-            "area_responsavel": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "placeholder": "Área Responsável"}),
+            "nome": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
+            "objetivo": forms.Textarea(
+                attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "rows": "2"}),
+            "observacao": forms.Textarea(
+                attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "rows": "2"}),
+            "gestor": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
+            "email": forms.EmailInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
+            "telefone": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
+            "area_responsavel": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
         }
 
+    # 🔵 AQUI ESTÁ O INIT QUE ESTAVA FALTANDO (E QUE DEFINE TODO O LAYOUT)
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
         modo_exclusao = kwargs.pop('modo_exclusao', False)
         modo_edicao = kwargs.pop('modo_edicao', False)
+
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
-        base = "w-full border border-gray-300 rounded-md px-3 py-2 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+        # classes base — o coração do layout
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        # aplica estilização uniforme em todos campos
         for name, field in self.fields.items():
-            existing = field.widget.attrs.get("class", "")
+            # cor do fundo dependendo do modo
             bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
-            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
+
+            # aplica APENAS as classes tailwind desejadas
+            field.widget.attrs["class"] = f"{base} {bg_color}"
+
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
+
+        # desabilitar campos no modo visualização/exclusão
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
+
+    # -----------------------------
+    # Validações complexas
+    # -----------------------------
+    def clean(self):
+        cleaned = super().clean()
+
+        tipo = cleaned.get("tipo_processo")
+        parent = cleaned.get("parent")
+        macro1 = cleaned.get("macroprocesso_nivel1")
+        macro2 = cleaned.get("macroprocesso_nivel2")
+
+        # 1. Processo vs Subprocesso
+        if tipo == "processo":
+            cleaned["parent"] = None  # ignorar parent
+        elif tipo == "subprocesso":
+            if not parent:
+                self.add_error("parent", "Selecione o processo pai para o subprocesso.")
+
+        # 2. Validação Macroprocesso 1/2
+        if macro2 and macro1:
+            fk_parent = getattr(macro2, "macroprocesso_nivel1_id", None) \
+                        or getattr(macro2, "nivel1_id", None) \
+                        or getattr(macro2, "macroprocesso_id", None)
+
+            if fk_parent is not None and fk_parent != macro1.id:
+                self.add_error(
+                    "macroprocesso_nivel2",
+                    "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
+                )
+
+        return cleaned
+
 
 
 
