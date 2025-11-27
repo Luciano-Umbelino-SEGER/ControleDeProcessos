@@ -650,13 +650,12 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
         return obj
 
-# ----------------------------#
-# Processos                   #
-# ----------------------------#
+# ----------------------------
+# Processos
+# ----------------------------
 class Form_ProcessoForm(forms.ModelForm):
-    # -----------------------------
-    # Campos extras (não estão no model)
-    # -----------------------------
+
+    # Campo extra para o radio (Processo/Subprocesso)
     tipo_processo = forms.ChoiceField(
         choices=[("processo", "Processo"), ("subprocesso", "Subprocesso")],
         widget=forms.RadioSelect(attrs={"class": "mr-2"}),
@@ -688,83 +687,96 @@ class Form_ProcessoForm(forms.ModelForm):
 
     class Meta:
         model = Processo
-        exclude = ("usuario_cadastro", "usuario_atualizacao", "data_criacao", "data_atualizacao")
+        exclude = ("usuario_cadastro", "usuario_atualizacao",
+                   "data_criacao", "data_atualizacao")
+
+        # o 'nome' NÃO será usado no template (input hidden)
         widgets = {
-            "nome": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
-            "objetivo": forms.Textarea(
-                attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "rows": "2"}),
-            "observacao": forms.Textarea(
-                attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2", "rows": "2"}),
-            "gestor": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
-            "email": forms.EmailInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
-            "telefone": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
-            "area_responsavel": forms.TextInput(attrs={"class": "w-full border border-gray-300 rounded-md px-3 py-2"}),
+            "objetivo": forms.Textarea(attrs={"rows": "2"}),
+            "observacao": forms.Textarea(attrs={"rows": "2"}),
         }
 
-    # 🔵 AQUI ESTÁ O INIT QUE ESTAVA FALTANDO (E QUE DEFINE TODO O LAYOUT)
+    # ------------------------------------------------
+    # INIT – remove estilização do campo nome,
+    # e mantém estilo dos demais campos.
+    # ------------------------------------------------
     def __init__(self, *args, **kwargs):
-        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
-        modo_exclusao = kwargs.pop('modo_exclusao', False)
-        modo_edicao = kwargs.pop('modo_edicao', False)
+        modo_visualizacao = kwargs.pop("modo_visualizacao", False)
+        modo_exclusao = kwargs.pop("modo_exclusao", False)
+        modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
+
         self.label_suffix = ""
 
-        # classes base — o coração do layout
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # aplica estilização uniforme em todos campos
         for name, field in self.fields.items():
-            # cor do fundo dependendo do modo
+
+            # ⛔ PULAMOS O CAMPO NOME – ele é hidden e será tratado via JS
+            if name == "nome":
+                continue
+
+            # fundo dependendo do modo
             bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
 
-            # aplica APENAS as classes tailwind desejadas
             field.widget.attrs["class"] = f"{base} {bg_color}"
-
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # desabilitar campos no modo visualização/exclusão
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
-                field.widget.attrs["class"] += " bg-gray-100"
+                if field.widget.attrs.get("class"):
+                    field.widget.attrs["class"] += " bg-gray-100"
 
-    # -----------------------------
-    # Validações complexas
-    # -----------------------------
+        # 🔒 Travar tipo_processo fora do modo inclusão
+        if modo_visualizacao or modo_exclusao or modo_edicao:
+            if "tipo_processo" in self.fields:
+                self.fields["tipo_processo"].disabled = True
+
+    # ------------------------------------------------
+    # CLEAN – Regras finais de validação
+    # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
 
         tipo = cleaned.get("tipo_processo")
         parent = cleaned.get("parent")
-        macro1 = cleaned.get("macroprocesso_nivel1")
-        macro2 = cleaned.get("macroprocesso_nivel2")
+        nome = cleaned.get("nome")
 
-        # 1. Processo vs Subprocesso
+        # 1️⃣ Nome é obrigatório SEMPRE
+        if not nome or nome.strip() == "":
+            self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
+
+        # 2️⃣ Processo não pode ter parent
         if tipo == "processo":
-            cleaned["parent"] = None  # ignorar parent
-        elif tipo == "subprocesso":
+            cleaned["parent"] = None
+
+        # 3️⃣ Subprocesso precisa obrigatoriamente de parent
+        if tipo == "subprocesso":
             if not parent:
                 self.add_error("parent", "Selecione o processo pai para o subprocesso.")
 
-        # 2. Validação Macroprocesso 1/2
-        if macro2 and macro1:
-            fk_parent = getattr(macro2, "macroprocesso_nivel1_id", None) \
-                        or getattr(macro2, "nivel1_id", None) \
-                        or getattr(macro2, "macroprocesso_id", None)
+        # 4️⃣ Validação macroprocesso n1/n2 (mantida)
+        macro1 = cleaned.get("macroprocesso_nivel1")
+        macro2 = cleaned.get("macroprocesso_nivel2")
 
-            if fk_parent is not None and fk_parent != macro1.id:
+        if macro2 and macro1:
+            fk_parent = getattr(macro2, "macroprocesso_nivel1_id", None)
+
+            if fk_parent != macro1.id:
                 self.add_error(
                     "macroprocesso_nivel2",
                     "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
                 )
 
         return cleaned
+
 
 
 

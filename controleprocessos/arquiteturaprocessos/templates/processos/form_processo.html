@@ -66,12 +66,16 @@
             <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
 
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" id="rb_processo" name="tipo_processo" value="processo" checked>
+                    <input type="radio" id="rb_processo" name="tipo_processo" value="processo"
+                           {% if form.instance.parent_id %}{% else %}checked{% endif %}
+                           {% if not modo_inclusao %}disabled{% endif %}>
                     <span id="lbl_processo" class="font-medium text-blue-700">Processo</span>
                 </label>
 
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" id="rb_subprocesso" name="tipo_processo" value="subprocesso">
+                    <input type="radio" id="rb_subprocesso" name="tipo_processo" value="subprocesso"
+                           {% if form.instance.parent_id %}checked{% endif %}
+                           {% if not modo_inclusao %}disabled{% endif %}>
                     <span id="lbl_subprocesso" class="font-medium text-gray-400">Subprocesso</span>
                 </label>
 
@@ -87,19 +91,17 @@
                 <!-- Input visível (modo Processo) -->
                 <input id="processo_input_visible" type="text"
                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                              focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                        placeholder="Nome do Processo">
 
-                <!-- Campo original Django (oculto visualmente mas funcional) -->
-                <div class="hidden">
-                    {{ form.parent }}
-                </div>
+                <!-- Campo Django (parent_id) oculto -->
+                <input type="hidden" id="id_parent" name="parent" value="">
 
                 <!-- SELECT (modo Subprocesso) -->
                 <div id="processo_select_container" class="hidden">
                     <select id="processo_select_visible"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                                   focus:ring-2 focus:ring-blue-500">
+                                   focus:ring-2 focus:ring-blue-500 bg-white">
                         <option value="">---------</option>
                     </select>
                 </div>
@@ -113,15 +115,15 @@
                 <input id="subprocesso_input_visible"
                        type="text"
                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                       placeholder="Nome do Subprocesso">
+                              focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                       placeholder="Nome do Subprocesso"
+                       disabled>
 
-                <!-- Campo Django (oculto, será preenchido via JS) -->
-                <input type="hidden" id="id_nome" name="nome" value="{{ form.nome.value|default:'' }}">
+                <!-- Campo Django (nome) oculto — sempre preenchido via JS antes do submit -->
+                <input type="hidden" id="id_nome" name="nome" value="">
             </div>
 
         </div>
-
 
         <!-- LINHA 3 -->
         <div class="grid grid-cols-2 gap-6 mb-6">

@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // Config
     // =========================
     const ENABLE_REVERSE_UPDATE = false; // mudar para true só se quiser reativar a seleção reversa (com cautela)
+    const modoInclusao = document.body.dataset.modoInclusao === "true";
+
 
     // -------------------------
     // Helpers de segurança
@@ -24,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =====================================================================
-    // 🔵 LINHA 2 — PROCESSO / SUBPROCESSO (mantido)
+    // 🔵 LINHA 2 — PROCESSO / SUBPROCESSO (mantido e sincronizado)
     // =====================================================================
     const rbProcesso = safeGet("rb_processo");
     const rbSubprocesso = safeGet("rb_subprocesso");
@@ -39,14 +41,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const processoSelectContainer = safeGet("processo_select_container");
     const processoSelectVisible = safeGet("processo_select_visible");
 
-    const parentField = safeGet("id_parent");
-    const subprocessoField = safeGet("id_nome");
+    // novo: campo visível do subprocesso (não ligado ao model diretamente)
+    const subprocessoInputVisible = safeGet("subprocesso_input_visible");
+
+    // campos ocultos que realmente entram no form
+    const parentField = safeGet("id_parent");   // hidden original {{ form.parent }} ou input hidden
+    const hiddenNomeField = safeGet("id_nome"); // agora é input hidden name="nome"
 
     let selectListenerAdded = false;
 
     function limparCampos() {
         if (processoInputVisible) processoInputVisible.value = "";
-        if (subprocessoField) subprocessoField.value = "";
+        if (subprocessoInputVisible) subprocessoInputVisible.value = "";
+        if (hiddenNomeField) hiddenNomeField.value = "";
         if (parentField) parentField.value = "";
         if (processoSelectVisible) processoSelectVisible.selectedIndex = 0;
     }
@@ -77,25 +84,31 @@ document.addEventListener("DOMContentLoaded", function () {
             lblCampoSubprocesso.classList.remove("text-blue-700");
         }
 
+        // Mostrar input de processo, esconder select
         if (processoInputVisible) processoInputVisible.classList.remove("hidden");
         if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
 
+        // Processo: input editável
         if (processoInputVisible) {
             processoInputVisible.disabled = false;
             processoInputVisible.classList.remove("bg-gray-100");
+            processoInputVisible.classList.add("bg-white");
         }
 
-        if (subprocessoField) {
-            subprocessoField.disabled = true;
-            subprocessoField.classList.add("bg-gray-100", "text-gray-500");
-            subprocessoField.classList.remove("bg-white");
+        // Subprocesso: desabilitado e fundo cinza (visível apenas se template antigo)
+        if (subprocessoInputVisible) {
+            subprocessoInputVisible.disabled = true;
+            subprocessoInputVisible.classList.add("bg-gray-100", "text-gray-500");
+            subprocessoInputVisible.classList.remove("bg-white");
         }
 
+        // parent deve ficar vazio em modo processo
         if (parentField) {
             parentField.value = "";
             parentField.disabled = true;
         }
 
+        // limpar visíveis (conforme solicitado)
         limparCampos();
     }
 
@@ -125,25 +138,30 @@ document.addEventListener("DOMContentLoaded", function () {
             lblCampoSubprocesso.classList.remove("text-gray-400");
         }
 
+        // esconder input processo e mostrar select de seleção de processo pai
         if (processoInputVisible) processoInputVisible.classList.add("hidden");
         if (processoSelectContainer) processoSelectContainer.classList.remove("hidden");
 
-        if (subprocessoField) {
-            subprocessoField.disabled = false;
-            subprocessoField.classList.remove("bg-gray-100", "text-gray-500");
-            subprocessoField.classList.add("bg-white");
+        // Subprocesso: habilitado e fundo branco para digitação
+        if (subprocessoInputVisible) {
+            subprocessoInputVisible.disabled = false;
+            subprocessoInputVisible.classList.remove("bg-gray-100", "text-gray-500");
+            subprocessoInputVisible.classList.add("bg-white");
         }
 
+        // parent ficará enabled (será preenchido ao escolher no select)
         if (parentField) parentField.disabled = false;
 
+        // limpar visíveis (conforme solicitado)
         limparCampos();
 
+        // carregar lista de processos pai no select
         if (processoSelectVisible) {
             fetch("/api/processos_pai/")
                 .then(r => r.json())
                 .then(data => {
                     processoSelectVisible.innerHTML = `<option value="">---------</option>`;
-                    data.processos_pai.forEach(p => {
+                    (data.processos_pai || []).forEach(p => {
                         const opt = document.createElement("option");
                         opt.value = p.id;
                         opt.textContent = p.nome;
@@ -169,17 +187,22 @@ document.addEventListener("DOMContentLoaded", function () {
         rbSubprocesso.addEventListener("change", () => setModeSubprocesso());
     }
 
+    // inicialização: se o form já vier com parent preenchido tratamos como subprocesso
     try {
         if (parentField && parentField.value) {
+            // preencher visible inputs a partir dos ocultos (caso venham do servidor)
             setModeSubprocesso();
             if (processoSelectVisible) processoSelectVisible.value = parentField.value;
+            if (hiddenNomeField && subprocessoInputVisible) subprocessoInputVisible.value = hiddenNomeField.value || "";
         } else {
+            // se houver nome vindo do servidor e parent vazio, colocamos no processo input
             setModeProcesso();
+            if (hiddenNomeField && processoInputVisible) processoInputVisible.value = hiddenNomeField.value || "";
         }
-    } catch (e) { }
+    } catch (e) { /* ignora */ }
 
     // =====================================================================
-    // 🔵 MODELO DE PROCESSO / NORMA – atualizações informativas
+    // 🔵 MODELO DE PROCESSO / NORMA – atualizações informativas (mantido)
     // =====================================================================
     const modeloSelect = safeGet("id_modelagem_processo");
     const temaModelo = safeGet("tema_modelo");
@@ -193,11 +216,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const partes = iso.split("-");
         return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
-
-    function formatarVersao(v) {
-        if (!v) return "";
-        return v.toString().padStart(2, "0");
-    }
+    function formatarVersao(v) { if (!v) return ""; return v.toString().padStart(2, "0"); }
 
     if (modeloSelect) {
         modeloSelect.addEventListener("change", function () {
@@ -245,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =====================================================================
-    // 🔵 TRIPLE FILTER: Classificação ↔ Macro1 ↔ Macro2
+    // 🔵 TRIPLE FILTER: Classificação ↔ Macro1 ↔ Macro2 (mantido)
     // =====================================================================
     (function tripleFilter() {
 
@@ -393,15 +412,83 @@ document.addEventListener("DOMContentLoaded", function () {
     })(); // fim tripleFilter
 
     // =====================================================================
+    // 🔵 SINCRONIZAÇÃO ANTES DO SUBMIT (garante que backend receba nome/parent corretos)
+    // =====================================================================
+    (function syncNomeBeforeSubmit() {
+        const form = document.getElementById("form-processo");
+        if (!form) return;
+
+        form.addEventListener("submit", function (ev) {
+            // Determina valor de nome e parent conforme modo atual
+            let nomeValor = "";
+            let parentValor = "";
+
+            if (rbSubprocesso && rbSubprocesso.checked) {
+                if (subprocessoInputVisible) nomeValor = subprocessoInputVisible.value.trim();
+                if (processoSelectVisible) parentValor = processoSelectVisible.value || "";
+            } else {
+                if (processoInputVisible) nomeValor = processoInputVisible.value.trim();
+                parentValor = "";
+            }
+
+            // sincroniza com os campos reais
+            if (hiddenNomeField) hiddenNomeField.value = nomeValor;
+            if (parentField) parentField.value = parentValor;
+
+            // validação cliente simples (evitar envio sem nome)
+            if (!nomeValor) {
+                // marca visualmente o(s) campo(s) visíveis
+                if (rbSubprocesso && rbSubprocesso.checked) {
+                    if (subprocessoInputVisible) {
+                        subprocessoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
+                        subprocessoInputVisible.focus();
+                    }
+                } else {
+                    if (processoInputVisible) {
+                        processoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
+                        processoInputVisible.focus();
+                    }
+                }
+
+                alert("Preencha o nome do Processo/Subprocesso antes de enviar.");
+                ev.preventDefault();
+                return false;
+            }
+
+            // segue com o envio normal (back-end fará validações finais)
+            return true;
+        });
+    })();
+
+
+    // =====================================================================
     // 🔴 DESTAQUE AUTOMÁTICO DE CAMPOS COM ERRO (INCLUSÃO/EDIÇÃO)
     // =====================================================================
-    document.querySelectorAll('.alert ul li strong').forEach(err => {
-        const fieldName = err.textContent.replace(':', '').trim();
-        const field = document.querySelector(`[name="${fieldName}"]`);
+    // Além de marcar o campo real (campo oculto), também marcou o input visível correspondente.
+    (function destaqueCamposErro() {
+        document.querySelectorAll('.alert ul li strong').forEach(err => {
+            const fieldName = err.textContent.replace(':', '').trim();
+            const field = document.querySelector(`[name="${fieldName}"]`);
 
-        if (field) {
-            field.classList.add('border-red-500', 'ring-2', 'ring-red-300');
-        }
-    });
+            if (field) {
+                // adiciona estilo ao campo real (se visível)
+                field.classList.add('border-red-500', 'ring-2', 'ring-red-300');
+
+                // se o campo é "nome" (hidden), marca o input visível correspondente
+                if (fieldName === 'nome') {
+                    if (rbSubprocesso && rbSubprocesso.checked) {
+                        if (subprocessoInputVisible) subprocessoInputVisible.classList.add('border-red-500', 'ring-2', 'ring-red-300');
+                    } else {
+                        if (processoInputVisible) processoInputVisible.classList.add('border-red-500', 'ring-2', 'ring-red-300');
+                    }
+                }
+
+                // se o campo é "parent" (FK), marca o select visível quando aplicável
+                if (fieldName === 'parent') {
+                    if (processoSelectVisible) processoSelectVisible.classList.add('border-red-500', 'ring-2', 'ring-red-300');
+                }
+            }
+        });
+    })();
 
 }); // fim DOMContentLoaded
