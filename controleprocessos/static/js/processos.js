@@ -1,19 +1,30 @@
 // ===============================
-// processos.js – VERSÃO FINAL
+// processos.js – FINAL (robusto, reverse-update DESATIVADO por padrão)
 // ===============================
 
 document.addEventListener("DOMContentLoaded", function () {
 
     // =========================
-    // Helpers
+    // Config
     // =========================
-    function safeGet(id) { try { return document.getElementById(id); } catch(e) { return null; } }
-    function safeFetchJson(url) { return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()); }
+    const ENABLE_REVERSE_UPDATE = false; // mudar para true só se quiser reativar a seleção reversa (com cautela)
 
-    const ENABLE_REVERSE_UPDATE = false;
+    // -------------------------
+    // Helpers de segurança
+    // -------------------------
+    function safeGet(id) {
+        try { return document.getElementById(id); }
+        catch (e) { return null; }
+    }
+
+    function safeFetchJson(url) {
+        return fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(r => r.json());
+    }
 
     // =====================================================================
-    // 🔵 LINHA 2 — PROCESSO / SUBPROCESSO
+    // 🔵 LINHA 2 — PROCESSO / SUBPROCESSO (mantido)
     // =====================================================================
     const rbProcesso = safeGet("rb_processo");
     const rbSubprocesso = safeGet("rb_subprocesso");
@@ -41,111 +52,200 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function setModeProcesso() {
-        if (!rbProcesso) return;
+        if (!rbProcesso || !rbSubprocesso) return;
 
         rbProcesso.checked = true;
         rbSubprocesso.checked = false;
 
-        if (lblProcesso) lblProcesso.classList.add("text-blue-700");
-        if (lblProcesso) lblProcesso.classList.remove("text-gray-400");
+        if (lblProcesso) {
+            lblProcesso.classList.add("text-blue-700");
+            lblProcesso.classList.remove("text-gray-400");
+        }
 
-        if (lblSubprocesso) lblSubprocesso.classList.add("text-gray-400");
-        if (lblSubprocesso) lblSubprocesso.classList.remove("text-blue-700");
+        if (lblSubprocesso) {
+            lblSubprocesso.classList.add("text-gray-400");
+            lblSubprocesso.classList.remove("text-blue-700");
+        }
 
-        if (lblCampoProcesso) lblCampoProcesso.classList.add("text-blue-700");
-        if (lblCampoSubprocesso) lblCampoSubprocesso.classList.add("text-gray-400");
+        if (lblCampoProcesso) {
+            lblCampoProcesso.classList.add("text-blue-700");
+            lblCampoProcesso.classList.remove("text-gray-400");
+        }
 
-        processoInputVisible.classList.remove("hidden");
-        processoSelectContainer.classList.add("hidden");
+        if (lblCampoSubprocesso) {
+            lblCampoSubprocesso.classList.add("text-gray-400");
+            lblCampoSubprocesso.classList.remove("text-blue-700");
+        }
 
-        processoInputVisible.disabled = false;
-        subprocessoField.disabled = true;
-        subprocessoField.classList.add("bg-gray-100");
+        if (processoInputVisible) processoInputVisible.classList.remove("hidden");
+        if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
 
-        parentField.value = "";
-        parentField.disabled = true;
+        if (processoInputVisible) {
+            processoInputVisible.disabled = false;
+            processoInputVisible.classList.remove("bg-gray-100");
+        }
+
+        if (subprocessoField) {
+            subprocessoField.disabled = true;
+            subprocessoField.classList.add("bg-gray-100", "text-gray-500");
+            subprocessoField.classList.remove("bg-white");
+        }
+
+        if (parentField) {
+            parentField.value = "";
+            parentField.disabled = true;
+        }
 
         limparCampos();
     }
 
     function setModeSubprocesso() {
-        rbSubprocesso.checked = true;
+        if (!rbProcesso || !rbSubprocesso) return;
+
         rbProcesso.checked = false;
+        rbSubprocesso.checked = true;
 
-        if (lblSubprocesso) lblSubprocesso.classList.add("text-blue-700");
-        if (lblSubprocesso) lblSubprocesso.classList.remove("text-gray-400");
+        if (lblProcesso) {
+            lblProcesso.classList.add("text-blue-700");
+            lblProcesso.classList.remove("text-gray-400");
+        }
 
-        processoInputVisible.classList.add("hidden");
-        processoSelectContainer.classList.remove("hidden");
+        if (lblSubprocesso) {
+            lblSubprocesso.classList.add("text-blue-700");
+            lblSubprocesso.classList.remove("text-gray-400");
+        }
 
-        subprocessoField.disabled = false;
-        parentField.disabled = false;
+        if (lblCampoProcesso) {
+            lblCampoProcesso.classList.add("text-blue-700");
+            lblCampoProcesso.classList.remove("text-gray-400");
+        }
+
+        if (lblCampoSubprocesso) {
+            lblCampoSubprocesso.classList.add("text-blue-700");
+            lblCampoSubprocesso.classList.remove("text-gray-400");
+        }
+
+        if (processoInputVisible) processoInputVisible.classList.add("hidden");
+        if (processoSelectContainer) processoSelectContainer.classList.remove("hidden");
+
+        if (subprocessoField) {
+            subprocessoField.disabled = false;
+            subprocessoField.classList.remove("bg-gray-100", "text-gray-500");
+            subprocessoField.classList.add("bg-white");
+        }
+
+        if (parentField) parentField.disabled = false;
 
         limparCampos();
 
-        fetch("/api/processos_pai/")
-            .then(r => r.json())
-            .then(data => {
-                processoSelectVisible.innerHTML = `<option value="">---------</option>`;
-                data.processos_pai.forEach(p => {
-                    const opt = document.createElement("option");
-                    opt.value = p.id;
-                    opt.textContent = p.nome;
-                    processoSelectVisible.appendChild(opt);
-                });
-                if (parentField.value) processoSelectVisible.value = parentField.value;
-            });
+        if (processoSelectVisible) {
+            fetch("/api/processos_pai/")
+                .then(r => r.json())
+                .then(data => {
+                    processoSelectVisible.innerHTML = `<option value="">---------</option>`;
+                    data.processos_pai.forEach(p => {
+                        const opt = document.createElement("option");
+                        opt.value = p.id;
+                        opt.textContent = p.nome;
+                        processoSelectVisible.appendChild(opt);
+                    });
+                    if (parentField && parentField.value) {
+                        processoSelectVisible.value = parentField.value;
+                    }
+                })
+                .catch(e => console.error("Erro ao carregar processos pai:", e));
+        }
 
-        if (!selectListenerAdded) {
+        if (!selectListenerAdded && processoSelectVisible) {
             processoSelectVisible.addEventListener("change", function () {
-                parentField.value = this.value;
+                if (parentField) parentField.value = this.value;
             });
             selectListenerAdded = true;
         }
     }
 
-    if (rbProcesso) rbProcesso.addEventListener("change", setModeProcesso);
-    if (rbSubprocesso) rbSubprocesso.addEventListener("change", setModeSubprocesso);
+    if (rbProcesso && rbSubprocesso) {
+        rbProcesso.addEventListener("change", () => setModeProcesso());
+        rbSubprocesso.addEventListener("change", () => setModeSubprocesso());
+    }
 
-    if (parentField && parentField.value) setModeSubprocesso();
-    else setModeProcesso();
-
+    try {
+        if (parentField && parentField.value) {
+            setModeSubprocesso();
+            if (processoSelectVisible) processoSelectVisible.value = parentField.value;
+        } else {
+            setModeProcesso();
+        }
+    } catch (e) { }
 
     // =====================================================================
-    // 🔵 MODELO / NORMA – atualizações informativas
+    // 🔵 MODELO DE PROCESSO / NORMA – atualizações informativas
     // =====================================================================
+    const modeloSelect = safeGet("id_modelagem_processo");
+    const temaModelo = safeGet("tema_modelo");
+    const versaoModelo = safeGet("versao_modelo");
+    const emitenteModelo = safeGet("emitente_modelo");
+    const sistemaModelo = safeGet("sistema_modelo");
+    const vigenciaModelo = safeGet("vigencia_modelo");
+
     function formatarDataISO_para_BR(iso) {
         if (!iso) return "";
-        const p = iso.split("-");
-        return `${p[2]}/${p[1]}/${p[0]}`;
+        const partes = iso.split("-");
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
-    const modeloSelect = safeGet("id_modelagem_processo");
+
+    function formatarVersao(v) {
+        if (!v) return "";
+        return v.toString().padStart(2, "0");
+    }
+
     if (modeloSelect) {
         modeloSelect.addEventListener("change", function () {
             const opt = this.options[this.selectedIndex];
-            safeGet("tema_modelo").value = opt.dataset.tema || "";
-            safeGet("emitente_modelo").value = opt.dataset.emitente || "";
-            safeGet("sistema_modelo").value = opt.dataset.sistema || "";
-            safeGet("versao_modelo").value = opt.dataset.versao || "";
-            safeGet("vigencia_modelo").value = formatarDataISO_para_BR(opt.dataset.vigencia);
+            if (!opt || opt.value === "") {
+                if (temaModelo) temaModelo.value = "";
+                if (versaoModelo) versaoModelo.value = "";
+                if (emitenteModelo) emitenteModelo.value = "";
+                if (sistemaModelo) sistemaModelo.value = "";
+                if (vigenciaModelo) vigenciaModelo.value = "";
+                return;
+            }
+            if (temaModelo) temaModelo.value = opt.dataset.tema || "";
+            if (versaoModelo) versaoModelo.value = formatarVersao(opt.dataset.versao);
+            if (emitenteModelo) emitenteModelo.value = opt.dataset.emitente || "";
+            if (sistemaModelo) sistemaModelo.value = opt.dataset.sistema || "";
+            if (vigenciaModelo) vigenciaModelo.value = formatarDataISO_para_BR(opt.dataset.vigencia);
         });
     }
 
     const normaSelect = safeGet("norma_procedimento");
+    const temaNorma = safeGet("tema_norma");
+    const versaoNorma = safeGet("versao_norma");
+    const emitenteNorma = safeGet("emitente_norma");
+    const sistemaNorma = safeGet("sistema_norma");
+    const vigenciaNorma = safeGet("vigencia_norma");
+
     if (normaSelect) {
         normaSelect.addEventListener("change", function () {
             const opt = this.options[this.selectedIndex];
-            safeGet("tema_norma").value = opt.dataset.tema || "";
-            safeGet("emitente_norma").value = opt.dataset.emitente || "";
-            safeGet("sistema_norma").value = opt.dataset.sistema || "";
-            safeGet("versao_norma").value = opt.dataset.versao || "";
-            safeGet("vigencia_norma").value = formatarDataISO_para_BR(opt.dataset.vigencia);
+            if (!opt || opt.value === "") {
+                if (temaNorma) temaNorma.value = "";
+                if (versaoNorma) versaoNorma.value = "";
+                if (emitenteNorma) emitenteNorma.value = "";
+                if (sistemaNorma) sistemaNorma.value = "";
+                if (vigenciaNorma) vigenciaNorma.value = "";
+                return;
+            }
+            if (temaNorma) temaNorma.value = opt.dataset.tema || "";
+            if (versaoNorma) versaoNorma.value = formatarVersao(opt.dataset.versao);
+            if (emitenteNorma) emitenteNorma.value = opt.dataset.emitente || "";
+            if (sistemaNorma) sistemaNorma.value = opt.dataset.sistema || "";
+            if (vigenciaNorma) vigenciaNorma.value = formatarDataISO_para_BR(opt.dataset.vigencia);
         });
     }
 
-
     // =====================================================================
-    // 🔵 TRIPLE FILTER
+    // 🔵 TRIPLE FILTER: Classificação ↔ Macro1 ↔ Macro2
     // =====================================================================
     (function tripleFilter() {
 
@@ -153,7 +253,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const selMacro1 = safeGet("id_macroprocesso_nivel1");
         const selMacro2 = safeGet("id_macroprocesso_nivel2");
 
-        if (!selClass) return;
+        if (!selClass || !selMacro1 || !selMacro2) return;
 
         const API_MACRO1_BY_CLASS = "/api/macroprocessos_por_classificacao/";
         const API_MACRO2_BY_MACRO1 = "/api/macro2_por_macro1/";
@@ -164,94 +264,144 @@ document.addEventListener("DOMContentLoaded", function () {
         let cacheMacro1 = null;
         let cacheMacro2 = null;
 
-        function addOptions(select, items) {
-            select.innerHTML = `<option value="">---------</option>`;
-            items.forEach(i => {
-                const opt = document.createElement("option");
-                opt.value = i.id;
-                opt.textContent = i.nome;
-                select.appendChild(opt);
-            });
+        function clearOptions(select) {
+            while (select.options.length > 0) select.remove(0);
         }
 
-        async function loadCache1() {
-            if (!cacheMacro1) cacheMacro1 = (await safeFetchJson(API_MACRO1_ALL)).macro1;
+        function addOptions(select, items, selectedValue = null) {
+            const previous = selectedValue ?? select.value;
+
+            clearOptions(select);
+
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "---------";
+            select.appendChild(placeholder);
+
+            items.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item.id;
+                opt.textContent = item.nome;
+                select.appendChild(opt);
+            });
+
+            if (previous && Array.from(select.options).some(o => o.value == previous)) {
+                select.value = previous;
+            } else {
+                select.value = "";
+            }
+        }
+
+        async function loadAllMacro1() {
+            if (cacheMacro1) return cacheMacro1;
+            const data = await safeFetchJson(API_MACRO1_ALL);
+            cacheMacro1 = data.macro1 || [];
             return cacheMacro1;
         }
-        async function loadCache2() {
-            if (!cacheMacro2) cacheMacro2 = (await safeFetchJson(API_MACRO2_ALL)).macro2;
+
+        async function loadAllMacro2() {
+            if (cacheMacro2) return cacheMacro2;
+            const data = await safeFetchJson(API_MACRO2_ALL);
+            cacheMacro2 = data.macro2 || [];
             return cacheMacro2;
         }
 
         selClass.addEventListener("change", async function () {
             const classId = this.value;
+
             if (!classId) {
-                addOptions(selMacro1, await loadCache1());
-                addOptions(selMacro2, await loadCache2());
+                addOptions(selMacro1, await loadAllMacro1(), "");
+                addOptions(selMacro2, await loadAllMacro2(), "");
                 return;
             }
-            const r = await safeFetchJson(API_MACRO1_BY_CLASS + classId + "/");
-            addOptions(selMacro1, r.macroprocessos);
-            const m2 = await loadCache2();
-            addOptions(selMacro2, m2.filter(x => r.macroprocessos.map(m => m.id).includes(x.macroprocesso_nivel1_id)));
+
+            const resp = await fetch(API_MACRO1_BY_CLASS + classId + "/");
+            const data = await resp.json();
+
+            addOptions(selMacro1, data.macroprocessos || []);
+
+            const todosMacro2 = await loadAllMacro2();
+            const macro1Ids = (data.macroprocessos || []).map(m => m.id);
+            const filtrado = todosMacro2.filter(m => macro1Ids.includes(m.macroprocesso_nivel1_id));
+
+            addOptions(selMacro2, filtrado || []);
         });
 
         selMacro1.addEventListener("change", async function () {
-            const id = this.value;
-            if (!id) { addOptions(selMacro2, await loadCache2()); return; }
-            const c = await safeFetchJson(API_CLASS_BY_MACRO1 + id + "/");
-            selClass.value = c.classificacao_id;
+            const macro1Id = this.value;
+
+            if (!macro1Id) {
+                addOptions(selMacro2, await loadAllMacro2(), "");
+                return;
+            }
+
+            const respC = await fetch(API_CLASS_BY_MACRO1 + macro1Id + "/");
+            const dataC = await respC.json();
+
+            if (dataC.classificacao_id) {
+                selClass.value = String(dataC.classificacao_id);
+            }
+
             selClass.dispatchEvent(new Event("change"));
-            const r = await safeFetchJson(API_MACRO2_BY_MACRO1 + id + "/");
-            addOptions(selMacro2, r.macro2);
+
+            const resp2 = await fetch(API_MACRO2_BY_MACRO1 + macro1Id + "/");
+            const data2 = await resp2.json();
+
+            addOptions(selMacro2, data2.macro2 || []);
         });
 
-    })();
+        selMacro2.addEventListener("change", async function () {
+            const macro2Id = this.value;
+
+            if (!macro2Id) {
+                return;
+            }
+
+            if (!ENABLE_REVERSE_UPDATE) {
+                return;
+            }
+
+            const classEmpty = selClass.value === "";
+            const macro1Empty = selMacro1.value === "";
+
+            if (!classEmpty || !macro1Empty) return;
+
+            try {
+                const resp = await fetch("/api/macro1_e_classificacao_por_macro2/" + macro2Id + "/");
+                const data = await resp.json();
+
+                if (data.macroprocesso_nivel1?.id) {
+                    selMacro1.value = String(data.macroprocesso_nivel1.id);
+                }
+
+                if (data.classificacao?.id) {
+                    selClass.value = String(data.classificacao.id);
+                }
+
+                selClass.dispatchEvent(new Event("change"));
+            }
+            catch (e) {
+                console.error("Erro no reverse-update:", e);
+            }
+        });
+
+        (async function init() {
+            addOptions(selMacro1, await loadAllMacro1());
+            addOptions(selMacro2, await loadAllMacro2());
+        })();
+
+    })(); // fim tripleFilter
 
     // =====================================================================
-    // 🔴 DESTACAR CAMPOS COM ERRO
+    // 🔴 DESTAQUE AUTOMÁTICO DE CAMPOS COM ERRO (INCLUSÃO/EDIÇÃO)
     // =====================================================================
-    const errorBlocks = document.querySelectorAll(".alert ul li strong");
-    errorBlocks.forEach(err => {
-        const fieldName = err.textContent.replace(":", "").trim();
+    document.querySelectorAll('.alert ul li strong').forEach(err => {
+        const fieldName = err.textContent.replace(':', '').trim();
         const field = document.querySelector(`[name="${fieldName}"]`);
+
         if (field) {
-            field.classList.add("border-red-500", "ring-2", "ring-red-300");
+            field.classList.add('border-red-500', 'ring-2', 'ring-red-300');
         }
     });
 
-    // ======================================================
-    // 🔵 SINCRONIZAÇÃO FINAL DOS CAMPOS ANTES DO SUBMIT
-    // ======================================================
-    const formProcesso = document.getElementById("form-processo");
-    if (formProcesso) {
-        formProcesso.addEventListener("submit", function (e) {
-
-            const tipo = rbProcesso?.checked ? "processo" : "subprocesso";
-
-            // campo nome real do Django
-            const fieldNome = safeGet("id_nome");
-
-            if (!fieldNome) return; // segurança máxima
-
-            if (tipo === "processo") {
-                // nome = input texto do processo
-                fieldNome.value = processoInputVisible?.value || "";
-
-                // parent = vazio
-                if (parentField) parentField.value = "";
-
-            } else {
-                // nome = input texto do subprocesso
-                fieldNome.value = subprocessoField?.value || "";
-
-                // parent = option selecionado no combo
-                if (parentField) {
-                    parentField.value = processoSelectVisible?.value || "";
-                }
-            }
-
-        });
-    }
-
-}); // DOM READY
+}); // fim DOMContentLoaded
