@@ -100,7 +100,8 @@
                 <!-- Input visível (modo Processo) -->
                 <input id="processo_input_visible" type="text"
                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                              focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white
+                              {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}"
                        placeholder="Nome do Processo">
 
                 <!-- Campo Django (parent_id) oculto -->
@@ -110,7 +111,8 @@
                 <div id="processo_select_container" class="hidden">
                     <select id="processo_select_visible"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                                   focus:ring-2 focus:ring-blue-500 bg-white">
+                                   focus:ring-2 focus:ring-blue-500 bg-white
+                                   {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}">
                         <option value="">---------</option>
                     </select>
                 </div>
@@ -187,45 +189,66 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Modelo de Processo</label>
 
-                <!-- Container flex igual ao modelo -->
                 <div class="flex items-center space-x-2"
                      x-data="{
-                        url: '{{ form.instance.modelagem_processo.documento_modelagem_processo.url|default:'' }}',
+                        url: '{% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}{{ form.instance.modelagem_processo.documento_modelagem_processo.url }}{% endif %}',
+                        tema: '{{ form.instance.modelagem_processo.tema|default:"" }}',
+                        versao: '{{ form.instance.modelagem_processo.versao|default:"" }}',
+                        emitente: '{{ form.instance.modelagem_processo.emitente|default:"" }}',
+                        sistema: '{{ form.instance.modelagem_processo.sistema|default:"" }}',
+                        vigencia: '{% if form.instance.modelagem_processo.vigencia_inicio %}{{ form.instance.modelagem_processo.vigencia_inicio|date:"Y-m-d" }}{% endif %}',
+
                         hasFile() { return this.url !== '' && this.url !== 'None'; },
+
                         update(selectEl) {
                             const opt = selectEl.options[selectEl.selectedIndex];
-                            this.url = opt?.dataset?.url || '';
+
+                            this.url     = opt?.dataset?.url     || '';
+                            this.tema    = opt?.dataset?.tema    || '';
+                            this.versao  = opt?.dataset?.versao  || '';
+                            this.emitente= opt?.dataset?.emitente|| '';
+                            this.sistema = opt?.dataset?.sistema || '';
+                            this.vigencia= opt?.dataset?.vigencia|| '';
+
+                            // preencher inputs derivados
+                            document.getElementById('tema_modelo').value     = this.tema;
+                            document.getElementById('versao_modelo').value   = this.versao;
+                            document.getElementById('emitente_modelo').value = this.emitente;
+                            document.getElementById('sistema_modelo').value  = this.sistema;
+                            document.getElementById('vigencia_modelo').value = this.vigencia;
                         }
                      }">
 
-                    <!-- Select reduzido para abrir espaço para o ícone -->
                     <div class="flex-1 min-w-0">
                         <select id="id_modelagem_processo" name="modelagem_processo"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                                       focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                @change="update($el)">
-                            <option value="">---------</option>
+                                       focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                       {% if desabilitar %}bg-gray-100 opacity-70 cursor-not-allowed{% endif %}"
+                                @change="update($el)"
+                                {% if desabilitar %}disabled{% endif %}>
+                            <option value="">---------</option>>
 
                             {% for m in modelos_processo %}
-                            <option value="{{ m.id }}"
-                                    data-tema="{{ m.tema }}"
-                                    data-versao="{{ m.versao }}"
-                                    data-emitente="{{ m.emitente }}"
-                                    data-sistema="{{ m.sistema }}"
-                                    data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
-                                    data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}">
-                                {{ m.documento_modelagem_processo|filename }}
-                            </option>
+                                <option value="{{ m.id }}"
+                                        data-tema="{{ m.tema }}"
+                                        data-versao="{{ m.versao }}"
+                                        data-emitente="{{ m.emitente }}"
+                                        data-sistema="{{ m.sistema }}"
+                                        data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
+                                        data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
+                                        {% if form.instance.modelagem_processo_id == m.id %}selected{% endif %}>
+                                    {{ m.documento_modelagem_processo|filename }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <!-- Ícone do olho fora do select -->
+                    <!-- Ícone Visualizar -->
                     <template x-if="hasFile()">
                         <button type="button"
                                 class="text-blue-600 hover:text-blue-800 icon-visualizar focus:outline-none focus:ring-0"
                                 style="outline: none !important;"
-                                @click="abrirModalDocumento(url, 'Documento de Modelagem de Processo')"
+                                @click="abrirModalDocumento(url, 'Modelo de Processo')"
                                 title="Visualizar Documento">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                  fill="none" viewBox="0 0 24 24"
@@ -238,6 +261,7 @@
                             </svg>
                         </button>
                     </template>
+
                 </div>
             </div>
 
@@ -245,6 +269,7 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
                 <input id="tema_modelo" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.modelagem_processo.tema|default:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
@@ -253,40 +278,42 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
                 <input id="versao_modelo" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.modelagem_processo.versao|default:'' }}"
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
 
         </div>
 
-        <!-- LINHA 7 – Derivados da Modelagem -->
+        <!-- LINHA 7 – Derivados -->
         <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-            <!-- Emitente -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Emitente</label>
                 <input id="emitente_modelo" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.modelagem_processo.emitente|default:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
 
-            <!-- Sistema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Sistema</label>
                 <input id="sistema_modelo" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.modelagem_processo.sistema|default:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
 
-            <!-- Início de Vigência -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
                 <input id="vigencia_modelo" type="text" readonly tabindex="-1"
+                       value="{% if form.instance.modelagem_processo.vigencia_inicio %}{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}{% endif %}"
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
 
         </div>
+
 
         <!-- LINHA 8 – Norma de Procedimento -->
         <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
@@ -295,50 +322,75 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Norma de Procedimento</label>
 
-                <!-- Container flex para ícone igual ao ModelagemProcesso -->
                 <div class="flex items-center space-x-2"
                      x-data="{
-                        url: '',
+                        // valores iniciais vindos do backend
+                        url: '{{ form.instance.norma_procedimento.link_normaprocedimento|default:'' }}',
+                        tema: '{{ form.instance.norma_procedimento.tema|default:'' }}',
+                        versao: '{{ form.instance.norma_procedimento.versao|default:'' }}',
+                        emitente: '{{ form.instance.norma_procedimento.emitente|default:'' }}',
+                        sistema: '{{ form.instance.norma_procedimento.sistema|default:'' }}',
+                        vigencia: '{% if form.instance.norma_procedimento and form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:"d/m/Y" }}{% endif %}',
+
+                        // utilidades
                         hasFile() { return this.url !== '' && this.url !== 'None'; },
+
                         update(selectEl) {
                             const opt = selectEl.options[selectEl.selectedIndex];
-                            this.url = opt?.dataset?.url || '';
-                        }
-                     }">
 
-                    <!-- Select reduzido para abrir espaço ao ícone -->
+                            this.url      = opt?.dataset?.url || '';
+                            this.tema     = opt?.dataset?.tema || '';
+                            this.versao   = opt?.dataset?.versao || '';
+                            this.emitente = opt?.dataset?.emitente || '';
+                            this.sistema  = opt?.dataset?.sistema || '';
+                            this.vigencia = opt?.dataset?.vigencia_br || '';
+
+                            document.getElementById('tema_norma').value = this.tema;
+                            document.getElementById('versao_norma').value = this.versao;
+                            document.getElementById('emitente_norma').value = this.emitente;
+                            document.getElementById('sistema_norma').value = this.sistema;
+                            document.getElementById('vigencia_norma').value = this.vigencia;
+                        }
+                     }"
+                     x-init="
+                        document.getElementById('tema_norma').value     = tema;
+                        document.getElementById('versao_norma').value   = versao;
+                        document.getElementById('emitente_norma').value = emitente;
+                        document.getElementById('sistema_norma').value  = sistema;
+                        document.getElementById('vigencia_norma').value = vigencia;
+                     ">
+
                     <div class="flex-1 min-w-0">
                         <select id="norma_procedimento" name="norma_procedimento"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                                       focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                @change="update($el)">
+                                       focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                       {% if desabilitar %}bg-gray-100 opacity-70 cursor-not-allowed{% endif %}"
+                                @change="update($el)"
+                                {% if desabilitar %}disabled{% endif %}>
                             <option value="">---------</option>
 
                             {% for n in normas_procedimento %}
                             <option value="{{ n.id }}"
                                     data-tema="{{ n.tema }}"
-                                    data-versao="{{ n.versao }}"
+                                    data-versao="{{ n.versao|stringformat:'02d' }}"
                                     data-emitente="{{ n.emitente }}"
                                     data-sistema="{{ n.sistema }}"
-                                    data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
-                                    data-url="{{ n.link_normaprocedimento }}">
+                                    data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
+                                    data-url="{{ n.link_normaprocedimento }}"
+                                    {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %}selected{% endif %}>
                                 {{ n.link_normaprocedimento|filename }}
                             </option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <!-- Ícone do olho fora do select -->
                     <template x-if="hasFile()">
                         <button type="button"
                                 class="text-blue-600 hover:text-blue-800 icon-visualizar focus:outline-none focus:ring-0"
-                                style="outline: none !important;"
                                 @click="abrirModalDocumento(url, 'Norma de Procedimento')"
                                 title="Visualizar Documento">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 fill="none" viewBox="0 0 24 24"
-                                 stroke-width="2" stroke="currentColor"
-                                 class="w-5 h-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                 stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                       d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -346,96 +398,94 @@
                             </svg>
                         </button>
                     </template>
+
                 </div>
             </div>
 
-            <!-- Tema (Normas) -->
+            <!-- Tema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
-                <input id="tema_norma" type="text" readonly tabindex="-1"
+                <input id="tema_norma" type="text" readonly
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black">
+                              pointer-events-none text-black">
             </div>
 
-            <!-- Versão (Normas) -->
+            <!-- Versão -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
-                <input id="versao_norma" type="text" readonly tabindex="-1"
+                <input id="versao_norma" type="text" readonly
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black">
+                              pointer-events-none text-black">
             </div>
 
         </div>
 
-        <!-- LINHA 9 – Emitente / Sistema / Vigência (Normas) -->
+        <!-- LINHA 9 – Derivados -->
         <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-            <!-- Emitente -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                <input id="emitente_norma" type="text" readonly tabindex="-1"
+                <input id="emitente_norma" type="text" readonly
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black">
+                              pointer-events-none text-black">
             </div>
 
-            <!-- Sistema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                <input id="sistema_norma" type="text" readonly tabindex="-1"
+                <input id="sistema_norma" type="text" readonly
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black">
+                              pointer-events-none text-black">
             </div>
 
-            <!-- Início de Vigência -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                <input id="vigencia_norma" type="text" readonly tabindex="-1"
+                <input id="vigencia_norma" type="text" readonly
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black">
+                              pointer-events-none text-black">
             </div>
-
         </div>
 
         <!-- LINHA 10 – Auditoria -->
-        <div class="grid grid-cols-[180px_1fr_180px_1fr] gap-6 mb-6">
+        <div class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-6 mb-6">
 
             <!-- Cadastro -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Cadastro</label>
-                <input type="text" readonly tabindex="-1"
-                       class="w-[180px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black"
-                       value="{{ cadastro_data }}">
+                <input type="text"
+                       value="{{ cadastro_data }}"
+                       readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
             </div>
 
             <!-- Responsável Cadastro -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
-                <input type="text" readonly tabindex="-1"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black"
-                       value="{{ cadastro_user }}">
+                <input type="text"
+                       value="{{ cadastro_user }}"
+                       readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
             </div>
 
             <!-- Atualização -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Atualização</label>
-                <input type="text" readonly tabindex="-1"
-                       class="w-[180px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black"
-                       value="{{ atualizacao_data }}">
+                <input type="text"
+                       value="{{ atualizacao_data }}"
+                       readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
             </div>
 
             <!-- Responsável Atualização -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
-                <input type="text" readonly tabindex="-1"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none focus:outline-none text-black"
-                       value="{{ atualizacao_user }}">
+                <input type="text"
+                       value="{{ atualizacao_user }}"
+                       readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
             </div>
 
         </div>
+
 
         <!-- BOTÕES -->
         <div class="flex justify-end mt-8 space-x-4">
@@ -443,7 +493,7 @@
             {% if not modo_visualizacao %}
                 {% if modo_exclusao %}
                     <button
-                        class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-red-700 transition
                                focus:outline-none focus:ring-2 focus:ring-red-400"
                         style="outline:none !important;"
                         type="button">

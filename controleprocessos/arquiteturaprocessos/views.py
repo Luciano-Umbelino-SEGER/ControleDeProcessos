@@ -912,7 +912,7 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
-    # garante que o form venha no modo correto
+    # Força o modo_inclusao no form
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["modo_visualizacao"] = False
@@ -927,24 +927,58 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         modelos, normas = get_modelagem_filtrada()
 
         context.update({
+            # listas para os selects
             "modelos_processo": modelos,
             "normas_procedimento": normas,
 
+            # controle de modos
             "modo_inclusao": True,
             "modo_visualizacao": False,
             "modo_exclusao": False,
             "modo_edicao": False,
 
+            # 🔵 AUDITORIA — inclusão
             "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
             "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
+
+            # 🔵 AUDITORIA — atualização (vazia)
+            "atualizacao_data": "",
+            "atualizacao_user": "",
         })
 
         return context
 
     def form_valid(self, form):
+        processo = form.instance
+
+        # 🔵 Auditoria registro novo
+        processo.usuario_cadastro = self.request.user
+        processo.usuario_atualizacao = None
+        processo.data_atualizacao = None
+
+        messages.success(
+            self.request,
+            f"Processo '{processo.nome}' criado com sucesso!"
+        )
+
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Há erros no formulário. Verifique os campos destacados."
+        )
+        return super().form_invalid(form)
+
+    def form_valid(self, form):
 
         processo = form.instance
 
+        # 🔵 GRAVAÇÃO DO NOVO CAMPO
+        processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
+        processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
+
+        # auditoria
         processo.usuario_cadastro = self.request.user
         processo.usuario_atualizacao = None
         processo.data_atualizacao = None
@@ -979,20 +1013,45 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        context['form'] = Form_ProcessoForm(instance=processo, modo_visualizacao=True)
+        # form carregado corretamente
+        context['form'] = Form_ProcessoForm(
+            instance=processo,
+            modo_visualizacao=True
+        )
+
+        # Auditoria — Sempre readonly (o template já marca como readonly)
         context.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
-            'modo_edicao': False
-        })
-        return context
+            'modo_edicao': False,
+            "desabilitar": True,
 
+            # 📌 Auditoria – Exibição
+            'cadastro_data': (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            'cadastro_user': (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
+
+            'atualizacao_data': (
+                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_atualizacao else ""
+            ),
+            'atualizacao_user': (
+                processo.usuario_atualizacao.get_full_name()
+                if processo.usuario_atualizacao else ""
+            ),
+        })
+
+        return context
 
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
-
 class EditarProcesso(LoginRequiredMixin, UpdateView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1007,30 +1066,53 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
+        # 🔵 AUDITORIA — corrigido e padronizado
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
 
-            # dados da auditoria — modo edição
-            'cadastro_data': timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else "",
-            'cadastro_user': processo.usuario_cadastro,
+            # Cadastro (sempre do banco)
+            'cadastro_data': (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            'cadastro_user': (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
 
-            'agora_local': timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
-            'atualizacao_user': self.request.user.get_full_name() or self.request.user.username,
+            # Atualização (vai aparecer mesmo antes de salvar)
+            'atualizacao_data': (
+                timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S")
+            ),
+            'atualizacao_user': (
+                self.request.user.get_full_name() or self.request.user.username
+            ),
         })
         return context
 
     def form_valid(self, form):
-        form.instance.usuario_atualizacao = self.request.user
-        messages.success(self.request, f"Processo '{form.instance.nome}' atualizado com sucesso!")
+        processo = form.instance
+
+        # 🔵 GRAVAÇÃO DOS DOIS CAMPOS RELACIONAIS
+        processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
+        processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
+
+        # Atualiza usuário e data automaticamente
+        processo.usuario_atualizacao = self.request.user
+        processo.data_atualizacao = timezone.now()
+
+        messages.success(
+            self.request,
+            f"Processo '{processo.nome}' atualizado com sucesso!"
+        )
         return super().form_valid(form)
 
 # --------------------------------#
 # Excluir Processo                #
 # --------------------------------#
-
 class ExcluirProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1044,13 +1126,37 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
+        # 🔵 O form já virá com todos os campos desabilitados
         context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
+
+        # 🔵 AUDITORIA
         context.update({
+            'cadastro_data': (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            'cadastro_user': (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
+
+            'atualizacao_data': (
+                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_atualizacao else ""
+            ),
+            'atualizacao_user': (
+                processo.usuario_atualizacao.get_full_name()
+                if processo.usuario_atualizacao else ""
+            ),
+
+            # 🔵 Modos
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,
-            'modo_edicao': False
+            'modo_edicao': False,
+            "desabilitar": True,
         })
+
         return context
 
     def post(self, request, *args, **kwargs):
@@ -1058,6 +1164,8 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         processo.delete()
         messages.success(request, f"Processo '{processo.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:processos')
+
+
 
 
 

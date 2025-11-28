@@ -682,15 +682,24 @@ class Form_ProcessoForm(forms.ModelForm):
     modelagem_processo = forms.ModelChoiceField(
         queryset=ModelagemProcesso.objects.all(),
         required=False,
-        label="Modelagem / Norma de Procedimento"
+        label="Modelo de Processo"
+    )
+
+    norma_procedimento = forms.ModelChoiceField(
+        queryset=ModelagemProcesso.objects.all(),
+        required=False,
+        label="Norma de Procedimento"
     )
 
     class Meta:
         model = Processo
-        exclude = ("usuario_cadastro", "usuario_atualizacao",
-                   "data_criacao", "data_atualizacao")
+        exclude = (
+            "usuario_cadastro",
+            "usuario_atualizacao",
+            "data_criacao",
+            "data_atualizacao",
+        )
 
-        # o 'nome' NÃO será usado no template (input hidden)
         widgets = {
             "objetivo": forms.Textarea(attrs={"rows": "2"}),
             "observacao": forms.Textarea(attrs={"rows": "2"}),
@@ -717,24 +726,22 @@ class Form_ProcessoForm(forms.ModelForm):
 
         for name, field in self.fields.items():
 
-            # ⛔ PULAMOS O CAMPO NOME – ele é hidden e será tratado via JS
+            # ⛔ Campo nome é hidden — JS controla
             if name == "nome":
                 continue
 
             # fundo dependendo do modo
-            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
-
-            field.widget.attrs["class"] = f"{base} {bg_color}"
+            bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            field.widget.attrs["class"] = f"{base} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
+        # MODO VISUALIZAÇÃO / EXCLUSÃO — trava tudo
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
-                if field.widget.attrs.get("class"):
-                    field.widget.attrs["class"] += " bg-gray-100"
 
-        # 🔒 Travar tipo_processo fora do modo inclusão
+        # Travar radio fora da inclusão
         if modo_visualizacao or modo_exclusao or modo_edicao:
             if "tipo_processo" in self.fields:
                 self.fields["tipo_processo"].disabled = True
@@ -762,20 +769,19 @@ class Form_ProcessoForm(forms.ModelForm):
             if not parent:
                 self.add_error("parent", "Selecione o processo pai para o subprocesso.")
 
-        # 4️⃣ Validação macroprocesso n1/n2 (mantida)
+        # 4️⃣ Validação macroprocesso n1/n2
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")
 
         if macro2 and macro1:
-            fk_parent = getattr(macro2, "macroprocesso_nivel1_id", None)
-
-            if fk_parent != macro1.id:
+            if macro2.macroprocesso_nivel1_id != macro1.id:
                 self.add_error(
                     "macroprocesso_nivel2",
                     "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
                 )
 
         return cleaned
+
 
 
 

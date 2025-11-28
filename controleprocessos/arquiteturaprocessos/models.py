@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 LSTA_CLASSIFICACAO = (
@@ -231,10 +232,7 @@ class ModelagemProcesso(models.Model):
 
 # ============================================================
 # PROCESSO / SUBPROCESSO
-# ===========================================================
-from django.core.exceptions import ValidationError
-from django.db import models
-
+# ============================================================
 class Processo(models.Model):
     nome = models.CharField(max_length=100, verbose_name="Nome do Processo")
     gestor = models.CharField(max_length=150, verbose_name="Gestor")
@@ -246,16 +244,68 @@ class Processo(models.Model):
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
     data_atualizacao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Atualização")
 
-    classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT, related_name="processos", verbose_name="Classificação")
-    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Macroprocesso Nível 1")
-    macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Macroprocesso Nível 2")
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="subprocessos", verbose_name="Processo Pai")
+    classificacao = models.ForeignKey(
+        "Classificacao",
+        on_delete=models.PROTECT,
+        related_name="processos",
+        verbose_name="Classificação"
+    )
+
+    macroprocesso_nivel1 = models.ForeignKey(
+        "MacroprocessoNivel1",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Macroprocesso Nível 1"
+    )
+
+    macroprocesso_nivel2 = models.ForeignKey(
+        "MacroprocessoNivel2",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Macroprocesso Nível 2"
+    )
+
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name="subprocessos",
+        verbose_name="Processo Pai"
+    )
 
     area_responsavel = models.CharField(max_length=100, null=True, blank=True, verbose_name="Área Responsável")
-    usuario_cadastro = models.ForeignKey("Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="processos_cadastrados", verbose_name="Usuário que efetuou o cadastro")
-    usuario_atualizacao = models.ForeignKey("Usuario", on_delete=models.SET_NULL, null=True, blank=True, related_name="processos_atualizados", verbose_name="Usuário que efetuou a última atualização")
+    usuario_cadastro = models.ForeignKey(
+        "Usuario",
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="processos_cadastrados",
+        verbose_name="Usuário que efetuou o cadastro"
+    )
+    usuario_atualizacao = models.ForeignKey(
+        "Usuario",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="processos_atualizados",
+        verbose_name="Usuário que efetuou a última atualização"
+    )
 
-    modelagem_processo = models.ForeignKey("ModelagemProcesso", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Modelagem / Norma de Procedimento")
+    # 🔵 Modelo de Processo (PDF da Modelagem)
+    modelagem_processo = models.ForeignKey(
+        "ModelagemProcesso",
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="processos_modelados",
+        verbose_name="Modelo de Processo"
+    )
+
+    # 🔵 Norma de Procedimento (outro PDF)
+    norma_procedimento = models.ForeignKey(
+        "ModelagemProcesso",
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="processos_norma",
+        verbose_name="Norma de Procedimento"
+    )
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"
