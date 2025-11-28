@@ -11,6 +11,15 @@
 {% endblock %}
 
 {% block body %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.body.dataset.modoInclusao = "{{ modo_inclusao|yesno:'true,false' }}";
+        document.body.dataset.modoEdicao = "{{ modo_edicao|yesno:'true,false' }}";
+        document.body.dataset.modoVisualizacao = "{{ modo_visualizacao|yesno:'true,false' }}";
+        document.body.dataset.modoExclusao = "{{ modo_exclusao|yesno:'true,false' }}";
+    });
+</script>
+
 
 <div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
 
@@ -120,7 +129,8 @@
                        disabled>
 
                 <!-- Campo Django (nome) oculto — sempre preenchido via JS antes do submit -->
-                <input type="hidden" id="id_nome" name="nome" value="">
+                <input type="hidden" id="id_nome" name="nome" value="{{ form.instance.nome }}">
+
             </div>
 
         </div>
@@ -471,6 +481,16 @@
 
     </form>
 </div>
+
+<script>
+    window.MODO = {
+        inclusao: {{ modo_inclusao|yesno:"true,false" }},
+        edicao: {{ modo_edicao|yesno:"true,false" }},
+        visualizacao: {{ modo_visualizacao|yesno:"true,false" }},
+        exclusao: {{ modo_exclusao|yesno:"true,false" }},
+        parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
+    };
+</script>
 
 <!-- JS CENTRALIZADO -->
 <script src="{% static 'js/processos.js' %}"></script>

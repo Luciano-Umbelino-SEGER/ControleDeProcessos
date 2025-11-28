@@ -1,15 +1,30 @@
 // ===============================
-// processos.js – FINAL (robusto, reverse-update DESATIVADO por padrão)
+// processos.js – FINAL (robusto, modos integrados)
 // ===============================
 
 document.addEventListener("DOMContentLoaded", function () {
 
     // =========================
-    // Config
+    // Config / modos (usa window.MODO se disponível)
     // =========================
-    const ENABLE_REVERSE_UPDATE = false; // mudar para true só se quiser reativar a seleção reversa (com cautela)
-    const modoInclusao = document.body.dataset.modoInclusao === "true";
+    const MODO = (typeof window !== "undefined" && window.MODO) ? window.MODO : {
+        inclusao: document.body.dataset.modoInclusao === "true",
+        edicao: document.body.dataset.modoEdicao === "true",
+        visualizacao: document.body.dataset.modoVisualizacao === "true",
+        exclusao: document.body.dataset.modoExclusao === "true",
+        parentId: document.body.dataset.parentId || ""
+    };
 
+    const modoInclusao = !!MODO.inclusao;
+    const modoEdicao = !!MODO.edicao;
+    const modoVisualizacao = !!MODO.visualizacao;
+    const modoExclusao = !!MODO.exclusao;
+    const parentIdFromServer = (MODO.parentId || "").toString();
+
+    // =========================
+    // Config adicional
+    // =========================
+    const ENABLE_REVERSE_UPDATE = false; // manter conforme sua versão original
 
     // -------------------------
     // Helpers de segurança
@@ -26,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =====================================================================
-    // 🔵 LINHA 2 — PROCESSO / SUBPROCESSO (mantido e sincronizado)
+    // Elementos compartilhados
     // =====================================================================
     const rbProcesso = safeGet("rb_processo");
     const rbSubprocesso = safeGet("rb_subprocesso");
@@ -41,16 +56,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const processoSelectContainer = safeGet("processo_select_container");
     const processoSelectVisible = safeGet("processo_select_visible");
 
-    // novo: campo visível do subprocesso (não ligado ao model diretamente)
     const subprocessoInputVisible = safeGet("subprocesso_input_visible");
 
-    // campos ocultos que realmente entram no form
-    const parentField = safeGet("id_parent");   // hidden original {{ form.parent }} ou input hidden
-    const hiddenNomeField = safeGet("id_nome"); // agora é input hidden name="nome"
+    // campos ocultos reais que o backend espera
+    const parentField = safeGet("id_parent");   // <input type="hidden" name="parent">
+    const hiddenNomeField = safeGet("id_nome"); // <input type="hidden" name="nome">
 
     let selectListenerAdded = false;
 
-    function limparCampos() {
+    // utilitário para determinar se os campos devem ser editáveis
+    const formIsEditable = () => modoInclusao || modoEdicao;
+
+    // =====================================================================
+    // Funções utilitárias
+    // =====================================================================
+    function limparVisiveis() {
         if (processoInputVisible) processoInputVisible.value = "";
         if (subprocessoInputVisible) subprocessoInputVisible.value = "";
         if (hiddenNomeField) hiddenNomeField.value = "";
@@ -58,122 +78,104 @@ document.addEventListener("DOMContentLoaded", function () {
         if (processoSelectVisible) processoSelectVisible.selectedIndex = 0;
     }
 
-    function setModeProcesso() {
-        if (!rbProcesso || !rbSubprocesso) return;
+    // popula select de processos pai via API e retorna Promise com array
+    function carregarProcessosPai() {
+        return safeFetchJson("/api/processos_pai/")
+            .then(data => data.processos_pai || [])
+            .catch(e => {
+                console.error("Erro ao carregar processos pai:", e);
+                return [];
+            });
+    }
 
-        rbProcesso.checked = true;
-        rbSubprocesso.checked = false;
-
+    function aplicarEstadoVisualLabels(isSubprocesso) {
         if (lblProcesso) {
-            lblProcesso.classList.add("text-blue-700");
-            lblProcesso.classList.remove("text-gray-400");
+            lblProcesso.classList.toggle("text-blue-700", true);
+            lblProcesso.classList.toggle("text-gray-400", !isSubprocesso);
         }
-
         if (lblSubprocesso) {
-            lblSubprocesso.classList.add("text-gray-400");
-            lblSubprocesso.classList.remove("text-blue-700");
+            // se isSubprocesso true, sub é ativo
+            lblSubprocesso.classList.toggle("text-blue-700", isSubprocesso);
+            lblSubprocesso.classList.toggle("text-gray-400", !isSubprocesso);
         }
 
         if (lblCampoProcesso) {
-            lblCampoProcesso.classList.add("text-blue-700");
+            lblCampoProcesso.classList.toggle("text-blue-700", true);
             lblCampoProcesso.classList.remove("text-gray-400");
         }
-
         if (lblCampoSubprocesso) {
-            lblCampoSubprocesso.classList.add("text-gray-400");
-            lblCampoSubprocesso.classList.remove("text-blue-700");
+            lblCampoSubprocesso.classList.toggle("text-blue-700", isSubprocesso);
+            lblCampoSubprocesso.classList.toggle("text-gray-400", !isSubprocesso);
         }
+    }
 
-        // Mostrar input de processo, esconder select
+    // =====================================================================
+    // Modos: setModeProcesso / setModeSubprocesso para modo_inclusao
+    // =====================================================================
+    function setModeProcesso_inclusao() {
+        aplicarEstadoVisualLabels(false);
+
+        // mostrar input processo, esconder select
         if (processoInputVisible) processoInputVisible.classList.remove("hidden");
         if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
 
-        // Processo: input editável
+        // processo editável (em inclusão)
         if (processoInputVisible) {
             processoInputVisible.disabled = false;
             processoInputVisible.classList.remove("bg-gray-100");
             processoInputVisible.classList.add("bg-white");
         }
 
-        // Subprocesso: desabilitado e fundo cinza (visível apenas se template antigo)
+        // subprocesso visível mas desabilitado
         if (subprocessoInputVisible) {
             subprocessoInputVisible.disabled = true;
-            subprocessoInputVisible.classList.add("bg-gray-100", "text-gray-500");
             subprocessoInputVisible.classList.remove("bg-white");
+            subprocessoInputVisible.classList.add("bg-gray-100", "text-gray-500");
+            subprocessoInputVisible.value = "";
         }
 
-        // parent deve ficar vazio em modo processo
         if (parentField) {
             parentField.value = "";
             parentField.disabled = true;
         }
 
-        // limpar visíveis (conforme solicitado)
-        limparCampos();
+        // limpamos visíveis conforme especificado
+        limparVisiveis();
     }
 
-    function setModeSubprocesso() {
-        if (!rbProcesso || !rbSubprocesso) return;
+    async function setModeSubprocesso_inclusao() {
+        aplicarEstadoVisualLabels(true);
 
-        rbProcesso.checked = false;
-        rbSubprocesso.checked = true;
-
-        if (lblProcesso) {
-            lblProcesso.classList.add("text-blue-700");
-            lblProcesso.classList.remove("text-gray-400");
-        }
-
-        if (lblSubprocesso) {
-            lblSubprocesso.classList.add("text-blue-700");
-            lblSubprocesso.classList.remove("text-gray-400");
-        }
-
-        if (lblCampoProcesso) {
-            lblCampoProcesso.classList.add("text-blue-700");
-            lblCampoProcesso.classList.remove("text-gray-400");
-        }
-
-        if (lblCampoSubprocesso) {
-            lblCampoSubprocesso.classList.add("text-blue-700");
-            lblCampoSubprocesso.classList.remove("text-gray-400");
-        }
-
-        // esconder input processo e mostrar select de seleção de processo pai
+        // esconder input processo, mostrar select
         if (processoInputVisible) processoInputVisible.classList.add("hidden");
         if (processoSelectContainer) processoSelectContainer.classList.remove("hidden");
 
-        // Subprocesso: habilitado e fundo branco para digitação
+        // subprocesso habilitado para digitação
         if (subprocessoInputVisible) {
             subprocessoInputVisible.disabled = false;
             subprocessoInputVisible.classList.remove("bg-gray-100", "text-gray-500");
             subprocessoInputVisible.classList.add("bg-white");
+            subprocessoInputVisible.value = "";
         }
 
-        // parent ficará enabled (será preenchido ao escolher no select)
         if (parentField) parentField.disabled = false;
 
-        // limpar visíveis (conforme solicitado)
-        limparCampos();
+        // limpar visíveis
+        limparVisiveis();
 
-        // carregar lista de processos pai no select
+        // carregar lista de processos pai
         if (processoSelectVisible) {
-            fetch("/api/processos_pai/")
-                .then(r => r.json())
-                .then(data => {
-                    processoSelectVisible.innerHTML = `<option value="">---------</option>`;
-                    (data.processos_pai || []).forEach(p => {
-                        const opt = document.createElement("option");
-                        opt.value = p.id;
-                        opt.textContent = p.nome;
-                        processoSelectVisible.appendChild(opt);
-                    });
-                    if (parentField && parentField.value) {
-                        processoSelectVisible.value = parentField.value;
-                    }
-                })
-                .catch(e => console.error("Erro ao carregar processos pai:", e));
+            const processos = await carregarProcessosPai();
+            processoSelectVisible.innerHTML = `<option value="">---------</option>`;
+            processos.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = p.nome;
+                processoSelectVisible.appendChild(opt);
+            });
         }
 
+        // listener para sincronizar parent oculto
         if (!selectListenerAdded && processoSelectVisible) {
             processoSelectVisible.addEventListener("change", function () {
                 if (parentField) parentField.value = this.value;
@@ -182,27 +184,218 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    if (rbProcesso && rbSubprocesso) {
-        rbProcesso.addEventListener("change", () => setModeProcesso());
-        rbSubprocesso.addEventListener("change", () => setModeSubprocesso());
+    // =====================================================================
+    // Inicialização e comportamento quando NÃO é modo_inclusao (edição/visualização/exclusao)
+    // Regras específicas pedidas:
+    // - radios desabilitados
+    // - se parentId presente => registro é Subprocesso
+    //   * modo_edicao: Processo vira select (com valor selecionado), Subprocesso fica editável (se modo_edicao)
+    //   * modo_visualizacao/exclusao: Processo é input text desabilitado, Subprocesso desabilitado
+    // - se parentId ausente => registro é Processo
+    //   * modo_edicao: Processo é input text editável
+    //   * modo_visualizacao/exclusao: input text desabilitado
+    // =====================================================================
+    async function inicializacaoNaoInclusao() {
+        // Desabilitar radios (template já desabilita, mas reforçamos)
+        if (rbProcesso) rbProcesso.disabled = true;
+        if (rbSubprocesso) rbSubprocesso.disabled = true;
+
+        const isSub = !!parentIdFromServer;
+
+        // preencher hiddenNome (caso backend já tenha colocado o valor no hidden)
+        const nomeDoRegistro = (hiddenNomeField && hiddenNomeField.value) ? hiddenNomeField.value : "";
+
+        // se é Subprocesso (parent_id presente)
+        if (isSub) {
+            // marcar radio Subprocesso
+            if (rbProcesso) rbProcesso.checked = false;
+            if (rbSubprocesso) rbSubprocesso.checked = true;
+
+            aplicarEstadoVisualLabels(true);
+
+            // Modo EDIÇÃO -> trocar para select (mas se não for editável, select será disabled)
+            if (modoEdicao) {
+                // esconder input processo e mostrar select preenchido
+                if (processoInputVisible) processoInputVisible.classList.add("hidden");
+                if (processoSelectContainer) processoSelectContainer.classList.remove("hidden");
+
+                // carregar processos pai e selecionar parentId
+                if (processoSelectVisible) {
+                    const processos = await carregarProcessosPai();
+                    processoSelectVisible.innerHTML = `<option value="">---------</option>`;
+                    processos.forEach(p => {
+                        const opt = document.createElement("option");
+                        opt.value = p.id;
+                        opt.textContent = p.nome;
+                        processoSelectVisible.appendChild(opt);
+                    });
+
+                    // selecionar parentId
+                    if (parentIdFromServer) processoSelectVisible.value = parentIdFromServer;
+
+                    // se não for editável, deixar select disabled; se for edição, permitir editar parent (opcional)
+                    processoSelectVisible.disabled = !formIsEditable();
+                }
+
+                // preencher subprocesso input com o nome do registro (nome próprio)
+                if (subprocessoInputVisible) {
+                    subprocessoInputVisible.disabled = !formIsEditable();
+                    subprocessoInputVisible.classList.toggle("bg-white", formIsEditable());
+                    subprocessoInputVisible.classList.toggle("bg-gray-100", !formIsEditable());
+                    // se hiddenNomeField vazio, tentamos obter do servidor listagem (procura no processos pai)
+                    if (nomeDoRegistro) {
+                        subprocessoInputVisible.value = nomeDoRegistro;
+                    } else {
+                        // tenta extrair o nome do objeto via API /api/processo/<id>/ (não implementado por padrão)
+                        // fallback: vazio
+                        subprocessoInputVisible.value = "";
+                    }
+                }
+
+                // sincroniza parentField com select (caso backend não tenha definido)
+                if (parentField) parentField.value = processoSelectVisible ? processoSelectVisible.value : parentIdFromServer;
+
+                // listener para manter hidden parent atualizado (se select editável)
+                if (!selectListenerAdded && processoSelectVisible) {
+                    processoSelectVisible.addEventListener("change", function () {
+                        if (parentField) parentField.value = this.value;
+                    });
+                    selectListenerAdded = true;
+                }
+            }
+            else {
+                // modo visualização ou exclusão => processo deve ser input text (desabilitado)
+                if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
+                if (processoInputVisible) {
+                    processoInputVisible.classList.remove("hidden");
+                    processoInputVisible.disabled = true;
+                    processoInputVisible.classList.add("bg-gray-100");
+                }
+
+                // queremos mostrar o NOME do PROCESSO pai no campo Processo (visível e desabilitado)
+                // Para obter o nome do parent, carregamos processos pai e encontramos pelo id
+                if (processoInputVisible) {
+                    const processos = await carregarProcessosPai();
+                    const parentObj = processos.find(p => String(p.id) === String(parentIdFromServer));
+                    if (parentObj) {
+                        processoInputVisible.value = parentObj.nome;
+                    } else {
+                        processoInputVisible.value = "";
+                    }
+                }
+
+                // Subprocesso: mostrar nome do registro (desabilitado)
+                if (subprocessoInputVisible) {
+                    subprocessoInputVisible.disabled = true;
+                    subprocessoInputVisible.classList.add("bg-gray-100", "text-gray-500");
+                    // se o backend colocou hiddenNomeField, usa; caso contrário vazio
+                    subprocessoInputVisible.value = nomeDoRegistro || "";
+                }
+
+                if (parentField) {
+                    parentField.value = parentIdFromServer;
+                    parentField.disabled = true;
+                }
+            }
+
+        } else {
+            // É PROCESSO (parent ausente)
+            if (rbProcesso) rbProcesso.checked = true;
+            if (rbSubprocesso) rbSubprocesso.checked = false;
+
+            aplicarEstadoVisualLabels(false);
+
+            // em modo edição: manter input processo visível e editável
+            if (modoEdicao) {
+                if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
+                if (processoInputVisible) {
+                    processoInputVisible.classList.remove("hidden");
+                    processoInputVisible.disabled = !formIsEditable(); // true for ediçao
+                    processoInputVisible.classList.toggle("bg-white", formIsEditable());
+                    processoInputVisible.classList.toggle("bg-gray-100", !formIsEditable());
+                    // preenche com nome vindo do servidor (hiddenNomeField) se disponível
+                    if (hiddenNomeField && hiddenNomeField.value) processoInputVisible.value = hiddenNomeField.value;
+                    else processoInputVisible.value = "";
+                }
+
+                // subprocesso input desabilitado
+                if (subprocessoInputVisible) {
+                    subprocessoInputVisible.disabled = true;
+                    subprocessoInputVisible.classList.add("bg-gray-100", "text-gray-500");
+                    subprocessoInputVisible.value = "";
+                }
+
+                if (parentField) {
+                    parentField.value = "";
+                    parentField.disabled = true;
+                }
+            }
+            else {
+                // visualização / exclusão: input processo visível e desabilitado com o nome
+                if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
+                if (processoInputVisible) {
+                    processoInputVisible.classList.remove("hidden");
+                    processoInputVisible.disabled = true;
+                    processoInputVisible.classList.add("bg-gray-100");
+                    if (hiddenNomeField && hiddenNomeField.value) processoInputVisible.value = hiddenNomeField.value;
+                    else processoInputVisible.value = "";
+                }
+
+                if (subprocessoInputVisible) {
+                    subprocessoInputVisible.disabled = true;
+                    subprocessoInputVisible.classList.add("bg-gray-100", "text-gray-500");
+                    subprocessoInputVisible.value = "";
+                }
+
+                if (parentField) {
+                    parentField.value = "";
+                    parentField.disabled = true;
+                }
+            }
+        }
     }
 
-    // inicialização: se o form já vier com parent preenchido tratamos como subprocesso
-    try {
-        if (parentField && parentField.value) {
-            // preencher visible inputs a partir dos ocultos (caso venham do servidor)
-            setModeSubprocesso();
-            if (processoSelectVisible) processoSelectVisible.value = parentField.value;
-            if (hiddenNomeField && subprocessoInputVisible) subprocessoInputVisible.value = hiddenNomeField.value || "";
-        } else {
-            // se houver nome vindo do servidor e parent vazio, colocamos no processo input
-            setModeProcesso();
-            if (hiddenNomeField && processoInputVisible) processoInputVisible.value = hiddenNomeField.value || "";
+    // =====================================================================
+    // Inicialização geral
+    // =====================================================================
+    (async function init() {
+        // Se modo inclusão -> ativar listeners para permitir troca Processo/Subprocesso
+        if (modoInclusao) {
+            // Radios devem estar habilitados (template já marca, mas reforçamos)
+            if (rbProcesso) rbProcesso.disabled = false;
+            if (rbSubprocesso) rbSubprocesso.disabled = false;
+
+            // event listeners para os radios
+            if (rbProcesso) {
+                rbProcesso.addEventListener("change", function () {
+                    if (rbProcesso.checked) {
+                        setModeProcesso_inclusao();
+                    }
+                });
+            }
+            if (rbSubprocesso) {
+                rbSubprocesso.addEventListener("change", function () {
+                    if (rbSubprocesso.checked) {
+                        setModeSubprocesso_inclusao();
+                    }
+                });
+            }
+
+            // definir estado inicial: se radio selecionado no template, seguir
+            if (rbSubprocesso && rbSubprocesso.checked) {
+                await setModeSubprocesso_inclusao();
+            } else {
+                setModeProcesso_inclusao();
+            }
         }
-    } catch (e) { /* ignora */ }
+        else {
+            // não é inclusão -> comportamento especial (edição / visualização / exclusao)
+            await inicializacaoNaoInclusao();
+        }
+    })();
 
     // =====================================================================
-    // 🔵 MODELO DE PROCESSO / NORMA – atualizações informativas (mantido)
+    // MODELO / NORMA — parte mantida/inalterada (copiada da sua versão)
     // =====================================================================
     const modeloSelect = safeGet("id_modelagem_processo");
     const temaModelo = safeGet("tema_modelo");
@@ -264,7 +457,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =====================================================================
-    // 🔵 TRIPLE FILTER: Classificação ↔ Macro1 ↔ Macro2 (mantido)
+    // TRIPLE FILTER – mantido exatamente (não tocar sem necessidade)
     // =====================================================================
     (function tripleFilter() {
 
@@ -404,7 +597,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        (async function init() {
+        (async function initTriple() {
             addOptions(selMacro1, await loadAllMacro1());
             addOptions(selMacro2, await loadAllMacro2());
         })();
@@ -412,32 +605,38 @@ document.addEventListener("DOMContentLoaded", function () {
     })(); // fim tripleFilter
 
     // =====================================================================
-    // 🔵 SINCRONIZAÇÃO ANTES DO SUBMIT (garante que backend receba nome/parent corretos)
+    // Sincronização ANTES do SUBMIT (garante backend receba nome/parent corretos)
     // =====================================================================
     (function syncNomeBeforeSubmit() {
         const form = document.getElementById("form-processo");
         if (!form) return;
 
         form.addEventListener("submit", function (ev) {
-            // Determina valor de nome e parent conforme modo atual
             let nomeValor = "";
             let parentValor = "";
 
+            // se estamos em modo subprocesso (radio marcado), usamos o subprocesso input + select parent
             if (rbSubprocesso && rbSubprocesso.checked) {
-                if (subprocessoInputVisible) nomeValor = subprocessoInputVisible.value.trim();
+                if (subprocessoInputVisible) nomeValor = (subprocessoInputVisible.value || "").trim();
                 if (processoSelectVisible) parentValor = processoSelectVisible.value || "";
             } else {
-                if (processoInputVisible) nomeValor = processoInputVisible.value.trim();
+                // processo
+                if (processoInputVisible && !processoInputVisible.classList.contains("hidden")) {
+                    nomeValor = (processoInputVisible.value || "").trim();
+                } else if (processoSelectVisible && !processoSelectVisible.classList.contains("hidden")) {
+                    // raro: select visível no submit, pega texto selecionado
+                    nomeValor = (processoSelectVisible.options[processoSelectVisible.selectedIndex]?.text || "").trim();
+                } else {
+                    nomeValor = "";
+                }
                 parentValor = "";
             }
 
-            // sincroniza com os campos reais
             if (hiddenNomeField) hiddenNomeField.value = nomeValor;
             if (parentField) parentField.value = parentValor;
 
-            // validação cliente simples (evitar envio sem nome)
+            // validação cliente simples
             if (!nomeValor) {
-                // marca visualmente o(s) campo(s) visíveis
                 if (rbSubprocesso && rbSubprocesso.checked) {
                     if (subprocessoInputVisible) {
                         subprocessoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
@@ -449,32 +648,26 @@ document.addEventListener("DOMContentLoaded", function () {
                         processoInputVisible.focus();
                     }
                 }
-
                 alert("Preencha o nome do Processo/Subprocesso antes de enviar.");
                 ev.preventDefault();
                 return false;
             }
 
-            // segue com o envio normal (back-end fará validações finais)
             return true;
         });
     })();
 
-
     // =====================================================================
-    // 🔴 DESTAQUE AUTOMÁTICO DE CAMPOS COM ERRO (INCLUSÃO/EDIÇÃO)
+    // Destaque automático de campos com erro
     // =====================================================================
-    // Além de marcar o campo real (campo oculto), também marcou o input visível correspondente.
     (function destaqueCamposErro() {
         document.querySelectorAll('.alert ul li strong').forEach(err => {
             const fieldName = err.textContent.replace(':', '').trim();
             const field = document.querySelector(`[name="${fieldName}"]`);
 
             if (field) {
-                // adiciona estilo ao campo real (se visível)
                 field.classList.add('border-red-500', 'ring-2', 'ring-red-300');
 
-                // se o campo é "nome" (hidden), marca o input visível correspondente
                 if (fieldName === 'nome') {
                     if (rbSubprocesso && rbSubprocesso.checked) {
                         if (subprocessoInputVisible) subprocessoInputVisible.classList.add('border-red-500', 'ring-2', 'ring-red-300');
@@ -483,7 +676,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 }
 
-                // se o campo é "parent" (FK), marca o select visível quando aplicável
                 if (fieldName === 'parent') {
                     if (processoSelectVisible) processoSelectVisible.classList.add('border-red-500', 'ring-2', 'ring-red-300');
                 }
