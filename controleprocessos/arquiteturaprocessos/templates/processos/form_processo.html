@@ -189,35 +189,7 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Modelo de Processo</label>
 
-                <div class="flex items-center space-x-2"
-                     x-data="{
-                        url: '{% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}{{ form.instance.modelagem_processo.documento_modelagem_processo.url }}{% endif %}',
-                        tema: '{{ form.instance.modelagem_processo.tema|default:"" }}',
-                        versao: '{{ form.instance.modelagem_processo.versao|default:"" }}',
-                        emitente: '{{ form.instance.modelagem_processo.emitente|default:"" }}',
-                        sistema: '{{ form.instance.modelagem_processo.sistema|default:"" }}',
-                        vigencia: '{% if form.instance.modelagem_processo.vigencia_inicio %}{{ form.instance.modelagem_processo.vigencia_inicio|date:"Y-m-d" }}{% endif %}',
-
-                        hasFile() { return this.url !== '' && this.url !== 'None'; },
-
-                        update(selectEl) {
-                            const opt = selectEl.options[selectEl.selectedIndex];
-
-                            this.url     = opt?.dataset?.url     || '';
-                            this.tema    = opt?.dataset?.tema    || '';
-                            this.versao  = opt?.dataset?.versao  || '';
-                            this.emitente= opt?.dataset?.emitente|| '';
-                            this.sistema = opt?.dataset?.sistema || '';
-                            this.vigencia= opt?.dataset?.vigencia|| '';
-
-                            // preencher inputs derivados
-                            document.getElementById('tema_modelo').value     = this.tema;
-                            document.getElementById('versao_modelo').value   = this.versao;
-                            document.getElementById('emitente_modelo').value = this.emitente;
-                            document.getElementById('sistema_modelo').value  = this.sistema;
-                            document.getElementById('vigencia_modelo').value = this.vigencia;
-                        }
-                     }">
+                <div class="flex items-center space-x-2" x-data="modeloProcessoData()">
 
                     <div class="flex-1 min-w-0">
                         <select id="id_modelagem_processo" name="modelagem_processo"
@@ -226,7 +198,7 @@
                                        {% if desabilitar %}bg-gray-100 opacity-70 cursor-not-allowed{% endif %}"
                                 @change="update($el)"
                                 {% if desabilitar %}disabled{% endif %}>
-                            <option value="">---------</option>>
+                            <option value="">---------</option>
 
                             {% for m in modelos_processo %}
                                 <option value="{{ m.id }}"
@@ -247,7 +219,6 @@
                     <template x-if="hasFile()">
                         <button type="button"
                                 class="text-blue-600 hover:text-blue-800 icon-visualizar focus:outline-none focus:ring-0"
-                                style="outline: none !important;"
                                 @click="abrirModalDocumento(url, 'Modelo de Processo')"
                                 title="Visualizar Documento">
                             <svg xmlns="http://www.w3.org/2000/svg"
@@ -261,7 +232,6 @@
                             </svg>
                         </button>
                     </template>
-
                 </div>
             </div>
 
@@ -269,7 +239,7 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
                 <input id="tema_modelo" type="text" readonly tabindex="-1"
-                       value="{{ form.instance.modelagem_processo.tema|default:'' }}"
+                       value="{{ form.instance.modelagem_processo.tema|default_if_none:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
@@ -278,7 +248,7 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
                 <input id="versao_modelo" type="text" readonly tabindex="-1"
-                       value="{{ form.instance.modelagem_processo.versao|default:'' }}"
+                       value="{{ form.instance.modelagem_processo.versao|default_if_none:'' }}"
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
@@ -314,7 +284,6 @@
 
         </div>
 
-
         <!-- LINHA 8 – Norma de Procedimento -->
         <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
@@ -322,43 +291,7 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Norma de Procedimento</label>
 
-                <div class="flex items-center space-x-2"
-                     x-data="{
-                        // valores iniciais vindos do backend
-                        url: '{{ form.instance.norma_procedimento.link_normaprocedimento|default:'' }}',
-                        tema: '{{ form.instance.norma_procedimento.tema|default:'' }}',
-                        versao: '{{ form.instance.norma_procedimento.versao|default:'' }}',
-                        emitente: '{{ form.instance.norma_procedimento.emitente|default:'' }}',
-                        sistema: '{{ form.instance.norma_procedimento.sistema|default:'' }}',
-                        vigencia: '{% if form.instance.norma_procedimento and form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:"d/m/Y" }}{% endif %}',
-
-                        // utilidades
-                        hasFile() { return this.url !== '' && this.url !== 'None'; },
-
-                        update(selectEl) {
-                            const opt = selectEl.options[selectEl.selectedIndex];
-
-                            this.url      = opt?.dataset?.url || '';
-                            this.tema     = opt?.dataset?.tema || '';
-                            this.versao   = opt?.dataset?.versao || '';
-                            this.emitente = opt?.dataset?.emitente || '';
-                            this.sistema  = opt?.dataset?.sistema || '';
-                            this.vigencia = opt?.dataset?.vigencia_br || '';
-
-                            document.getElementById('tema_norma').value = this.tema;
-                            document.getElementById('versao_norma').value = this.versao;
-                            document.getElementById('emitente_norma').value = this.emitente;
-                            document.getElementById('sistema_norma').value = this.sistema;
-                            document.getElementById('vigencia_norma').value = this.vigencia;
-                        }
-                     }"
-                     x-init="
-                        document.getElementById('tema_norma').value     = tema;
-                        document.getElementById('versao_norma').value   = versao;
-                        document.getElementById('emitente_norma').value = emitente;
-                        document.getElementById('sistema_norma').value  = sistema;
-                        document.getElementById('vigencia_norma').value = vigencia;
-                     ">
+                <div class="flex items-center space-x-2" x-data="normaProcedimentoData()">
 
                     <div class="flex-1 min-w-0">
                         <select id="norma_procedimento" name="norma_procedimento"
@@ -540,6 +473,114 @@
         exclusao: {{ modo_exclusao|yesno:"true,false" }},
         parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
     };
+</script>
+<script>
+/* -------------------------------------------------------
+   Função x-data para Modelo de Processo (substitui x-data inline)
+   Usa |escapejs para evitar que aspas do backend quebrem o JS
+   ------------------------------------------------------- */
+function modeloProcessoData() {
+    return {
+        url: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}"{{ form.instance.modelagem_processo.documento_modelagem_processo.url|escapejs }}"{% else %}""{% endif %},
+        tema: "{{ form.instance.modelagem_processo.tema|default_if_none:''|escapejs }}",
+        versao: "{{ form.instance.modelagem_processo.versao|default_if_none:''|escapejs }}",
+        emitente: "{{ form.instance.modelagem_processo.emitente|default_if_none:''|escapejs }}",
+        sistema: "{{ form.instance.modelagem_processo.sistema|default_if_none:''|escapejs }}",
+        vigencia: {% if form.instance.modelagem_processo.vigencia_inicio %}"{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}"{% else %}""{% endif %},
+
+        hasFile() { return this.url !== "" && this.url !== "None"; },
+
+        update(selectEl) {
+            const opt = selectEl.options[selectEl.selectedIndex];
+
+            this.url      = opt?.dataset?.url     || "";
+            this.tema     = opt?.dataset?.tema    || "";
+            this.versao   = opt?.dataset?.versao  || "";
+            this.emitente = opt?.dataset?.emitente|| "";
+            this.sistema  = opt?.dataset?.sistema || "";
+            this.vigencia = opt?.dataset?.vigencia || "";
+
+            // preencher inputs derivados (mantém IDs originais)
+            document.getElementById("tema_modelo").value     = this.tema;
+            document.getElementById("versao_modelo").value   = this.versao;
+            document.getElementById("emitente_modelo").value = this.emitente;
+            document.getElementById("sistema_modelo").value  = this.sistema;
+            document.getElementById("vigencia_modelo").value = this.vigencia;
+        }
+    };
+}
+
+/* -------------------------------------------------------
+   Função x-data para Norma de Procedimento (linha 8)
+   ------------------------------------------------------- */
+function normaProcedimentoData() {
+    return {
+        url: "{{ form.instance.norma_procedimento.link_normaprocedimento|default_if_none:''|escapejs }}",
+        tema: "{{ form.instance.norma_procedimento.tema|default_if_none:''|escapejs }}",
+        versao: "{{ form.instance.norma_procedimento.versao|default_if_none:''|escapejs }}",
+        emitente: "{{ form.instance.norma_procedimento.emitente|default_if_none:''|escapejs }}",
+        sistema: "{{ form.instance.norma_procedimento.sistema|default_if_none:''|escapejs }}",
+        vigencia: {% if form.instance.norma_procedimento and form.instance.norma_procedimento.vigencia_inicio %}"{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}"{% else %}""{% endif %},
+
+        hasFile() { return this.url !== "" && this.url !== "None"; },
+
+        update(selectEl) {
+            const opt = selectEl.options[selectEl.selectedIndex];
+
+            this.url      = opt?.dataset?.url || "";
+            this.tema     = opt?.dataset?.tema || "";
+            this.versao   = opt?.dataset?.versao || "";
+            this.emitente = opt?.dataset?.emitente || "";
+            this.sistema  = opt?.dataset?.sistema || "";
+            this.vigencia = opt?.dataset?.vigencia_br || "";
+
+            document.getElementById("tema_norma").value     = this.tema;
+            document.getElementById("versao_norma").value   = this.versao;
+            document.getElementById("emitente_norma").value = this.emitente;
+            document.getElementById("sistema_norma").value  = this.sistema;
+            document.getElementById("vigencia_norma").value = this.vigencia;
+        }
+    };
+}
+</script>
+<script>
+function normaProcedimentoData() {
+    return {
+        url: "{{ form.instance.norma_procedimento.link_normaprocedimento|default_if_none:''|escapejs }}",
+        tema: "{{ form.instance.norma_procedimento.tema|default_if_none:''|escapejs }}",
+        versao: "{{ form.instance.norma_procedimento.versao|default_if_none:''|escapejs }}",
+        emitente: "{{ form.instance.norma_procedimento.emitente|default_if_none:''|escapejs }}",
+        sistema: "{{ form.instance.norma_procedimento.sistema|default_if_none:''|escapejs }}",
+        vigencia:
+            {% if form.instance.norma_procedimento and form.instance.norma_procedimento.vigencia_inicio %}
+                "{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}"
+            {% else %}
+                ""
+            {% endif %},
+
+        hasFile() {
+            return this.url !== "" && this.url !== "None";
+        },
+
+        update(selectEl) {
+            const opt = selectEl.options[selectEl.selectedIndex];
+
+            this.url      = opt?.dataset?.url || "";
+            this.tema     = opt?.dataset?.tema || "";
+            this.versao   = opt?.dataset?.versao || "";
+            this.emitente = opt?.dataset?.emitente || "";
+            this.sistema  = opt?.dataset?.sistema || "";
+            this.vigencia = opt?.dataset?.vigencia_br || "";
+
+            // Atualiza campos derivados
+            document.getElementById("tema_norma").value     = this.tema;
+            document.getElementById("versao_norma").value   = this.versao;
+            document.getElementById("emitente_norma").value = this.emitente;
+            document.getElementById("sistema_norma").value  = this.sistema;
+            document.getElementById("vigencia_norma").value = this.vigencia;
+        }
+    };
+}
 </script>
 
 <!-- JS CENTRALIZADO -->
