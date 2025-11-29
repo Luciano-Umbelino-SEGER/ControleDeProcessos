@@ -886,7 +886,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
     template_name = 'processos/processos.html'  # nova pasta processos
     context_object_name = 'processos'
     paginate_by = 20  # quantidade de registros por página
-    ordering = ['nome']
+    ordering = ['id']
 
     def get_queryset(self):
         # Retorna apenas os processos pai
@@ -899,7 +899,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
                 "macroprocesso_nivel2",
                 "modelagem_processo",
             )
-            .order_by("nome")
+            .order_by("id")
         )
         return queryset
 
