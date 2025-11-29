@@ -120,8 +120,9 @@
             <tr class="text-blue-500 hover:bg-blue-100 transition-colors
                        {% if pos|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
-              <td class="py-3 px-3 pl-6 text-blue-600">{{ sub.nome }}</td>
-
+              <td class="py-3 px-3 text-blue-600">
+                  <span class="ml-5 block">{{ sub.nome }}</span>
+              </td>
               <td class="py-3 px-2">{{ sub.classificacao }}</td>
               <td class="py-3 px-2">{{ sub.macroprocesso_nivel1 }}</td>
               <td class="py-3 px-2">{{ sub.macroprocesso_nivel2 }}</td>
