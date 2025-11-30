@@ -1060,13 +1060,39 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        processo = self.get_object()
+        processo = self.object   # já existe no UpdateView
 
+        # Carrega listas gerais (selects de modelo e norma)
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # 🔵 AUDITORIA — corrigido e padronizado
+        # ====================================================================
+        # 🔵 CARREGAR OS SELECTS DEPENDENTES (Classificação → Macro N1 → Macro N2)
+        # ====================================================================
+        from .models import MacroprocessoNivel1, MacroprocessoNivel2
+
+        # Proteções caso processo.classificacao ou macroprocesso_nivel1 sejam None
+        macro_n1_list = MacroprocessoNivel1.objects.none()
+        macro_n2_list = MacroprocessoNivel2.objects.none()
+
+        if processo.classificacao_id:
+            macro_n1_list = MacroprocessoNivel1.objects.filter(
+                classificacao=processo.classificacao
+            )
+
+        if processo.macroprocesso_nivel1_id:
+            # NOTE: campo correto é 'macroprocesso_nivel1'
+            macro_n2_list = MacroprocessoNivel2.objects.filter(
+                macroprocesso_nivel1=processo.macroprocesso_nivel1
+            )
+
+        context["macroprocesso_nivel1_list"] = macro_n1_list
+        context["macroprocesso_nivel2_list"] = macro_n2_list
+
+        # ====================================================================
+        # 🔵 AUDITORIA
+        # ====================================================================
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
@@ -1084,23 +1110,54 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             ),
 
             # Atualização (vai aparecer mesmo antes de salvar)
-            'atualizacao_data': (
-                timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S")
-            ),
+            'atualizacao_data': timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
             'atualizacao_user': (
                 self.request.user.get_full_name() or self.request.user.username
             ),
+
+            # Tipo (Processo/Subprocesso) – desabilitar no template
+            'desabilitar_tipo': True,
         })
+
         return context
 
+    # ========================================================================
+    # 🔵 VALIDAÇÃO DO FORM – coerência Classificação → Macro1 → Macro2
+    # ========================================================================
     def form_valid(self, form):
         processo = form.instance
 
-        # 🔵 GRAVAÇÃO DOS DOIS CAMPOS RELACIONAIS
-        processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
-        processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
+        # ----- Validação da coerência hierárquica -----
+        c = processo.classificacao
+        m1 = processo.macroprocesso_nivel1
+        m2 = processo.macroprocesso_nivel2
 
-        # Atualiza usuário e data automaticamente
+        # Se qualquer um for None, adiciona erro apropriado
+        if not c:
+            form.add_error('classificacao', "Classificação é obrigatória.")
+            return self.form_invalid(form)
+
+        if not m1:
+            form.add_error('macroprocesso_nivel1', "Macroprocesso Nível 1 é obrigatório.")
+            return self.form_invalid(form)
+
+        if not m2:
+            form.add_error('macroprocesso_nivel2', "Macroprocesso Nível 2 é obrigatório.")
+            return self.form_invalid(form)
+
+        # Macro N1 deve pertencer à Classificação
+        # usamos os ids para evitar consultas extras
+        if m1.classificacao_id != c.id:
+            form.add_error('macroprocesso_nivel1', "Macroprocesso Nível 1 inválido para esta classificação.")
+            return self.form_invalid(form)
+
+        # Macro N2 deve pertencer ao Macroprocesso N1
+        # campo correto em MacroprocessoNivel2 é 'macroprocesso_nivel1'
+        if getattr(m2, 'macroprocesso_nivel1_id', None) != m1.id:
+            form.add_error('macroprocesso_nivel2', "Macroprocesso Nível 2 inválido para este Macroprocesso Nível 1.")
+            return self.form_invalid(form)
+
+        # Atualiza auditoria
         processo.usuario_atualizacao = self.request.user
         processo.data_atualizacao = timezone.now()
 
@@ -1108,7 +1165,10 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             self.request,
             f"Processo '{processo.nome}' atualizado com sucesso!"
         )
+
         return super().form_valid(form)
+
+
 
 # --------------------------------#
 # Excluir Processo                #
