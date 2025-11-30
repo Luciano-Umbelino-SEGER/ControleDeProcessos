@@ -422,46 +422,29 @@
 
         <!-- BOTÕES -->
         <div class="flex justify-end mt-8 space-x-4">
-
-            {% if not modo_visualizacao %}
-                {% if modo_exclusao %}
-                    <button
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-red-700 transition
-                               focus:outline-none focus:ring-2 focus:ring-red-400"
-                        style="outline:none !important;"
-                        type="button">
-                        Confirmar Exclusão
-                    </button>
-
-                {% elif modo_edicao %}
-                    <button
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition
-                               focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        style="outline:none !important;"
-                        type="submit">
-                        Salvar Alterações
-                    </button>
-
-                {% else %}
-                    <button
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition
-                               focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        style="outline:none !important;"
-                        type="submit">
-                        Adicionar Processo
-                    </button>
-                {% endif %}
+          {% if not modo_visualizacao %}
+            {% if modo_exclusao %}
+              <button @click="$dispatch('abrir-modal-confirmacao', {
+                            url: '{% url 'arquiteturaprocessos:excluir_processo' processo.id %}',
+                            mensagem: 'Confirma a exclusão do Processo &lt;strong&gt;{{ processo.classificacao.nome }} - {{ processo.nome }}&lt;/strong&gt;?'
+                        })" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="button">
+                Confirmar Exclusão
+              </button>
+            {% elif modo_edicao %}
+              <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                Salvar Alterações
+              </button>
+            {% else %}
+              <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                Adicionar Processo
+              </button>
             {% endif %}
+          {% endif %}
 
-            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition
-                      focus:outline-none focus:ring-2 focus:ring-blue-400"
-               style="outline:none !important;"
-               href="{% url 'arquiteturaprocessos:processos' %}">
-               {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
-            </a>
-
+          <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition" href="{% url 'arquiteturaprocessos:processos' %}">
+             {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+          </a>
         </div>
-
     </form>
 </div>
 
