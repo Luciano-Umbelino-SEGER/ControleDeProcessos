@@ -277,7 +277,7 @@
             <div>
                 <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
                 <input id="vigencia_modelo" type="text" readonly tabindex="-1"
-                       value="{% if form.instance.modelagem_processo.vigencia_inicio %}{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}{% endif %}"
+                       value="{% if form.instance.modelagem_processo.vigencia_inicio %}{{ form.instance.modelagem_processo.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none focus:outline-none text-black">
             </div>
@@ -303,20 +303,21 @@
                             <option value="">---------</option>
 
                             {% for n in normas_procedimento %}
-                            <option value="{{ n.id }}"
-                                    data-tema="{{ n.tema }}"
-                                    data-versao="{{ n.versao|stringformat:'02d' }}"
-                                    data-emitente="{{ n.emitente }}"
-                                    data-sistema="{{ n.sistema }}"
-                                    data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
-                                    data-url="{{ n.link_normaprocedimento }}"
-                                    {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %}selected{% endif %}>
-                                {{ n.link_normaprocedimento|filename }}
-                            </option>
+                                <option value="{{ n.id }}"
+                                        data-tema="{{ n.tema }}"
+                                        data-versao="{{ n.versao|stringformat:'02d' }}"
+                                        data-emitente="{{ n.emitente }}"
+                                        data-sistema="{{ n.sistema }}"
+                                        data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
+                                        data-url="{{ n.link_normaprocedimento }}"
+                                        {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %}selected{% endif %}>
+                                    {{ n.link_normaprocedimento|filename }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
 
+                    <!-- Ícone visualizar -->
                     <template x-if="hasFile()">
                         <button type="button"
                                 class="text-blue-600 hover:text-blue-800 icon-visualizar focus:outline-none focus:ring-0"
@@ -331,14 +332,14 @@
                             </svg>
                         </button>
                     </template>
-
                 </div>
             </div>
 
             <!-- Tema -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Tema</label>
-                <input id="tema_norma" type="text" readonly
+                <input id="tema_norma" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.norma_procedimento.tema|default_if_none:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none text-black">
             </div>
@@ -346,7 +347,8 @@
             <!-- Versão -->
             <div>
                 <label class="block text-sm font-medium text-blue-700">Versão</label>
-                <input id="versao_norma" type="text" readonly
+                <input id="versao_norma" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}"
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none text-black">
             </div>
@@ -358,24 +360,28 @@
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                <input id="emitente_norma" type="text" readonly
+                <input id="emitente_norma" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.norma_procedimento.emitente|default:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none text-black">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                <input id="sistema_norma" type="text" readonly
+                <input id="sistema_norma" type="text" readonly tabindex="-1"
+                       value="{{ form.instance.norma_procedimento.sistema|default:'' }}"
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none text-black">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                <input id="vigencia_norma" type="text" readonly
+                <input id="vigencia_norma" type="text" readonly tabindex="-1"
+                       value="{% if form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
                        class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                               pointer-events-none text-black">
             </div>
+
         </div>
 
         <!-- LINHA 10 – Auditoria -->
