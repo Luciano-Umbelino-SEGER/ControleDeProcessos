@@ -11,77 +11,94 @@
     {% if request.user.perfil.nome|lower == 'administrador' %}
     <form method="GET" class="mb-4">
 
-      <div class="flex flex-wrap justify-between items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
+    <div class="flex flex-wrap justify-between items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
 
-        <!-- ESQUERDA (filtros compactados) -->
-        <div class="flex flex-wrap items-end gap-3">
+      <!-- ESQUERDA (filtros compactados) -->
+      <div class="flex flex-wrap items-end gap-3">
 
-          <!-- Processo/Subprocesso -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
-            <input type="text" name="nome"
-                   placeholder="Digite parte do nome..."
-                   value="{{ request.GET.nome }}"
-                   class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
-          </div>
-
-          <!-- Classificação -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
-            <select name="classificacao"
-                    class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-              <option value="">Todas</option>
-              {% for c in classificacoes %}
-                <option value="{{ c.id }}" {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
-                  {{ c.nome }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Área Responsável -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Área Responsável</label>
-            <select name="area"
-                    class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-              <option value="">Todas</option>
-              {% for a in areas %}
-                <option value="{{ a }}" {% if request.GET.area == a %}selected{% endif %}>
-                  {{ a }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Botões -->
-          <div class="flex items-center gap-2 mt-4 md:mt-0">
-            <button type="submit"
-                    class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-              Filtrar
-            </button>
-
-            <a href="{% url 'arquiteturaprocessos:processos' %}"
-               class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
-              Limpar
-            </a>
-          </div>
-
+        <!-- Processo/Subprocesso -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
+          <input type="text" name="nome"
+                 placeholder="Digite Processo/Subprocesso ou parte..."
+                 value="{{ request.GET.nome }}"
+                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
         </div>
 
-        <!-- DIREITA (botão adicionar) -->
-        <div class="flex justify-end shrink-0">
-          <a href="{% url 'arquiteturaprocessos:criar_processo' %}"
-             class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded shadow-sm hover:bg-blue-700 transition whitespace-nowrap">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 4v16m8-8H4"/>
-            </svg>
-            Adicionar Processo
+        <!-- Classificação -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
+          <select name="classificacao"
+                  class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                         focus:ring-2 focus:ring-blue-500 focus:outline-none
+                         {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
+
+              <option value="">Todas</option>
+
+              {% for c in classificacoes %}
+                  <option value="{{ c.id }}"
+                      {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
+                      {{ c.nome }}
+                  </option>
+              {% endfor %}
+          </select>
+        </div>
+        <!-- Macroprocesso Nível 1 (agora INPUT) -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 1</label>
+          <input type="text" name="macro1"
+                 placeholder="Digite Macroprocesso Nível 1 ou parte..."
+                 value="{{ request.GET.macro1 }}"
+                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <!-- Macroprocesso Nível 2 (agora INPUT) -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 2</label>
+          <input type="text" name="macro2"
+                 placeholder="Digite Macroprocesso Nível 2 ou parte..."
+                 value="{{ request.GET.macro2 }}"
+                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <!-- Área Responsável -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Área Responsável</label>
+          <input type="text" name="area"
+                 placeholder="Digite Área Responsável ou parte..."
+                 value="{{ request.GET.area }}"
+                 class="w-40 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <!-- Botões -->
+        <div class="flex items-center gap-2 mt-4 md:mt-0">
+          <button type="submit"
+                  class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+            Filtrar
+          </button>
+
+          <a href="{% url 'arquiteturaprocessos:processos' %}"
+             class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+            Limpar
           </a>
         </div>
 
       </div>
-    </form>
+
+      <!-- DIREITA (botão adicionar) -->
+      <div class="flex justify-end shrink-0">
+        <a href="{% url 'arquiteturaprocessos:criar_processo' %}"
+           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded shadow-sm hover:bg-blue-700 transition whitespace-nowrap">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v16m8-8H4"/>
+          </svg>
+          Adicionar Processo
+        </a>
+      </div>
+
+    </div>
+  </form>
     {% endif %}
 
 
