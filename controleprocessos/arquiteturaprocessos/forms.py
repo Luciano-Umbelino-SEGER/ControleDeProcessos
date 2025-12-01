@@ -651,17 +651,9 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         return obj
 
 # ----------------------------
-# Processos
+# Processos - Formulário
 # ----------------------------
 class Form_ProcessoForm(forms.ModelForm):
-
-    # Campo extra para o radio (Processo/Subprocesso)
-    tipo_processo = forms.ChoiceField(
-        choices=[("processo", "Processo"), ("subprocesso", "Subprocesso")],
-        widget=forms.RadioSelect(attrs={"class": "mr-2"}),
-        required=True,
-        label="Tipo"
-    )
 
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),
@@ -706,8 +698,7 @@ class Form_ProcessoForm(forms.ModelForm):
         }
 
     # ------------------------------------------------
-    # INIT – remove estilização do campo nome,
-    # e mantém estilo dos demais campos.
+    # INIT – estilo base, bloqueios por modo
     # ------------------------------------------------
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop("modo_visualizacao", False)
@@ -724,27 +715,26 @@ class Form_ProcessoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
+        # --------------------------------------------------------------------
+        # Estilização e preenchimento dos campos
+        # --------------------------------------------------------------------
         for name, field in self.fields.items():
 
             # ⛔ Campo nome é hidden — JS controla
             if name == "nome":
                 continue
 
-            # fundo dependendo do modo
             bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{base} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # MODO VISUALIZAÇÃO / EXCLUSÃO — trava tudo
+        # --------------------------------------------------------------------
+        # Modo VISUALIZAÇÃO / EXCLUSÃO — trava tudo
+        # --------------------------------------------------------------------
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
-
-        # Travar radio fora da inclusão
-        if modo_visualizacao or modo_exclusao or modo_edicao:
-            if "tipo_processo" in self.fields:
-                self.fields["tipo_processo"].disabled = True
 
     # ------------------------------------------------
     # CLEAN – Regras finais de validação
@@ -752,7 +742,6 @@ class Form_ProcessoForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
 
-        tipo = cleaned.get("tipo_processo")
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
 
@@ -760,14 +749,16 @@ class Form_ProcessoForm(forms.ModelForm):
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
 
-        # 2️⃣ Processo não pode ter parent
-        if tipo == "processo":
-            cleaned["parent"] = None
+        # 2️⃣ PROCESSO → parent deve ser None
+        if not parent:
+            cleaned["parent"] = None  # Processo
 
-        # 3️⃣ Subprocesso precisa obrigatoriamente de parent
-        if tipo == "subprocesso":
-            if not parent:
-                self.add_error("parent", "Selecione o processo pai para o subprocesso.")
+        # 3️⃣ SUBPROCESSO → parent deve ser um Processo (não outro subprocesso)
+        if parent and parent.parent_id:
+            self.add_error(
+                "parent",
+                "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso."
+            )
 
         # 4️⃣ Validação macroprocesso n1/n2
         macro1 = cleaned.get("macroprocesso_nivel1")
@@ -781,6 +772,7 @@ class Form_ProcessoForm(forms.ModelForm):
                 )
 
         return cleaned
+
 
 
 
