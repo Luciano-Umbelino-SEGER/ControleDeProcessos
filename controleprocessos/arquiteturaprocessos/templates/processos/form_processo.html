@@ -31,6 +31,25 @@
         {% else %}Inclusão de Processos{% endif %}
     </h2>
 
+    {# --- AVISO: bloqueio de exclusão quando houver subprocessos (Opção A) --- #}
+    {% if modo_exclusao and subprocessos_existentes %}
+        <div class="bg-red-100 border-l-4 border-red-600 text-red-800 p-4 rounded mb-6">
+            <h3 class="font-bold text-lg">Exclusão não permitida</h3>
+            <p class="mt-2">
+                Não é possível excluir o processo <strong>{{ processo.nome }}</strong>
+                porque existem subprocessos associados:
+            </p>
+            <ul class="list-disc ml-6 mt-2">
+                {% for sub in subprocessos_existentes %}
+                    <li>{{ sub.nome }}</li>
+                {% endfor %}
+            </ul>
+            <p class="mt-2 text-sm">
+                Para excluir este processo, primeiro remova ou transfira seus subprocessos.
+            </p>
+        </div>
+    {% endif %}
+
     {% if form.non_field_errors %}
         <div class="text-red-600 mb-4">{{ form.non_field_errors }}</div>
     {% endif %}
@@ -469,12 +488,26 @@
         <div class="flex justify-end mt-8 space-x-4">
           {% if not modo_visualizacao %}
             {% if modo_exclusao %}
-              <button @click="$dispatch('abrir-modal-confirmacao', {
-                            url: '{% url 'arquiteturaprocessos:excluir_processo' processo.id %}',
-                            mensagem: 'Confirma a exclusão do Processo &lt;strong&gt;{{ processo.classificacao.nome }} - {{ processo.nome }}&lt;/strong&gt;?'
-                        })" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="button">
-                Confirmar Exclusão
-              </button>
+                {% if subprocessos_existentes %}
+                    {# existe subprocessos: mostra mensagem (já mostrada acima) e botão desabilitado com tooltip #}
+                    <button
+                        type="button"
+                        class="bg-gray-400 text-white px-6 py-2 rounded cursor-not-allowed"
+                        disabled
+                        title="Este processo possui subprocessos associados e não pode ser excluído.">
+                        Confirmar Exclusão
+                    </button>
+                {% else %}
+                    {# sem subprocessos: botão normal que abre o modal de confirmação #}
+                    <button @click="$dispatch('abrir-modal-confirmacao', {
+                                    url: '{% url 'arquiteturaprocessos:excluir_processo' processo.id %}',
+                                    mensagem: 'Confirma a exclusão do {{ processo.parent_id|yesno:"Subprocesso,Processo" }} <strong>{{ processo.classificacao.nome }} - {{ processo.nome }}</strong>?'
+                                })"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            type="button">
+                        Confirmar Exclusão
+                    </button>
+                {% endif %}
             {% elif modo_edicao %}
               <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
                 Salvar Alterações
@@ -562,45 +595,6 @@ function normaProcedimentoData() {
             this.sistema  = opt?.dataset?.sistema || "";
             this.vigencia = opt?.dataset?.vigencia_br || "";
 
-            document.getElementById("tema_norma").value     = this.tema;
-            document.getElementById("versao_norma").value   = this.versao;
-            document.getElementById("emitente_norma").value = this.emitente;
-            document.getElementById("sistema_norma").value  = this.sistema;
-            document.getElementById("vigencia_norma").value = this.vigencia;
-        }
-    };
-}
-</script>
-<script>
-function normaProcedimentoData() {
-    return {
-        url: "{{ form.instance.norma_procedimento.link_normaprocedimento|default_if_none:''|escapejs }}",
-        tema: "{{ form.instance.norma_procedimento.tema|default_if_none:''|escapejs }}",
-        versao: "{{ form.instance.norma_procedimento.versao|default_if_none:''|escapejs }}",
-        emitente: "{{ form.instance.norma_procedimento.emitente|default_if_none:''|escapejs }}",
-        sistema: "{{ form.instance.norma_procedimento.sistema|default_if_none:''|escapejs }}",
-        vigencia:
-            {% if form.instance.norma_procedimento and form.instance.norma_procedimento.vigencia_inicio %}
-                "{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}"
-            {% else %}
-                ""
-            {% endif %},
-
-        hasFile() {
-            return this.url !== "" && this.url !== "None";
-        },
-
-        update(selectEl) {
-            const opt = selectEl.options[selectEl.selectedIndex];
-
-            this.url      = opt?.dataset?.url || "";
-            this.tema     = opt?.dataset?.tema || "";
-            this.versao   = opt?.dataset?.versao || "";
-            this.emitente = opt?.dataset?.emitente || "";
-            this.sistema  = opt?.dataset?.sistema || "";
-            this.vigencia = opt?.dataset?.vigencia_br || "";
-
-            // Atualiza campos derivados
             document.getElementById("tema_norma").value     = this.tema;
             document.getElementById("versao_norma").value   = this.versao;
             document.getElementById("emitente_norma").value = this.emitente;
