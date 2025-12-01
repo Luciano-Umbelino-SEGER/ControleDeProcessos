@@ -883,25 +883,97 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
 # -------------------------------#
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
-    template_name = 'processos/processos.html'  # nova pasta processos
+    template_name = 'processos/processos.html'
     context_object_name = 'processos'
-    paginate_by = 20  # quantidade de registros por página
+    paginate_by = 20
     ordering = ['id']
 
     def get_queryset(self):
-        # Retorna apenas os processos pai
-        queryset = (
-            Processo.objects
-            .filter(parent__isnull=True)
+
+        # === 1) Recuperar parâmetros GET ===
+        nome = self.request.GET.get("nome", "").strip()
+        classificacao = self.request.GET.get("classificacao", "").strip()
+        macro1 = self.request.GET.get("macro1", "").strip()
+        macro2 = self.request.GET.get("macro2", "").strip()
+        area = self.request.GET.get("area", "").strip()
+
+        # === 2) Base inicial: TUDO (PAI + SUB) para aplicar filtros ===
+        qs = (
+            Processo.objects.all()
             .select_related(
                 "classificacao",
                 "macroprocesso_nivel1",
                 "macroprocesso_nivel2",
-                "modelagem_processo",
             )
             .order_by("id")
         )
-        return queryset
+
+        # === 3) Aplicação dos filtros acumulativos ===
+        if nome:
+            qs = qs.filter(nome__icontains=nome)
+
+        if classificacao:
+            qs = qs.filter(classificacao_id=classificacao)
+
+        if macro1:
+            qs = qs.filter(
+                macroprocesso_nivel1__nome__icontains=macro1
+            )
+
+        if macro2:
+            qs = qs.filter(
+                macroprocesso_nivel2__nome__icontains=macro2
+            )
+
+        if area:
+            qs = qs.filter(
+                area_responsavel__icontains=area
+            )
+
+        # === 4) Se filtrou subprocessos, precisamos retornar APENAS os processos PAI,
+        # mas mantendo na tabela os subprocessos associados.
+        # Obtemos todos os PAI relacionados aos resultados filtrados.
+        pai_ids = (
+            qs.values_list("parent_id", flat=True)
+        )
+
+        # processos que são pai direto
+        diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
+
+        # conjunto final de PAI = pais diretos + pais dos subprocessos filtrados
+        ids_finais = set(diretos) | set(pai_ids)
+
+        # remover None (subprocessos sem pai)
+        ids_finais = {i for i in ids_finais if i is not None}
+
+        # === 5) Agora retornamos APENAS os processos pai filtrados ===
+        queryset_final = (
+            Processo.objects.filter(id__in=ids_finais)
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+            )
+            .prefetch_related(
+                "subprocessos",
+                "subprocessos__classificacao",
+                "subprocessos__macroprocesso_nivel1",
+                "subprocessos__macroprocesso_nivel2",
+            )
+            .order_by("id")
+        )
+
+        return queryset_final
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Necessário para preencher o select de classificação
+        context["classificacoes"] = Classificacao.objects.all().order_by("nome")
+
+        return context
+
 
 # --------------------------------#
 # Criar Processo                  #

@@ -22,17 +22,19 @@
           <input type="text" name="nome"
                  placeholder="Digite Processo/Subprocesso ou parte..."
                  value="{{ request.GET.nome }}"
-                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none
+                        text-black placeholder-gray-400">
         </div>
 
         <!-- Classificação -->
         <div class="flex flex-col">
           <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
+
           <select name="classificacao"
                   class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white
                          focus:ring-2 focus:ring-blue-500 focus:outline-none
                          {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
-
               <option value="">Todas</option>
 
               {% for c in classificacoes %}
@@ -43,22 +45,27 @@
               {% endfor %}
           </select>
         </div>
-        <!-- Macroprocesso Nível 1 (agora INPUT) -->
+
+        <!-- Macroprocesso Nível 1 -->
         <div class="flex flex-col">
           <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 1</label>
           <input type="text" name="macro1"
                  placeholder="Digite Macroprocesso Nível 1 ou parte..."
                  value="{{ request.GET.macro1 }}"
-                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none
+                        text-black placeholder-gray-400">
         </div>
 
-        <!-- Macroprocesso Nível 2 (agora INPUT) -->
+        <!-- Macroprocesso Nível 2 -->
         <div class="flex flex-col">
           <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 2</label>
           <input type="text" name="macro2"
                  placeholder="Digite Macroprocesso Nível 2 ou parte..."
                  value="{{ request.GET.macro2 }}"
-                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none
+                        text-black placeholder-gray-400">
         </div>
 
         <!-- Área Responsável -->
@@ -67,7 +74,9 @@
           <input type="text" name="area"
                  placeholder="Digite Área Responsável ou parte..."
                  value="{{ request.GET.area }}"
-                 class="w-40 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                 class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none
+                        text-black placeholder-gray-400">
         </div>
 
         <!-- Botões -->
@@ -98,8 +107,9 @@
       </div>
 
     </div>
-  </form>
+    </form>
     {% endif %}
+
 
 
 
