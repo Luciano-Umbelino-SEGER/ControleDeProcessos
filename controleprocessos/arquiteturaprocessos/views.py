@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import json
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
@@ -74,16 +75,13 @@ def get_modelagem_filtrada():
 
     return modelos, normas
 
-class HomePage(TemplateView):
-    template_name = 'homepage.html'
-
 class CustomLoginView(LoginView):
     template_name = 'usuario/fazer_login.html'
     authentication_form = CustomAuthenticationForm  # ✅ Usa o formulário customizado
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect('arquiteturaprocessos:homepage')
+            return redirect('arquiteturaprocessos:arquiteturaprocessos')
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -197,10 +195,143 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:classificacoes')
 
+# ---------------------------------------------#
+# ARQUITETURA DE PROCESSOS (Tela Pública)      #
+# ---------------------------------------------#
 class ArquiteruraProcessos(ListView):
-    template_name = 'arquiteruraprocessos.html'
-    model = ArquiteturaProcesso
+    model = Processo
+    template_name = "arquiteturaprocessos/arquiteturaprocessos.html"
+    context_object_name = "processos"
+    paginate_by = 30
+    ordering = ["id"]
 
+    def get_queryset(self):
+        # === 1) Recuperar filtros ===
+        nome = self.request.GET.get("nome", "").strip()
+        classificacao = self.request.GET.get("classificacao", "").strip()
+        macro1 = self.request.GET.get("macro1", "").strip()
+        macro2 = self.request.GET.get("macro2", "").strip()
+        area = self.request.GET.get("area", "").strip()
+
+        # === 2) Base inicial: TODOS processos (pais + subs) ===
+        qs = (
+            Processo.objects.all()
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "modelagem_processo",
+                "norma_procedimento",
+            )
+            .prefetch_related(
+                "subprocessos",
+                "subprocessos__classificacao",
+                "subprocessos__macroprocesso_nivel1",
+                "subprocessos__macroprocesso_nivel2",
+                "subprocessos__modelagem_processo",
+                "subprocessos__norma_procedimento",
+            )
+        )
+
+        # === 3) Aplicar filtros ===
+        if nome:
+            qs = qs.filter(nome__icontains=nome)
+        if classificacao:
+            qs = qs.filter(classificacao_id=classificacao)
+        if macro1:
+            qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
+        if macro2:
+            qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
+        if area:
+            qs = qs.filter(area_responsavel__icontains=area)
+
+        # === 4) Recuperar pais dos subprocessos encontrados ===
+        pai_ids = qs.values_list("parent_id", flat=True)
+        diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
+
+        ids_finais = {i for i in pai_ids if i} | set(diretos)
+
+        resultados = (
+            Processo.objects.filter(id__in=ids_finais)
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "modelagem_processo",
+                "norma_procedimento",
+            )
+            .prefetch_related(
+                "subprocessos",
+                "subprocessos__classificacao",
+                "subprocessos__macroprocesso_nivel1",
+                "subprocessos__macroprocesso_nivel2",
+                "subprocessos__modelagem_processo",
+                "subprocessos__norma_procedimento",
+            )
+            .order_by("id")
+        )
+
+        # === 5) Acrescentar docs_json em cada processo (pai + sub) ===
+        for proc in resultados:
+            docs = []
+
+            # Modelo (pai)
+            if proc.modelagem_processo and proc.modelagem_processo.documento_modelagem_processo:
+                docs.append({
+                    "tipo": "Modelo de Processo",
+                    "titulo": str(proc.modelagem_processo),
+                    "versao": proc.modelagem_processo.versao,
+                    "vigencia": proc.modelagem_processo.vigencia_inicio.isoformat() if proc.modelagem_processo.vigencia_inicio else "",
+                    "tema": proc.modelagem_processo.tema,
+                    "url": proc.modelagem_processo.documento_modelagem_processo.url,
+                })
+
+            # Norma (pai)
+            if proc.norma_procedimento and proc.norma_procedimento.documento_modelagem_processo:
+                docs.append({
+                    "tipo": "Norma de Procedimento",
+                    "titulo": str(proc.norma_procedimento),
+                    "versao": proc.norma_procedimento.versao,
+                    "vigencia": proc.norma_procedimento.vigencia_inicio.isoformat() if proc.norma_procedimento.vigencia_inicio else "",
+                    "tema": proc.norma_procedimento.tema,
+                    "url": proc.norma_procedimento.documento_modelagem_processo.url,
+                })
+
+            # Subprocessos
+            sp_docs = []
+            for sub in proc.subprocessos.all():
+                if sub.modelagem_processo and sub.modelagem_processo.documento_modelagem_processo:
+                    sp_docs.append({
+                        "tipo": "Modelo de Processo",
+                        "titulo": str(sub.modelagem_processo),
+                        "versao": sub.modelagem_processo.versao,
+                        "vigencia": sub.modelagem_processo.vigencia_inicio.isoformat() if sub.modelagem_processo.vigencia_inicio else "",
+                        "tema": sub.modelagem_processo.tema,
+                        "url": sub.modelagem_processo.documento_modelagem_processo.url,
+                    })
+                if sub.norma_procedimento and sub.norma_procedimento.documento_modelagem_processo:
+                    sp_docs.append({
+                        "tipo": "Norma de Procedimento",
+                        "titulo": str(sub.norma_procedimento),
+                        "versao": sub.norma_procedimento.versao,
+                        "vigencia": sub.norma_procedimento.vigencia_inicio.isoformat() if sub.norma_procedimento.vigencia_inicio else "",
+                        "tema": sub.norma_procedimento.tema,
+                        "url": sub.norma_procedimento.documento_modelagem_processo.url,
+                    })
+
+            # adiciona docs dos subprocessos no JSON
+            if sp_docs:
+                docs.extend(sp_docs)
+
+            # 🔵 campo sem underscore
+            proc.docs_json = json.dumps(docs)
+
+        return resultados
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["classificacoes"] = Classificacao.objects.all().order_by("nome")
+        return context
 
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
@@ -360,7 +491,7 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
 
         if request.user.perfil.nome.casefold() != 'administrador':
             messages.warning(request, "Você não tem permissão para acessar esta página.")
-            return redirect('arquiteturaprocessos:homepage')
+            return redirect('arquiteturaprocessos:arquiteturaprocessos')
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -426,7 +557,7 @@ class LogAcoes(LoginRequiredMixin, ListView):
 
         if request.user.perfil.nome.casefold() != 'administrador':
             messages.warning(request, "Você não tem permissão para acessar esta página.")
-            return redirect('arquiteturaprocessos:homepage')
+            return redirect('arquiteturaprocessos:arquiteturaprocessos')
 
         return super().dispatch(request, *args, **kwargs)
 

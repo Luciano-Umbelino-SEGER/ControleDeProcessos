@@ -139,11 +139,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = 'arquiteturaprocessos:homepage'
+LOGIN_REDIRECT_URL = 'arquiteturaprocessos:arquiteturaprocessos'
 
 LOGIN_URL = 'arquiteturaprocessos:fazer_login'
 
-LOGOUT_REDIRECT_URL = 'arquiteturaprocessos:homepage'
+LOGOUT_REDIRECT_URL = 'arquiteturaprocessos:arquiteturaprocessos'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 

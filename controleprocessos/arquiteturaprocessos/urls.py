@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.urls import path
 from . import views
-from .views import (HomePage, ArquiteruraProcessos, Estatisticas, BackLog,
-                    CadastroUsuarios,  LogAcoes, CustomLoginView, CriarUsuario, VisualizarUsuario, EditarUsuario,
-                    ExcluirUsuario, Classificacoes, CriarClassificacao, VisualizarClassificacao, EditarClassificacao,
-                    ExcluirClassificacao, MacroProcessoNivel1View, CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
+from .views import (ArquiteruraProcessos, Estatisticas, BackLog, CadastroUsuarios,  LogAcoes, CustomLoginView,
+                    CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
+                    VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
+                    CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1,
                     EditarMacroProcessoNivel1, ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2,
                     VisualizarMacroProcessoNivel2, EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, ModelagemProcessoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
@@ -22,8 +22,8 @@ app_name = "arquiteturaprocessos"
 
 urlpatterns = [
     path('doc/pdf/<path:path>/', views.visualizar_pdf, name='visualizar_pdf'),
-    # Home Page
-    path('', HomePage.as_view(), name='homepage'),
+    # Home Page - Arquitetura de Processos
+    path('', ArquiteruraProcessos.as_view(), name='homepage'),
     # Arquitetura de Processos
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     # Estatísticas
