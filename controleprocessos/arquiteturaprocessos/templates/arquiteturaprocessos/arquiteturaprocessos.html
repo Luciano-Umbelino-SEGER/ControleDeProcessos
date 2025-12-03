@@ -215,7 +215,8 @@
 
           <!-- SUBPROCESSOS -->
           {% for sub in processo.subprocessos.all|dictsort:"id" %}
-            <tr class="hover:bg-blue-100 transition-colors bg-white">
+            <tr class="hover:bg-blue-100 transition-colors
+                       {% if forloop.parentloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
               <td class="py-3 px-6 text-blue-600">
                 — {{ sub.nome }}
