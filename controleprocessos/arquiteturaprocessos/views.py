@@ -26,6 +26,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin  # ou
 from pathlib import Path
 import mimetypes
 
+
 @xframe_options_sameorigin  # permite ser exibido em <iframe> quando a página for da mesma origem
 def visualizar_pdf(request, path):
     """
@@ -205,15 +206,44 @@ class ArquiteruraProcessos(ListView):
     paginate_by = 30
     ordering = ["id"]
 
-    def get_queryset(self):
-        # === 1) Recuperar filtros ===
-        nome = self.request.GET.get("nome", "").strip()
-        classificacao = self.request.GET.get("classificacao", "").strip()
-        macro1 = self.request.GET.get("macro1", "").strip()
-        macro2 = self.request.GET.get("macro2", "").strip()
-        area = self.request.GET.get("area", "").strip()
+    # -------------------------------------------
+    # Converte string YYYY-MM-DD → objeto date
+    # (HTML <input type="date"> sempre envia yyyy-mm-dd)
+    # -------------------------------------------
+    def parse_date(self, value):
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except:
+            return None
 
-        # === 2) Base inicial: TODOS processos (pais + subs) ===
+    # -------------------------------------------
+    # GET QUERYSET
+    # -------------------------------------------
+    def get_queryset(self):
+        req = self.request.GET
+
+        # -------------------------------
+        # Filtros texto
+        # -------------------------------
+        nome = req.get("nome", "").strip()
+        classificacao = req.get("classificacao", "").strip()
+        macro1 = req.get("macro1", "").strip()
+        macro2 = req.get("macro2", "").strip()
+        area = req.get("area", "").strip()
+
+        # -------------------------------
+        # Filtros datas
+        # -------------------------------
+        cri_de = self.parse_date(req.get("criacao_de"))
+        cri_ate = self.parse_date(req.get("criacao_ate"))
+        atu_de = self.parse_date(req.get("atualizacao_de"))
+        atu_ate = self.parse_date(req.get("atualizacao_ate"))
+
+        # ---------------------------------------
+        # Base inicial
+        # ---------------------------------------
         qs = (
             Processo.objects.all()
             .select_related(
@@ -233,22 +263,70 @@ class ArquiteruraProcessos(ListView):
             )
         )
 
-        # === 3) Aplicar filtros ===
+        # Flag que indica se algum erro crítico ocorreu
+        filtro_valido = True
+
+        # ---------------------------------------
+        # FILTROS TEXTO
+        # ---------------------------------------
         if nome:
             qs = qs.filter(nome__icontains=nome)
+
         if classificacao:
             qs = qs.filter(classificacao_id=classificacao)
+
         if macro1:
             qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
+
         if macro2:
             qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
+
         if area:
             qs = qs.filter(area_responsavel__icontains=area)
 
-        # === 4) Recuperar pais dos subprocessos encontrados ===
+        # ---------------------------------------
+        # FILTROS DATA — Criação
+        # ---------------------------------------
+        if cri_de:
+            qs = qs.filter(data_criacao__gte=cri_de)
+
+        if cri_ate:
+            qs = qs.filter(data_criacao__lte=cri_ate)
+
+        if cri_de and cri_ate and cri_ate < cri_de:
+            messages.error(
+                self.request,
+                "A data final de criação deve ser maior ou igual à data inicial."
+            )
+            filtro_valido = False
+
+        # ---------------------------------------
+        # FILTROS DATA — Atualização
+        # ---------------------------------------
+        if atu_de:
+            qs = qs.filter(data_atualizacao__gte=atu_de)
+
+        if atu_ate:
+            qs = qs.filter(data_atualizacao__lte=atu_ate)
+
+        if atu_de and atu_ate and atu_ate < atu_de:
+            messages.error(
+                self.request,
+                "A data final de atualização deve ser maior ou igual à data inicial."
+            )
+            filtro_valido = False
+
+        # ----------------------------------------------------
+        # Se houve erro → NÃO aplicar filtros → retorna tudo
+        # ----------------------------------------------------
+        if not filtro_valido:
+            return Processo.objects.filter(parent__isnull=True).order_by("id")
+
+        # ---------------------------------------
+        # Selecionar processos pai
+        # ---------------------------------------
         pai_ids = qs.values_list("parent_id", flat=True)
         diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
-
         ids_finais = {i for i in pai_ids if i} | set(diretos)
 
         resultados = (
@@ -271,67 +349,84 @@ class ArquiteruraProcessos(ListView):
             .order_by("id")
         )
 
-        # === 5) Acrescentar docs_json em cada processo (pai + sub) ===
+        # ---------------------------------------
+        # Montar lista de documentos
+        # ---------------------------------------
         for proc in resultados:
             docs = []
 
-            # Modelo (pai)
-            if proc.modelagem_processo and proc.modelagem_processo.documento_modelagem_processo:
+            # ----- Modelo (arquivo PDF interno)
+            mp = proc.modelagem_processo
+            if mp and mp.documento_modelagem_processo:
                 docs.append({
-                    "tipo": "Modelo de Processo",
-                    "titulo": str(proc.modelagem_processo),
-                    "versao": proc.modelagem_processo.versao,
-                    "vigencia": proc.modelagem_processo.vigencia_inicio.isoformat() if proc.modelagem_processo.vigencia_inicio else "",
-                    "tema": proc.modelagem_processo.tema,
-                    "url": proc.modelagem_processo.documento_modelagem_processo.url,
+                    "tipo": "Modelo",
+                    "codigo": mp.codigo,
+                    "sequencial": mp.sequencial,
+                    "versao": mp.versao,
+                    "tema": mp.tema,
+                    "vigencia": mp.vigencia_inicio.strftime("%d/%m/%Y") if mp.vigencia_inicio else "",
+                    "displayname": mp.documento_modelagem_processo.name.split("/")[-1],
+                    "url": mp.documento_modelagem_processo.url,
                 })
 
-            # Norma (pai)
-            if proc.norma_procedimento and proc.norma_procedimento.documento_modelagem_processo:
+            # ----- Norma (URL externa)
+            norma = proc.norma_procedimento
+            if norma and norma.link_normaprocedimento:
                 docs.append({
-                    "tipo": "Norma de Procedimento",
-                    "titulo": str(proc.norma_procedimento),
-                    "versao": proc.norma_procedimento.versao,
-                    "vigencia": proc.norma_procedimento.vigencia_inicio.isoformat() if proc.norma_procedimento.vigencia_inicio else "",
-                    "tema": proc.norma_procedimento.tema,
-                    "url": proc.norma_procedimento.documento_modelagem_processo.url,
+                    "tipo": "Norma",
+                    "codigo": norma.codigo,
+                    "sequencial": norma.sequencial,
+                    "versao": norma.versao,
+                    "tema": norma.tema,
+                    "vigencia": norma.vigencia_inicio.strftime("%d/%m/%Y") if norma.vigencia_inicio else "",
+                    "displayname": norma.link_normaprocedimento.split("/")[-1],
+                    "url": norma.link_normaprocedimento,
                 })
 
-            # Subprocessos
-            sp_docs = []
+            # ----- Subprocessos
             for sub in proc.subprocessos.all():
-                if sub.modelagem_processo and sub.modelagem_processo.documento_modelagem_processo:
-                    sp_docs.append({
-                        "tipo": "Modelo de Processo",
-                        "titulo": str(sub.modelagem_processo),
-                        "versao": sub.modelagem_processo.versao,
-                        "vigencia": sub.modelagem_processo.vigencia_inicio.isoformat() if sub.modelagem_processo.vigencia_inicio else "",
-                        "tema": sub.modelagem_processo.tema,
-                        "url": sub.modelagem_processo.documento_modelagem_processo.url,
-                    })
-                if sub.norma_procedimento and sub.norma_procedimento.documento_modelagem_processo:
-                    sp_docs.append({
-                        "tipo": "Norma de Procedimento",
-                        "titulo": str(sub.norma_procedimento),
-                        "versao": sub.norma_procedimento.versao,
-                        "vigencia": sub.norma_procedimento.vigencia_inicio.isoformat() if sub.norma_procedimento.vigencia_inicio else "",
-                        "tema": sub.norma_procedimento.tema,
-                        "url": sub.norma_procedimento.documento_modelagem_processo.url,
+
+                sm = sub.modelagem_processo
+                if sm and sm.documento_modelagem_processo:
+                    docs.append({
+                        "tipo": "Modelo",
+                        "codigo": sm.codigo,
+                        "sequencial": sm.sequencial,
+                        "versao": sm.versao,
+                        "tema": sm.tema,
+                        "vigencia": sm.vigencia_inicio.strftime("%d/%m/%Y") if sm.vigencia_inicio else "",
+                        "displayname": sm.documento_modelagem_processo.name.split("/")[-1],
+                        "url": sm.documento_modelagem_processo.url,
                     })
 
-            # adiciona docs dos subprocessos no JSON
-            if sp_docs:
-                docs.extend(sp_docs)
+                s_norma = sub.norma_procedimento
+                if s_norma and s_norma.link_normaprocedimento:
+                    docs.append({
+                        "tipo": "Norma",
+                        "codigo": s_norma.codigo,
+                        "sequencial": s_norma.sequencial,
+                        "versao": s_norma.versao,
+                        "tema": s_norma.tema,
+                        "vigencia": s_norma.vigencia_inicio.strftime("%d/%m/%Y") if s_norma.vigencia_inicio else "",
+                        "displayname": s_norma.link_normaprocedimento.split("/")[-1],
+                        "url": s_norma.link_normaprocedimento,
+                    })
 
-            # 🔵 campo sem underscore
-            proc.docs_json = json.dumps(docs)
+            proc.docs_json = docs
+            proc.docs_count = len(docs)
 
         return resultados
 
+    # -------------------------------------------
+    # CONTEXTO
+    # -------------------------------------------
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["classificacoes"] = Classificacao.objects.all().order_by("nome")
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
+        return ctx
+
+
+
 
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
