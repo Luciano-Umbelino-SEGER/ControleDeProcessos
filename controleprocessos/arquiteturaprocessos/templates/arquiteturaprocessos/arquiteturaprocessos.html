@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags %}
 {% include 'navbar.html' %}
 
 {% block body %}
@@ -8,7 +9,7 @@
 
     <h2 class="text-2xl font-bold text-blue-800 mb-6">Arquitetura de Processos</h2>
 
-    <!-- FILTROS (mesma barra do processos, com macro1/macro2 inputs) -->
+    <!-- FILTROS -->
     <form method="GET" class="mb-4">
       <div class="flex flex-wrap justify-between items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
 
@@ -32,7 +33,7 @@
                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white
                            focus:ring-2 focus:ring-blue-500 focus:outline-none
                            {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
-              <option value="" {% if not request.GET.classificacao %}selected{% endif %}>Todas</option>
+              <option value="">Todas</option>
               {% for c in classificacoes %}
                 <option value="{{ c.id }}" {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
               {% endfor %}
@@ -84,12 +85,10 @@
               Limpar
             </a>
           </div>
+
         </div>
 
-        <!-- botão direito (mantive vazio para dar espaço; botão 'Voltar' removido conforme pedido) -->
-        <div class="flex justify-end shrink-0">
-          <!-- espaço reservado caso queira colocar algo depois -->
-        </div>
+        <!-- direita vazia: removido "Voltar à Listagem" conforme solicitado -->
 
       </div>
     </form>
@@ -99,7 +98,7 @@
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow">
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 px-3 text-left w-[20%]">Processo / Subprocesso</th>
+            <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
             <th class="py-3 px-2 text-left w-[14%]">Objetivo</th>
             <th class="py-3 px-2 text-left w-[8%]">Classificação</th>
             <th class="py-3 px-2 text-left w-[8%]">Macro N1</th>
@@ -117,131 +116,161 @@
 
         <tbody>
           {% for processo in processos %}
-            {# calcula atributos defensivos para o TR: só incluir atributos se existirem #}
-            <tr
-              class="text-blue-500 hover:bg-blue-100 transition-colors {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}"
-              {% comment %} atributos data-* apenas quando existem, para o modal ler com segurança {% endcomment %}
-              {% if processo.modelagem_processo and processo.modelagem_processo.documento_modelagem_processo %}
-                data-model-url="{{ processo.modelagem_processo.documento_modelagem_processo.url|escapejs }}"
-                data-model-title="{{ processo.modelagem_processo.nome|escapejs }}"
-                data-model-versao="{{ processo.modelagem_processo.versao|stringformat:'02d' }}"
-                data-model-vigencia="{% if processo.modelagem_processo.vigencia_inicio %}{{ processo.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}{% endif %}"
-              {% endif %}
-              {% if processo.norma_procedimento %}
-                {% if processo.norma_procedimento.documento_modelagem_processo %}
-                  data-norma-url="{{ processo.norma_procedimento.documento_modelagem_processo.url|escapejs }}"
-                {% elif processo.norma_procedimento.link_normaprocedimento %}
-                  data-norma-url="{{ processo.norma_procedimento.link_normaprocedimento|escapejs }}"
-                {% endif %}
-                data-norma-title="{{ processo.norma_procedimento.nome|default:processo.norma_procedimento.tema|escapejs }}"
-                data-norma-versao="{{ processo.norma_procedimento.versao|stringformat:'02d' }}"
-                data-norma-vigencia="{% if processo.norma_procedimento.vigencia_inicio %}{{ processo.norma_procedimento.vigencia_inicio|date:'Y-m-d' }}{% endif %}"
-              {% endif %}
-            >
-              <td class="py-3 px-3 font-semibold text-blue-800">
+            <tr class="hover:bg-blue-100 transition-colors {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+
+              <!-- Processo (pai) - destaque em azul escuro -->
+              <td class="py-3 px-3 font-semibold text-blue-800 align-top">
                 {{ processo.nome }}
                 {% if processo.parent %}
                   <div class="text-sm text-gray-600">Subprocesso de {{ processo.parent.nome }}</div>
                 {% endif %}
               </td>
 
-              {# Objetivo: usei cor azul leve pra ficar coerente com demais colunas #}
-              <td class="py-3 px-2 text-sm text-blue-600">
+              <!-- Objetivo (texto azul claro padrão do grid) -->
+              <td class="py-3 px-2 align-top text-sm text-blue-500">
                 {{ processo.objetivo|truncatechars:160 }}
               </td>
 
-              <td class="py-3 px-2">{{ processo.classificacao }}</td>
-              <td class="py-3 px-2">{{ processo.macroprocesso_nivel1 }}</td>
-              <td class="py-3 px-2">{{ processo.macroprocesso_nivel2 }}</td>
-              <td class="py-3 px-2">{{ processo.area_responsavel }}</td>
-              <td class="py-3 px-2">{{ processo.gestor }}</td>
-              <td class="py-3 px-2">{{ processo.email }}</td>
-              <td class="py-3 px-2">{{ processo.telefone }}</td>
+              <!-- resto das colunas: texto azul claro (text-blue-500) -->
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.classificacao }}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.macroprocesso_nivel1 }}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.macroprocesso_nivel2 }}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.area_responsavel }}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.gestor }}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.email }}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{{ processo.telefone }}</td>
 
-              <td class="py-3 px-2">
-                {% if processo.data_criacao %}{{ processo.data_criacao|date:"d/m/Y" }}{% endif %}
+              <td class="py-3 px-2 align-top text-blue-500">{% if processo.data_criacao %}{{ processo.data_criacao|date:"d/m/Y" }}{% endif %}</td>
+              <td class="py-3 px-2 align-top text-blue-500">{% if processo.data_atualizacao %}{{ processo.data_atualizacao|date:"d/m/Y" }}{% endif %}</td>
+
+              <!-- Observação (logo após Atualização, em azul claro) -->
+              <td class="py-3 px-2 text-sm text-blue-500 align-top">
+                {% if processo.observacao %}
+                  {{ processo.observacao|truncatechars:120 }}
+                {% else %}
+                  <span class="text-gray-400 italic">Sem Observação</span>
+                {% endif %}
               </td>
 
-              <td class="py-3 px-2">
-                {% if processo.data_atualizacao %}{{ processo.data_atualizacao|date:"d/m/Y" }}{% endif %}
-              </td>
-
-              <td class="py-3 px-2 text-sm text-blue-600">{{ processo.observacao|default_if_none:"" }}</td>
-
-              <!-- DOCUMENTOS (botão) -->
-              <td class="py-3 px-2 text-center">
-                {# calcular contagem defensiva: 1 para modelagem_processo (se existir arquivo), 1 para norma (se arquivo ou link) #}
+              <!-- DOCUMENTOS: ícone pasta + contador minimalista (sem botão azul) -->
+              <td class="py-3 px-2 text-center align-top">
+                {# contador defensivo: modelagem_processo + norma_procedimento #}
                 {% with cnt=0 %}
-                  {% if processo.modelagem_processo and processo.modelagem_processo.documento_modelagem_processo %}
-                    {% with cnt=cnt|add:1 %}{% endwith %}
-                  {% endif %}
-                  {% if processo.norma_procedimento %}
-                    {% if processo.norma_procedimento.documento_modelagem_processo or processo.norma_procedimento.link_normaprocedimento %}
-                      {% with cnt=cnt|add:1 %}{% endwith %}
-                    {% endif %}
-                  {% endif %}
+                  {% if processo.modelagem_processo %}{% with cnt=cnt|add:1 %}{% endwith %}{% endif %}
+                  {% if processo.norma_procedimento %}{% with cnt=cnt|add:1 %}{% endwith %}{% endif %}
 
-                  <button
-                      data-procid="{{ processo.id }}"
-                      class="btn-documents inline-flex items-center px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
-                      type="button">
-                    Documentos ({{ cnt }})
-                  </button>
+                  {# elemento clicável minimalista (icone + número). Mantemos data-* para JS abrir modal depois. #}
+                  <div role="button" tabindex="0"
+                       class="inline-flex items-center gap-2 px-2 py-1 rounded text-blue-500 hover:text-blue-700 cursor-pointer select-none"
+                       data-procname="{{ processo.nome|escapejs }}"
+
+                       {% if processo.modelagem_processo %}
+                         data-model-exists="1"
+                         data-model-filename="{{ processo.modelagem_processo.documento_modelagem_processo.name|default_if_none:''|escape }}"
+                         data-model-displayname="{% if processo.modelagem_processo and processo.modelagem_processo.documento_modelagem_processo %}{{ processo.modelagem_processo.documento_modelagem_processo|filename }}{% endif %}"
+                         data-model-url="{% if processo.modelagem_processo and processo.modelagem_processo.documento_modelagem_processo %}{{ request.scheme }}://{{ request.get_host }}{{ processo.modelagem_processo.documento_modelagem_processo.url }}{% endif %}"
+                         data-model-codigo="{{ processo.modelagem_processo.codigo|default_if_none:'' }}"
+                         data-model-sequencial="{{ processo.modelagem_processo.sequencial|default_if_none:'' }}"
+                         data-model-versao="{% if processo.modelagem_processo %}{{ processo.modelagem_processo.versao|stringformat:'02d' }}{% endif %}"
+                         data-model-tema="{{ processo.modelagem_processo.tema|default_if_none:''|escape }}"
+                         data-model-vigencia="{% if processo.modelagem_processo and processo.modelagem_processo.vigencia_inicio %}{{ processo.modelagem_processo.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
+                       {% else %}
+                         data-model-exists="0"
+                       {% endif %}
+
+                       {% if processo.norma_procedimento %}
+                         data-norma-exists="1"
+                         data-norma-url="{% if processo.norma_procedimento and processo.norma_procedimento.link_normaprocedimento %}{{ processo.norma_procedimento.link_normaprocedimento }}{% endif %}"
+                         data-norma-displayname="{% if processo.norma_procedimento and processo.norma_procedimento.link_normaprocedimento %}{{ processo.norma_procedimento.link_normaprocedimento|filename }}{% endif %}"
+                         data-norma-codigo="{{ processo.norma_procedimento.codigo|default_if_none:'' }}"
+                         data-norma-sequencial="{{ processo.norma_procedimento.sequencial|default_if_none:'' }}"
+                         data-norma-versao="{% if processo.norma_procedimento %}{{ processo.norma_procedimento.versao|stringformat:'02d' }}{% endif %}"
+                         data-norma-tema="{{ processo.norma_procedimento.tema|default_if_none:''|escape }}"
+                         data-norma-vigencia="{% if processo.norma_procedimento and processo.norma_procedimento.vigencia_inicio %}{{ processo.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
+                       {% else %}
+                         data-norma-exists="0"
+                       {% endif %}
+                  >
+                    <span class="text-lg">📁</span>
+                    <span class="text-sm">({{ cnt }})</span>
+                  </div>
+
                 {% endwith %}
               </td>
             </tr>
 
-            {# --- Exibir subprocessos (mantendo zebrado coerente) --- #}
+            {# --- Exibir subprocessos (mantendo padrão do processos.html) --- #}
             {% for sub in processo.subprocessos.all|dictsort:"id" %}
               {% with pos=forloop.parentloop.counter0|add:forloop.counter0 %}
-              <tr
-                class="text-blue-500 hover:bg-blue-100 transition-colors {% if pos|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}"
-                {% if sub.modelagem_processo and sub.modelagem_processo.documento_modelagem_processo %}
-                  data-model-url="{{ sub.modelagem_processo.documento_modelagem_processo.url|escapejs }}"
-                  data-model-title="{{ sub.modelagem_processo.nome|escapejs }}"
-                  data-model-versao="{{ sub.modelagem_processo.versao|stringformat:'02d' }}"
-                  data-model-vigencia="{% if sub.modelagem_processo.vigencia_inicio %}{{ sub.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}{% endif %}"
-                {% endif %}
-                {% if sub.norma_procedimento %}
-                  {% if sub.norma_procedimento.documento_modelagem_processo %}
-                    data-norma-url="{{ sub.norma_procedimento.documento_modelagem_processo.url|escapejs }}"
-                  {% elif sub.norma_procedimento.link_normaprocedimento %}
-                    data-norma-url="{{ sub.norma_procedimento.link_normaprocedimento|escapejs }}"
-                  {% endif %}
-                  data-norma-title="{{ sub.norma_procedimento.nome|default:sub.norma_procedimento.tema|escapejs }}"
-                  data-norma-versao="{{ sub.norma_procedimento.versao|stringformat:'02d' }}"
-                  data-norma-vigencia="{% if sub.norma_procedimento.vigencia_inicio %}{{ sub.norma_procedimento.vigencia_inicio|date:'Y-m-d' }}{% endif %}"
-                {% endif %}
-              >
-                <td class="py-3 px-3 text-blue-600 pl-6">
-                  <span class="block ml-4">{{ sub.nome }}</span>
+              <tr class="hover:bg-blue-100 transition-colors {% if pos|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+
+                <td class="py-3 px-3 text-blue-600 pl-6 align-top">
+                  <span class="ml-4 block">{{ sub.nome }}</span>
                 </td>
-                <td class="py-3 px-2 text-sm text-blue-600">{{ sub.objetivo|truncatechars:120 }}</td>
-                <td class="py-3 px-2">{{ sub.classificacao }}</td>
-                <td class="py-3 px-2">{{ sub.macroprocesso_nivel1 }}</td>
-                <td class="py-3 px-2">{{ sub.macroprocesso_nivel2 }}</td>
-                <td class="py-3 px-2">{{ sub.area_responsavel }}</td>
-                <td class="py-3 px-2">{{ sub.gestor }}</td>
-                <td class="py-3 px-2">{{ sub.email }}</td>
-                <td class="py-3 px-2">{{ sub.telefone }}</td>
-                <td class="py-3 px-2">{% if sub.data_criacao %}{{ sub.data_criacao|date:"d/m/Y" }}{% endif %}</td>
-                <td class="py-3 px-2">{% if sub.data_atualizacao %}{{ sub.data_atualizacao|date:"d/m/Y" }}{% endif %}</td>
-                <td class="py-3 px-2 text-sm text-blue-600">{{ sub.observacao|default_if_none:"" }}</td>
-                <td class="py-3 px-2 text-center">
+
+                <td class="py-3 px-2 text-sm text-blue-500 align-top">{{ sub.objetivo|truncatechars:120 }}</td>
+
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.classificacao }}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.macroprocesso_nivel1 }}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.macroprocesso_nivel2 }}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.area_responsavel }}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.gestor }}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.email }}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{{ sub.telefone }}</td>
+
+                <td class="py-3 px-2 text-blue-500 align-top">{% if sub.data_criacao %}{{ sub.data_criacao|date:"d/m/Y" }}{% endif %}</td>
+                <td class="py-3 px-2 text-blue-500 align-top">{% if sub.data_atualizacao %}{{ sub.data_atualizacao|date:"d/m/Y" }}{% endif %}</td>
+
+                <td class="py-3 px-2 text-sm text-blue-500 align-top">
+                  {% if sub.observacao %}
+                    {{ sub.observacao|truncatechars:100 }}
+                  {% else %}
+                    <span class="text-gray-400 italic">Sem Observação</span>
+                  {% endif %}
+                </td>
+
+                <td class="py-3 px-2 text-center align-top">
                   {% with scnt=0 %}
-                    {% if sub.modelagem_processo and sub.modelagem_processo.documento_modelagem_processo %}
-                      {% with scnt=scnt|add:1 %}{% endwith %}
-                    {% endif %}
-                    {% if sub.norma_procedimento %}
-                      {% if sub.norma_procedimento.documento_modelagem_processo or sub.norma_procedimento.link_normaprocedimento %}
-                        {% with scnt=scnt|add:1 %}{% endwith %}
-                      {% endif %}
-                    {% endif %}
-                    <button data-procid="{{ sub.id }}" class="btn-documents inline-flex items-center px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition text-sm" type="button">
-                      Documentos ({{ scnt }})
-                    </button>
+                    {% if sub.modelagem_processo %}{% with scnt=scnt|add:1 %}{% endwith %}{% endif %}
+                    {% if sub.norma_procedimento %}{% with scnt=scnt|add:1 %}{% endwith %}{% endif %}
+
+                    <div role="button" tabindex="0"
+                         class="inline-flex items-center gap-2 px-2 py-1 rounded text-blue-500 hover:text-blue-700 cursor-pointer select-none"
+                         data-procname="{{ sub.nome|escapejs }}"
+
+                         {% if sub.modelagem_processo %}
+                           data-model-exists="1"
+                           data-model-displayname="{% if sub.modelagem_processo and sub.modelagem_processo.documento_modelagem_processo %}{{ sub.modelagem_processo.documento_modelagem_processo|filename }}{% endif %}"
+                           data-model-url="{% if sub.modelagem_processo and sub.modelagem_processo.documento_modelagem_processo %}{{ request.scheme }}://{{ request.get_host }}{{ sub.modelagem_processo.documento_modelagem_processo.url }}{% endif %}"
+                           data-model-codigo="{{ sub.modelagem_processo.codigo|default_if_none:'' }}"
+                           data-model-sequencial="{{ sub.modelagem_processo.sequencial|default_if_none:'' }}"
+                           data-model-versao="{% if sub.modelagem_processo %}{{ sub.modelagem_processo.versao|stringformat:'02d' }}{% endif %}"
+                           data-model-tema="{{ sub.modelagem_processo.tema|default_if_none:''|escape }}"
+                           data-model-vigencia="{% if sub.modelagem_processo and sub.modelagem_processo.vigencia_inicio %}{{ sub.modelagem_processo.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
+                         {% else %}
+                           data-model-exists="0"
+                         {% endif %}
+
+                         {% if sub.norma_procedimento %}
+                           data-norma-exists="1"
+                           data-norma-url="{% if sub.norma_procedimento and sub.norma_procedimento.link_normaprocedimento %}{{ sub.norma_procedimento.link_normaprocedimento }}{% endif %}"
+                           data-norma-displayname="{% if sub.norma_procedimento and sub.norma_procedimento.link_normaprocedimento %}{{ sub.norma_procedimento.link_normaprocedimento|filename }}{% endif %}"
+                           data-norma-codigo="{{ sub.norma_procedimento.codigo|default_if_none:'' }}"
+                           data-norma-sequencial="{{ sub.norma_procedimento.sequencial|default_if_none:'' }}"
+                           data-norma-versao="{% if sub.norma_procedimento %}{{ sub.norma_procedimento.versao|stringformat:'02d' }}{% endif %}"
+                           data-norma-tema="{{ sub.norma_procedimento.tema|default_if_none:''|escape }}"
+                           data-norma-vigencia="{% if sub.norma_procedimento and sub.norma_procedimento.vigencia_inicio %}{{ sub.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
+                         {% else %}
+                           data-norma-exists="0"
+                         {% endif %}
+                    >
+                      <span class="text-lg">📁</span>
+                      <span class="text-sm">({{ scnt }})</span>
+                    </div>
+
                   {% endwith %}
                 </td>
+
               </tr>
               {% endwith %}
             {% endfor %}
@@ -275,143 +304,169 @@
   </div>
 </div>
 
-<!-- MODAL MINIMALISTA (Opção B) -->
-<div id="documents-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-  <div class="absolute inset-0 bg-black/40"></div>
+<!-- inclui modal de exibição de documento (reaproveita seu componente) -->
+{% include "components/modal_documento_processo.html" %}
 
-  <div class="relative bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4">
-    <div class="flex items-center justify-between px-6 py-4 border-b">
-      <h3 id="documents-modal-title" class="text-lg font-semibold text-gray-800">Documentos</h3>
-      <button id="documents-modal-close" class="text-gray-500 hover:text-gray-800">&times;</button>
-    </div>
-
-    <div id="documents-modal-body" class="p-6 max-h-[60vh] overflow-y-auto">
-      <!-- conteúdo injetado por JS -->
-      <div id="documents-list" class="space-y-3"></div>
-    </div>
-
-    <div class="flex justify-end px-6 py-4 border-t">
-      <button id="documents-modal-close-2" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- JS local para abrir modal e preencher documentos -->
+<!-- JS para abrir modal premium (monta tabela de documentos a partir dos data-attrs) -->
 <script>
 (function () {
-  function qs(sel, el=document) { return el.querySelector(sel); }
-  function qsa(sel, el=document) { return Array.from(el.querySelectorAll(sel)); }
+  function qsa(sel, el=document){ return Array.from((el||document).querySelectorAll(sel)); }
+  function qs(sel, el=document){ return (el||document).querySelector(sel); }
 
-  const modal = document.getElementById('documents-modal');
-  const modalTitle = document.getElementById('documents-modal-title');
-  const modalBodyList = document.getElementById('documents-list');
-  const closeBtns = [document.getElementById('documents-modal-close'), document.getElementById('documents-modal-close-2')];
+  // abre modal preenchendo a tabela a partir dos atributos data-*
+  function openDocsModalFromData(procName, el) {
+    // pega dados model / norma
+    const model = {
+      exists: el.getAttribute('data-model-exists') === '1',
+      url: el.getAttribute('data-model-url') || '',
+      displayname: el.getAttribute('data-model-displayname') || el.getAttribute('data-model-filename') || '',
+      codigo: el.getAttribute('data-model-codigo') || '',
+      sequencial: el.getAttribute('data-model-sequencial') || '',
+      versao: el.getAttribute('data-model-versao') || '',
+      tema: el.getAttribute('data-model-tema') || '',
+      vigencia: el.getAttribute('data-model-vigencia') || ''
+    };
 
-  function openModalForProcess(procId, procName, docs) {
-    modalTitle.textContent = `Documentos — ${procName || ('ID ' + procId)}`;
-    modalBodyList.innerHTML = '';
+    const norma = {
+      exists: el.getAttribute('data-norma-exists') === '1',
+      url: el.getAttribute('data-norma-url') || '',
+      displayname: el.getAttribute('data-norma-displayname') || el.getAttribute('data-norma-filename') || '',
+      codigo: el.getAttribute('data-norma-codigo') || '',
+      sequencial: el.getAttribute('data-norma-sequencial') || '',
+      versao: el.getAttribute('data-norma-versao') || '',
+      tema: el.getAttribute('data-norma-tema') || '',
+      vigencia: el.getAttribute('data-norma-vigencia') || ''
+    };
 
-    if (!docs || docs.length === 0) {
-      modalBodyList.innerHTML = '<div class="text-sm text-gray-600">Nenhum documento disponível.</div>';
-    } else {
-      docs.sort((a,b) => {
-        const da = a.vigencia ? (new Date(a.vigencia)) : new Date(0);
-        const db = b.vigencia ? (new Date(b.vigencia)) : new Date(0);
-        return db - da;
-      });
-
-      docs.forEach(d => {
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
-
-        const left = document.createElement('div');
-        left.className = 'text-sm';
-
-        const title = document.createElement('div');
-        title.className = 'font-medium text-gray-800';
-        title.textContent = `${d.tipo ? (d.tipo + ' — ') : ''}${d.titulo || d.name || d.label || ''}`;
-
-        const meta = document.createElement('div');
-        meta.className = 'text-xs text-gray-600';
-        const parts = [];
-        if (d.versao) parts.push('v. ' + d.versao);
-        if (d.vigencia) parts.push(d.vigencia);
-        if (d.tema) parts.push(d.tema);
-        meta.textContent = parts.join(' • ');
-
-        left.appendChild(title);
-        left.appendChild(meta);
-
-        const right = document.createElement('div');
-        right.className = 'flex items-center gap-2';
-
-        const link = document.createElement('a');
-        link.className = 'px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.href = d.url || '#';
-        link.textContent = 'Abrir PDF';
-
-        right.appendChild(link);
-
-        row.appendChild(left);
-        row.appendChild(right);
-        modalBodyList.appendChild(row);
-      });
+    // localizar o modal (assume que components/modal_documento_processo.html criou #documents-modal e #documents-modal-body)
+    const documentsModal = document.getElementById('documents-modal');
+    if (!documentsModal) {
+      console.warn('Modal de documentos não encontrado (components/modal_documento_processo.html).');
+      return;
     }
 
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    // preparar container/table
+    let container = documentsModal.querySelector('#documents-list-table');
+    const body = documentsModal.querySelector('#documents-modal-body') || documentsModal;
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'documents-list-table';
+      body.innerHTML = '';
+      body.appendChild(container);
+    } else {
+      container.innerHTML = '';
+    }
+
+    // cria tabela
+    const table = document.createElement('table');
+    table.className = 'w-full text-sm border-collapse';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr class="bg-gray-100 text-left"><th class="py-2 px-3">Tipo</th><th class="py-2 px-3">Nome</th><th class="py-2 px-3">Código</th><th class="py-2 px-3">Sequencial</th><th class="py-2 px-3">Versão</th><th class="py-2 px-3">Tema</th><th class="py-2 px-3">Início Vigência</th><th class="py-2 px-3 text-center">Abrir PDF</th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+
+    // add model
+    if (model.exists && (model.displayname || model.url)) {
+      const tr = document.createElement('tr'); tr.className = 'border-b';
+      tr.innerHTML =
+        `<td class="py-2 px-3">Modelo</td>
+         <td class="py-2 px-3"><button type="button" class="text-blue-600 hover:underline">${model.displayname || '(sem nome)'}</button></td>
+         <td class="py-2 px-3">${model.codigo || ''}</td>
+         <td class="py-2 px-3">${model.sequencial || ''}</td>
+         <td class="py-2 px-3">${model.versao || ''}</td>
+         <td class="py-2 px-3">${model.tema || ''}</td>
+         <td class="py-2 px-3">${model.vigencia || ''}</td>
+         <td class="py-2 px-3 text-center">${model.url ? '<button class="px-2 py-1 rounded bg-blue-600 text-white">PDF</button>' : '-'}</td>`;
+      tbody.appendChild(tr);
+      // attach click handler to open PDF via modal_documento_processo's abrirModalDocumento if available
+      // we'll attach after table insertion
+    }
+
+    // add norma
+    if (norma.exists && (norma.displayname || norma.url)) {
+      const tr = document.createElement('tr'); tr.className = 'border-b';
+      tr.innerHTML =
+        `<td class="py-2 px-3">Norma</td>
+         <td class="py-2 px-3"><button type="button" class="text-blue-600 hover:underline">${norma.displayname || '(sem nome)'}</button></td>
+         <td class="py-2 px-3">${norma.codigo || ''}</td>
+         <td class="py-2 px-3">${norma.sequencial || ''}</td>
+         <td class="py-2 px-3">${norma.versao || ''}</td>
+         <td class="py-2 px-3">${norma.tema || ''}</td>
+         <td class="py-2 px-3">${norma.vigencia || ''}</td>
+         <td class="py-2 px-3 text-center">${norma.url ? '<button class="px-2 py-1 rounded bg-blue-600 text-white">PDF</button>' : '-'}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    if (!tbody.children.length) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="8" class="py-4 px-3 text-sm text-gray-600">Nenhum documento disponível.</td>';
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+
+    // ligar os botões "PDF" para abrir o PDF (se existir função abrirModalDocumento)
+    container.querySelectorAll('button').forEach((b, idx) => {
+      // 0 -> model, 1 -> norma (dependendo do que foi adicionado)
+      b.addEventListener('click', function () {
+        // decidir qual url usar
+        const isModel = idx === 0 && model.exists;
+        const url = isModel ? model.url : norma.url;
+        const name = isModel ? model.displayname : norma.displayname;
+        if (typeof abrirModalDocumento === 'function') {
+          abrirModalDocumento(url, name);
+        } else {
+          // fallback: abrir em nova aba
+          if (url) window.open(url, '_blank');
+        }
+      });
+    });
+
+    // título do modal
+    const titleEl = documentsModal.querySelector('#documents-modal-title');
+    if (titleEl) titleEl.textContent = 'Documentos — ' + (procName || '');
+
+    // abrir modal (espera que modal_documento_processo.html implemente a classe hidden/flex)
+    documentsModal.classList.remove('hidden');
+    documentsModal.classList.add('flex');
     document.body.style.overflow = 'hidden';
   }
 
-  function closeModal() {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+  // fechar modal (assume existência de botões dentro do modal com ids padrão)
+  function closeDocumentsModal() {
+    const documentsModal = document.getElementById('documents-modal');
+    if (!documentsModal) return;
+    documentsModal.classList.add('hidden');
+    documentsModal.classList.remove('flex');
     document.body.style.overflow = '';
   }
 
-  closeBtns.forEach(b => { if (b) b.addEventListener('click', closeModal); });
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) closeModal();
+  // Attach listeners on the inline folder elements
+  qsa('[role="button"][data-procname]').forEach(el => {
+    el.addEventListener('click', function () {
+      const procName = this.getAttribute('data-procname') || '';
+      openDocsModalFromData(procName, this);
+    });
+    // keyboard accessibility (Enter/Space)
+    el.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        this.click();
+      }
+    });
   });
 
-  // Handler dos botões Documentos (defensivo)
-  qsa('.btn-documents').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const procId = this.dataset.procid;
-      const row = this.closest('tr');
-      const procName = row ? (row.querySelector('td')?.textContent?.trim() || '') : '';
+  // fechar ao clicar no background do modal (se o modal implementado possuir esse comportamento)
+  document.addEventListener('click', function (ev) {
+    const documentsModal = document.getElementById('documents-modal');
+    if (documentsModal && ev.target === documentsModal) closeDocumentsModal();
+  });
 
-      // 1) se a TR possui atributos data-model-url / data-norma-url -> montar docs a partir deles
-      const docs = [];
-
-      if (row) {
-        const murl = row.getAttribute('data-model-url');
-        if (murl) {
-          docs.push({
-            tipo: 'Modelo',
-            titulo: row.getAttribute('data-model-title') || 'Modelo',
-            versao: row.getAttribute('data-model-versao') || '',
-            vigencia: row.getAttribute('data-model-vigencia') || '',
-            url: murl
-          });
-        }
-
-        const nurl = row.getAttribute('data-norma-url');
-        if (nurl) {
-          docs.push({
-            tipo: 'Norma',
-            titulo: row.getAttribute('data-norma-title') || 'Norma',
-            versao: row.getAttribute('data-norma-versao') || '',
-            vigencia: row.getAttribute('data-norma-vigencia') || '',
-            url: nurl
-          });
-        }
-      }
-
-      openModalForProcess(procId, procName, docs);
-    });
+  // fechar via botões internos se houver
+  ['#documents-modal-close', '#documents-modal-close-2'].forEach(sel => {
+    const btn = qs(sel);
+    if (btn) btn.addEventListener('click', closeDocumentsModal);
   });
 
 })();
