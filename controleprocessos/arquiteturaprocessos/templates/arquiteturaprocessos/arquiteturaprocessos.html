@@ -11,65 +11,116 @@
 
     <!-- FILTROS -->
     <form method="GET" class="mb-4">
-      <div class="flex flex-wrap justify-between items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
+      <!-- BARRA DE FILTRAGEM -->
+      <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
 
-        <div class="flex flex-wrap items-end gap-3">
+        <!-- LINHA COM TODOS OS FILTROS + BOTÕES -->
+        <div class="flex items-end justify-between gap-4 flex-nowrap">
 
-          <!-- Processo / Subprocesso -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
-            <input type="text" name="nome" placeholder="Digite Processo/Subprocesso ou parte..."
-                   value="{{ request.GET.nome }}"
-                   class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+          <!-- COLUNA ESQUERDA – CAMPOS -->
+          <div class="flex items-end gap-3 flex-nowrap">
+
+            <!-- Processo -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
+              <input name="nome" type="text" placeholder="Digite..."
+                     class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.nome }}">
+            </div>
+
+            <!-- Classificação -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
+              <select name="classificacao"
+                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                             focus:ring-2 focus:ring-blue-500
+                             {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
+                <option value="">Todas</option>
+                {% for c in classificacoes %}
+                  <option value="{{ c.id }}" {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
+                    {{ c.nome }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Macro N1 -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 1</label>
+              <input name="macro1" type="text" placeholder="Digite..."
+                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.macro1 }}">
+            </div>
+
+            <!-- Macro N2 -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 2</label>
+              <input name="macro2" type="text" placeholder="Digite..."
+                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.macro2 }}">
+            </div>
+
+            <!-- Área -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Área</label>
+              <input name="area" type="text" placeholder="Digite..."
+                     class="w-36 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.area }}">
+            </div>
+
+            <!-- Datas -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação De</label>
+              <input name="criacao_de" type="date"
+                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.criacao_de }}">
+            </div>
+
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação Até</label>
+              <input name="criacao_ate" type="date"
+                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.criacao_ate }}">
+            </div>
+
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Atualização De</label>
+              <input name="atualizacao_de" type="date"
+                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.atualizacao_de }}">
+            </div>
+
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Atualização Até</label>
+              <input name="atualizacao_ate" type="date"
+                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.atualizacao_ate }}">
+            </div>
+
           </div>
 
-          <!-- Classificação -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
-            <select name="classificacao"
-                    class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500">
-              <option value="">Todas</option>
-              {% for c in classificacoes %}
-                <option value="{{ c.id }}"
-                  {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}
-                >{{ c.nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Macro 1 -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 1</label>
-            <input type="text" name="macro1" value="{{ request.GET.macro1 }}"
-                   class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-          </div>
-
-          <!-- Macro 2 -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 2</label>
-            <input type="text" name="macro2" value="{{ request.GET.macro2 }}"
-                   class="w-48 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-          </div>
-
-          <!-- Área responsável -->
-          <div class="flex flex-col">
-            <label class="text-sm font-semibold text-blue-800 mb-0.5">Área Responsável</label>
-            <input type="text" name="area" value="{{ request.GET.area }}"
-                   class="w-40 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-          </div>
-
-          <!-- Botões -->
-          <div class="flex items-center gap-2 mt-4">
-            <button class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700">Filtrar</button>
+          <!-- BOTÕES -->
+          <div class="flex items-center gap-3 shrink-0">
+            <button type="submit"
+                    class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+              Filtrar
+            </button>
 
             <a href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}"
-               class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+               class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
               Limpar
             </a>
           </div>
 
         </div>
-
       </div>
     </form>
 
