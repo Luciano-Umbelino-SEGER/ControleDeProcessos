@@ -146,113 +146,57 @@
         </thead>
 
         <tbody>
-        {% for processo in processos %}
-          <tr class="hover:bg-blue-100 transition-colors
-                     {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+          {% comment %}
+          ======================================================
+           LINHA 1 — Processos (PAI)
+          ======================================================
+          {% endcomment %}
 
-            <!-- Processo -->
-            <td class="py-3 px-3 font-semibold text-blue-800">
-              {{ processo.nome }}
-              {% if processo.parent %}
-                <div class="text-xs text-blue-500">Subprocesso de {{ processo.parent.nome }}</div>
-              {% endif %}
-            </td>
+          {% for processo in processos %}
+              {% with rownum=forloop.counter %}
+              <tr class="hover:bg-blue-100 transition-colors
+                         {% if rownum|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
-            <!-- Objetivo -->
-            <td class="py-3 px-2 text-blue-600">
-              {{ processo.objetivo|truncatechars:160 }}
-            </td>
+                <!-- Processo -->
+                <td class="py-3 px-3 font-semibold text-blue-800">
+                  {{ processo.nome }}
+                  {% if processo.parent %}
+                    <div class="text-xs text-blue-500">Subprocesso de {{ processo.parent.nome }}</div>
+                  {% endif %}
+                </td>
 
-            <td class="py-3 px-2 text-blue-600">{{ processo.classificacao }}</td>
-            <td class="py-3 px-2 text-blue-600">{{ processo.macroprocesso_nivel1 }}</td>
-            <td class="py-3 px-2 text-blue-600">{{ processo.macroprocesso_nivel2 }}</td>
-            <td class="py-3 px-2 text-blue-600">{{ processo.area_responsavel }}</td>
-            <td class="py-3 px-2 text-blue-600">{{ processo.gestor }}</td>
-            <td class="py-3 px-2 text-blue-600">{{ processo.email }}</td>
-            <td class="py-3 px-2 text-blue-600">{{ processo.telefone }}</td>
+                <!-- Objetivo -->
+                <td class="py-3 px-2 text-blue-600">
+                  {{ processo.objetivo|truncatechars:160 }}
+                </td>
 
-            <td class="py-3 px-2 text-blue-600">
-              {% if processo.data_criacao %}{{ processo.data_criacao|date:"d/m/Y" }}{% endif %}
-            </td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.classificacao }}</td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.macroprocesso_nivel1 }}</td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.macroprocesso_nivel2 }}</td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.area_responsavel }}</td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.gestor }}</td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.email }}</td>
+                <td class="py-3 px-2 text-blue-600">{{ processo.telefone }}</td>
 
-            <td class="py-3 px-2 text-blue-600">
-              {% if processo.data_atualizacao %}{{ processo.data_atualizacao|date:"d/m/Y" }}{% endif %}
-            </td>
+                <td class="py-3 px-2 text-blue-600">
+                  {% if processo.data_criacao %}{{ processo.data_criacao|date:"d/m/Y" }}{% endif %}
+                </td>
 
-            <!-- Observação -->
-            <td class="py-3 px-2 text-blue-600 text-sm">
-              {% if processo.observacao %}
-                {{ processo.observacao|truncatechars:120 }}
-              {% endif %}
-            </td>
+                <td class="py-3 px-2 text-blue-600">
+                  {% if processo.data_atualizacao %}{{ processo.data_atualizacao|date:"d/m/Y" }}{% endif %}
+                </td>
 
-            <!-- DOCUMENTOS -->
-            <td class="py-3 px-2 text-center">
+                <td class="py-3 px-2 text-blue-600 text-sm">
+                  {% if processo.observacao %}{{ processo.observacao|truncatechars:120 }}{% endif %}
+                </td>
 
-              {% with cnt=0 %}
-                {% if processo.modelagem_processo %}{% with cnt=cnt|add:1 %}{% endwith %}{% endif %}
-                {% if processo.norma_procedimento %}{% with cnt=cnt|add:1 %}{% endwith %}{% endif %}
-
-                <button type="button"
-                        class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
-                        data-procname="{{ processo.nome|escapejs }}">
-
-                  <!-- Ícone pasta suave -->
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                       class="w-5 h-5"
-                       fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                  </svg>
-
-                  <span class="text-blue-700 font-medium">({{ cnt }})</span>
-                </button>
-
-              {% endwith %}
-            </td>
-
-          </tr>
-
-          <!-- SUBPROCESSOS -->
-          {% for sub in processo.subprocessos.all|dictsort:"id" %}
-            <tr class="hover:bg-blue-100 transition-colors
-                       {% if forloop.parentloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
-
-              <td class="py-3 px-6 text-blue-600">
-                — {{ sub.nome }}
-              </td>
-
-              <td class="py-3 px-2 text-blue-600">{{ sub.objetivo|truncatechars:120 }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.classificacao }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.macroprocesso_nivel1 }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.macroprocesso_nivel2 }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.area_responsavel }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.gestor }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.email }}</td>
-              <td class="py-3 px-2 text-blue-600">{{ sub.telefone }}</td>
-
-              <td class="py-3 px-2 text-blue-600">
-                {% if sub.data_criacao %}{{ sub.data_criacao|date:"d/m/Y" }}{% endif %}
-              </td>
-
-              <td class="py-3 px-2 text-blue-600">
-                {% if sub.data_atualizacao %}{{ sub.data_atualizacao|date:"d/m/Y" }}{% endif %}
-              </td>
-
-              <td class="py-3 px-2 text-blue-600 text-sm">
-                {% if sub.observacao %}{{ sub.observacao|truncatechars:100 }}{% endif %}
-              </td>
-
-              <td class="py-3 px-2 text-center">
-                {% with scnt=0 %}
-                  {% if sub.modelagem_processo %}{% with scnt=scnt|add:1 %}{% endwith %}{% endif %}
-                  {% if sub.norma_procedimento %}{% with scnt=scnt|add:1 %}{% endwith %}{% endif %}
-
+                <!-- Documentos -->
+                <td class="py-3 px-2 text-center">
+                  {% with cnt=processo.docs_count %}
                   <button type="button"
                           class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
-                          data-procname="{{ sub.nome|escapejs }}">
+                          data-procname="{{ processo.nome|escapejs }}">
 
-                    <!-- Ícone pasta suave -->
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                          class="w-5 h-5"
                          fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
@@ -260,23 +204,81 @@
                             d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
                     </svg>
 
-                    <span class="text-blue-700 font-medium">({{ scnt }})</span>
+                    <span class="text-blue-700 font-medium">({{ cnt }})</span>
                   </button>
+                  {% endwith %}
+                </td>
 
+              </tr>
+
+              {% endwith %}
+
+              {% comment %}
+              ======================================================
+                LINHA 2 — SUBPROCESSOS
+                Usando incremento global → mantém zebrado contínuo
+              ======================================================
+              {% endcomment %}
+
+              {% for sub in processo.subprocessos.all|dictsort:"id" %}
+                {% with rownum=forloop.parentloop.counter|add:forloop.counter %}
+                <tr class="hover:bg-blue-100 transition-colors
+                           {% if rownum|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+
+                  <td class="py-3 px-6 text-blue-600">— {{ sub.nome }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.objetivo|truncatechars:120 }}</td>
+
+                  <td class="py-3 px-2 text-blue-600">{{ sub.classificacao }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.macroprocesso_nivel1 }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.macroprocesso_nivel2 }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.area_responsavel }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.gestor }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.email }}</td>
+                  <td class="py-3 px-2 text-blue-600">{{ sub.telefone }}</td>
+
+                  <td class="py-3 px-2 text-blue-600">
+                    {% if sub.data_criacao %}{{ sub.data_criacao|date:"d/m/Y" }}{% endif %}
+                  </td>
+
+                  <td class="py-3 px-2 text-blue-600">
+                    {% if sub.data_atualizacao %}{{ sub.data_atualizacao|date:"d/m/Y" }}{% endif %}
+                  </td>
+
+                  <td class="py-3 px-2 text-blue-600 text-sm">
+                    {% if sub.observacao %}{{ sub.observacao|truncatechars:100 }}{% endif %}
+                  </td>
+
+                  <td class="py-3 px-2 text-center">
+                    {% with scnt=sub.docs_count %}
+                    <button type="button"
+                            class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
+                            data-procname="{{ sub.nome|escapejs }}">
+
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                           class="w-5 h-5"
+                           fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                      </path>
+                      </svg>
+
+                      <span class="text-blue-700 font-medium">({{ scnt }})</span>
+                    </button>
+                    {% endwith %}
+                  </td>
+
+                </tr>
                 {% endwith %}
-              </td>
+              {% endfor %}
 
+          {% empty %}
+            <tr>
+              <td colspan="13" class="py-4 text-center text-gray-500">Nenhum processo encontrado.</td>
             </tr>
           {% endfor %}
 
-        {% empty %}
-          <tr>
-            <td colspan="13" class="py-4 text-center text-gray-500">
-              Nenhum processo encontrado.
-            </td>
-          </tr>
-        {% endfor %}
         </tbody>
+
       </table>
     </div>
 
