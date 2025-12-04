@@ -193,21 +193,37 @@
                 <!-- Documentos -->
                 <td class="py-3 px-2 text-center">
                   {% with cnt=processo.docs_count %}
-                  <button type="button"
-                          class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
-                          data-procname="{{ processo.nome|escapejs }}">
+                    {% if cnt > 0 %}
+                      <button type="button"
+                              class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
+                              onclick='abrirListaDocumentos("{{ processo.nome|escapejs }}", {{ processo.docs_json|safe }})'>
 
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                         class="w-5 h-5"
-                         fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                    </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                              class="w-5 h-5"
+                              fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
+                          <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                        </svg>
 
-                    <span class="text-blue-700 font-medium">({{ cnt }})</span>
-                  </button>
+                        <span class="text-blue-700 font-medium">({{ cnt }})</span>
+                      </button>
+
+                    {% else %}
+                      <div class="flex items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed">
+
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                              class="w-5 h-5"
+                              fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
+                          <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                        </svg>
+
+                        <span class="text-blue-700 font-medium">(0)</span>
+                      </div>
+                    {% endif %}
                   {% endwith %}
                 </td>
+
 
               </tr>
 
@@ -250,23 +266,35 @@
 
                   <td class="py-3 px-2 text-center">
                     {% with scnt=sub.docs_count %}
-                    <button type="button"
-                            class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
-                            data-procname="{{ sub.nome|escapejs }}">
+                      {% if scnt > 0 %}
+                        <button type="button"
+                                class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
+                                onclick='abrirListaDocumentos("{{ sub.nome|escapejs }}", {{ sub.docs_json|safe }})'>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                class="w-5 h-5"
+                                fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                          </svg>
 
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                           class="w-5 h-5"
-                           fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                      </path>
-                      </svg>
+                          <span class="text-blue-700 font-medium">({{ scnt }})</span>
+                        </button>
 
-                      <span class="text-blue-700 font-medium">({{ scnt }})</span>
-                    </button>
+                      {% else %}
+                        <div class="flex items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed">
+
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                class="w-5 h-5"
+                                fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                          </svg>
+
+                          <span class="text-blue-700 font-medium">(0)</span>
+                        </div>
+                      {% endif %}
                     {% endwith %}
                   </td>
-
                 </tr>
                 {% endwith %}
               {% endfor %}
@@ -285,12 +313,20 @@
   </div>
 </div>
 
-<!-- Modal existente -->
+<!-- Modal: Lista de Documentos -->
+{% include "components/modal_lista_documentos.html" %}
+
+<!-- Modal: Visualização de Documento -->
 {% include "components/modal_documento_processo.html" %}
 
-<!-- Scripts (mantidos) -->
+<!-- Expor funções ao escopo global APÓS os includes -->
 <script>
-/* ... SEU JS COMPLETO ORIGINAL FOI MANTIDO ... */
+    if (typeof abrirListaDocumentos !== "undefined") {
+        window.abrirListaDocumentos = abrirListaDocumentos;
+        window.fecharModalListaDocs = fecharModalListaDocs;
+    } else {
+        console.error("❌ Função abrirListaDocumentos NÃO foi carregada! Verifique o modal_lista_documentos.");
+    }
 </script>
 
 {% endblock %}
