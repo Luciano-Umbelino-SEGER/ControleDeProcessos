@@ -134,7 +134,6 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
         context['modo_edicao'] = False
         return context
 
-
 class EditarClassificacao(LoginRequiredMixin, UpdateView):
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
@@ -350,12 +349,15 @@ class ArquiteruraProcessos(ListView):
         )
 
         # ---------------------------------------
-        # Montar lista de documentos
+        # Contagem correta: cada registro conta apenas SEUS documentos
         # ---------------------------------------
         for proc in resultados:
+
+            # -----------------------------
+            # DOCUMENTOS DO PROCESSO PAI
+            # -----------------------------
             docs = []
 
-            # ----- Modelo (arquivo PDF interno)
             mp = proc.modelagem_processo
             if mp and mp.documento_modelagem_processo:
                 docs.append({
@@ -369,7 +371,6 @@ class ArquiteruraProcessos(ListView):
                     "url": mp.documento_modelagem_processo.url,
                 })
 
-            # ----- Norma (URL externa)
             norma = proc.norma_procedimento
             if norma and norma.link_normaprocedimento:
                 docs.append({
@@ -383,12 +384,19 @@ class ArquiteruraProcessos(ListView):
                     "url": norma.link_normaprocedimento,
                 })
 
-            # ----- Subprocessos
+            proc.docs_json = docs
+            proc.docs_count = len(docs)
+
+            # -----------------------------------------------------
+            # PARA CADA SUBPROCESSO → adicionar contagem individual
+            # -----------------------------------------------------
             for sub in proc.subprocessos.all():
+
+                sub_docs = []
 
                 sm = sub.modelagem_processo
                 if sm and sm.documento_modelagem_processo:
-                    docs.append({
+                    sub_docs.append({
                         "tipo": "Modelo",
                         "codigo": sm.codigo,
                         "sequencial": sm.sequencial,
@@ -401,7 +409,7 @@ class ArquiteruraProcessos(ListView):
 
                 s_norma = sub.norma_procedimento
                 if s_norma and s_norma.link_normaprocedimento:
-                    docs.append({
+                    sub_docs.append({
                         "tipo": "Norma",
                         "codigo": s_norma.codigo,
                         "sequencial": s_norma.sequencial,
@@ -412,8 +420,8 @@ class ArquiteruraProcessos(ListView):
                         "url": s_norma.link_normaprocedimento,
                     })
 
-            proc.docs_json = docs
-            proc.docs_count = len(docs)
+                sub.docs_json = sub_docs
+                sub.docs_count = len(sub_docs)
 
         return resultados
 
@@ -424,9 +432,6 @@ class ArquiteruraProcessos(ListView):
         ctx = super().get_context_data(**kwargs)
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
         return ctx
-
-
-
 
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
