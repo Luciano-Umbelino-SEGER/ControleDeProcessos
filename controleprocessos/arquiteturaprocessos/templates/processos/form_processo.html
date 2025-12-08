@@ -276,6 +276,27 @@
                         </svg>
 
                     </button>
+                    <!-- Botão Remover -->
+                    <button type="button"
+                            class="align-middle px-[2px]
+                                   transition
+                                   text-red-600 hover:text-red-800
+                                   cursor-pointer
+                                   disabled:text-gray-300 disabled:cursor-not-allowed"
+                            :disabled="!selected"
+                            title="Remover Modelo {{ tipoRemocao }}">
+
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="w-5 h-5"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="3"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M19.5 12h-15"/>
+                        </svg>
+                    </button>
+
                 </div>
 
                 <!-- Select + Visualizar -->
@@ -416,6 +437,26 @@
                                   d="M12 4.5v15m7.5-7.5h-15"/>
                         </svg>
 
+                    </button>
+                    <!-- Botão Remover -->
+                    <button type="button"
+                            class="align-middle px-[2px]
+                                   transition
+                                   text-red-600 hover:text-red-800
+                                   cursor-pointer
+                                   disabled:text-gray-300 disabled:cursor-not-allowed"
+                            :disabled="!selected"
+                            title="Remover Norma {{ tipoRemocao }}">
+
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="w-5 h-5"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="3"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M19.5 12h-15"/>
+                        </svg>
                     </button>
                 </div>
 
