@@ -546,170 +546,311 @@
             <!-- fim template -->
         </div> <!-- fim modelos_container -->
 
-
         <!-- ========================= -->
-        <!-- LINHA 8 – Norma de Procedimento (mantida sem alterações) -->
+        <!-- LINHA 8 – Norma de Procedimento (Dinamico) -->
         <!-- ========================= -->
 
-        <!-- LINHA 8 – Norma de Procedimento -->
-        <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+        <!-- Container geral de blocos de Norma -->
+        <div id="normas_container">
 
-            <!-- Norma -->
-            <div x-data="{
-                    selected: {{ form.instance.norma_procedimento_id|yesno:'true,false' }},
-                    check(e) { this.selected = e.target.value !== ''; }
-                }">
+            <!-- BLOCO BASE (mantém ids originais e Alpine x-data que você já possui) -->
+            <!-- Este bloco não é removido (apenas limpo quando o usuário clicar no - no bloco-base) -->
+            <div class="norma-block" data-uid="base">
 
-                <!-- Label + Botão ajustado -->
-                <div class="flex items-center gap-2 relative -top-[5px]">
-                    <label class="block text-sm font-medium text-blue-700">
-                        Norma de Procedimento
-                    </label>
+                <!-- LINHA 8 – Norma de Procedimento -->
+                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-                    <button type="button"
-                            class="align-middle px-[2px]
-                                   transition
-                                   hover:text-blue-800
-                                   text-blue-600
-                                   cursor-pointer
-                                   disabled:text-gray-300 disabled:cursor-not-allowed"
-                            :disabled="!selected"
-                            title="Adicionar Norma">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="w-5 h-5"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke-width="3"
-                             stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M12 4.5v15m7.5-7.5h-15"/>
-                        </svg>
+                    <!-- Norma (BLOCO BASE) -->
+                    <div x-data="{
+                            selected: {{ form.instance.norma_procedimento_id|yesno:'true,false' }},
+                            check(e) { this.selected = e.target.value !== ''; }
+                        }">
 
-                    </button>
-                    <!-- Botão Remover -->
-                    <button type="button"
-                            class="align-middle px-[2px]
-                                   transition
-                                   text-red-600 hover:text-red-800
-                                   cursor-pointer
-                                   disabled:text-gray-300 disabled:cursor-not-allowed"
-                            :disabled="!selected"
-                            title="Remover Norma {{ tipoRemocao }}">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="w-5 h-5"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke-width="3"
-                             stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M19.5 12h-15"/>
-                        </svg>
-                    </button>
-                </div>
+                        <!-- Label + Botão ajustado -->
+                        <div class="flex items-center gap-2 relative -top-[5px]">
+                            <label class="block text-sm font-medium text-blue-700">
+                                Norma de Procedimento
+                            </label>
 
-                <!-- Select + Visualizar -->
-                <div class="flex items-center space-x-2 mt-[1px]"
-                     x-data="normaProcedimentoData()">
+                            <button type="button"
+                                    class="align-middle px-[2px]
+                                           transition
+                                           hover:text-blue-800
+                                           text-blue-600
+                                           cursor-pointer
+                                           disabled:text-gray-300 disabled:cursor-not-allowed"
+                                    :disabled="!selected"
+                                    title="Adicionar Norma"
+                                    onclick="addNorma(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="w-5 h-5"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="3"
+                                     stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M12 4.5v15m7.5-7.5h-15"/>
+                                </svg>
 
-                    <div class="flex-1 min-w-0">
-                        <select id="norma_procedimento" name="norma_procedimento"
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                                       focus:ring-2 focus:ring-blue-500 focus:outline-none
-                                       {% if desabilitar %} bg-gray-100 opacity-70 cursor-not-allowed {% endif %}"
-                                @change="check($event); update($el)"
-                                {% if desabilitar %} disabled {% endif %}>
+                            </button>
+                            <!-- Botão Remover (no bloco-base: limpa, não remove) -->
+                            <button type="button"
+                                    class="align-middle px-[2px]
+                                           transition
+                                           text-red-600 hover:text-red-800
+                                           cursor-pointer
+                                           disabled:text-gray-300 disabled:cursor-not-allowed"
+                                    :disabled="!selected"
+                                    title="Remover Norma"
+                                    onclick="removeNorma(this, true)">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="w-5 h-5"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="3"
+                                     stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M19.5 12h-15"/>
+                                </svg>
+                            </button>
+                        </div>
 
-                            <option value="">---------</option>
+                        <!-- Select + Visualizar (BLOCO BASE usa sua função Alpine normaProcedimentoData) -->
+                        <div class="flex items-center space-x-2 mt-[1px]"
+                             x-data="normaProcedimentoData()">
 
-                            {% for n in normas_procedimento %}
-                                <option value="{{ n.id }}"
-                                        data-tema="{{ n.tema }}"
-                                        data-versao="{{ n.versao|stringformat:'02d' }}"
-                                        data-emitente="{{ n.emitente }}"
-                                        data-sistema="{{ n.sistema }}"
-                                        data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
-                                        data-url="{{ n.link_normaprocedimento }}"
-                                        {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
-                                    {{ n.link_normaprocedimento|filename }}
-                                </option>
-                            {% endfor %}
+                            <div class="flex-1 min-w-0">
+                                <select id="norma_procedimento" name="norma_procedimento"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
+                                               focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                               {% if desabilitar %} bg-gray-100 opacity-70 cursor-not-allowed {% endif %}"
+                                        @change="check($event); update($el)"
+                                        {% if desabilitar %} disabled {% endif %}>
 
-                        </select>
+                                    <option value="">---------</option>
+
+                                    {% for n in normas_procedimento %}
+                                        <option value="{{ n.id }}"
+                                                data-tema="{{ n.tema }}"
+                                                data-versao="{{ n.versao|stringformat:'02d' }}"
+                                                data-emitente="{{ n.emitente }}"
+                                                data-sistema="{{ n.sistema }}"
+                                                data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
+                                                data-url="{{ n.link_normaprocedimento }}"
+                                                {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
+                                            {{ n.link_normaprocedimento|filename }}
+                                        </option>
+                                    {% endfor %}
+
+                                </select>
+                            </div>
+
+                            <template x-if="hasFile()">
+                                <button type="button"
+                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                        @click="abrirModalDocumento(url, 'Norma de Procedimento')"
+                                        title="Visualizar Documento">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+
+                                </button>
+                            </template>
+
+                        </div>
                     </div>
 
-                    <template x-if="hasFile()">
-                        <button type="button"
-                                class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                @click="abrirModalDocumento(url, 'Norma de Procedimento')"
-                                title="Visualizar Documento">
+                    <!-- Tema -->
+                    <div>
+                        <label class="block text-sm font-medium text-blue-700">Tema</label>
+                        <input id="tema_norma" type="text" readonly tabindex="-1"
+                               value="{{ form.instance.norma_procedimento.tema|default_if_none:'' }}"
+                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                      pointer-events-none text-black">
+                    </div>
 
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 class="w-5 h-5"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke-width="2"
-                                 stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-
-                        </button>
-                    </template>
+                    <!-- Versão -->
+                    <div>
+                        <label class="block text-sm font-medium text-blue-700">Versão</label>
+                        <input id="versao_norma" type="text" readonly tabindex="-1"
+                               value="{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}"
+                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                      pointer-events-none text-black">
+                    </div>
 
                 </div>
-            </div>
 
-            <!-- Tema -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Tema</label>
-                <input id="tema_norma" type="text" readonly tabindex="-1"
-                       value="{{ form.instance.norma_procedimento.tema|default_if_none:'' }}"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none text-black">
-            </div>
+                <!-- LINHA 9 – Derivados (BLOCO BASE) -->
+                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-            <!-- Versão -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Versão</label>
-                <input id="versao_norma" type="text" readonly tabindex="-1"
-                       value="{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}"
-                       class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none text-black">
-            </div>
+                    <div>
+                        <label class="block text-sm font-medium text-blue-700">Emitente</label>
+                        <input id="emitente_norma" type="text" readonly tabindex="-1"
+                               value="{{ form.instance.norma_procedimento.emitente|default:'' }}"
+                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                      pointer-events-none text-black">
+                    </div>
 
-        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-blue-700">Sistema</label>
+                        <input id="sistema_norma" type="text" readonly tabindex="-1"
+                               value="{{ form.instance.norma_procedimento.sistema|default:'' }}"
+                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                      pointer-events-none text-black">
+                    </div>
 
+                    <div>
+                        <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
+                        <input id="vigencia_norma" type="text" readonly tabindex="-1"
+                               value="{% if form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
+                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                      pointer-events-none text-black">
+                    </div>
 
-        <!-- LINHA 9 – Derivados -->
-        <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+                </div>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                <input id="emitente_norma" type="text" readonly tabindex="-1"
-                       value="{{ form.instance.norma_procedimento.emitente|default:'' }}"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none text-black">
-            </div>
+            </div> <!-- fim norma-block base -->
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                <input id="sistema_norma" type="text" readonly tabindex="-1"
-                       value="{{ form.instance.norma_procedimento.sistema|default:'' }}"
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none text-black">
-            </div>
+            <!-- ======================================================= -->
+            <!-- TEMPLATE para blocos de Norma adicionais (invisível) -->
+            <!-- ======================================================= -->
+            <template id="template-norma">
+                <!-- bloco inteiro (LINHA 8 + LINHA 9) com placeholders __UID__ -->
+                <div class="norma-block" data-uid="__UID__">
+                    <!-- LINHA 8 -->
+                    <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                <input id="vigencia_norma" type="text" readonly tabindex="-1"
-                       value="{% if form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
-                       class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                              pointer-events-none text-black">
-            </div>
+                        <div class="">
 
-        </div>
+                            <!-- Label + Botões (clonado) -->
+                            <div class="flex items-center gap-2 relative -top-[5px]">
+                                <label class="block text-sm font-medium text-blue-700">
+                                    Norma de Procedimento
+                                </label>
+
+                                <!-- botão adicionar (clonado) -->
+                                <button type="button"
+                                        class="align-middle px-[2px] transition hover:text-blue-800 text-blue-600 cursor-pointer disabled:text-gray-300 disabled:cursor-not-allowed"
+                                        data-action="add"
+                                        title="Adicionar Norma">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="3"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M12 4.5v15m7.5-7.5h-15"/>
+                                    </svg>
+                                </button>
+
+                                <!-- botão remover (clonado) -->
+                                <button type="button"
+                                        class="align-middle px-[2px] transition text-red-600 hover:text-red-800 cursor-pointer disabled:text-gray-300 disabled:cursor-not-allowed"
+                                        data-action="remove"
+                                        title="Remover Norma">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="3"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M19.5 12h-15"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Select + visualizar (select name usa array para não conflitar com backend atual) -->
+                            <div class="flex items-center space-x-2 mt-[1px]">
+
+                                <div class="flex-1 min-w-0">
+                                    <select id="norma_procedimento___UID__" name="norma_procedimento_extra[]"
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                        <option value="">---------</option>
+
+                                        {% for n in normas_procedimento %}
+                                            <option value="{{ n.id }}"
+                                                    data-tema="{{ n.tema }}"
+                                                    data-versao="{{ n.versao|stringformat:'02d' }}"
+                                                    data-emitente="{{ n.emitente }}"
+                                                    data-sistema="{{ n.sistema }}"
+                                                    data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
+                                                    data-url="{{ n.link_normaprocedimento }}">
+                                                {{ n.link_normaprocedimento|filename }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <button type="button" class="text-blue-600 hover:text-blue-800 icon-visualizar" data-action="visualizar" title="Visualizar Documento">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </button>
+
+                            </div>
+                        </div>
+
+                        <!-- Tema -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Tema</label>
+                            <input id="tema_norma___UID__" name="tema_norma_extra[]" type="text" readonly tabindex="-1"
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                        </div>
+
+                        <!-- Versão -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Versão</label>
+                            <input id="versao_norma___UID__" name="versao_norma_extra[]" type="text" readonly tabindex="-1"
+                                   class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                        </div>
+
+                    </div>
+
+                    <!-- LINHA 9 – Derivados -->
+                    <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Emitente</label>
+                            <input id="emitente_norma___UID__" name="emitente_norma_extra[]" type="text" readonly tabindex="-1"
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Sistema</label>
+                            <input id="sistema_norma___UID__" name="sistema_norma_extra[]" type="text" readonly tabindex="-1"
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
+                            <input id="vigencia_norma___UID__" name="vigencia_norma_extra[]" type="text" readonly tabindex="-1"
+                                   class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                        </div>
+
+                    </div>
+                </div>
+            </template>
+            <!-- fim template -->
+        </div> <!-- fim normas_container -->
 
         <!-- LINHA 10 – Auditoria -->
         <div class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-6 mb-6">
@@ -751,7 +892,6 @@
             </div>
 
         </div>
-
 
         <!-- BOTÕES -->
         <div class="flex justify-end mt-8 space-x-4">
@@ -1053,6 +1193,184 @@ function normaProcedimentoData() {
         // e habilitar / desabilitar do bloco-base já é feito via Alpine (x-data)
         // Para garantir que blocos extras removidos no reload não causem problema, zera counter:
         modeloUidCounter = 0;
+    });
+
+})();
+</script>
+
+<!-- ========================= -->
+<!-- JS para controlar blocos dinâmicos de Norma (Fase 2B - Etapa 1) -->
+<!-- ========================= -->
+<script>
+(function(){
+    // contador de UIDs para blocos extras de Norma
+    let normaUidCounter = 0;
+
+    // Helper: gerar UID
+    function nextNormaUid() {
+        normaUidCounter += 1;
+        return normaUidCounter;
+    }
+
+    // Insere um novo bloco de norma abaixo do bloco do botão clicado (buttonEl)
+    window.addNorma = function(buttonEl) {
+        // encontra o bloco pai mais próximo (.norma-block)
+        const currentBlock = buttonEl.closest('.norma-block');
+        if (!currentBlock) return;
+
+        const template = document.getElementById('template-norma');
+        if (!template) return;
+
+        const uid = nextNormaUid();
+        // clonagem via string replace para os placeholders __UID__
+        let tplHtml = template.innerHTML;
+        tplHtml = tplHtml.replace(/__UID__/g, uid);
+
+        // criar nó a partir da string
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = tplHtml.trim();
+        const newBlock = wrapper.firstElementChild;
+
+        // inserir após o bloco atual (para manter ordem)
+        currentBlock.parentNode.insertBefore(newBlock, currentBlock.nextSibling);
+
+        // inicializa comportamentos do bloco novo
+        initNormaBlock(newBlock, uid);
+
+        // foco no select do novo bloco
+        const sel = newBlock.querySelector('select');
+        if (sel) sel.focus();
+    };
+
+    // Remove bloco; isBase indica se o botão veio do bloco-base (limpar) ou de um clone (remover)
+    window.removeNorma = function(buttonEl, isBase=false) {
+        const block = buttonEl.closest('.norma-block');
+        if (!block) return;
+
+        if (isBase) {
+            // limpar todos os campos do bloco-base
+            const sel = block.querySelector('#norma_procedimento');
+            if (sel) {
+                sel.value = "";
+                // dispara evento change para preencher vazios via normaProcedimentoData
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            // limpar campos derivados do bloco-base
+            const idsToClear = ['tema_norma','versao_norma','emitente_norma','sistema_norma','vigencia_norma'];
+            idsToClear.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+            return;
+        }
+
+        // se não for base, remove o bloco do DOM
+        block.remove();
+    };
+
+    // Inicializa um bloco clonado (newBlock: element, uid: number)
+    function initNormaBlock(newBlock, uid) {
+        // encontrar elementos
+        const select = newBlock.querySelector('select');
+        const addBtn = newBlock.querySelector('button[data-action="add"]');
+        const removeBtn = newBlock.querySelector('button[data-action="remove"]');
+        const visBtn = newBlock.querySelector('button[data-action="visualizar"]');
+
+        // IDs dos campos derivados dentro do bloco (já gerados com sufíxo _uid)
+        const temaEl = newBlock.querySelector('#tema_norma_' + uid);
+        const versaoEl = newBlock.querySelector('#versao_norma_' + uid);
+        const emitenteEl = newBlock.querySelector('#emitente_norma_' + uid);
+        const sistemaEl = newBlock.querySelector('#sistema_norma_' + uid);
+        const vigenciaEl = newBlock.querySelector('#vigencia_norma_' + uid);
+
+        // função que atualiza os derivados no clone
+        function updateDerived() {
+            const opt = select.options[select.selectedIndex];
+            const tema = opt?.dataset?.tema || "";
+            const versao = opt?.dataset?.versao || "";
+            const emitente = opt?.dataset?.emitente || "";
+            const sistema = opt?.dataset?.sistema || "";
+            const vigencia = opt?.dataset?.vigencia_br || "";
+
+            if (temaEl) temaEl.value = tema;
+            if (versaoEl) versaoEl.value = versao;
+            if (emitenteEl) emitenteEl.value = emitente;
+            if (sistemaEl) sistemaEl.value = sistema;
+            if (vigenciaEl) vigenciaEl.value = vigencia;
+
+            // visualizar: guarda a url no botão
+            const url = opt?.dataset?.url || "";
+            if (visBtn) visBtn.dataset.url = url;
+        }
+
+        // gerencia habilitação do botão add e remove
+        function refreshButtons() {
+            const hasValue = select.value && select.value !== "";
+            if (addBtn) {
+                if (hasValue) {
+                    addBtn.classList.remove('text-gray-300');
+                    addBtn.classList.add('text-blue-600');
+                    addBtn.disabled = false;
+                } else {
+                    addBtn.classList.remove('text-blue-600');
+                    addBtn.classList.add('text-gray-300');
+                    addBtn.disabled = true;
+                }
+            }
+            if (removeBtn) {
+                // remove sempre habilitado nos clones
+                removeBtn.disabled = false;
+                if (hasValue) {
+                    removeBtn.classList.remove('text-gray-300');
+                    removeBtn.classList.add('text-red-600');
+                } else {
+                    // mantém vermelho mesmo vazio (mas enabled)
+                    removeBtn.classList.remove('text-gray-300');
+                    removeBtn.classList.add('text-red-600');
+                }
+            }
+        }
+
+        // evento change do select
+        select.addEventListener('change', function (ev) {
+            updateDerived();
+            refreshButtons();
+        });
+
+        // inicializa estado (select vem vazio -> botões configurados)
+        updateDerived();
+        refreshButtons();
+
+        // ligar ação do botão add (usa a function global addNorma)
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                addNorma(this);
+            });
+        }
+
+        // ligar ação do botão remove (remove o bloco)
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                removeNorma(this, false);
+            });
+        }
+
+        // visualizar - chama abrirModalDocumento(url, 'Norma de Procedimento') se houver url
+        if (visBtn) {
+            visBtn.addEventListener('click', function() {
+                const url = this.dataset.url || "";
+                if (url) {
+                    try { abrirModalDocumento(url, 'Norma de Procedimento'); }
+                    catch(e){ console.warn('abrirModalDocumento not available', e); }
+                }
+            });
+        }
+    }
+
+    // Inicialização: ligar botões do DOM já existente (apenas para segurança)
+    document.addEventListener('DOMContentLoaded', function() {
+        // reset counter
+        normaUidCounter = 0;
     });
 
 })();
