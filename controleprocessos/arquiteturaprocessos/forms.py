@@ -10,11 +10,16 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import date
 
-from .models import (Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-                     ModelagemProcesso, Processo)
+from .models import (
+    Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
+    ModelagemProcesso, Processo
+)
 
 UserModel = get_user_model()
 
+# ============================================================
+# AUTENTICAÇÃO
+# ============================================================
 class CustomAuthenticationForm(AuthenticationForm):
     def clean(self):
         username = self.cleaned_data.get('username')
@@ -36,7 +41,7 @@ class CustomAuthenticationForm(AuthenticationForm):
                         code='inactive',
                     )
 
-                # ✅ ESSENCIAL: define o usuário autenticado
+                # define o usuário autenticado
                 self.user_cache = user
 
             except UserModel.DoesNotExist:
@@ -50,7 +55,7 @@ class CustomAuthenticationForm(AuthenticationForm):
 
 class EmailAuthenticationForm(AuthenticationForm):
     """
-    Formulário de login que permite usar email ou username
+    Permite login por username ou email
     """
     username = forms.CharField(
         label=_("E-mail ou Username"),
@@ -62,7 +67,7 @@ class EmailAuthenticationForm(AuthenticationForm):
         password = self.cleaned_data.get("password")
 
         if input_value and password:
-            # tenta encontrar usuário por username ou email
+            user = None
             try:
                 user = UserModel.objects.get(username=input_value)
             except UserModel.DoesNotExist:
@@ -77,11 +82,14 @@ class EmailAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
 
+
+# ============================================================
+# FORMULÁRIO DE USUÁRIO (CRIAÇÃO) — versão estável (username editável)
+# ============================================================
 class Form_UsuarioForm(UserCreationForm):
     """
-    Formulário para criação de usuário.
-    Inclui os campos de senha.
-    Desabilita todos os campos nos modos visualização e exclusão.
+    Formulário para criação de usuário (mantém username editável).
+    Desabilita campos nos modos visualização/exclusão.
     """
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
 
@@ -125,6 +133,7 @@ class Form_UsuarioForm(UserCreationForm):
                 field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = autocomplete_map.get(name, "off")
 
+        # Ajustes para selects / choice fields
         for name in ["setor", "cargo", "funcao", "perfil"]:
             f = self.fields.get(name)
             if isinstance(f, forms.ModelChoiceField):
@@ -134,25 +143,23 @@ class Form_UsuarioForm(UserCreationForm):
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
 
-        # Desabilita todos os campos se estiver em modo visualização ou exclusão
+        # Desabilitar campos em modo visualização/exclusão
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
-
-                # Aplica fundo cinza aos campos desabilitados
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
+        # Se for exclusão, marca desativado e seta data
         if modo_exclusao and self.instance:
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
 
+# ============================================================
+# EDITAR USUÁRIO (mantém username editável)
+# ============================================================
 class EditarUsuarioForm(forms.ModelForm):
-    """
-    Formulário para edição de usuário.
-    Inclui campos de senha, mas só os valida no modo inclusão.
-    """
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
     password1 = forms.CharField(
         label="Senha",
@@ -214,20 +221,24 @@ class EditarUsuarioForm(forms.ModelForm):
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
 
-        # Só valida as senhas se for modo inclusão
+        # Se for inclusão (instance sem pk) valida senha; ao editar (pk existe) só valida se os campos foram preenchidos
         if self.instance.pk is None:
             if not password1 or not password2:
                 raise forms.ValidationError("Os campos de senha são obrigatórios.")
             if password1 != password2:
                 raise forms.ValidationError("As senhas não coincidem.")
+        else:
+            # se algum dos campos de senha foi preenchido, exige que os dois coincidam
+            if password1 or password2:
+                if password1 != password2:
+                    raise forms.ValidationError("As senhas não coincidem.")
         return cleaned_data
 
 
-
+# ============================================================
+# TELEFONE + FORMSET
+# ============================================================
 class TelefoneForm(forms.ModelForm):
-    """
-    Formulário para cadastrar telefones
-    """
     class Meta:
         model = Telefone
         fields = ("ddd", "numero", "ramal")
@@ -250,20 +261,20 @@ class TelefoneForm(forms.ModelForm):
             }),
         }
 
-# Formset de telefones
 TelefoneFormSet = inlineformset_factory(
     Usuario,
     Telefone,
     form=TelefoneForm,
-    extra=1,        # número de linhas iniciais
-    can_delete=True # permite remover telefones
+    extra=1,
+    can_delete=True
 )
 
+
+# ============================================================
+# CLASSIFICAÇÃO / MACROPROCESSOS / MODELAGEM / PROCESSO
+# (mantive exatamente como na versão estável)
+# ============================================================
 class Form_ClassificacaoForm(forms.ModelForm):
-    """
-    Formulário para criação de classificação.
-    Aplica estilos e controla os modos de visualização, exclusão e edição.
-    """
     class Meta:
         model = Classificacao
         fields = ['nome', 'descricao']
@@ -275,7 +286,6 @@ class Form_ClassificacaoForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
-
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
@@ -289,23 +299,18 @@ class Form_ClassificacaoForm(forms.ModelForm):
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # Desabilita todos os campos se estiver em modo visualização ou exclusão
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
-        # Se estiver em modo exclusão, pode aplicar lógica adicional
         if modo_exclusao and self.instance:
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
+
 class Form_MacroProcessoNivel1Form(forms.ModelForm):
-    """
-    Formulário para criação de Macro Processos de Nivel1.
-    Aplica estilos e controla os modos de visualização, exclusão e edição.
-    """
     class Meta:
         model = MacroprocessoNivel1
         fields = ['nome', 'descricao', 'classificacao']
@@ -317,7 +322,6 @@ class Form_MacroProcessoNivel1Form(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
-
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
@@ -331,32 +335,23 @@ class Form_MacroProcessoNivel1Form(forms.ModelForm):
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # Desabilita todos os campos se estiver em modo visualização ou exclusão
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
-        # Se estiver em modo exclusão, pode aplicar lógica adicional
         if modo_exclusao and self.instance:
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
-class Form_MacroProcessoNivel2Form(forms.ModelForm):
-    """
-    Formulário para criação/edição de Macro Processos de Nível 2.
-    Aplica estilos e controla os modos de visualização, exclusão e edição,
-    espelhando o comportamento do Form_MacroProcessoNivel1Form.
-    """
 
+class Form_MacroProcessoNivel2Form(forms.ModelForm):
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),
         required=False,
         label="Classificação",
-        widget=forms.Select(attrs={
-            "id": "id_classificacao"  # importante para o JS
-        })
+        widget=forms.Select(attrs={"id": "id_classificacao"})
     )
 
     class Meta:
@@ -364,56 +359,44 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
         fields = ["classificacao", "macroprocesso_nivel1", "nome", "descricao"]
 
     def __init__(self, *args, **kwargs):
-        # --- Modos (iguais ao Nível 1) ---
         modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         modo_exclusao     = kwargs.pop("modo_exclusao", False)
         modo_edicao       = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
-
-        # --- Estilos base (iguais ao Nível 1) ---
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # Aplica classes, placeholder e autocomplete para TODOS os campos
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
-            # preserva classes existentes, adiciona base e bg_color
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # Ajustes específicos de widgets/ids
-        # mantém label_from_instance para exibir nome do objeto
         self.fields["macroprocesso_nivel1"].label_from_instance = lambda obj: obj.nome
-        # garante id explícito para macroprocesso_nivel1 (se quiser manter)
         self.fields["macroprocesso_nivel1"].widget.attrs.update({
             "id": "id_macroprocesso_nivel1"
         })
-        # Altura maior para descrição (preserva as classes já setadas)
         self.fields["descricao"].widget.attrs["class"] += " h-32"
 
-        # --- Desabilita campos em visualização/exclusão (igual ao Nível 1) ---
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 existing_classes = field.widget.attrs.get("class", "")
                 field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
-        # --- (Opcional) Lógica adicional no modo exclusao, se o modelo tiver os campos ---
         if modo_exclusao and self.instance:
             if hasattr(self.instance, "is_active"):
                 self.instance.is_active = False
             if hasattr(self.instance, "data_ativacaodesativacao"):
                 self.instance.data_ativacaodesativacao = timezone.now()
 
-        # --- Lógica de interdependência Classificação ↔ Macroprocesso N1 ---
-        # Filtra Macro N1 quando uma classificação é informada no POST/GET (self.data)
+        # Filtra macroprocesso_nivel1 quando classificação é informada no request
         if "classificacao" in self.data:
             try:
                 classificacao_id = int(self.data.get("classificacao") or 0)
@@ -422,12 +405,10 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                         classificacao_id=classificacao_id
                     )
                 else:
-                    # Sem classificação => mostra todos (estado inicial)
                     self.fields["macroprocesso_nivel1"].queryset = MacroprocessoNivel1.objects.all()
             except (ValueError, TypeError):
                 self.fields["macroprocesso_nivel1"].queryset = MacroprocessoNivel1.objects.all()
         else:
-            # Primeira carga da tela (ou sem informar classificacao no request) => todos
             self.fields["macroprocesso_nivel1"].queryset = MacroprocessoNivel1.objects.all()
 
         # Se Macro N1 vier no request, preenche a classificação correspondente
@@ -439,22 +420,15 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                     self.fields["classificacao"].initial = macro.classificacao
             except (ValueError, MacroprocessoNivel1.DoesNotExist):
                 pass
-        # Em modo edição (instance existente), inicializa classificação do macro vinculado
         elif self.instance and getattr(self.instance, "pk", None):
             if getattr(self.instance, "macroprocesso_nivel1", None):
                 self.fields["classificacao"].initial = self.instance.macroprocesso_nivel1.classificacao
 
-        # -----------------------
-        # GARANTIA FINAL DE IDS
-        # -----------------------
-        # Aqui asseguramos que **todos** os widgets tenham um atributo 'id'
-        # no formato id_<nome_campo> caso não exista — sem sobrescrever se já houver.
+        # Garantia final de ids/names
         for name, field in self.fields.items():
             existing_id = field.widget.attrs.get("id")
             if not existing_id:
                 field.widget.attrs["id"] = f"id_{name}"
-            # Assegura também que o atributo name do widget esteja correto (não altera layout)
-            # (normalmente Django já define, mas garantimos para evitar inconsistências)
             field.widget.attrs.setdefault("name", name)
 
 
@@ -495,7 +469,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         self.modo_edicao = kwargs.pop("modo_edicao", False)
         super().__init__(*args, **kwargs)
 
-        # Ajuste datas
+        # Ajuste datas iniciais
         for field_name in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
             field = self.fields.get(field_name)
             if field and getattr(self.instance, field_name):
@@ -508,13 +482,11 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # Ajuste de classes
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
-
             field.widget.attrs.update({
                 "autocomplete": "new-password",
                 "data-lpignore": "true",
@@ -523,25 +495,19 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 "spellcheck": "false",
             })
 
-        # Ajuste campo código
+        # Ajustes específicos
         self.fields["codigo"].widget.attrs.update({
-            "class": self.fields["codigo"].widget.attrs["class"] + " uppercase"
+            "class": self.fields["codigo"].widget.attrs.get("class", "") + " uppercase"
         })
-
-        # Ajuste sequencial e versão
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
-        # Ajuste PDF
+        # Ajuste PDF widget
         if "documento_modelagem_processo" in self.fields:
-            from django.forms.widgets import FileInput
-            import os
-
             fwidget = self.fields["documento_modelagem_processo"].widget
             fwidget.attrs.setdefault("tabindex", "0")
             fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
 
-            # Remover ClearableFileInput
             if self.modo_edicao or self.modo_visualizacao or self.modo_exclusao:
                 self.fields["documento_modelagem_processo"].widget = FileInput(attrs=fwidget.attrs)
 
@@ -549,13 +515,13 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                     nome_arquivo = os.path.basename(self.instance.documento_modelagem_processo.name)
                     self.fields["documento_modelagem_processo"].widget.attrs["placeholder"] = nome_arquivo
 
-        # Valores iniciais para inclusão
+        # Valores padrão para inclusão
         if not self.instance or not self.instance.pk:
             self.fields["nome"].initial = "NORMA DE PROCEDIMENTO"
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
 
-        # usuário
+        # Atribui usuário quando cria
         if self.usuario_logado and (not self.instance or not self.instance.pk):
             self.instance.usuario = self.usuario_logado
 
@@ -565,11 +531,10 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
 
-        # Guarda versão original
+        # guarda versão original
         self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
 
-    # ----- VALIDATIONS -----
-
+    # VALIDAÇÕES
     def clean_nome(self):
         nome = (self.cleaned_data.get("nome") or "").strip().upper()
         if not nome:
@@ -631,17 +596,11 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         return f
 
     def save(self, commit=True):
-        """
-        Ajuste cirúrgico: delega ao model a exclusão e renomeação do arquivo.
-        Apenas associa usuários corretamente.
-        """
         obj = super().save(commit=False)
 
-        # Atribui usuário criador
         if self.usuario_logado and not obj.usuario_id:
             obj.usuario = self.usuario_logado
 
-        # Atribui usuário de atualização
         if self.usuario_logado and obj.pk:
             obj.usuario_atualizacao = self.usuario_logado
 
@@ -650,38 +609,13 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
         return obj
 
-# ----------------------------
-# Processos - Formulário
-# ----------------------------
+
 class Form_ProcessoForm(forms.ModelForm):
-
-    classificacao = forms.ModelChoiceField(
-        queryset=Classificacao.objects.all(),
-        label="Classificação"
-    )
-
-    macroprocesso_nivel1 = forms.ModelChoiceField(
-        queryset=MacroprocessoNivel1.objects.all(),
-        label="Macroprocesso Nível 1"
-    )
-
-    macroprocesso_nivel2 = forms.ModelChoiceField(
-        queryset=MacroprocessoNivel2.objects.all(),
-        label="Macroprocesso Nível 2",
-        required=False
-    )
-
-    modelagem_processo = forms.ModelChoiceField(
-        queryset=ModelagemProcesso.objects.all(),
-        required=False,
-        label="Modelo de Processo"
-    )
-
-    norma_procedimento = forms.ModelChoiceField(
-        queryset=ModelagemProcesso.objects.all(),
-        required=False,
-        label="Norma de Procedimento"
-    )
+    classificacao = forms.ModelChoiceField(queryset=Classificacao.objects.all(), label="Classificação")
+    macroprocesso_nivel1 = forms.ModelChoiceField(queryset=MacroprocessoNivel1.objects.all(), label="Macroprocesso Nível 1")
+    macroprocesso_nivel2 = forms.ModelChoiceField(queryset=MacroprocessoNivel2.objects.all(), label="Macroprocesso Nível 2", required=False)
+    modelagem_processo = forms.ModelChoiceField(queryset=ModelagemProcesso.objects.all(), required=False, label="Modelo de Processo")
+    norma_procedimento = forms.ModelChoiceField(queryset=ModelagemProcesso.objects.all(), required=False, label="Norma de Procedimento")
 
     class Meta:
         model = Processo
@@ -691,22 +625,17 @@ class Form_ProcessoForm(forms.ModelForm):
             "data_criacao",
             "data_atualizacao",
         )
-
         widgets = {
             "objetivo": forms.Textarea(attrs={"rows": "2"}),
             "observacao": forms.Textarea(attrs={"rows": "2"}),
         }
 
-    # ------------------------------------------------
-    # INIT – estilo base, bloqueios por modo
-    # ------------------------------------------------
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         modo_exclusao = kwargs.pop("modo_exclusao", False)
         modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
-
         self.label_suffix = ""
 
         base = (
@@ -715,69 +644,36 @@ class Form_ProcessoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # --------------------------------------------------------------------
-        # Estilização e preenchimento dos campos
-        # --------------------------------------------------------------------
         for name, field in self.fields.items():
-
-            # ⛔ Campo nome é hidden — JS controla
             if name == "nome":
                 continue
-
             bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{base} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
-        # --------------------------------------------------------------------
-        # Modo VISUALIZAÇÃO / EXCLUSÃO — trava tudo
-        # --------------------------------------------------------------------
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
 
-    # ------------------------------------------------
-    # CLEAN – Regras finais de validação
-    # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
-
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
 
-        # 1️⃣ Nome é obrigatório SEMPRE
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
 
-        # 2️⃣ PROCESSO → parent deve ser None
         if not parent:
-            cleaned["parent"] = None  # Processo
+            cleaned["parent"] = None
 
-        # 3️⃣ SUBPROCESSO → parent deve ser um Processo (não outro subprocesso)
         if parent and parent.parent_id:
-            self.add_error(
-                "parent",
-                "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso."
-            )
+            self.add_error("parent", "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso.")
 
-        # 4️⃣ Validação macroprocesso n1/n2
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")
-
         if macro2 and macro1:
             if macro2.macroprocesso_nivel1_id != macro1.id:
-                self.add_error(
-                    "macroprocesso_nivel2",
-                    "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
-                )
+                self.add_error("macroprocesso_nivel2", "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado.")
 
         return cleaned
-
-
-
-
-
-
-
-
-

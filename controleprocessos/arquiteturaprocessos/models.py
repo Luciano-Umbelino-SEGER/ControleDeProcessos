@@ -1,18 +1,17 @@
 import os
 import uuid
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
-from django.core.exceptions import ValidationError
-from django.urls import reverse
-
-LSTA_CLASSIFICACAO = (
-    ("FINALISTICO", "Finalístico"),
-    ("SUPORTE", "Suporte"),
-    ("ESTRATEGICO", "Estratégico"),
+from django.core.validators import (
+    RegexValidator,
+    MinValueValidator,
+    MaxValueValidator,
+    FileExtensionValidator,
 )
+from django.core.exceptions import ValidationError
+
 
 # ============================================================
 # PERFIL / USUÁRIO / TELEFONE
@@ -33,31 +32,36 @@ class Telefone(models.Model):
 
     @property
     def numero_formatado(self):
-        """Retorna o telefone formatado no padrão brasileiro"""
         ramal_str = f" Ramal: {self.ramal}" if self.ramal else ""
-
-        if len(self.numero) == 9:  # celular
+        if len(self.numero) == 9:
             return f"({self.ddd}) {self.numero[:5]}-{self.numero[5:]}{ramal_str}"
-        elif len(self.numero) == 8:  # fixo
+        elif len(self.numero) == 8:
             return f"({self.ddd}) {self.numero[:4]}-{self.numero[4:]}{ramal_str}"
-        else:
-            return f"({self.ddd}) {self.numero}{ramal_str}"
+        return f"({self.ddd}) {self.numero}{ramal_str}"
 
     def __str__(self):
         return f"{self.ddd} - {self.numero} - {self.ramal}"
 
-
 class Usuario(AbstractUser):
+    """
+    Modelo de usuário customizado baseado em AbstractUser,
+    mantendo username, password, first_name, last_name, email etc.
+    """
+
     setor = models.CharField(max_length=100, null=True, blank=True)
     cargo = models.CharField(max_length=100, null=True, blank=True)
     funcao = models.CharField(max_length=100, null=True, blank=True)
     perfil = models.ForeignKey("Perfil", null=True, blank=True, on_delete=models.SET_NULL)
     data_ativacaodesativacao = models.DateTimeField(default=timezone.now)
 
+    # campos obrigatórios além de USERNAME_FIELD
+    REQUIRED_FIELDS = ["email"]
+
     def __str__(self):
         perfil_nome = self.perfil.nome if self.perfil else "Sem perfil"
         cargo_nome = self.cargo if self.cargo else "Sem cargo"
         return f"{self.username} - {cargo_nome} - {perfil_nome}"
+
 
 
 # ============================================================
@@ -75,130 +79,107 @@ class Classificacao(models.Model):
 class MacroprocessoNivel1(models.Model):
     nome = models.CharField(max_length=200)
     descricao = models.TextField(max_length=500)
-    classificacao = models.ForeignKey(
-        "Classificacao",
-        on_delete=models.PROTECT,
-        related_name="macroprocessos_nivel1"
-    )
+    classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT)
 
     def __str__(self):
-        return f"{self.nome}"
+        return self.nome
 
 
 class MacroprocessoNivel2(models.Model):
     nome = models.CharField(max_length=200)
     descricao = models.TextField(max_length=500)
-    macroprocesso_nivel1 = models.ForeignKey(
-        "MacroprocessoNivel1",
-        on_delete=models.PROTECT,
-        related_name="macroprocessos_nivel2",
-        null=False,
-        blank=False
-    )
+    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.PROTECT)
 
     def __str__(self):
-        return f"{self.nome}"
+        return self.nome
+
 
 # ============================================================
-# Modelagem de Processos
+# TIPO DE DOCUMENTO
 # ============================================================
+
+class TipoDocumento(models.Model):
+    nome = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+
+    class Meta:
+        db_table = "arquiteturaprocessos_tipodocumento"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
+# ============================================================
+# MODELAGEM DE PROCESSO
+# ============================================================
+
 def mp_upload_to(instance, filename):
-    """
-    Gera um nome único para cada arquivo enviado.
-    Evita sobrescrever e preserva a extensão original.
-    """
     nome, ext = os.path.splitext(filename)
     ext = ext.lower()
-
-    # Gera código único curto (8 chars)
     codigo = uuid.uuid4().hex[:8]
-
-    # Normaliza o nome
     nome = nome.replace(" ", "_").replace("–", "-")
+    return f"modelagemprocessos/{nome}_{codigo}{ext}"
 
-    novo_nome = f"{nome}_{codigo}{ext}"
-    return f"modelagemprocessos/{novo_nome}"
 
 class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 
-    nome = models.CharField(max_length=200, verbose_name="Nome", default="NORMA DE PROCEDIMENTO")
+    tipo_documento = models.ForeignKey(
+        "TipoDocumento", on_delete=models.PROTECT, related_name="modelagens"
+    )
+
+    nome = models.CharField(max_length=200, default="MODELO DE PROCESSO")
     codigo = models.CharField(
         max_length=10,
         db_index=True,
-        verbose_name="Código",
-        validators=[RegexValidator(r"^[A-Za-z0-9.\-_/]+$", "Use apenas letras, números e . - _ /")],
-        default="SRH"
+        validators=[RegexValidator(r"^[A-Za-z0-9.\-_/]+$")],
+        default="SRH",
     )
     sequencial = models.CharField(
         max_length=3,
-        validators=[RegexValidator(r'^\d{1,3}$', message="Informe um número válido entre 1 e 999.")],
-        verbose_name="Sequencial"
+        validators=[RegexValidator(r"^\d{1,3}$")],
     )
-    versao = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(99)],
-        verbose_name="Versão"
-    )
-    tema = models.CharField(max_length=150, db_index=True, verbose_name="Tema")
-    emitente = models.CharField(max_length=150, db_index=True, verbose_name="Emitente")
-    sistema = models.CharField(max_length=100, db_index=True, verbose_name="Sistema")
+    versao = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(99)])
+    tema = models.CharField(max_length=150, db_index=True)
+    emitente = models.CharField(max_length=150, db_index=True)
+    sistema = models.CharField(max_length=100, db_index=True)
 
-    data_elaboracao = models.DateField(null=True, blank=True, verbose_name="Data de Elaboração")
-    portaria_aprovacao = models.CharField(max_length=150, blank=True, verbose_name="Portaria de Aprovação")
-    data_aprovacao = models.DateField(null=True, blank=True, verbose_name="Data de Aprovação")
-    vigencia_inicio = models.DateField(null=True, blank=True, verbose_name="Início da Vigência")
-    vigencia_fim = models.DateField(null=True, blank=True, verbose_name="Fim da Vigência")
+    data_elaboracao = models.DateField(null=True, blank=True)
+    portaria_aprovacao = models.CharField(max_length=150, blank=True)
+    data_aprovacao = models.DateField(null=True, blank=True)
+    vigencia_inicio = models.DateField(null=True, blank=True)
+    vigencia_fim = models.DateField(null=True, blank=True)
 
-    link_normaprocedimento = models.URLField(max_length=500, blank=True, null=True, verbose_name="Link Norma de Procedimento")
+    link_normaprocedimento = models.URLField(max_length=500, null=True, blank=True)
 
     documento_modelagem_processo = models.FileField(
         upload_to=mp_upload_to,
         max_length=500,
-        blank=True,
         null=True,
-        validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
-        verbose_name="Documento de Modelagem de Processo"
+        blank=True,
+        validators=[FileExtensionValidator(["pdf"])],
     )
 
-    data_cadastro = models.DateTimeField(auto_now_add=True, editable=False, verbose_name="Data de Cadastro")
-    data_atualizacao = models.DateTimeField(auto_now=True, editable=False, verbose_name="Data de Atualização")
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
 
     usuario = models.ForeignKey(
-        "Usuario",
-        on_delete=models.PROTECT,
-        related_name="modelagens_criadas",
-        verbose_name="Usuário"
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="modelagens_criadas"
     )
     usuario_atualizacao = models.ForeignKey(
-        "Usuario",
-        related_name="modelagens_atualizadas",
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Usuário (última atualização)"
+        related_name="modelagens_atualizadas",
     )
 
     class Meta:
         db_table = "arquiteturaprocessos_modelagem_processo"
-        verbose_name = "Modelagem de Processo"
-        verbose_name_plural = "Modelagens de Processo"
         ordering = ["nome", "codigo", "sequencial", "versao", "tema"]
-        constraints = [
-            models.UniqueConstraint(fields=["codigo", "sequencial", "versao"], name="uq_modelagem_codigo_seq_versao")
-        ]
-        indexes = [
-            models.Index(fields=["nome"], name="idx_mp_nome"),
-            models.Index(fields=["tema"], name="idx_mp_tema"),
-            models.Index(fields=["sistema"], name="idx_mp_sistema"),
-            models.Index(fields=["emitente"], name="idx_mp_emitente"),
-        ]
 
     def save(self, *args, **kwargs):
-        """
-        Se o arquivo for alterado, remove o arquivo antigo do servidor.
-        """
-
-        # Detecta alteração do arquivo durante edição
         try:
             old = ModelagemProcesso.objects.get(pk=self.pk)
         except ModelagemProcesso.DoesNotExist:
@@ -206,135 +187,85 @@ class ModelagemProcesso(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Se não havia registro anterior, nada a deletar
-        if not old:
-            return
-
-        # Se o arquivo foi trocado, apagar o antigo
-        if old.documento_modelagem_processo and old.documento_modelagem_processo != self.documento_modelagem_processo:
+        if old and old.documento_modelagem_processo and old.documento_modelagem_processo != self.documento_modelagem_processo:
             old_path = old.documento_modelagem_processo.path
             if os.path.isfile(old_path):
                 os.remove(old_path)
 
-    def delete(self, *args, **kwargs):
-        """
-        Ao excluir o registro, remove também o arquivo do servidor.
-        """
-        if self.documento_modelagem_processo:
-            path = self.documento_modelagem_processo.path
-            if os.path.isfile(path):
-                os.remove(path)
-
-        super().delete(*args, **kwargs)
-
     def __str__(self):
-        return f"{self.nome} - {self.codigo}-{self.sequencial} - V{self.versao} - {self.tema}"
+        return f"{self.nome} - {self.codigo}-{self.sequencial} - V{self.versao}"
+
 
 # ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================
+
 class Processo(models.Model):
-    nome = models.CharField(max_length=100, verbose_name="Nome do Processo")
-    gestor = models.CharField(max_length=150, verbose_name="Gestor")
-    email = models.EmailField(max_length=200, null=True, blank=True, verbose_name="E-mail do Gestor")
-    telefone = models.CharField(max_length=20, null=True, blank=True, verbose_name="Telefone/Ramal")
-    objetivo = models.TextField(verbose_name="Objetivo do Processo")
-    observacao = models.TextField(null=True, blank=True, verbose_name="Observações")
+    nome = models.CharField(max_length=100)
+    gestor = models.CharField(max_length=150)
+    email = models.EmailField(max_length=200, null=True, blank=True)
+    telefone = models.CharField(max_length=20, null=True, blank=True)
+    objetivo = models.TextField()
+    observacao = models.TextField(null=True, blank=True)
 
-    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
-    data_atualizacao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Atualização")
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(null=True, blank=True)
 
-    classificacao = models.ForeignKey(
-        "Classificacao",
-        on_delete=models.PROTECT,
-        related_name="processos",
-        verbose_name="Classificação"
-    )
+    classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT)
 
-    macroprocesso_nivel1 = models.ForeignKey(
-        "MacroprocessoNivel1",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name="Macroprocesso Nível 1"
-    )
+    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.SET_NULL, null=True, blank=True)
+    macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", on_delete=models.SET_NULL, null=True, blank=True)
 
-    macroprocesso_nivel2 = models.ForeignKey(
-        "MacroprocessoNivel2",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name="Macroprocesso Nível 2"
-    )
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="subprocessos")
 
-    parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True, blank=True,
-        related_name="subprocessos",
-        verbose_name="Processo Pai"
-    )
+    area_responsavel = models.CharField(max_length=100, null=True, blank=True)
 
-    area_responsavel = models.CharField(max_length=100, null=True, blank=True, verbose_name="Área Responsável")
     usuario_cadastro = models.ForeignKey(
-        "Usuario",
-        on_delete=models.PROTECT,
-        null=True, blank=True,
-        related_name="processos_cadastrados",
-        verbose_name="Usuário que efetuou o cadastro"
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="processos_cadastrados"
     )
     usuario_atualizacao = models.ForeignKey(
-        "Usuario",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="processos_atualizados",
-        verbose_name="Usuário que efetuou a última atualização"
-    )
-
-    # 🔵 Modelo de Processo (PDF da Modelagem)
-    modelagem_processo = models.ForeignKey(
-        "ModelagemProcesso",
-        on_delete=models.PROTECT,
-        null=True, blank=True,
-        related_name="processos_modelados",
-        verbose_name="Modelo de Processo"
-    )
-
-    # 🔵 Norma de Procedimento (outro PDF)
-    norma_procedimento = models.ForeignKey(
-        "ModelagemProcesso",
-        on_delete=models.PROTECT,
-        null=True, blank=True,
-        related_name="processos_norma",
-        verbose_name="Norma de Procedimento"
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="processos_atualizados"
     )
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"
-        verbose_name = "Processo / Subprocesso"
-        verbose_name_plural = "Processos / Subprocessos"
         ordering = ["nome"]
-        indexes = [
-            models.Index(fields=["nome"], name="idx_processo_nome"),
-            models.Index(fields=["gestor"], name="idx_processo_gestor"),
-        ]
 
     def __str__(self):
-        return f"{self.nome}" if not self.parent else f"{self.parent.nome} > {self.nome}"
+        return self.nome if not self.parent else f"{self.parent.nome} > {self.nome}"
 
     def clean(self):
-        errors = {}
         if self.parent and self.parent_id == self.id:
-            errors['parent'] = "O processo pai não pode ser o próprio processo."
-        if errors:
-            raise ValidationError(errors)
+            raise ValidationError({"parent": "O processo pai não pode ser o próprio processo."})
+
 
 # ============================================================
-# ARQUITETURA / LOG
+# PROCESSO–DOCUMENTO (1 processo → N documentos)
 # ============================================================
 
-class ArquiteturaProcesso(models.Model):
-    macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", related_name="arquiteturas_nivel1", null=True, blank=True, on_delete=models.SET_NULL)
-    macroprocesso_nivel2 = models.ForeignKey("MacroprocessoNivel2", related_name="arquiteturas_nivel2", null=True, blank=True, on_delete=models.SET_NULL)
+class ProcessoDocumento(models.Model):
+    processo = models.ForeignKey(
+        "Processo",
+        on_delete=models.CASCADE,
+        related_name="documentos"  # facilita uso: processo.documentos.all()
+    )
+    # Relação direta com a modelagem que contém o PDF / link / tipo
+    modelagem_processo = models.ForeignKey(
+        "ModelagemProcesso",
+        on_delete=models.PROTECT,
+        related_name="processo_documentos"
+    )
 
+    class Meta:
+        db_table = "arquiteturaprocessos_processodocumento"
+
+    def __str__(self):
+        mp = self.modelagem_processo
+        return f"Doc {mp.codigo if mp else 'N/A'} → Processo {self.processo_id}"
+
+# ============================================================
+# LOG
+# ============================================================
 
 class LogAcoes(models.Model):
     data_registro = models.DateTimeField(default=timezone.now)

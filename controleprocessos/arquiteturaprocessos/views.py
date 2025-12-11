@@ -1,6 +1,8 @@
+# views.py (revisado)
 from datetime import datetime
 import os
 import json
+import re
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
@@ -11,50 +13,60 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
-
-from .models import (Usuario, Telefone, ArquiteturaProcesso, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
-                     Classificacao, ModelagemProcesso, Processo)
+from django.db import IntegrityError
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q
-from django.db.models import Exists, OuterRef
-from .forms import (Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
-                    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
-                    Form_ModelagemProcessoForm, Form_ProcessoForm)
+from django.db.models import Q, Exists, OuterRef
 from django.core.paginator import Paginator
 from django.conf import settings
-from django.views.decorators.clickjacking import xframe_options_sameorigin  # ou xframe_options_exempt
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pathlib import Path
 import mimetypes
 
+from .models import (
+    Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
+    Classificacao, ModelagemProcesso, Processo
+)
+from .forms import (
+    Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
+    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
+    Form_ModelagemProcessoForm, Form_ProcessoForm
+)
 
-@xframe_options_sameorigin  # permite ser exibido em <iframe> quando a página for da mesma origem
+# ---------------------------------------------------
+# Utility to safely generate a username from names
+# ---------------------------------------------------
+def make_username_from_names(first_name: str, last_name: str) -> str:
+    # cria nome.sobrenome em lowercase, sem espaços, mantendo apenas alfanumérico + ponto
+    base = f"{(first_name or '').strip()}.{(last_name or '').strip()}"
+    username = base.lower()
+    # remove acentos/normalização simples (opcional: aqui apenas remove espaços e não-alphanum exceto '.')
+    username = re.sub(r"\s+", "", username)
+    username = re.sub(r"[^a-z0-9\.]", "", username)
+    return username
+
+# ---------------------------
+# PDF visualizer (secure)
+# ---------------------------
+@xframe_options_sameorigin
 def visualizar_pdf(request, path):
-    """
-    Serve com segurança um PDF do MEDIA_ROOT para ser exibido em <iframe>.
-    'path' deve ser relativo ao MEDIA_ROOT (ex.: 'modelagemprocessos/arquivo.pdf').
-    """
-    # Monta caminho absoluto com segurança
     media_root = Path(settings.MEDIA_ROOT).resolve()
     file_path = (media_root / path).resolve()
 
-    # Evita path traversal e garante existência do arquivo
     if not str(file_path).startswith(str(media_root)) or not file_path.exists() or not file_path.is_file():
         raise Http404("Arquivo não encontrado")
 
-    # (Opcional) restringir a PDFs; comente se precisar abrir outros tipos
     ctype, _ = mimetypes.guess_type(str(file_path))
     if ctype != 'application/pdf':
         raise Http404("Tipo de arquivo não permitido")
 
-    # Responder 'inline' para o navegador renderizar
     response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="{file_path.name}"'
-
-    # (Opcional, moderno) Reforçar CSP para iframes da mesma origem
     response['Content-Security-Policy'] = "frame-ancestors 'self'"
-
     return response
 
+# ---------------------------
+# Modelagem filtrada helper
+# ---------------------------
 def get_modelagem_filtrada():
     hoje = timezone.now().date()
 
@@ -76,16 +88,21 @@ def get_modelagem_filtrada():
 
     return modelos, normas
 
+# ---------------------------
+# Login view
+# ---------------------------
 class CustomLoginView(LoginView):
     template_name = 'usuario/fazer_login.html'
-    authentication_form = CustomAuthenticationForm  # ✅ Usa o formulário customizado
+    authentication_form = CustomAuthenticationForm
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect('arquiteturaprocessos:arquiteturaprocessos')
         return super().dispatch(request, *args, **kwargs)
 
-
+# ---------------------------
+# Classificações CRUD
+# ---------------------------
 class Classificacoes(LoginRequiredMixin, ListView):
     model = Classificacao
     template_name = 'estrutura/classificacoes.html'
@@ -99,10 +116,12 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_inclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
     def form_valid(self, form):
@@ -127,12 +146,14 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         classificacao = self.get_object()
         context['form'] = Form_ClassificacaoForm(instance=classificacao, modo_visualizacao=True)
-
-        context['modo_visualizacao'] = True
-        context['modo_inclusao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
+
 
 class EditarClassificacao(LoginRequiredMixin, UpdateView):
     model = Classificacao
@@ -142,16 +163,18 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_edicao'] = True
-        context['modo_inclusao'] = False
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
         return context
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        resp = super().form_valid(form)
         messages.success(self.request, f"Classificação '{self.object.nome}' atualizada com sucesso!")
-        return response
+        return resp
 
     def form_invalid(self, form):
         messages.error(self.request, "Não foi possível atualizar a classificação. Corrija os erros abaixo.")
@@ -170,34 +193,31 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         if self.request.method != 'POST':
             context['form'] = Form_ClassificacaoForm(instance=self.get_object(), modo_exclusao=True)
-
-        context['modo_exclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_inclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
     def post(self, request, *args, **kwargs):
         classificacao = self.get_object()
-        processo_associado = ArquiteturaProcesso.objects.filter(classificacao=classificacao).first()
-
+        processo_associado = Processo.objects.filter(classificacao=classificacao).first()
         if processo_associado:
-            messages.error(
-                request,
-                f"Não é possível excluir a classificação '{classificacao.nome}', pois está associada ao processo '{processo_associado.macroprocesso.nome}'."
+            messages.error(request,
+                f"Não é possível excluir a classificação '{classificacao.nome}', pois está associada ao processo '{processo_associado.nome}'."
             )
             return redirect('arquiteturaprocessos:classificacoes')
 
         classificacao.delete()
-        messages.success(
-            request,
-            f"Classificação '{classificacao.nome}' excluída com sucesso!"
-        )
+        messages.success(request, f"Classificação '{classificacao.nome}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:classificacoes')
 
-# ---------------------------------------------#
-# ARQUITETURA DE PROCESSOS (Tela Pública)      #
-# ---------------------------------------------#
+
+# ---------------------------------------------
+# ARQUITETURA DE PROCESSOS (Tela Pública)
+# ---------------------------------------------
 class ArquiteruraProcessos(ListView):
     model = Processo
     template_name = "arquiteturaprocessos/arquiteturaprocessos.html"
@@ -205,10 +225,6 @@ class ArquiteruraProcessos(ListView):
     paginate_by = 30
     ordering = ["id"]
 
-    # -------------------------------------------
-    # Converte string YYYY-MM-DD → objeto date
-    # (HTML <input type="date"> sempre envia yyyy-mm-dd)
-    # -------------------------------------------
     def parse_date(self, value):
         if not value:
             return None
@@ -217,57 +233,39 @@ class ArquiteruraProcessos(ListView):
         except:
             return None
 
-    # -------------------------------------------
-    # GET QUERYSET
-    # -------------------------------------------
     def get_queryset(self):
         req = self.request.GET
-
-        # -------------------------------
-        # Filtros texto
-        # -------------------------------
         nome = req.get("nome", "").strip()
         classificacao = req.get("classificacao", "").strip()
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
 
-        # -------------------------------
-        # Filtros datas
-        # -------------------------------
         cri_de = self.parse_date(req.get("criacao_de"))
         cri_ate = self.parse_date(req.get("criacao_ate"))
         atu_de = self.parse_date(req.get("atualizacao_de"))
         atu_ate = self.parse_date(req.get("atualizacao_ate"))
 
-        # ---------------------------------------
-        # Base inicial
-        # ---------------------------------------
         qs = (
             Processo.objects.all()
             .select_related(
                 "classificacao",
                 "macroprocesso_nivel1",
                 "macroprocesso_nivel2",
-                "modelagem_processo",
-                "norma_procedimento",
+                "parent",
+                "usuario_cadastro",
+                "usuario_atualizacao",
             )
             .prefetch_related(
                 "subprocessos",
-                "subprocessos__classificacao",
-                "subprocessos__macroprocesso_nivel1",
-                "subprocessos__macroprocesso_nivel2",
-                "subprocessos__modelagem_processo",
-                "subprocessos__norma_procedimento",
+                # usa related_name 'documentos' no relacionamento Processo <-> ProcessoDocumento
+                "documentos",
+                "subprocessos__documentos",
             )
         )
 
-        # Flag que indica se algum erro crítico ocorreu
         filtro_valido = True
 
-        # ---------------------------------------
-        # FILTROS TEXTO
-        # ---------------------------------------
         if nome:
             qs = qs.filter(nome__icontains=nome)
 
@@ -283,9 +281,6 @@ class ArquiteruraProcessos(ListView):
         if area:
             qs = qs.filter(area_responsavel__icontains=area)
 
-        # ---------------------------------------
-        # FILTROS DATA — Criação
-        # ---------------------------------------
         if cri_de:
             qs = qs.filter(data_criacao__gte=cri_de)
 
@@ -293,15 +288,9 @@ class ArquiteruraProcessos(ListView):
             qs = qs.filter(data_criacao__lte=cri_ate)
 
         if cri_de and cri_ate and cri_ate < cri_de:
-            messages.error(
-                self.request,
-                "A data final de criação deve ser maior ou igual à data inicial."
-            )
+            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
             filtro_valido = False
 
-        # ---------------------------------------
-        # FILTROS DATA — Atualização
-        # ---------------------------------------
         if atu_de:
             qs = qs.filter(data_atualizacao__gte=atu_de)
 
@@ -309,140 +298,94 @@ class ArquiteruraProcessos(ListView):
             qs = qs.filter(data_atualizacao__lte=atu_ate)
 
         if atu_de and atu_ate and atu_ate < atu_de:
-            messages.error(
-                self.request,
-                "A data final de atualização deve ser maior ou igual à data inicial."
-            )
+            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
             filtro_valido = False
 
-        # ----------------------------------------------------
-        # Se houve erro → NÃO aplicar filtros → retorna tudo
-        # ----------------------------------------------------
         if not filtro_valido:
             return Processo.objects.filter(parent__isnull=True).order_by("id")
 
-        # ---------------------------------------
-        # Selecionar processos pai
-        # ---------------------------------------
-        pai_ids = qs.values_list("parent_id", flat=True)
-        diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
-        ids_finais = {i for i in pai_ids if i} | set(diretos)
+        qs = qs.filter(parent__isnull=True).order_by("id")
 
-        resultados = (
-            Processo.objects.filter(id__in=ids_finais)
-            .select_related(
-                "classificacao",
-                "macroprocesso_nivel1",
-                "macroprocesso_nivel2",
-                "modelagem_processo",
-                "norma_procedimento",
-            )
-            .prefetch_related(
-                "subprocessos",
-                "subprocessos__classificacao",
-                "subprocessos__macroprocesso_nivel1",
-                "subprocessos__macroprocesso_nivel2",
-                "subprocessos__modelagem_processo",
-                "subprocessos__norma_procedimento",
-            )
-            .order_by("id")
-        )
-
-        # ---------------------------------------
-        # Contagem correta: cada registro conta apenas SEUS documentos
-        # ---------------------------------------
-        for proc in resultados:
-
-            # -----------------------------
-            # DOCUMENTOS DO PROCESSO PAI
-            # -----------------------------
+        # Montar documentos — cada registro de relacionamento referencia ModelagemProcesso
+        for proc in qs:
             docs = []
+            for pd in proc.documentos.all():  # related_name 'documentos'
+                mp = pd.modelagem_processo
+                if not mp:
+                    continue
+                displayname = ""
+                url = ""
+                if getattr(mp, "documento_modelagem_processo", None):
+                    displayname = os.path.basename(mp.documento_modelagem_processo.name)
+                    url = mp.documento_modelagem_processo.url
+                elif getattr(mp, "link_normaprocedimento", None):
+                    displayname = mp.link_normaprocedimento.split("/")[-1]
+                    url = mp.link_normaprocedimento
 
-            mp = proc.modelagem_processo
-            if mp and mp.documento_modelagem_processo:
                 docs.append({
-                    "tipo": "Modelo",
-                    "codigo": mp.codigo,
-                    "sequencial": mp.sequencial,
-                    "versao": mp.versao,
-                    "tema": mp.tema,
-                    "vigencia": mp.vigencia_inicio.strftime("%d/%m/%Y") if mp.vigencia_inicio else "",
-                    "displayname": mp.documento_modelagem_processo.name.split("/")[-1],
-                    "url": mp.documento_modelagem_processo.url,
-                })
-
-            norma = proc.norma_procedimento
-            if norma and norma.link_normaprocedimento:
-                docs.append({
-                    "tipo": "Norma",
-                    "codigo": norma.codigo,
-                    "sequencial": norma.sequencial,
-                    "versao": norma.versao,
-                    "tema": norma.tema,
-                    "vigencia": norma.vigencia_inicio.strftime("%d/%m/%Y") if norma.vigencia_inicio else "",
-                    "displayname": norma.link_normaprocedimento.split("/")[-1],
-                    "url": norma.link_normaprocedimento,
+                    "tipo": mp.tipo_documento.nome if getattr(mp, "tipo_documento", None) else "",
+                    "codigo": getattr(mp, "codigo", "") or "",
+                    "sequencial": getattr(mp, "sequencial", "") or "",
+                    "versao": getattr(mp, "versao", "") or "",
+                    "tema": getattr(mp, "tema", "") or "",
+                    "vigencia": mp.vigencia_inicio.strftime("%d/%m/%Y") if getattr(mp, "vigencia_inicio", None) else "",
+                    "displayname": displayname,
+                    "url": url,
                 })
 
             proc.docs_json = docs
             proc.docs_count = len(docs)
 
-            # -----------------------------------------------------
-            # PARA CADA SUBPROCESSO → adicionar contagem individual
-            # -----------------------------------------------------
             for sub in proc.subprocessos.all():
+                sd = []
+                for pd in sub.documentos.all():
+                    mp = pd.modelagem_processo
+                    if not mp:
+                        continue
+                    displayname = ""
+                    url = ""
+                    if getattr(mp, "documento_modelagem_processo", None):
+                        displayname = os.path.basename(mp.documento_modelagem_processo.name)
+                        url = mp.documento_modelagem_processo.url
+                    elif getattr(mp, "link_normaprocedimento", None):
+                        displayname = mp.link_normaprocedimento.split("/")[-1]
+                        url = mp.link_normaprocedimento
 
-                sub_docs = []
-
-                sm = sub.modelagem_processo
-                if sm and sm.documento_modelagem_processo:
-                    sub_docs.append({
-                        "tipo": "Modelo",
-                        "codigo": sm.codigo,
-                        "sequencial": sm.sequencial,
-                        "versao": sm.versao,
-                        "tema": sm.tema,
-                        "vigencia": sm.vigencia_inicio.strftime("%d/%m/%Y") if sm.vigencia_inicio else "",
-                        "displayname": sm.documento_modelagem_processo.name.split("/")[-1],
-                        "url": sm.documento_modelagem_processo.url,
+                    sd.append({
+                        "tipo": mp.tipo_documento.nome if getattr(mp, "tipo_documento", None) else "",
+                        "codigo": getattr(mp, "codigo", "") or "",
+                        "sequencial": getattr(mp, "sequencial", "") or "",
+                        "versao": getattr(mp, "versao", "") or "",
+                        "tema": getattr(mp, "tema", "") or "",
+                        "vigencia": mp.vigencia_inicio.strftime("%d/%m/%Y") if getattr(mp, "vigencia_inicio", None) else "",
+                        "displayname": displayname,
+                        "url": url,
                     })
 
-                s_norma = sub.norma_procedimento
-                if s_norma and s_norma.link_normaprocedimento:
-                    sub_docs.append({
-                        "tipo": "Norma",
-                        "codigo": s_norma.codigo,
-                        "sequencial": s_norma.sequencial,
-                        "versao": s_norma.versao,
-                        "tema": s_norma.tema,
-                        "vigencia": s_norma.vigencia_inicio.strftime("%d/%m/%Y") if s_norma.vigencia_inicio else "",
-                        "displayname": s_norma.link_normaprocedimento.split("/")[-1],
-                        "url": s_norma.link_normaprocedimento,
-                    })
+                sub.docs_json = sd
+                sub.docs_count = len(sd)
 
-                sub.docs_json = sub_docs
-                sub.docs_count = len(sub_docs)
+        return qs
 
-        return resultados
-
-    # -------------------------------------------
-    # CONTEXTO
-    # -------------------------------------------
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
         return ctx
 
+# ---------------------------
+# Estatísticas / Backlog (simples)
+# ---------------------------
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
-    model = ArquiteturaProcesso
-
+    model = Processo
 
 class BackLog(LoginRequiredMixin, ListView):
     template_name = 'backlog.html'
-    model = ArquiteturaProcesso
+    model = Processo
 
-
+# ---------------------------
+# Usuário — Visualizar
+# ---------------------------
 class VisualizarUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/form_usuario.html'
     model = Usuario
@@ -460,13 +403,17 @@ class VisualizarUsuario(LoginRequiredMixin, DetailView):
             can_delete=False
         )
         context['telefones'] = TelefoneFormSetVisualizacao(instance=usuario, prefix='telefones')
-        context['modo_visualizacao'] = True
-        context['modo_inclusao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
-
+# ---------------------------
+# Usuário — Editar
+# ---------------------------
 class EditarUsuario(LoginRequiredMixin, UpdateView):
     template_name = 'usuario/form_usuario.html'
     model = Usuario
@@ -474,7 +421,6 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         TelefoneFormSetEdicao = inlineformset_factory(
             Usuario,
             Telefone,
@@ -488,75 +434,65 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
         else:
             context['telefones'] = TelefoneFormSetEdicao(instance=self.object, prefix='telefones')
 
-        context['modo_edicao'] = True
-        context['modo_inclusao'] = False
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         telefones = context['telefones']
 
-        if telefones.is_valid():
-            self.object = form.save(commit=False)
-
-            # 🔒 Proteção contra alteração indevida de datas
-            if not self.object.date_joined:
-                self.object.date_joined = timezone.now()
-            # data_ativacaodesativacao não altera no modo edição
-
-            # Atualiza is_active
-            is_active = self.request.POST.get("is_active")
-            self.object.is_active = is_active == "True"
-
-            # Atualiza a senha apenas se o usuário digitou uma nova
-            password1 = form.cleaned_data.get("password1")
-            if password1:
-                self.object.set_password(password1)
-
-            self.object.save()
-
-            # Salva telefones
-            telefones.instance = self.object
-            telefones.save()
-
-            messages.success(self.request, f"Usuário {self.object.get_full_name()} atualizado com sucesso!")
-            return redirect(self.get_success_url())
-        else:
-            messages.error(self.request, "Corrija os erros abaixo.")
+        if not telefones.is_valid():
+            messages.error(self.request, "Corrija os erros abaixo nos telefones.")
             return self.render_to_response(self.get_context_data(form=form))
+
+        self.object = form.save(commit=False)
+
+        if not self.object.date_joined:
+            self.object.date_joined = timezone.now()
+
+        is_active = self.request.POST.get("is_active")
+        self.object.is_active = is_active == "True"
+
+        password1 = form.cleaned_data.get("password1")
+        if password1:
+            self.object.set_password(password1)
+
+        self.object.save()
+
+        telefones.instance = self.object
+        telefones.save()
+
+        messages.success(self.request, f"Usuário {self.object.get_full_name()} atualizado com sucesso!")
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
 
-
+# ---------------------------
+# Usuário — Excluir (desativar)
+# ---------------------------
 class ExcluirUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/form_usuario.html'
     model = Usuario
 
     def post(self, request, *args, **kwargs):
         usuario = self.get_object()
-
-        # Exclusão lógica
         usuario.is_active = False
         usuario.data_ativacaodesativacao = timezone.now()
         usuario.save()
-
-        messages.success(
-            request,
-            f"Usuário {usuario.get_full_name()} desativado com sucesso!"
-        )
+        messages.success(request, f"Usuário {usuario.get_full_name()} desativado com sucesso!")
         return redirect('arquiteturaprocessos:cadastrousuarios')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
-
-        # Atualiza os valores antes de passar para o form
         usuario.is_active = False
         usuario.data_ativacaodesativacao = timezone.now()
-
         context['form'] = Form_UsuarioForm(
             instance=usuario,
             initial={
@@ -573,13 +509,17 @@ class ExcluirUsuario(LoginRequiredMixin, DetailView):
             can_delete=False
         )
         context['telefones'] = TelefoneFormSetExclusao(instance=usuario, prefix='telefones')
-
-        context['modo_exclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_inclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
+# ---------------------------
+# Cadastro / Listagem Usuários
+# ---------------------------
 class CadastroUsuarios(LoginRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'
     model = Usuario
@@ -589,7 +529,7 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
 
-        if request.user.perfil.nome.casefold() != 'administrador':
+        if not request.user.perfil or request.user.perfil.nome.casefold() != 'administrador':
             messages.warning(request, "Você não tem permissão para acessar esta página.")
             return redirect('arquiteturaprocessos:arquiteturaprocessos')
 
@@ -597,21 +537,25 @@ class CadastroUsuarios(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         status = self.request.GET.get("status", "ativos")
-
         if status == "inativos":
             return Usuario.objects.filter(is_active=False).order_by("perfil__nome", "username")
         return Usuario.objects.filter(is_active=True).order_by("perfil__nome", "username")
 
+# ---------------------------
+# Criar Usuário (com username automático)
+# ---------------------------
 class CriarUsuario(LoginRequiredMixin, CreateView):
     template_name = 'usuario/form_usuario.html'
     form_class = Form_UsuarioForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_inclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         if self.request.POST:
             context['telefones'] = TelefoneFormSet(self.request.POST, prefix='telefones')
         else:
@@ -622,23 +566,43 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
         context = self.get_context_data()
         telefones = context['telefones']
 
-        if telefones.is_valid():
-            self.object = form.save(commit=False)
-
-            # 🔒 Proteção contra alteração indevida de datas
-            self.object.is_active = self.request.POST.get("is_active") == "True"
-            self.object.data_ativacaodesativacao = timezone.now()
-            self.object.date_joined = timezone.now()
-
-            self.object.save()
-            telefones.instance = self.object
-            telefones.save()
-
-            messages.success(self.request, f"Usuário {self.object.get_full_name()} criado com sucesso!")
-
-            return redirect(self.get_success_url())
-        else:
+        if not telefones.is_valid():
+            messages.error(self.request, "Corrija os erros abaixo nos telefones.")
             return self.render_to_response(self.get_context_data(form=form))
+
+        # cria usuário sem salvar para ajustar username automático
+        user = form.save(commit=False)
+
+        # Gera username automático nome.sobrenome
+        username = make_username_from_names(user.first_name, user.last_name)
+        if not username:
+            messages.error(self.request, "Nome e Sobrenome são necessários para gerar o username.")
+            return self.render_to_response(self.get_context_data(form=form))
+
+        # se já existe, não cria e mostra mensagem (opção escolhida)
+        if Usuario.objects.filter(username=username).exists():
+            messages.error(self.request, f"Não foi possível criar o usuário: o username '{username}' já existe. Ajuste Nome/Sobrenome.")
+            return self.render_to_response(self.get_context_data(form=form))
+
+        user.username = username
+
+        # auditoria e flags
+        user.is_active = self.request.POST.get("is_active") == "True"
+        user.data_ativacaodesativacao = timezone.now()
+        user.date_joined = timezone.now()
+
+        try:
+            user.save()
+        except IntegrityError:
+            messages.error(self.request, f"Erro ao salvar usuário. Username '{username}' pode já existir.")
+            return self.render_to_response(self.get_context_data(form=form))
+
+        # salva telefones vinculando ao usuário
+        telefones.instance = user
+        telefones.save()
+
+        messages.success(self.request, f"Usuário {user.get_full_name()} criado com sucesso!")
+        return redirect(self.get_success_url())
 
     def form_invalid(self, form):
         messages.error(self.request, "Por favor, corrija os erros abaixo.")
@@ -647,6 +611,9 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
 
+# ---------------------------
+# LogAcoes — lista de logs (admin)
+# ---------------------------
 class LogAcoes(LoginRequiredMixin, ListView):
     template_name = 'usuario/logacoes.html'
     model = LogAcoes
@@ -655,16 +622,19 @@ class LogAcoes(LoginRequiredMixin, ListView):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
 
-        if request.user.perfil.nome.casefold() != 'administrador':
+        if not request.user.perfil or request.user.perfil.nome.casefold() != 'administrador':
             messages.warning(request, "Você não tem permissão para acessar esta página.")
             return redirect('arquiteturaprocessos:arquiteturaprocessos')
 
         return super().dispatch(request, *args, **kwargs)
 
+# ---------------------------
+# Macroprocessos N1 / N2
+# ---------------------------
 class MacroProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/macroprocesso.html'
 
-class MacroProcessoNivel1View(LoginRequiredMixin,ListView):
+class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
     model = MacroprocessoNivel1
     template_name = 'estrutura/macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
@@ -676,16 +646,18 @@ class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_inclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        resp = super().form_valid(form)
         messages.success(self.request, f"Macroprocesso de Nível 1 '{self.object.nome}' criada com sucesso!")
-        return response
+        return resp
 
     def form_invalid(self, form):
         messages.error(self.request, "Não foi possível criar o Macroprocesso de Nível 1. Corrija os erros abaixo.")
@@ -693,7 +665,6 @@ class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
-
 
 class VisualizarMacroProcessoNivel1(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_macroprocessonivel1.html'
@@ -704,13 +675,13 @@ class VisualizarMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         macroprocessonivel1 = self.get_object()
         context['form'] = Form_MacroProcessoNivel1Form(instance=macroprocessonivel1, modo_visualizacao=True)
-
-        context['modo_visualizacao'] = True
-        context['modo_inclusao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
-
 
 class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
     model = MacroprocessoNivel1
@@ -720,16 +691,18 @@ class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_edicao'] = True
-        context['modo_inclusao'] = False
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
         return context
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        resp = super().form_valid(form)
         messages.success(self.request, f"Macroprocesso de Nível 1 '{self.object.nome}' atualizado com sucesso!")
-        return response
+        return resp
 
     def form_invalid(self, form):
         messages.error(self.request, "Não foi possível atualizar o Macroprocesso de Nível 1. Corrija os erros abaixo.")
@@ -738,7 +711,6 @@ class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
 
-# sua view ajustada
 class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
     model = MacroprocessoNivel1
     template_name = 'estrutura/form_macroprocessonivel1.html'
@@ -748,31 +720,26 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         if self.request.method != 'POST':
             context['form'] = Form_MacroProcessoNivel1Form(instance=self.get_object(), modo_exclusao=True)
-
-        context['modo_exclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_inclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
     def post(self, request, *args, **kwargs):
         macroprocessonivel = self.get_object()
-
         try:
-            # tenta deletar diretamente — se houver FK com on_delete=PROTECT, ProtectedError será lançado
             macroprocessonivel.delete()
         except ProtectedError as e:
-            # tenta extrair alguns exemplos de objetos protegidos para uma mensagem mais informativa
             protected_objs = getattr(e, 'protected_objects', None)
             if protected_objs:
-                # limita a lista a 3 exemplos para não inundar a mensagem
                 exemplos = ', '.join(str(o) for o in list(protected_objs)[:3])
                 detalhes = f"Exemplos: {exemplos}."
             else:
                 detalhes = ""
-
-            messages.error(
-                request,
+            messages.error(request,
                 (
                     f"Não é possível excluir o Macroprocesso Nível 1 '{macroprocessonivel.nome}', "
                     "pois existem registros relacionados que impedem a exclusão. "
@@ -780,14 +747,9 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
                     f"{detalhes}"
                 )
             )
-            # redireciona para a lista (ou altere para onde preferir)
             return redirect('arquiteturaprocessos:macroprocessonivel1')
 
-        # se chegou aqui, exclusão OK
-        messages.success(
-            request,
-            f"Macroprocesso Nível 1 '{macroprocessonivel.nome}' excluído com sucesso!"
-        )
+        messages.success(request, f"Macroprocesso Nível 1 '{macroprocessonivel.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:macroprocessonivel1')
 
 class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
@@ -806,15 +768,18 @@ class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_inclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
+
     def form_valid(self, form):
-        response = super().form_valid(form)
+        resp = super().form_valid(form)
         messages.success(self.request, f"Macroprocesso de Nível 2 '{self.object.nome}' criado com sucesso!")
-        return response
+        return resp
 
     def form_invalid(self, form):
         messages.error(self.request, "Não foi possível criar o Macroprocesso de Nível 2. Corrija os erros abaixo.")
@@ -832,11 +797,12 @@ class VisualizarMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         macroprocessonivel2 = self.get_object()
         context['form'] = Form_MacroProcessoNivel2Form(instance=macroprocessonivel2, modo_visualizacao=True)
-
-        context['modo_visualizacao'] = True
-        context['modo_inclusao'] = False
-        context['modo_exclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
 class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
@@ -847,16 +813,18 @@ class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modo_edicao'] = True
-        context['modo_inclusao'] = False
-        context['modo_visualizacao'] = False
-        context['modo_exclusao'] = False
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
         return context
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        resp = super().form_valid(form)
         messages.success(self.request, f"Macroprocesso de Nível 2 '{self.object.nome}' atualizado com sucesso!")
-        return response
+        return resp
 
     def form_invalid(self, form):
         messages.error(self.request, "Não foi possível atualizar o Macroprocesso de Nível 2. Corrija os erros abaixo.")
@@ -874,39 +842,33 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         if self.request.method != 'POST':
             context['form'] = Form_MacroProcessoNivel2Form(instance=self.get_object(), modo_exclusao=True)
-
-        context['modo_exclusao'] = True
-        context['modo_visualizacao'] = False
-        context['modo_inclusao'] = False
-        context['modo_edicao'] = False
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
         return context
 
     def post(self, request, *args, **kwargs):
         macroprocessonivel2 = self.get_object()
-
-        # Verifica se há processos associados a esse macroprocesso de nível 2
-        processo_associado = ArquiteturaProcesso.objects.filter(macroprocesso_nivel2=macroprocessonivel2).first()
-
+        processo_associado = Processo.objects.filter(macroprocesso_nivel2=macroprocessonivel2).first()
         if processo_associado:
-            messages.error(
-                request,
-                f"Não é possível excluir o Macroprocesso Nível 2 '{macroprocessonivel2.nome}', pois ele está associado a um ou mais processos na arquitetura."
+            messages.error(request,
+                f"Não é possível excluir o Macroprocesso Nível 2 '{macroprocessonivel2.nome}', pois está associado ao processo '{processo_associado.nome}'."
             )
             return redirect('arquiteturaprocessos:macroprocessonivel2')
 
         macroprocessonivel2.delete()
-        messages.success(
-            request,
-            f"Macroprocesso Nível 2 '{macroprocessonivel2.nome}' excluído com sucesso!"
-        )
+        messages.success(request, f"Macroprocesso Nível 2 '{macroprocessonivel2.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:macroprocessonivel2')
 
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-# -------------------------------#
-# Listagem - Modelagem Processos #
-# -------------------------------#
+# -------------------------------
+# Modelagem Processos (list/create/view/edit/delete)
+# -------------------------------
 class ModelagemProcessoView(LoginRequiredMixin, ListView):
     model = ModelagemProcesso
     template_name = 'estrutura/modelagemprocessos.html'
@@ -924,8 +886,6 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
                 Q(codigo__icontains=termo)
             )
         queryset = queryset.order_by('tema', 'codigo', 'sequencial')
-
-        # 🔹 Formata o sequencial com zeros à esquerda (para exibição na lista)
         for obj in queryset:
             if obj.sequencial is not None:
                 try:
@@ -939,10 +899,6 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
         context['termo_busca'] = self.request.GET.get('q', '')
         return context
 
-
-# -----------------------------#
-# Criar Modelarem de Processos #
-# -----------------------------#
 class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_modelagemprocesso.html'
     form_class = Form_ModelagemProcessoForm
@@ -962,18 +918,13 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         from django.db.models import Max
         from .models import ModelagemProcesso
-
         context = super().get_context_data(**kwargs)
-
         ultimo_sequencial = ModelagemProcesso.objects.aggregate(Max('sequencial'))['sequencial__max'] or 0
-
         try:
             proximo_sequencial = int(ultimo_sequencial) + 1
         except (TypeError, ValueError):
             proximo_sequencial = 1
-
         sequencial_formatado = f"{proximo_sequencial:03}"
-
         context.update({
             'modo_inclusao': True,
             'modo_visualizacao': False,
@@ -991,16 +942,9 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         return response
 
     def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo: " + str(form.errors)
-        )
+        messages.error(self.request, "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo: " + str(form.errors))
         return super().form_invalid(form)
 
-
-# ----------------------------------#
-# Visualizar Modelarem de Processos #
-# ----------------------------------#
 class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_modelagemprocesso.html'
     model = ModelagemProcesso
@@ -1009,13 +953,10 @@ class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         obj = self.get_object()
-
-        # 🔹 Formata o sequencial
         try:
             obj.sequencial = f"{int(obj.sequencial):03}"
         except (TypeError, ValueError):
             pass
-
         context['form'] = Form_ModelagemProcessoForm(instance=obj, modo_visualizacao=True)
         context.update({
             'modo_visualizacao': True,
@@ -1025,10 +966,6 @@ class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
         })
         return context
 
-
-# ------------------------------#
-# Editar Modelarem de Processos #
-# ------------------------------#
 class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
@@ -1038,20 +975,14 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         modelagem = self.get_object()
-
-        # Exibição formatada (opcional)
         if modelagem.sequencial is not None:
             modelagem.sequencial = f"{int(modelagem.sequencial):03d}"
-
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
-            'form': Form_ModelagemProcessoForm(
-                instance=modelagem,
-                modo_edicao=True,
-            ),
+            'form': Form_ModelagemProcessoForm(instance=modelagem, modo_edicao=True),
         })
         return context
 
@@ -1059,9 +990,6 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
         obj = form.instance
         obj.usuario_atualizacao = self.request.user
         obj.data_atualizacao = timezone.now()
-
-        # REMOVIDO: não apagar arquivo aqui — o model.save() faz isso corretamente
-
         response = super().form_valid(form)
         messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' atualizada com sucesso!")
         return response
@@ -1073,9 +1001,6 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:modelagemprocessos')
 
-# -------------------------------#
-# Excluir Modelarem de Processos #
-# -------------------------------#
 class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
@@ -1084,13 +1009,10 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         obj = self.get_object()
-
-        # 🔹 Formata o sequencial
         try:
             obj.sequencial = f"{int(obj.sequencial):03}"
         except (TypeError, ValueError):
             pass
-
         if self.request.method != 'POST':
             context['form'] = Form_ModelagemProcessoForm(instance=obj, modo_exclusao=True)
         context.update({
@@ -1109,9 +1031,9 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
-# -------------------------------#
-# Listagem - Processos           #
-# -------------------------------#
+# -------------------------------
+# Processos (list / create / view / edit / delete)
+# -------------------------------
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
     template_name = 'processos/processos.html'
@@ -1120,15 +1042,12 @@ class ProcessoView(LoginRequiredMixin, ListView):
     ordering = ['id']
 
     def get_queryset(self):
-
-        # === 1) Recuperar parâmetros GET ===
         nome = self.request.GET.get("nome", "").strip()
         classificacao = self.request.GET.get("classificacao", "").strip()
         macro1 = self.request.GET.get("macro1", "").strip()
         macro2 = self.request.GET.get("macro2", "").strip()
         area = self.request.GET.get("area", "").strip()
 
-        # === 2) Base inicial: TUDO (PAI + SUB) para aplicar filtros ===
         qs = (
             Processo.objects.all()
             .select_related(
@@ -1139,45 +1058,22 @@ class ProcessoView(LoginRequiredMixin, ListView):
             .order_by("id")
         )
 
-        # === 3) Aplicação dos filtros acumulativos ===
         if nome:
             qs = qs.filter(nome__icontains=nome)
-
         if classificacao:
             qs = qs.filter(classificacao_id=classificacao)
-
         if macro1:
-            qs = qs.filter(
-                macroprocesso_nivel1__nome__icontains=macro1
-            )
-
+            qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
         if macro2:
-            qs = qs.filter(
-                macroprocesso_nivel2__nome__icontains=macro2
-            )
-
+            qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
         if area:
-            qs = qs.filter(
-                area_responsavel__icontains=area
-            )
+            qs = qs.filter(area_responsavel__icontains=area)
 
-        # === 4) Se filtrou subprocessos, precisamos retornar APENAS os processos PAI,
-        # mas mantendo na tabela os subprocessos associados.
-        # Obtemos todos os PAI relacionados aos resultados filtrados.
-        pai_ids = (
-            qs.values_list("parent_id", flat=True)
-        )
-
-        # processos que são pai direto
+        pai_ids = qs.values_list("parent_id", flat=True)
         diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
-
-        # conjunto final de PAI = pais diretos + pais dos subprocessos filtrados
         ids_finais = set(diretos) | set(pai_ids)
-
-        # remover None (subprocessos sem pai)
         ids_finais = {i for i in ids_finais if i is not None}
 
-        # === 5) Agora retornamos APENAS os processos pai filtrados ===
         queryset_final = (
             Processo.objects.filter(id__in=ids_finais)
             .select_related(
@@ -1196,113 +1092,66 @@ class ProcessoView(LoginRequiredMixin, ListView):
 
         return queryset_final
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Necessário para preencher o select de classificação
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
-
         return context
 
-
-# --------------------------------#
-# Criar Processo                  #
-# --------------------------------#
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
     template_name = 'processos/form_processo.html'
     form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
-    # Força o modo_inclusao no form
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["modo_visualizacao"] = False
-        kwargs["modo_exclusao"] = False
-        kwargs["modo_edicao"] = False
+        kwargs.update({
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+        })
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         agora_local = timezone.localtime(timezone.now())
         modelos, normas = get_modelagem_filtrada()
-
         context.update({
-            # listas para os selects
             "modelos_processo": modelos,
             "normas_procedimento": normas,
-
-            # controle de modos
             "modo_inclusao": True,
             "modo_visualizacao": False,
             "modo_exclusao": False,
             "modo_edicao": False,
-
-            # 🔵 AUDITORIA — inclusão
             "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
             "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
-
-            # 🔵 AUDITORIA — atualização (vazia)
             "atualizacao_data": "",
             "atualizacao_user": "",
         })
-
         return context
 
     def form_valid(self, form):
         processo = form.instance
-
-        # 🔵 Auditoria registro novo
-        processo.usuario_cadastro = self.request.user
-        processo.usuario_atualizacao = None
-        processo.data_atualizacao = None
-
-        messages.success(
-            self.request,
-            f"Processo '{processo.nome}' criado com sucesso!"
-        )
-
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Há erros no formulário. Verifique os campos destacados."
-        )
-        return super().form_invalid(form)
-
-    def form_valid(self, form):
-
-        processo = form.instance
-
-        # 🔵 GRAVAÇÃO DO NOVO CAMPO
-        processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
-        processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
-
         # auditoria
         processo.usuario_cadastro = self.request.user
         processo.usuario_atualizacao = None
         processo.data_atualizacao = None
 
-        messages.success(
-            self.request,
-            f"Processo '{processo.nome}' criado com sucesso!"
-        )
+        # se seu form possui campos modelagem_processo/norma_procedimento, popula-los:
+        try:
+            processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
+            processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
+        except Exception:
+            # campos podem não existir — ignora se for o caso
+            pass
 
+        messages.success(self.request, f"Processo '{processo.nome}' criado com sucesso!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Há erros no formulário. Verifique os campos destacados."
-        )
+        messages.error(self.request, "Há erros no formulário. Verifique os campos destacados.")
         return super().form_invalid(form)
 
-# --------------------------------#
-# Visualizar Processo             #
-# --------------------------------#
 class VisualizarProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1311,50 +1160,23 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
-
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
-
-        # form carregado corretamente
-        context['form'] = Form_ProcessoForm(
-            instance=processo,
-            modo_visualizacao=True
-        )
-
-        # Auditoria — Sempre readonly (o template já marca como readonly)
+        context['form'] = Form_ProcessoForm(instance=processo, modo_visualizacao=True)
         context.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
             "desabilitar": True,
-
-            # 📌 Auditoria – Exibição
-            'cadastro_data': (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_criacao else ""
-            ),
-            'cadastro_user': (
-                processo.usuario_cadastro.get_full_name()
-                if processo.usuario_cadastro else ""
-            ),
-
-            'atualizacao_data': (
-                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_atualizacao else ""
-            ),
-            'atualizacao_user': (
-                processo.usuario_atualizacao.get_full_name()
-                if processo.usuario_atualizacao else ""
-            ),
+            'cadastro_data': (timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else ""),
+            'cadastro_user': (processo.usuario_cadastro.get_full_name() if processo.usuario_cadastro else ""),
+            'atualizacao_data': (timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_atualizacao else ""),
+            'atualizacao_user': (processo.usuario_atualizacao.get_full_name() if processo.usuario_atualizacao else ""),
         })
-
         return context
 
-# --------------------------------#
-# Editar Processo                 #
-# --------------------------------#
 class EditarProcesso(LoginRequiredMixin, UpdateView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1363,74 +1185,39 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        processo = self.object  # Sempre disponível no UpdateView
-
-        # Carrega selects de PDF
+        processo = self.object
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # -------------------------------
-        # SELECTS DEPENDENTES (n1/n2)
-        # -------------------------------
         context["macroprocesso_nivel1_list"] = (
             MacroprocessoNivel1.objects.filter(classificacao=processo.classificacao)
             if processo.classificacao_id else MacroprocessoNivel1.objects.none()
         )
-
         context["macroprocesso_nivel2_list"] = (
-            MacroprocessoNivel2.objects.filter(
-                macroprocesso_nivel1=processo.macroprocesso_nivel1
-            )
+            MacroprocessoNivel2.objects.filter(macroprocesso_nivel1=processo.macroprocesso_nivel1)
             if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
         )
 
-        # -------------------------------
-        # AUDITORIA
-        # -------------------------------
         context.update({
             "modo_edicao": True,
             "modo_inclusao": False,
             "modo_visualizacao": False,
             "modo_exclusao": False,
-
-            "cadastro_data": (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_criacao else ""
-            ),
-            "cadastro_user": (
-                processo.usuario_cadastro.get_full_name()
-                if processo.usuario_cadastro else ""
-            ),
-
+            "cadastro_data": (timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else ""),
+            "cadastro_user": (processo.usuario_cadastro.get_full_name() if processo.usuario_cadastro else ""),
             "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
-            "atualizacao_user": (
-                self.request.user.get_full_name() or self.request.user.username
-            ),
+            "atualizacao_user": (self.request.user.get_full_name() or self.request.user.username),
         })
-
         return context
 
-    # ------------------------------------------------------------
-    # GRAVAÇÃO FINAL (validação principal já está no forms.py)
-    # ------------------------------------------------------------
     def form_valid(self, form):
         processo = form.instance
-
-        # Atualiza auditoria
         processo.usuario_atualizacao = self.request.user
         processo.data_atualizacao = timezone.now()
-
-        messages.success(
-            self.request,
-            f"Processo '{processo.nome}' atualizado com sucesso!"
-        )
-
+        messages.success(self.request, f"Processo '{processo.nome}' atualizado com sucesso!")
         return super().form_valid(form)
 
-# --------------------------------#
-# Excluir Processo                #
-# --------------------------------#
 class ExcluirProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1439,70 +1226,32 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
-
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
-
-        # Lista de subprocessos
         subprocessos = processo.subprocessos.all()
-
         context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
-
-        # 🔵 AUDITORIA + MODOS
         context.update({
-            'cadastro_data': (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_criacao else ""
-            ),
-            'cadastro_user': (
-                processo.usuario_cadastro.get_full_name()
-                if processo.usuario_cadastro else ""
-            ),
-            'atualizacao_data': (
-                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_atualizacao else ""
-            ),
-            'atualizacao_user': (
-                processo.usuario_atualizacao.get_full_name()
-                if processo.usuario_atualizacao else ""
-            ),
-
+            'cadastro_data': (timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else ""),
+            'cadastro_user': (processo.usuario_cadastro.get_full_name() if processo.usuario_cadastro else ""),
+            'atualizacao_data': (timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_atualizacao else ""),
+            'atualizacao_user': (processo.usuario_atualizacao.get_full_name() if processo.usuario_atualizacao else ""),
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,
             'modo_edicao': False,
             "desabilitar": True,
-
-            # 🔵 subprocessos para o template
             "subprocessos_existentes": subprocessos,
         })
-
         return context
 
     def post(self, request, *args, **kwargs):
         processo = self.get_object()
-
-        # 1️⃣ Verifica se existem subprocessos
         subprocessos = processo.subprocessos.all()
-
         if subprocessos.exists():
             lista = ", ".join([s.nome for s in subprocessos])
-            messages.error(
-                request,
-                f"Não é possível excluir o processo '{processo.nome}'. "
-                f"Existem subprocessos associados: {lista}"
-            )
+            messages.error(request, f"Não é possível excluir o processo '{processo.nome}'. Existem subprocessos associados: {lista}")
             return redirect(request.path)
-
-        # 2️⃣ Se não existir nenhum subprocesso → excluir normalmente
         processo.delete()
         messages.success(request, f"Processo '{processo.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:processos')
-
-
-
-
-
-
-
