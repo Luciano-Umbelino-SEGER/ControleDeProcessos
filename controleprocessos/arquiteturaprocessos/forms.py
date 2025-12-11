@@ -12,7 +12,7 @@ from datetime import date
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-    ModelagemProcesso, Processo
+    ModelagemProcesso, Processo, TipoDocumento
 )
 
 UserModel = get_user_model()
@@ -431,28 +431,57 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                 field.widget.attrs["id"] = f"id_{name}"
             field.widget.attrs.setdefault("name", name)
 
+class Form_TipoDocumentoForm(forms.ModelForm):
+    class Meta:
+        model = TipoDocumento
+        fields = ['nome', 'slug']
+
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        modo_exclusao = kwargs.pop('modo_exclusao', False)
+        super().__init__(*args, **kwargs)
+        base = "w-full border border-gray-300 rounded-md px-3 py-2 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        for name, field in self.fields.items():
+            field.widget.attrs.setdefault('class', base + (' bg-gray-100' if (modo_visualizacao or modo_exclusao) else ' bg-white'))
+            field.widget.attrs.setdefault('placeholder', field.label)
+
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+
 
 class Form_ModelagemProcessoForm(forms.ModelForm):
-    nome = forms.CharField(
+
+    # 🔹 Novo campo TITULO (antigo nome)
+    titulo = forms.CharField(
         required=True,
+        label="Título",
         widget=forms.TextInput(attrs={
-            "class": "w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase",
-            "placeholder": "Nome da Norma de Procedimento",
-            "data-lpignore": "true",
-            "autocomplete": "new-password",
-            "autocorrect": "off",
-            "autocapitalize": "off",
-            "spellcheck": "false",
+            "class": "w-full border border-gray-300 rounded px-3 py-2 text-black "
+                     "focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase",
+            "placeholder": "Título do Documento",
+            "autocomplete": "off",
+        })
+    )
+
+    # 🔹 Novo campo TIPO_DOCUMENTO
+    tipo_documento = forms.ModelChoiceField(
+        queryset=TipoDocumento.objects.all(),
+        required=True,
+        label="Tipo de Documento",
+        widget=forms.Select(attrs={
+            "class": "w-full border border-gray-300 rounded px-3 py-2 text-black "
+                     "focus:ring-2 focus:ring-blue-500 focus:outline-none",
         })
     )
 
     class Meta:
         model = ModelagemProcesso
         exclude = (
-            'usuario',
-            'data_cadastro',
-            'data_atualizacao',
-            'usuario_atualizacao',
+            "usuario",
+            "data_cadastro",
+            "data_atualizacao",
+            "usuario_atualizacao",
         )
         widgets = {
             "data_elaboracao": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
@@ -461,34 +490,45 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             "vigencia_fim": forms.DateInput(format='%Y-%m-%d', attrs={"type": "date"}),
         }
 
+    # ============================================================
+    # INIT
+    # ============================================================
     def __init__(self, *args, **kwargs):
         self.usuario_logado = kwargs.pop("usuario_logado", None)
         self.modo_inclusao = kwargs.pop("modo_inclusao", False)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
         self.modo_edicao = kwargs.pop("modo_edicao", False)
+
         super().__init__(*args, **kwargs)
-
-        # Ajuste datas iniciais
-        for field_name in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
-            field = self.fields.get(field_name)
-            if field and getattr(self.instance, field_name):
-                field.initial = getattr(self.instance, field_name).strftime("%Y-%m-%d")
-
         self.label_suffix = ""
+
+        # Ajuste datas iniciais (evita quebra em edição)
+        for fname in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
+            try:
+                field = self.fields.get(fname)
+                if field and getattr(self.instance, fname):
+                    field.initial = getattr(self.instance, fname).strftime("%Y-%m-%d")
+            except:
+                pass
+
+        # Classe base visual
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
+        # Estilos gerais
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
-            bg_color = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
-            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
+            bg = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
+
+            field.widget.attrs["class"] = f"{existing} {base} {bg}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
+
             field.widget.attrs.update({
-                "autocomplete": "new-password",
+                "autocomplete": "off",
                 "data-lpignore": "true",
                 "autocorrect": "off",
                 "autocapitalize": "off",
@@ -496,50 +536,50 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             })
 
         # Ajustes específicos
-        self.fields["codigo"].widget.attrs.update({
-            "class": self.fields["codigo"].widget.attrs.get("class", "") + " uppercase"
-        })
+        self.fields["codigo"].widget.attrs["class"] += " uppercase"
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
-        # Ajuste PDF widget
+        # PDF widget
         if "documento_modelagem_processo" in self.fields:
             fwidget = self.fields["documento_modelagem_processo"].widget
             fwidget.attrs.setdefault("tabindex", "0")
             fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
 
+            # Em edição/visualização/exclusão removemos o ClearableFileInput
             if self.modo_edicao or self.modo_visualizacao or self.modo_exclusao:
                 self.fields["documento_modelagem_processo"].widget = FileInput(attrs=fwidget.attrs)
 
                 if self.instance and self.instance.documento_modelagem_processo:
-                    nome_arquivo = os.path.basename(self.instance.documento_modelagem_processo.name)
-                    self.fields["documento_modelagem_processo"].widget.attrs["placeholder"] = nome_arquivo
+                    nome_arq = os.path.basename(self.instance.documento_modelagem_processo.name)
+                    self.fields["documento_modelagem_processo"].widget.attrs["placeholder"] = nome_arq
 
         # Valores padrão para inclusão
-        if not self.instance or not self.instance.pk:
-            self.fields["nome"].initial = "NORMA DE PROCEDIMENTO"
+        if self.modo_inclusao:
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
 
-        # Atribui usuário quando cria
+        # Usuário criador
         if self.usuario_logado and (not self.instance or not self.instance.pk):
             self.instance.usuario = self.usuario_logado
 
-        # Desabilita nos modos somente leitura
+        # Modo somente leitura
         if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
                 field.widget.attrs["class"] += " bg-gray-100"
 
-        # guarda versão original
-        self._versao_original = getattr(self.instance, "versao", None) if self.instance and self.instance.pk else None
+        # Guarda versão original
+        self._versao_original = getattr(self.instance, "versao", None) if self.instance.pk else None
 
+    # ============================================================
     # VALIDAÇÕES
-    def clean_nome(self):
-        nome = (self.cleaned_data.get("nome") or "").strip().upper()
-        if not nome:
-            raise ValidationError("Informe o Nome.")
-        return nome
+    # ============================================================
+    def clean_titulo(self):
+        titulo = (self.cleaned_data.get("titulo") or "").strip().upper()
+        if not titulo:
+            raise ValidationError("Informe o Título.")
+        return titulo
 
     def clean_codigo(self):
         codigo = (self.cleaned_data.get("codigo") or "").strip().upper()
@@ -553,7 +593,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             raise ValidationError("Informe o número sequencial da norma.")
         seq = str(seq).strip()
         if not seq.isdigit():
-            raise ValidationError("O número sequencial deve conter apenas dígitos (0–9).")
+            raise ValidationError("O número sequencial deve conter apenas dígitos.")
         num = int(seq)
         if not (1 <= num <= 999):
             raise ValidationError("O número sequencial deve estar entre 1 e 999.")
@@ -562,7 +602,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     def clean_versao(self):
         ver = self.cleaned_data.get("versao")
         if ver is None:
-            raise ValidationError("Informe a versão da norma.")
+            raise ValidationError("Informe a versão.")
         if not isinstance(ver, int):
             raise ValidationError("Versão deve ser um número inteiro.")
         if not (1 <= ver <= 99):
@@ -571,30 +611,19 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             raise ValidationError(f"A versão não pode ser menor que {self._versao_original}.")
         return ver
 
-    def clean(self):
-        cleaned = super().clean()
-        de, da = cleaned.get("data_elaboracao"), cleaned.get("data_aprovacao")
-        vi, vf = cleaned.get("vigencia_inicio"), cleaned.get("vigencia_fim")
-
-        if de and da and da < de:
-            self.add_error("data_aprovacao", "Deve ser maior ou igual à Data de Elaboração.")
-        if da and vi and vi < da:
-            self.add_error("vigencia_inicio", "Deve ser maior ou igual à Data de Aprovação.")
-        if vi and vf and vf <= vi:
-            self.add_error("vigencia_fim", "Deve ser maior que Início da Vigência.")
-        return cleaned
-
     def clean_documento_modelagem_processo(self):
-        f = self.cleaned_data.get('documento_modelagem_processo')
+        f = self.cleaned_data.get("documento_modelagem_processo")
         if not f:
             return f
-        content_type = getattr(f, 'content_type', '') or ''
-        is_pdf_type = content_type in ('application/pdf', 'application/x-pdf')
-        is_pdf_name = f.name.lower().endswith('.pdf')
+        is_pdf_type = f.content_type in ("application/pdf", "application/x-pdf")
+        is_pdf_name = f.name.lower().endswith(".pdf")
         if not (is_pdf_type or is_pdf_name):
-            raise forms.ValidationError('Envie um arquivo PDF válido (.pdf).')
+            raise ValidationError("Envie um PDF válido (.pdf).")
         return f
 
+    # ============================================================
+    # SAVE
+    # ============================================================
     def save(self, commit=True):
         obj = super().save(commit=False)
 
@@ -608,7 +637,6 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             obj.save()
 
         return obj
-
 
 class Form_ProcessoForm(forms.ModelForm):
     classificacao = forms.ModelChoiceField(queryset=Classificacao.objects.all(), label="Classificação")

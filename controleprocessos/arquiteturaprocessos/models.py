@@ -93,7 +93,6 @@ class MacroprocessoNivel2(models.Model):
     def __str__(self):
         return self.nome
 
-
 # ============================================================
 # TIPO DE DOCUMENTO
 # ============================================================
@@ -109,17 +108,16 @@ class TipoDocumento(models.Model):
     def __str__(self):
         return self.nome
 
-
 # ============================================================
 # MODELAGEM DE PROCESSO
 # ============================================================
 
 def mp_upload_to(instance, filename):
-    nome, ext = os.path.splitext(filename)
+    titulo, ext = os.path.splitext(filename)
     ext = ext.lower()
     codigo = uuid.uuid4().hex[:8]
-    nome = nome.replace(" ", "_").replace("–", "-")
-    return f"modelagemprocessos/{nome}_{codigo}{ext}"
+    titulo = titulo.replace(" ", "_").replace("–", "-")
+    return f"modelagemprocessos/{titulo}_{codigo}{ext}"
 
 
 class ModelagemProcesso(models.Model):
@@ -129,7 +127,7 @@ class ModelagemProcesso(models.Model):
         "TipoDocumento", on_delete=models.PROTECT, related_name="modelagens"
     )
 
-    nome = models.CharField(max_length=200, default="MODELO DE PROCESSO")
+    titulo = models.CharField(max_length=255, null=True, blank=True)
     codigo = models.CharField(
         max_length=10,
         db_index=True,
@@ -177,7 +175,7 @@ class ModelagemProcesso(models.Model):
 
     class Meta:
         db_table = "arquiteturaprocessos_modelagem_processo"
-        ordering = ["nome", "codigo", "sequencial", "versao", "tema"]
+        ordering = ["titulo", "codigo", "sequencial", "versao", "tema"]
 
     def save(self, *args, **kwargs):
         try:
@@ -193,7 +191,7 @@ class ModelagemProcesso(models.Model):
                 os.remove(old_path)
 
     def __str__(self):
-        return f"{self.nome} - {self.codigo}-{self.sequencial} - V{self.versao}"
+        return f"{self.titulo} - {self.codigo}-{self.sequencial} - V{self.versao}"
 
 
 # ============================================================

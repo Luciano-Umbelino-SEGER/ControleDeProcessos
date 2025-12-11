@@ -51,13 +51,13 @@ class ModelagemProcessoAdmin(admin.ModelAdmin):
         "usuario",
     )
     list_display_links = ("identificacao",)
-    ordering = ("sequencial", "versao", "nome", "codigo", "tema")
+    ordering = ("sequencial", "versao", "titulo", "codigo", "tema")
     list_per_page = 25
     date_hierarchy = "data_cadastro"
 
     list_filter = ("tema", "emitente", "sistema")
     search_fields = (
-        "nome",
+        "titulo",
         "codigo",
         "tema",
         "emitente",
@@ -100,9 +100,9 @@ class ModelagemProcessoAdmin(admin.ModelAdmin):
     versao_formatada.admin_order_field = "versao_num"
 
     def identificacao(self, obj):
-        return f"{obj.nome} - {obj.codigo}-{self.sequencial_formatado(obj)} V{self.versao_formatada(obj)}"
+        return f"{obj.titulo} - {obj.codigo}-{self.sequencial_formatado(obj)} V{self.versao_formatada(obj)}"
     identificacao.short_description = "Identificação"
-    identificacao.admin_order_field = "nome"
+    identificacao.admin_order_field = "titulo"
 
     def save_model(self, request, obj, form, change):
         if not obj.usuario_id:
