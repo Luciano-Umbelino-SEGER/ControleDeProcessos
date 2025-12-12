@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.utils.text import slugify
 from django.conf import settings
 from django.core.validators import (
     RegexValidator,
@@ -94,19 +95,26 @@ class MacroprocessoNivel2(models.Model):
         return self.nome
 
 # ============================================================
-# TIPO DE DOCUMENTO
+# TIPOS DE DOCUMENTOS
 # ============================================================
-
-class TipoDocumento(models.Model):
+class TiposDocumento(models.Model):
     nome = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True)
+    descricao = models.TextField(blank=True, null=True)
 
     class Meta:
-        db_table = "arquiteturaprocessos_tipodocumento"
+        db_table = "arquiteturaprocessos_tiposdocumento"
         ordering = ["nome"]
 
     def __str__(self):
         return self.nome
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nome)
+        super().save(*args, **kwargs)
+
+
 
 # ============================================================
 # MODELAGEM DE PROCESSO
@@ -124,7 +132,7 @@ class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 
     tipo_documento = models.ForeignKey(
-        "TipoDocumento", on_delete=models.PROTECT, related_name="modelagens"
+        "TiposDocumento", on_delete=models.PROTECT, related_name="modelagens"
     )
 
     titulo = models.CharField(max_length=255, null=True, blank=True)

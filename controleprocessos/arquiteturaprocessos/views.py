@@ -24,7 +24,7 @@ import mimetypes
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
-    Classificacao, ModelagemProcesso, Processo, TipoDocumento
+    Classificacao, ModelagemProcesso, Processo, TiposDocumento
 )
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
@@ -865,16 +865,19 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-
+# ---------------------------
+# Tipos de Documento
+# ---------------------------
 class TipoDocumentoList(LoginRequiredMixin, ListView):
-    model = TipoDocumento
-    template_name = 'estrutura/tipodocumentos.html'
-    context_object_name = 'tipodocumentos'
-    queryset = TipoDocumento.objects.order_by('nome')
+    model = TiposDocumento
+    template_name = 'estrutura/tiposdocumento.html'
+    context_object_name = 'tiposdocumento'
+    queryset = TiposDocumento.objects.order_by('nome')
 
 class CriarTipoDocumento(LoginRequiredMixin, CreateView):
-    template_name = 'estrutura/form_tipodocumento.html'
+    model = TiposDocumento
     form_class = Form_TipoDocumentoForm
+    template_name = 'estrutura/form_tipodocumento.html'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -886,6 +889,12 @@ class CriarTipoDocumento(LoginRequiredMixin, CreateView):
         })
         return ctx
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['modo_visualizacao'] = False
+        kwargs['modo_exclusao'] = False
+        return kwargs
+
     def form_valid(self, form):
         response = super().form_valid(form)
         messages.success(self.request, f"Tipo de Documento '{self.object.nome}' criado com sucesso!")
@@ -894,26 +903,45 @@ class CriarTipoDocumento(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:tipodocumentos')
 
+
 class VisualizarTipoDocumento(LoginRequiredMixin, DetailView):
-    model = TipoDocumento
+    model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['form'] = Form_TipoDocumentoForm(instance=self.get_object(), modo_visualizacao=True)
-        ctx.update({'modo_visualizacao': True, 'modo_inclusao': False, 'modo_exclusao': False, 'modo_edicao': False})
+        ctx.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
         return ctx
 
+
 class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
-    model = TipoDocumento
+    model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
+    context_object_name = 'tipodocumento'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx.update({'modo_edicao': True, 'modo_inclusao': False, 'modo_visualizacao': False, 'modo_exclusao': False})
+        ctx.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
         return ctx
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['modo_visualizacao'] = False
+        kwargs['modo_exclusao'] = False
+        return kwargs
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -923,17 +951,20 @@ class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:tipodocumentos')
 
+
 class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
-    model = TipoDocumento
+    model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
+    context_object_name = 'tipodocumento'
 
     def post(self, request, *args, **kwargs):
         tip = self.get_object()
-        # verificação de relacionamentos para evitar erro
         vinculados = ModelagemProcesso.objects.filter(tipo_documento=tip).exists()
+
         if vinculados:
             messages.error(request, "Não é possível excluir: existem documentos vinculados a este tipo.")
             return redirect('arquiteturaprocessos:tipodocumentos')
+
         tip.delete()
         messages.success(request, f"Tipo de Documento '{tip.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:tipodocumentos')
@@ -941,9 +972,13 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['form'] = Form_TipoDocumentoForm(instance=self.get_object(), modo_exclusao=True)
-        ctx.update({'modo_exclusao': True, 'modo_visualizacao': False, 'modo_inclusao': False, 'modo_edicao': False})
+        ctx.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
         return ctx
-
 
 # -------------------------------
 # Modelagem Processos (list/create/view/edit/delete)

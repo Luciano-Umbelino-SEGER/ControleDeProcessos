@@ -61,12 +61,12 @@ urlpatterns = [
     path('macroprocessonivel2/<int:pk>/editar/', EditarMacroProcessoNivel2.as_view(), name='editar_macroprocessonivel2'),
     path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
-    # Tipo de Documento
-    path('tipodocumentos/', TipoDocumentoList.as_view(), name='tipodocumentos'),
-    path('tipodocumentos/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),
-    path('tipodocumentos/<int:pk>/', VisualizarTipoDocumento.as_view(), name='visualizar_tipodocumento'),
-    path('tipodocumentos/<int:pk>/editar/', EditarTipoDocumento.as_view(), name='editar_tipodocumento'),
-    path('tipodocumentos/<int:pk>/excluir/', ExcluirTipoDocumento.as_view(), name='excluir_tipodocumento'),
+    # Tipos de Documento
+    path('tiposdocumento/', TipoDocumentoList.as_view(), name='tiposdocumento'),
+    path('tiposdocumento/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),
+    path('tiposdocumento/<int:pk>/', VisualizarTipoDocumento.as_view(), name='visualizar_tipodocumento'),
+    path('tiposdocumento/<int:pk>/editar/', EditarTipoDocumento.as_view(), name='editar_tipodocumento'),
+    path('tiposdocumento/<int:pk>/excluir/', ExcluirTipoDocumento.as_view(), name='excluir_tipodocumento'),
     # Modelagem Processos
     path('modelagemprocessos/', ModelagemProcessoView.as_view(), name='modelagemprocessos'),
     path('modelagemprocesso/novo/', CriarModelagemProcesso.as_view(), name='criar_modelagemprocesso'),

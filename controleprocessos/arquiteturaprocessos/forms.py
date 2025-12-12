@@ -12,7 +12,7 @@ from datetime import date
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-    ModelagemProcesso, Processo, TipoDocumento
+    ModelagemProcesso, Processo, TiposDocumento
 )
 
 UserModel = get_user_model()
@@ -433,22 +433,29 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
 
 class Form_TipoDocumentoForm(forms.ModelForm):
     class Meta:
-        model = TipoDocumento
-        fields = ['nome', 'slug']
+        model = TiposDocumento
+        fields = ['nome', 'descricao']  # slug removido
 
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
         modo_exclusao = kwargs.pop('modo_exclusao', False)
         super().__init__(*args, **kwargs)
-        base = "w-full border border-gray-300 rounded-md px-3 py-2 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
         for name, field in self.fields.items():
-            field.widget.attrs.setdefault('class', base + (' bg-gray-100' if (modo_visualizacao or modo_exclusao) else ' bg-white'))
+            field.widget.attrs.setdefault(
+                'class',
+                base + (' bg-gray-100' if (modo_visualizacao or modo_exclusao) else ' bg-white')
+            )
             field.widget.attrs.setdefault('placeholder', field.label)
 
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
-
 
 class Form_ModelagemProcessoForm(forms.ModelForm):
 
@@ -466,7 +473,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
     # 🔹 Novo campo TIPO_DOCUMENTO
     tipo_documento = forms.ModelChoiceField(
-        queryset=TipoDocumento.objects.all(),
+        queryset=TiposDocumento.objects.all(),
         required=True,
         label="Tipo de Documento",
         widget=forms.Select(attrs={

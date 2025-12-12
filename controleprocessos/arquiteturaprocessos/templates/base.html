@@ -96,6 +96,20 @@
 
             <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
 
+                <!-- ARQUITETURA DE PROCESSOS (novo item de menu) -->
+                <a href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}"
+                   class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+                   @click="closeSidebar()"
+                   role="menuitem"
+                   :title="!sidebarOpen ? 'Arquitetura de Processos' : ''">
+                    <div class="w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-sitemap text-xl"></i>
+                    </div>
+                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+                        Arquitetura de Processos
+                    </div>
+                </a>
+
                 <a href="{% url 'arquiteturaprocessos:processos' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Cadastro de Processos' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
@@ -162,6 +176,7 @@
                     </button>
                     <div x-show="submenuOpen && sidebarOpen" x-transition.opacity.duration.300ms x-transition.scale.origin.top class="ml-14 space-y-1" role="menu">
                         <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="closeSidebar()">Classificação</a>
+                        <a href="{% url 'arquiteturaprocessos:tiposdocumento' %}"  class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="closeSidebar()"> Tipos de Documento</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="closeSidebar()">Macroprocesso Nivel 1</a>
                         <a href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="closeSidebar()">Macroprocesso Nivel 2</a>
                         <a href="{% url 'arquiteturaprocessos:modelagemprocessos' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="closeSidebar()">Modelagem Processos</a>

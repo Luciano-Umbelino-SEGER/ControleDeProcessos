@@ -14,7 +14,7 @@ from decouple import config, Csv
 # =========================
 # Paths / Ambiente (.env)
 # =========================
-BASE_DIR = Path(__file__).resolve().parent.parent  # pasta raiz do projeto (onde está manage.py)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # pasta raiz do projeto (onde está manage.py)
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'dev')    # dev | homolog | prod
 
 env_file = BASE_DIR / f'.env.{DJANGO_ENV}'
@@ -124,7 +124,9 @@ USE_TZ = True
 # Static / Media
 # =========================
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
