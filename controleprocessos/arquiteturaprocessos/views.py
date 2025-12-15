@@ -15,7 +15,7 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
 from django.db import IntegrityError
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Max, Exists, OuterRef
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -990,9 +990,9 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
         })
         return ctx
 
-# -------------------------------
-# Modelagem Processos (list/create/view/edit/delete)
-# -------------------------------
+# ---------------------------------------------------
+# LISTAGEM
+# ---------------------------------------------------
 class ModelagemProcessoView(LoginRequiredMixin, ListView):
     model = ModelagemProcesso
     template_name = 'estrutura/modelagemprocessos.html'
@@ -1001,21 +1001,36 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         termo = self.request.GET.get('q', '').strip()
-        queryset = ModelagemProcesso.objects.select_related('usuario', 'usuario_atualizacao')
+
+        queryset = (
+            ModelagemProcesso.objects
+            .select_related('usuario', 'usuario_atualizacao', 'tipo_documento')
+        )
+
         if termo:
             queryset = queryset.filter(
-                Q(tema__icontains=termo) |
+                Q(titulo__icontains=termo) |
+                Q(tipo_documento__nome__icontains=termo) |
                 Q(emitente__icontains=termo) |
                 Q(sistema__icontains=termo) |
                 Q(codigo__icontains=termo)
             )
-        queryset = queryset.order_by('tema', 'codigo', 'sequencial')
+
+        queryset = queryset.order_by(
+            'tipo_documento__nome',
+            'titulo',
+            'codigo',
+            'sequencial'
+        )
+
+        # Formatação visual do sequencial
         for obj in queryset:
             if obj.sequencial is not None:
                 try:
-                    obj.sequencial = f"{int(obj.sequencial):03}"
+                    obj.sequencial = f"{int(obj.sequencial):03d}"
                 except (TypeError, ValueError):
-                    obj.sequencial = obj.sequencial
+                    pass
+
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -1023,7 +1038,12 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
         context['termo_busca'] = self.request.GET.get('q', '')
         return context
 
+
+# ---------------------------------------------------
+# CRIAR
+# ---------------------------------------------------
 class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
+    model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
     form_class = Form_ModelagemProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:modelagemprocessos')
@@ -1033,80 +1053,111 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
         kwargs.update({
             'usuario_logado': self.request.user,
             'modo_inclusao': True,
-            'modo_visualizacao': False,
-            'modo_exclusao': False,
-            'modo_edicao': False,
         })
         return kwargs
 
     def get_context_data(self, **kwargs):
-        from django.db.models import Max
-        from .models import ModelagemProcesso
         context = super().get_context_data(**kwargs)
-        ultimo_sequencial = ModelagemProcesso.objects.aggregate(Max('sequencial'))['sequencial__max'] or 0
+
+        ultimo_seq = ModelagemProcesso.objects.aggregate(
+            Max('sequencial')
+        )['sequencial__max'] or 0
+
         try:
-            proximo_sequencial = int(ultimo_sequencial) + 1
+            proximo = int(ultimo_seq) + 1
         except (TypeError, ValueError):
-            proximo_sequencial = 1
-        sequencial_formatado = f"{proximo_sequencial:03}"
+            proximo = 1
+
         context.update({
             'modo_inclusao': True,
             'modo_visualizacao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
-            'proximo_sequencial': sequencial_formatado,
+            'proximo_sequencial': f"{proximo:03d}",
         })
         return context
 
     def form_valid(self, form):
         form.instance.usuario = self.request.user
         form.instance.data_cadastro = timezone.now()
+
         response = super().form_valid(form)
-        messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' criada com sucesso!")
+
+        messages.success(
+            self.request,
+            f"Modelagem de Processo '{self.object.titulo}' criada com sucesso!"
+        )
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo: " + str(form.errors))
+        messages.error(
+            self.request,
+            "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo."
+        )
         return super().form_invalid(form)
 
+
+# ---------------------------------------------------
+# VISUALIZAR
+# ---------------------------------------------------
 class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
-    template_name = 'estrutura/form_modelagemprocesso.html'
     model = ModelagemProcesso
+    template_name = 'estrutura/form_modelagemprocesso.html'
     context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         obj = self.get_object()
+
         try:
-            obj.sequencial = f"{int(obj.sequencial):03}"
+            obj.sequencial = f"{int(obj.sequencial):03d}"
         except (TypeError, ValueError):
             pass
-        context['form'] = Form_ModelagemProcessoForm(instance=obj, modo_visualizacao=True)
+
+        context['form'] = Form_ModelagemProcessoForm(
+            instance=obj,
+            modo_visualizacao=True
+        )
         context.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
-            'modo_edicao': False
+            'modo_edicao': False,
         })
         return context
 
+
+# ---------------------------------------------------
+# EDITAR
+# ---------------------------------------------------
 class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
     context_object_name = 'modelagemprocesso'
     form_class = Form_ModelagemProcessoForm
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({
+            'usuario_logado': self.request.user,
+            'modo_edicao': True,
+        })
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        modelagem = self.get_object()
-        if modelagem.sequencial is not None:
-            modelagem.sequencial = f"{int(modelagem.sequencial):03d}"
+        obj = self.get_object()
+
+        try:
+            obj.sequencial = f"{int(obj.sequencial):03d}"
+        except (TypeError, ValueError):
+            pass
+
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
-            'form': Form_ModelagemProcessoForm(instance=modelagem, modo_edicao=True),
         })
         return context
 
@@ -1114,17 +1165,29 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
         obj = form.instance
         obj.usuario_atualizacao = self.request.user
         obj.data_atualizacao = timezone.now()
+
         response = super().form_valid(form)
-        messages.success(self.request, f"Modelagem de Processo '{self.object.tema}' atualizada com sucesso!")
+
+        messages.success(
+            self.request,
+            f"Modelagem de Processo '{self.object.titulo}' atualizada com sucesso!"
+        )
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível atualizar a Modelagem de Processo. Corrija os erros abaixo.")
+        messages.error(
+            self.request,
+            "Não foi possível atualizar a Modelagem de Processo. Corrija os erros abaixo."
+        )
         return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:modelagemprocessos')
 
+
+# ---------------------------------------------------
+# EXCLUIR
+# ---------------------------------------------------
 class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     model = ModelagemProcesso
     template_name = 'estrutura/form_modelagemprocesso.html'
@@ -1133,26 +1196,42 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         obj = self.get_object()
+
         try:
-            obj.sequencial = f"{int(obj.sequencial):03}"
+            obj.sequencial = f"{int(obj.sequencial):03d}"
         except (TypeError, ValueError):
             pass
-        if self.request.method != 'POST':
-            context['form'] = Form_ModelagemProcessoForm(instance=obj, modo_exclusao=True)
+
+        context['form'] = Form_ModelagemProcessoForm(
+            instance=obj,
+            modo_exclusao=True
+        )
         context.update({
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,
-            'modo_edicao': False
+            'modo_edicao': False,
         })
         return context
 
     def post(self, request, *args, **kwargs):
-        norma = self.get_object()
-        if norma.documento_modelagem_processo and os.path.isfile(norma.documento_modelagem_processo.path):
-            os.remove(norma.documento_modelagem_processo.path)
-        norma.delete()
-        messages.success(request, f"Modelagem de Processos '{norma.tema}' excluída com sucesso!")
+        obj = self.get_object()
+
+        # Remove PDF do disco
+        if obj.documento_modelagem_processo:
+            try:
+                if os.path.isfile(obj.documento_modelagem_processo.path):
+                    os.remove(obj.documento_modelagem_processo.path)
+            except Exception:
+                pass
+
+        titulo = obj.titulo
+        obj.delete()
+
+        messages.success(
+            request,
+            f"Modelagem de Processo '{titulo}' excluída com sucesso!"
+        )
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
 # -------------------------------
