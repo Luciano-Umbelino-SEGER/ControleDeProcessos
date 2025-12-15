@@ -974,7 +974,7 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
             request,
             f"Tipo de Documento '{tipodocumento.nome}' excluído com sucesso!"
         )
-        return redirect('arquiteturaprocessos:tiposdocumento')
+        return redirect('arquiteturaprocessos:tipodocumento')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
