@@ -434,7 +434,7 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
 class Form_TipoDocumentoForm(forms.ModelForm):
     class Meta:
         model = TiposDocumento
-        fields = ['nome', 'descricao']  # slug removido
+        fields = ['nome', 'descricao']
 
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
@@ -443,7 +443,8 @@ class Form_TipoDocumentoForm(forms.ModelForm):
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
-            "text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            "text-black placeholder-gray-500 focus:outline-none "
+            "focus:ring-2 focus:ring-blue-500"
         )
 
         for name, field in self.fields.items():
@@ -453,9 +454,21 @@ class Form_TipoDocumentoForm(forms.ModelForm):
             )
             field.widget.attrs.setdefault('placeholder', field.label)
 
+            # 🔠 Forçar digitação em CAIXA ALTA no campo nome
+            if name == 'nome':
+                field.widget.attrs['style'] = 'text-transform: uppercase;'
+                field.widget.attrs['oninput'] = 'this.value = this.value.toUpperCase();'
+
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
+
+    # 🔒 REGRA DE DOMÍNIO: Nome sempre em CAIXA ALTA
+    def clean_nome(self):
+        nome = self.cleaned_data.get('nome')
+        if nome:
+            nome = nome.strip().upper()
+        return nome
 
 class Form_ModelagemProcessoForm(forms.ModelForm):
 

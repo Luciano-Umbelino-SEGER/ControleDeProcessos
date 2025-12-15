@@ -901,8 +901,7 @@ class CriarTipoDocumento(LoginRequiredMixin, CreateView):
         return response
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:tipodocumentos')
-
+        return reverse('arquiteturaprocessos:tiposdocumento')
 
 class VisualizarTipoDocumento(LoginRequiredMixin, DetailView):
     model = TiposDocumento
@@ -919,7 +918,6 @@ class VisualizarTipoDocumento(LoginRequiredMixin, DetailView):
             'modo_edicao': False,
         })
         return ctx
-
 
 class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
     model = TiposDocumento
@@ -949,8 +947,7 @@ class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
         return response
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:tipodocumentos')
-
+        return reverse('arquiteturaprocessos:tiposdocumento')
 
 class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
     model = TiposDocumento
@@ -958,20 +955,33 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
     context_object_name = 'tipodocumento'
 
     def post(self, request, *args, **kwargs):
-        tip = self.get_object()
-        vinculados = ModelagemProcesso.objects.filter(tipo_documento=tip).exists()
+        tipodocumento = self.get_object()
 
-        if vinculados:
-            messages.error(request, "Não é possível excluir: existem documentos vinculados a este tipo.")
-            return redirect('arquiteturaprocessos:tipodocumentos')
+        # 🔒 Regra de domínio: impedir exclusão se houver vínculos
+        existe_vinculo = ModelagemProcesso.objects.filter(
+            tipo_documento=tipodocumento
+        ).exists()
 
-        tip.delete()
-        messages.success(request, f"Tipo de Documento '{tip.nome}' excluído com sucesso!")
-        return redirect('arquiteturaprocessos:tipodocumentos')
+        if existe_vinculo:
+            messages.error(
+                request,
+                "Não é possível excluir este Tipo de Documento porque ele está vinculado a uma ou mais Modelagens de Processo."
+            )
+            return redirect('arquiteturaprocessos:tiposdocumento')
+
+        tipodocumento.delete()
+        messages.success(
+            request,
+            f"Tipo de Documento '{tipodocumento.nome}' excluído com sucesso!"
+        )
+        return redirect('arquiteturaprocessos:tiposdocumento')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['form'] = Form_TipoDocumentoForm(instance=self.get_object(), modo_exclusao=True)
+        ctx['form'] = Form_TipoDocumentoForm(
+            instance=self.object,
+            modo_exclusao=True
+        )
         ctx.update({
             'modo_exclusao': True,
             'modo_visualizacao': False,
