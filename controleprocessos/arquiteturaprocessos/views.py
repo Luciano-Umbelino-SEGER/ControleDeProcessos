@@ -13,7 +13,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.db.models import Q, Max, Exists, OuterRef
 from django.core.paginator import Paginator
@@ -24,7 +24,7 @@ import mimetypes
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
-    Classificacao, ModelagemProcesso, Processo, TiposDocumento
+    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento
 )
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
@@ -87,6 +87,61 @@ def get_modelagem_filtrada():
     ).order_by("id")
 
     return modelos, normas
+
+# -------------------------------
+# Extrair Modelagens - Processos
+# -------------------------------
+def extrair_modelagens_do_post(request):
+    ids = set()
+
+    # base
+    if request.POST.get("modelagem_processo"):
+        ids.add(request.POST.get("modelagem_processo"))
+
+    if request.POST.get("norma_procedimento"):
+        ids.add(request.POST.get("norma_procedimento"))
+
+    # extras
+    ids.update(request.POST.getlist("modelagem_processo_extra[]"))
+    ids.update(request.POST.getlist("norma_procedimento_extra[]"))
+
+    # limpa vazios
+    ids = {i for i in ids if i}
+
+    return ModelagemProcesso.objects.filter(id__in=ids)
+
+# ----------------------------------
+# Recuperar Documentos  - Processos
+# ----------------------------------
+def get_documentos_por_processo(processo):
+    """
+    Retorna dois lists:
+    - modelos_associados
+    - normas_associadas
+    """
+    documentos = (
+        ProcessoDocumento.objects
+        .filter(processo=processo)
+        .select_related("modelagem_processo__tipo_documento")
+    )
+
+    modelos = []
+    normas = []
+
+    for doc in documentos:
+        mp = doc.modelagem_processo
+        if not mp or not mp.tipo_documento:
+            continue
+
+        tipo = mp.tipo_documento.nome.lower()
+
+        if "modelo" in tipo:
+            modelos.append(mp)
+        elif "norma" in tipo:
+            normas.append(mp)
+
+    return modelos, normas
+
 
 # ---------------------------
 # Login view
@@ -154,7 +209,6 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
         })
         return context
 
-
 class EditarClassificacao(LoginRequiredMixin, UpdateView):
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
@@ -182,7 +236,6 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:classificacoes')
-
 
 class ExcluirClassificacao(LoginRequiredMixin, DetailView):
     model = Classificacao
@@ -472,9 +525,9 @@ class EditarUsuario(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
 
-# ---------------------------
+# -------------------------------
 # Usuário — Excluir (desativar)
-# ---------------------------
+# -------------------------------
 class ExcluirUsuario(LoginRequiredMixin, DetailView):
     template_name = 'usuario/form_usuario.html'
     model = Usuario
@@ -610,9 +663,9 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
 
-# ---------------------------
+# ---------------------------------
 # LogAcoes — lista de logs (admin)
-# ---------------------------
+# ---------------------------------
 class LogAcoes(LoginRequiredMixin, ListView):
     template_name = 'usuario/logacoes.html'
     model = LogAcoes
@@ -974,7 +1027,7 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
             request,
             f"Tipo de Documento '{tipodocumento.nome}' excluído com sucesso!"
         )
-        return redirect('arquiteturaprocessos:tipodocumento')
+        return redirect('arquiteturaprocessos:tiposdocumento')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -1234,15 +1287,15 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
-# -------------------------------
-# Processos (list / create / view / edit / delete)
-# -------------------------------
+# -------------------------------#
+# Listagem - Processos           #
+# -------------------------------#
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
-    template_name = 'processos/processos.html'
-    context_object_name = 'processos'
+    template_name = "processos/processos.html"
+    context_object_name = "processos"
     paginate_by = 20
-    ordering = ['id']
+    ordering = ["id"]
 
     def get_queryset(self):
         nome = self.request.GET.get("nome", "").strip()
@@ -1263,21 +1316,25 @@ class ProcessoView(LoginRequiredMixin, ListView):
 
         if nome:
             qs = qs.filter(nome__icontains=nome)
+
         if classificacao:
             qs = qs.filter(classificacao_id=classificacao)
+
         if macro1:
             qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
+
         if macro2:
             qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
+
         if area:
             qs = qs.filter(area_responsavel__icontains=area)
 
         pai_ids = qs.values_list("parent_id", flat=True)
         diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
-        ids_finais = set(diretos) | set(pai_ids)
-        ids_finais = {i for i in ids_finais if i is not None}
 
-        queryset_final = (
+        ids_finais = {i for i in set(diretos) | set(pai_ids) if i is not None}
+
+        return (
             Processo.objects.filter(id__in=ids_finais)
             .select_related(
                 "classificacao",
@@ -1293,18 +1350,19 @@ class ProcessoView(LoginRequiredMixin, ListView):
             .order_by("id")
         )
 
-        return queryset_final
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
         return context
 
+# --------------------------------#
+# Criar Processo                  #
+# --------------------------------#
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
-    template_name = 'processos/form_processo.html'
+    template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
-    success_url = reverse_lazy('arquiteturaprocessos:processos')
+    success_url = reverse_lazy("arquiteturaprocessos:processos")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -1317,44 +1375,60 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        agora_local = timezone.localtime(timezone.now())
+
+        agora = timezone.localtime(timezone.now())
         modelos, normas = get_modelagem_filtrada()
+
         context.update({
             "modelos_processo": modelos,
             "normas_procedimento": normas,
+
             "modo_inclusao": True,
             "modo_visualizacao": False,
             "modo_exclusao": False,
             "modo_edicao": False,
-            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+
+            "cadastro_data": agora.strftime("%d/%m/%Y %H:%M:%S"),
             "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
             "atualizacao_data": "",
             "atualizacao_user": "",
         })
+
         return context
 
     def form_valid(self, form):
-        processo = form.instance
-        # auditoria
+        processo = form.save(commit=False)
+
         processo.usuario_cadastro = self.request.user
         processo.usuario_atualizacao = None
         processo.data_atualizacao = None
+        processo.save()
 
-        # se seu form possui campos modelagem_processo/norma_procedimento, popula-los:
-        try:
-            processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
-            processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
-        except Exception:
-            # campos podem não existir — ignora se for o caso
-            pass
+        # 🔗 documentos (0..N)
+        modelagens = extrair_modelagens_do_post(self.request)
 
-        messages.success(self.request, f"Processo '{processo.nome}' criado com sucesso!")
-        return super().form_valid(form)
+        for modelagem in modelagens:
+            ProcessoDocumento.objects.get_or_create(
+                processo=processo,
+                modelagem_processo=modelagem
+            )
+
+        messages.success(
+            self.request,
+            f"Processo '{processo.nome}' criado com sucesso!"
+        )
+        return redirect(self.success_url)
 
     def form_invalid(self, form):
-        messages.error(self.request, "Há erros no formulário. Verifique os campos destacados.")
+        messages.error(
+            self.request,
+            "Há erros no formulário. Verifique os campos destacados."
+        )
         return super().form_invalid(form)
 
+# --------------------------------#
+# Visualizar Processo             #
+# --------------------------------#
 class VisualizarProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1363,23 +1437,55 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
+
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
-        context['form'] = Form_ProcessoForm(instance=processo, modo_visualizacao=True)
+
+        # 🔹 DOCUMENTOS ASSOCIADOS
+        modelos_associados, normas_associadas = get_documentos_por_processo(processo)
+
         context.update({
-            'modo_visualizacao': True,
-            'modo_inclusao': False,
-            'modo_exclusao': False,
-            'modo_edicao': False,
+            "form": Form_ProcessoForm(
+                instance=processo,
+                modo_visualizacao=True
+            ),
+
+            # 🔹 hidratação reversa
+            "modelos_associados": modelos_associados,
+            "normas_associadas": normas_associadas,
+
+            "modo_visualizacao": True,
+            "modo_inclusao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
             "desabilitar": True,
-            'cadastro_data': (timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else ""),
-            'cadastro_user': (processo.usuario_cadastro.get_full_name() if processo.usuario_cadastro else ""),
-            'atualizacao_data': (timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_atualizacao else ""),
-            'atualizacao_user': (processo.usuario_atualizacao.get_full_name() if processo.usuario_atualizacao else ""),
+
+            # Auditoria
+            "cadastro_data": (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            "cadastro_user": (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
+            "atualizacao_data": (
+                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_atualizacao else ""
+            ),
+            "atualizacao_user": (
+                processo.usuario_atualizacao.get_full_name()
+                if processo.usuario_atualizacao else ""
+            ),
         })
+
         return context
 
+
+# --------------------------------#
+# Editar Processo                 #
+# --------------------------------#
 class EditarProcesso(LoginRequiredMixin, UpdateView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1389,38 +1495,54 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.object
+
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        context["macroprocesso_nivel1_list"] = (
-            MacroprocessoNivel1.objects.filter(classificacao=processo.classificacao)
-            if processo.classificacao_id else MacroprocessoNivel1.objects.none()
-        )
-        context["macroprocesso_nivel2_list"] = (
-            MacroprocessoNivel2.objects.filter(macroprocesso_nivel1=processo.macroprocesso_nivel1)
-            if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
-        )
+        # 🔹 DOCUMENTOS ASSOCIADOS
+        modelos_associados, normas_associadas = get_documentos_por_processo(processo)
 
         context.update({
+            "modelos_associados": modelos_associados,
+            "normas_associadas": normas_associadas,
+
             "modo_edicao": True,
             "modo_inclusao": False,
             "modo_visualizacao": False,
             "modo_exclusao": False,
-            "cadastro_data": (timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else ""),
-            "cadastro_user": (processo.usuario_cadastro.get_full_name() if processo.usuario_cadastro else ""),
+
+            "cadastro_data": (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            "cadastro_user": (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
             "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
-            "atualizacao_user": (self.request.user.get_full_name() or self.request.user.username),
+            "atualizacao_user": (
+                self.request.user.get_full_name() or self.request.user.username
+            ),
         })
+
         return context
 
     def form_valid(self, form):
         processo = form.instance
         processo.usuario_atualizacao = self.request.user
         processo.data_atualizacao = timezone.now()
-        messages.success(self.request, f"Processo '{processo.nome}' atualizado com sucesso!")
+
+        messages.success(
+            self.request,
+            f"Processo '{processo.nome}' atualizado com sucesso!"
+        )
+
         return super().form_valid(form)
 
+# --------------------------------#
+# Excluir Processo                #
+# --------------------------------#
 class ExcluirProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
@@ -1429,32 +1551,47 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
+
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
-        subprocessos = processo.subprocessos.all()
-        context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
+
+        # 🔹 DOCUMENTOS ASSOCIADOS
+        modelos_associados, normas_associadas = get_documentos_por_processo(processo)
+
         context.update({
-            'cadastro_data': (timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_criacao else ""),
-            'cadastro_user': (processo.usuario_cadastro.get_full_name() if processo.usuario_cadastro else ""),
-            'atualizacao_data': (timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S") if processo.data_atualizacao else ""),
-            'atualizacao_user': (processo.usuario_atualizacao.get_full_name() if processo.usuario_atualizacao else ""),
-            'modo_exclusao': True,
-            'modo_visualizacao': False,
-            'modo_inclusao': False,
-            'modo_edicao': False,
+            "form": Form_ProcessoForm(instance=processo, modo_exclusao=True),
+
+            "modelos_associados": modelos_associados,
+            "normas_associadas": normas_associadas,
+
+            "modo_exclusao": True,
+            "modo_visualizacao": False,
+            "modo_inclusao": False,
+            "modo_edicao": False,
             "desabilitar": True,
-            "subprocessos_existentes": subprocessos,
+
+            "cadastro_data": (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            "cadastro_user": (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
+            "atualizacao_data": (
+                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_atualizacao else ""
+            ),
+            "atualizacao_user": (
+                processo.usuario_atualizacao.get_full_name()
+                if processo.usuario_atualizacao else ""
+            ),
+
+            "subprocessos_existentes": processo.subprocessos.all(),
         })
+
         return context
 
-    def post(self, request, *args, **kwargs):
-        processo = self.get_object()
-        subprocessos = processo.subprocessos.all()
-        if subprocessos.exists():
-            lista = ", ".join([s.nome for s in subprocessos])
-            messages.error(request, f"Não é possível excluir o processo '{processo.nome}'. Existem subprocessos associados: {lista}")
-            return redirect(request.path)
-        processo.delete()
-        messages.success(request, f"Processo '{processo.nome}' excluído com sucesso!")
-        return redirect('arquiteturaprocessos:processos')
+
+

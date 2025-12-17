@@ -269,7 +269,6 @@ TelefoneFormSet = inlineformset_factory(
     can_delete=True
 )
 
-
 # ============================================================
 # CLASSIFICAÇÃO / MACROPROCESSOS / MODELAGEM / PROCESSO
 # (mantive exatamente como na versão estável)
@@ -309,7 +308,9 @@ class Form_ClassificacaoForm(forms.ModelForm):
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
-
+# ============================================================
+# MACROPROCESSO NIVEL 1
+# ============================================================
 class Form_MacroProcessoNivel1Form(forms.ModelForm):
     class Meta:
         model = MacroprocessoNivel1
@@ -345,7 +346,9 @@ class Form_MacroProcessoNivel1Form(forms.ModelForm):
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
-
+# ============================================================
+# MACROPROCESSO NIVEL 2
+# ============================================================
 class Form_MacroProcessoNivel2Form(forms.ModelForm):
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),
@@ -431,6 +434,9 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                 field.widget.attrs["id"] = f"id_{name}"
             field.widget.attrs.setdefault("name", name)
 
+# ============================================================
+# TIPOS DE DOCUMENTO
+# ============================================================
 class Form_TipoDocumentoForm(forms.ModelForm):
     class Meta:
         model = TiposDocumento
@@ -469,15 +475,6 @@ class Form_TipoDocumentoForm(forms.ModelForm):
         if nome:
             nome = nome.strip().upper()
         return nome
-
-import os
-import re
-
-from django import forms
-from django.core.exceptions import ValidationError
-from django.forms import FileInput
-
-from .models import ModelagemProcesso, TiposDocumento
 
 # ============================================================
 # Modelagem de Processos
@@ -545,9 +542,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         # Ajuste datas iniciais (evita quebra em edição)
         for fname in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
             try:
-                field = self.fields.get(fname)
-                if field and getattr(self.instance, fname):
-                    field.initial = getattr(self.instance, fname).strftime("%Y-%m-%d")
+                if getattr(self.instance, fname):
+                    self.fields[fname].initial = getattr(self.instance, fname).strftime("%Y-%m-%d")
             except Exception:
                 pass
 
@@ -559,7 +555,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         )
 
         # Estilo geral
-        for name, field in self.fields.items():
+        for field in self.fields.values():
             existing = field.widget.attrs.get("class", "")
             bg = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
 
@@ -579,14 +575,6 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
         self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
 
-        # Campo tipo_documento respeitando modos
-        if "tipo_documento" in self.fields:
-            if self.modo_visualizacao or self.modo_exclusao:
-                self.fields["tipo_documento"].disabled = True
-                self.fields["tipo_documento"].widget.attrs["class"] += " bg-gray-100"
-            else:
-                self.fields["tipo_documento"].widget.attrs["class"] += " bg-white"
-
         # PDF widget
         if "documento_modelagem_processo" in self.fields:
             fwidget = self.fields["documento_modelagem_processo"].widget
@@ -605,9 +593,19 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             self.fields["sequencial"].initial = "001"
             self.fields["versao"].initial = "01"
 
-        # Usuário criador
-        if self.usuario_logado and (not self.instance or not self.instance.pk):
+        # 🔹 ZEROS À ESQUERDA — edição / visualização
+        if self.instance and self.instance.pk:
+            if self.instance.sequencial is not None:
+                self.initial["sequencial"] = f"{int(self.instance.sequencial):03d}"
+            if self.instance.versao is not None:
+                self.initial["versao"] = f"{int(self.instance.versao):02d}"
+
+        # Usuário criador / atualização
+        if self.usuario_logado and not self.instance.pk:
             self.instance.usuario = self.usuario_logado
+
+        if self.usuario_logado and self.instance.pk:
+            self.instance.usuario_atualizacao = self.usuario_logado
 
         # Modo somente leitura
         if self.modo_visualizacao or self.modo_exclusao:
@@ -689,12 +687,39 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
         return obj
 
+# ----------------------------
+# Processos - Formulário
+# ----------------------------
 class Form_ProcessoForm(forms.ModelForm):
-    classificacao = forms.ModelChoiceField(queryset=Classificacao.objects.all(), label="Classificação")
-    macroprocesso_nivel1 = forms.ModelChoiceField(queryset=MacroprocessoNivel1.objects.all(), label="Macroprocesso Nível 1")
-    macroprocesso_nivel2 = forms.ModelChoiceField(queryset=MacroprocessoNivel2.objects.all(), label="Macroprocesso Nível 2", required=False)
-    modelagem_processo = forms.ModelChoiceField(queryset=ModelagemProcesso.objects.all(), required=False, label="Modelo de Processo")
-    norma_procedimento = forms.ModelChoiceField(queryset=ModelagemProcesso.objects.all(), required=False, label="Norma de Procedimento")
+
+    classificacao = forms.ModelChoiceField(
+        queryset=Classificacao.objects.all(),
+        label="Classificação"
+    )
+
+    macroprocesso_nivel1 = forms.ModelChoiceField(
+        queryset=MacroprocessoNivel1.objects.all(),
+        label="Macroprocesso Nível 1"
+    )
+
+    macroprocesso_nivel2 = forms.ModelChoiceField(
+        queryset=MacroprocessoNivel2.objects.all(),
+        label="Macroprocesso Nível 2",
+        required=False
+    )
+
+    # 🔹 Campos existentes — NÃO MUDAM
+    modelagem_processo = forms.ModelChoiceField(
+        queryset=ModelagemProcesso.objects.all(),
+        required=False,
+        label="Modelo de Processo"
+    )
+
+    norma_procedimento = forms.ModelChoiceField(
+        queryset=ModelagemProcesso.objects.all(),
+        required=False,
+        label="Norma de Procedimento"
+    )
 
     class Meta:
         model = Processo
@@ -704,17 +729,22 @@ class Form_ProcessoForm(forms.ModelForm):
             "data_criacao",
             "data_atualizacao",
         )
+
         widgets = {
             "objetivo": forms.Textarea(attrs={"rows": "2"}),
             "observacao": forms.Textarea(attrs={"rows": "2"}),
         }
 
+    # ------------------------------------------------
+    # INIT – estilo base, bloqueios por modo
+    # ------------------------------------------------
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         modo_exclusao = kwargs.pop("modo_exclusao", False)
         modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
+
         self.label_suffix = ""
 
         base = (
@@ -726,6 +756,7 @@ class Form_ProcessoForm(forms.ModelForm):
         for name, field in self.fields.items():
             if name == "nome":
                 continue
+
             bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
             field.widget.attrs["class"] = f"{base} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
@@ -735,24 +766,57 @@ class Form_ProcessoForm(forms.ModelForm):
             for field in self.fields.values():
                 field.disabled = True
 
+    # ------------------------------------------------
+    # CLEAN – Regras finais + consolidação documentos
+    # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
+
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
 
+        # 1️⃣ Nome obrigatório
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
 
+        # 2️⃣ Processo → parent None
         if not parent:
             cleaned["parent"] = None
 
+        # 3️⃣ Subprocesso não pode ter subprocesso como pai
         if parent and parent.parent_id:
-            self.add_error("parent", "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso.")
+            self.add_error(
+                "parent",
+                "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso."
+            )
 
+        # 4️⃣ Validação Macro N1 / N2
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")
-        if macro2 and macro1:
-            if macro2.macroprocesso_nivel1_id != macro1.id:
-                self.add_error("macroprocesso_nivel2", "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado.")
+
+        if macro2 and macro1 and macro2.macroprocesso_nivel1_id != macro1.id:
+            self.add_error(
+                "macroprocesso_nivel2",
+                "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
+            )
+
+        # ------------------------------------------------
+        # 🔗 CONSOLIDAÇÃO DOS DOCUMENTOS (PONTO-CHAVE)
+        # ------------------------------------------------
+        documentos = []
+
+        modelo = cleaned.get("modelagem_processo")
+        norma = cleaned.get("norma_procedimento")
+
+        if modelo:
+            documentos.append(modelo)
+
+        if norma and norma != modelo:
+            documentos.append(norma)
+
+        # 🔵 Campo lógico para a view (não é ModelField)
+        cleaned["modelagens"] = documentos
 
         return cleaned
+
+

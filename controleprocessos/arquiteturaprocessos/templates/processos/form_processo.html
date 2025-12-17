@@ -2,6 +2,7 @@
 {% load static %}
 {% load custom_tags %}
 {% load form_tags %}
+{% with modelo_base=modelos_associados|first %}
 
 {% block titulo %}
     {% if modo_visualizacao %}Visualização de Processos
