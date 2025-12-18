@@ -1497,40 +1497,45 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        processo = self.object
+            context = super().get_context_data(**kwargs)
+            processo = self.object
 
-        modelos, normas = get_modelagem_filtrada()
-        context["modelos_processo"] = modelos
-        context["normas_procedimento"] = normas
 
-        # 🔹 DOCUMENTOS ASSOCIADOS
-        modelos_associados, normas_associadas = get_documentos_por_processo(processo)
 
-        context.update({
-            "modelos_associados": modelos_associados,
-            "normas_associadas": normas_associadas,
+            modelos, normas = get_modelagem_filtrada()
+            context["modelos_processo"] = modelos
+            context["normas_procedimento"] = normas
 
-            "modo_edicao": True,
-            "modo_inclusao": False,
-            "modo_visualizacao": False,
-            "modo_exclusao": False,
+            # 🔹 DOCUMENTOS ASSOCIADOS
+            modelos_associados, normas_associadas = get_documentos_por_processo(processo)
 
-            "cadastro_data": (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_criacao else ""
-            ),
-            "cadastro_user": (
-                processo.usuario_cadastro.get_full_name()
-                if processo.usuario_cadastro else ""
-            ),
-            "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
-            "atualizacao_user": (
-                self.request.user.get_full_name() or self.request.user.username
-            ),
-        })
+            context.update({
+                "modelos_associados": modelos_associados,
+                "normas_associadas": normas_associadas,
 
-        return context
+                "modelos_associados_ids": [m.id for m in modelos_associados],
+                "normas_associadas_ids": [n.id for n in normas_associadas],
+
+                "modo_edicao": True,
+                "modo_inclusao": False,
+                "modo_visualizacao": False,
+                "modo_exclusao": False,
+
+                "cadastro_data": (
+                    timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                    if processo.data_criacao else ""
+                ),
+                "cadastro_user": (
+                    processo.usuario_cadastro.get_full_name()
+                    if processo.usuario_cadastro else ""
+                ),
+                "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
+                "atualizacao_user": (
+                    self.request.user.get_full_name() or self.request.user.username
+                ),
+            })
+
+            return context
 
     def form_valid(self, form):
         processo = form.instance
@@ -1568,6 +1573,9 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 
             "modelos_associados": modelos_associados,
             "normas_associadas": normas_associadas,
+
+            "modelos_associados_ids": [m.id for m in modelos_associados],
+            "normas_associadas_ids": [n.id for n in normas_associadas],
 
             "modo_exclusao": True,
             "modo_visualizacao": False,

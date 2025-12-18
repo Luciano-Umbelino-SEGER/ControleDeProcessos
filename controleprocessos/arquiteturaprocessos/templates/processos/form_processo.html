@@ -1434,9 +1434,111 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (!window.MODO || window.MODO.inclusao) return;
+
+    const modelos = window.MODO.modelosAssociados || [];
+    const normas  = window.MODO.normasAssociadas || [];
+
+    /* ===============================
+       MODELOS DE PROCESSO
+    =============================== */
+    if (modelos.length > 0) {
+        const base = document.getElementById("id_modelagem_processo");
+        if (!base) return;
+
+        base.value = modelos[0];
+        base.dispatchEvent(new Event("change", { bubbles: true }));
+
+        modelos.slice(1).forEach(id => {
+            addModelo(base);
+
+            const blocks = document.querySelectorAll(".modelo-block");
+            const last   = blocks[blocks.length - 1];
+            const select = last?.querySelector("select");
+
+            if (select) {
+                select.value = id;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        });
+    }
+
+    /* ===============================
+       NORMAS DE PROCEDIMENTO
+    =============================== */
+    if (normas.length > 0) {
+        const base = document.getElementById("norma_procedimento");
+        if (!base) return;
+
+        base.value = normas[0];
+        base.dispatchEvent(new Event("change", { bubbles: true }));
+
+        normas.slice(1).forEach(id => {
+            addNorma(base);
+
+            const blocks = document.querySelectorAll(".norma-block");
+            const last   = blocks[blocks.length - 1];
+            const select = last?.querySelector("select");
+
+            if (select) {
+                select.value = id;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        });
+    }
+
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (!window.MODO) return;
+    if (!(window.MODO.visualizacao || window.MODO.exclusao)) return;
+
+    /* ===============================
+       🔒 BLOQUEAR APENAS + e -
+       =============================== */
+
+    // MODELOS DE PROCESSO
+    document.querySelectorAll(
+        ".modelo-block button[onclick^='addModelo'], " +
+        ".modelo-block button[onclick^='removeModelo'], " +
+        ".modelo-block button[data-action='add'], " +
+        ".modelo-block button[data-action='remove']"
+    ).forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add(
+            "text-gray-300",
+            "cursor-not-allowed",
+            "pointer-events-none"
+        );
+    });
+
+    // NORMAS DE PROCEDIMENTO
+    document.querySelectorAll(
+        ".norma-block button[onclick^='addNorma'], " +
+        ".norma-block button[onclick^='removeNorma'], " +
+        ".norma-block button[data-action='add'], " +
+        ".norma-block button[data-action='remove']"
+    ).forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add(
+            "text-gray-300",
+            "cursor-not-allowed",
+            "pointer-events-none"
+        );
+    });
+
+});
+</script>
+
 
 <!-- JS CENTRALIZADO -->
-<script src="{% static 'js/processos.js' %}"></script>
+<!-- <script src="{% static 'js/processos.js' %}"></script> -->
 {% include 'components/modal_documento_processo.html' %}
 
 {% endblock %}
