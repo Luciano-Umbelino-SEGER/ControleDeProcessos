@@ -111,36 +111,29 @@ def extrair_modelagens_do_post(request):
     return ModelagemProcesso.objects.filter(id__in=ids)
 
 # ----------------------------------
-# Recuperar Documentos  - Processos
+# Recuperar Documentos - Processos
 # ----------------------------------
 def get_documentos_por_processo(processo):
-    """
-    Retorna dois lists:
-    - modelos_associados
-    - normas_associadas
-    """
-    documentos = (
-        ProcessoDocumento.objects
-        .filter(processo=processo)
-        .select_related("modelagem_processo__tipo_documento")
-    )
-
     modelos = []
     normas = []
 
-    for doc in documentos:
-        mp = doc.modelagem_processo
-        if not mp or not mp.tipo_documento:
-            continue
+    relacoes = (
+        ProcessoDocumento.objects
+        .select_related("modelagem_processo__tipo_documento")
+        .filter(processo=processo)
+    )
 
-        tipo = mp.tipo_documento.nome.lower()
+    for rel in relacoes:
+        doc = rel.modelagem_processo
+        tipo_nome = doc.tipo_documento.nome.upper().strip()
 
-        if "modelo" in tipo:
-            modelos.append(mp)
-        elif "norma" in tipo:
-            normas.append(mp)
+        if tipo_nome == "MODELO DE PROCESSO":
+            modelos.append(doc)
+        elif tipo_nome == "NORMA DE PROCEDIMENTO":
+            normas.append(doc)
 
     return modelos, normas
+
 
 
 # ---------------------------
@@ -1445,10 +1438,21 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         # 🔹 DOCUMENTOS ASSOCIADOS
         modelos_associados, normas_associadas = get_documentos_por_processo(processo)
 
+        modelo_base = modelos_associados[0] if modelos_associados else None
+        norma_base = normas_associadas[0] if normas_associadas else None
+
+        # ✅ IDs para hidratação via JS
+        context["modelos_associados_ids"] = [m.id for m in modelos_associados]
+        context["normas_associadas_ids"] = [n.id for n in normas_associadas]
+
         context.update({
             "form": Form_ProcessoForm(
                 instance=processo,
-                modo_visualizacao=True
+                modo_visualizacao=True,
+                initial={
+                    "modelagem_processo": modelo_base,
+                    "norma_procedimento": norma_base,
+                }
             ),
 
             # 🔹 hidratação reversa

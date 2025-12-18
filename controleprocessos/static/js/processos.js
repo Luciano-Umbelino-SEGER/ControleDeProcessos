@@ -63,11 +63,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // Funções auxiliares
     // ===============================
     function isTipoProcesso() {
-        return rbProcesso && rbProcesso.checked;
+    if (rbProcesso && rbProcesso.checked) return true;
+        return !parentIdFromServer;
     }
 
     function isTipoSubprocesso() {
-        return rbSubprocesso && rbSubprocesso.checked;
+        if (rbSubprocesso && rbSubprocesso.checked) return true;
+        return !!parentIdFromServer;
     }
 
     const formIsEditable = () => modoInclusao || modoEdicao;
@@ -151,8 +153,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (parentField) parentField.disabled = false;
 
-        limparVisiveis();
-
         if (processoSelectVisible) {
             const processos = await carregarProcessosPai();
             processoSelectVisible.innerHTML = `<option value="">---------</option>`;
@@ -163,6 +163,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 processoSelectVisible.appendChild(opt);
             });
         }
+
+        limparVisiveis();
 
         if (!selectListenerAdded && processoSelectVisible) {
             processoSelectVisible.addEventListener("change", function () {
@@ -308,10 +310,17 @@ document.addEventListener("DOMContentLoaded", function () {
             if (parentField) parentField.value = parentValor;
 
             if (!nomeValor) {
-                alert("Preencha o nome antes de enviar.");
+                alert("Preencha o nome do Processo/Subprocesso antes de enviar.");
                 ev.preventDefault();
+                if (isTipoSubprocesso() && subprocessoInputVisible) {
+                    subprocessoInputVisible.focus();
+                } else if (processoInputVisible) {
+                    processoInputVisible.focus();
+                }
             }
         });
     })();
 
 });
+
+

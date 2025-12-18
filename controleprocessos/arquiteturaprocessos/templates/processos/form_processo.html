@@ -2,7 +2,6 @@
 {% load static %}
 {% load custom_tags %}
 {% load form_tags %}
-{% with modelo_base=modelos_associados|first %}
 
 {% block titulo %}
     {% if modo_visualizacao %}Visualização de Processos
@@ -943,7 +942,17 @@
         edicao: {{ modo_edicao|yesno:"true,false" }},
         visualizacao: {{ modo_visualizacao|yesno:"true,false" }},
         exclusao: {{ modo_exclusao|yesno:"true,false" }},
-        parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
+        parentId: "{{ form.instance.parent_id|default_if_none:'' }}",
+
+        // ✅ IDs dos documentos associados (para hidratação)
+        modelosAssociados: {{ modelos_associados_ids|default:"[]"|safe }},
+        normasAssociadas: {{ normas_associadas_ids|default:"[]"|safe }}
+    };
+</script>
+<script>
+    window.DOCUMENTOS_ASSOCIADOS = {
+        modelos: {{ modelos_associados_ids|default:"[]"|safe }},
+        normas: {{ normas_associadas_ids|default:"[]"|safe }}
     };
 </script>
 
@@ -1376,6 +1385,55 @@ function normaProcedimentoData() {
 
 })();
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (!window.MODO) return;
+    if (window.MODO.inclusao) return;
+
+    const modelos = window.MODO.modelosAssociados || [];
+    const normas  = window.MODO.normasAssociadas || [];
+
+    /* MODELOS */
+    if (modelos.length > 0) {
+        const base = document.getElementById("id_modelagem_processo");
+        if (!base) return;
+
+        base.value = modelos[0];
+        base.dispatchEvent(new Event("change", { bubbles: true }));
+
+        modelos.slice(1).forEach(id => {
+            addModelo(base);
+            const blocks = document.querySelectorAll(".modelo-block");
+            const last = blocks[blocks.length - 1];
+            const sel = last.querySelector("select");
+            sel.value = id;
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+    }
+
+    /* NORMAS */
+    if (normas.length > 0) {
+        const base = document.getElementById("norma_procedimento");
+        if (!base) return;
+
+        base.value = normas[0];
+        base.dispatchEvent(new Event("change", { bubbles: true }));
+
+        normas.slice(1).forEach(id => {
+            addNorma(base);
+            const blocks = document.querySelectorAll(".norma-block");
+            const last = blocks[blocks.length - 1];
+            const sel = last.querySelector("select");
+            sel.value = id;
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+    }
+
+});
+</script>
+
 
 <!-- JS CENTRALIZADO -->
 <script src="{% static 'js/processos.js' %}"></script>
