@@ -708,7 +708,6 @@ class Form_ProcessoForm(forms.ModelForm):
         required=False
     )
 
-    # 🔹 Campos existentes — NÃO MUDAM
     modelagem_processo = forms.ModelChoiceField(
         queryset=ModelagemProcesso.objects.all(),
         required=False,
@@ -745,6 +744,16 @@ class Form_ProcessoForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
 
+        # 🔑 GARANTIA DOS IDS PARA O TRIPLE FILTER (SEM QUEBRAR O LAYOUT)
+        if "classificacao" in self.fields:
+            self.fields["classificacao"].widget.attrs["id"] = "id_classificacao"
+
+        if "macroprocesso_nivel1" in self.fields:
+            self.fields["macroprocesso_nivel1"].widget.attrs["id"] = "id_macroprocesso_nivel1"
+
+        if "macroprocesso_nivel2" in self.fields:
+            self.fields["macroprocesso_nivel2"].widget.attrs["id"] = "id_macroprocesso_nivel2"
+
         self.label_suffix = ""
 
         base = (
@@ -753,7 +762,12 @@ class Form_ProcessoForm(forms.ModelForm):
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
+        # --------------------------------------------------------------------
+        # Estilização e preenchimento dos campos
+        # --------------------------------------------------------------------
         for name, field in self.fields.items():
+
+            # ⛔ Campo nome é hidden — JS controla
             if name == "nome":
                 continue
 
@@ -762,12 +776,15 @@ class Form_ProcessoForm(forms.ModelForm):
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
+        # --------------------------------------------------------------------
+        # Modo VISUALIZAÇÃO / EXCLUSÃO — trava tudo
+        # --------------------------------------------------------------------
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
 
     # ------------------------------------------------
-    # CLEAN – Regras finais + consolidação documentos
+    # CLEAN – Regras finais de validação
     # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
@@ -775,47 +792,31 @@ class Form_ProcessoForm(forms.ModelForm):
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
 
-        # 1️⃣ Nome obrigatório
+        # 1️⃣ Nome é obrigatório SEMPRE
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
 
-        # 2️⃣ Processo → parent None
+        # 2️⃣ PROCESSO → parent deve ser None
         if not parent:
-            cleaned["parent"] = None
+            cleaned["parent"] = None  # Processo
 
-        # 3️⃣ Subprocesso não pode ter subprocesso como pai
+        # 3️⃣ SUBPROCESSO → parent deve ser um Processo (não outro subprocesso)
         if parent and parent.parent_id:
             self.add_error(
                 "parent",
                 "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso."
             )
 
-        # 4️⃣ Validação Macro N1 / N2
+        # 4️⃣ Validação macroprocesso n1/n2
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")
 
-        if macro2 and macro1 and macro2.macroprocesso_nivel1_id != macro1.id:
-            self.add_error(
-                "macroprocesso_nivel2",
-                "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
-            )
-
-        # ------------------------------------------------
-        # 🔗 CONSOLIDAÇÃO DOS DOCUMENTOS (PONTO-CHAVE)
-        # ------------------------------------------------
-        documentos = []
-
-        modelo = cleaned.get("modelagem_processo")
-        norma = cleaned.get("norma_procedimento")
-
-        if modelo:
-            documentos.append(modelo)
-
-        if norma and norma != modelo:
-            documentos.append(norma)
-
-        # 🔵 Campo lógico para a view (não é ModelField)
-        cleaned["modelagens"] = documentos
+        if macro2 and macro1:
+            if macro2.macroprocesso_nivel1_id != macro1.id:
+                self.add_error(
+                    "macroprocesso_nivel2",
+                    "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
+                )
 
         return cleaned
 

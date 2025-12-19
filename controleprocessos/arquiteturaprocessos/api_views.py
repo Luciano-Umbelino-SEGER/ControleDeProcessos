@@ -70,11 +70,13 @@ def macro1_todos(request):
 
 
 def macro2_todos(request):
-    """
-    Retorna todos os Macroprocessos Nivel 2.
-    """
-    items = MacroprocessoNivel2.objects.values("id", "nome")
+    items = MacroprocessoNivel2.objects.values(
+        "id",
+        "nome",
+        "macroprocesso_nivel1_id"
+    )
     return JsonResponse({"macro2": list(items)})
+
 
 def processos_pai(request):
     """

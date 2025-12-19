@@ -1,5 +1,5 @@
 // ===============================
-// processos.js – VERSÃO FINAL AJUSTADA
+// processos.js – VERSÃO FINAL 100% REVISADA
 // ===============================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -30,11 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function safeFetchJson(url) {
         return fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(r => {
-            if (!r.ok) throw new Error("HTTP " + r.status);
-            return r.json();
-        });
+        }).then(r => r.json());
     }
 
     // =====================================================================
@@ -58,18 +54,23 @@ document.addEventListener("DOMContentLoaded", function () {
     // campos backend
     const parentField = safeGet("id_parent");
     const hiddenNomeField = safeGet("id_nome");
+    const hiddenTipoProcField = document.querySelector('input[name="tipo_processo"]');
 
     // ===============================
     // Funções auxiliares
     // ===============================
     function isTipoProcesso() {
-    if (rbProcesso && rbProcesso.checked) return true;
-        return !parentIdFromServer;
+        return (
+            (rbProcesso && rbProcesso.checked) ||
+            (hiddenTipoProcField && hiddenTipoProcField.value === "processo")
+        );
     }
 
     function isTipoSubprocesso() {
-        if (rbSubprocesso && rbSubprocesso.checked) return true;
-        return !!parentIdFromServer;
+        return (
+            (rbSubprocesso && rbSubprocesso.checked) ||
+            (hiddenTipoProcField && hiddenTipoProcField.value === "subprocesso")
+        );
     }
 
     const formIsEditable = () => modoInclusao || modoEdicao;
@@ -110,30 +111,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ===============================
-    // INCLUSÃO
+    // INCLUSÃO – mudar modos
     // ===============================
     function setModeProcesso_inclusao() {
         aplicarEstadoVisualLabels(false);
 
-        if (processoInputVisible) {
-            processoInputVisible.classList.remove("hidden");
-            processoInputVisible.disabled = false;
-            processoInputVisible.classList.add("bg-white");
-            processoInputVisible.classList.remove("bg-gray-100");
-        }
+        processoInputVisible.classList.remove("hidden");
+        processoSelectContainer.classList.add("hidden");
 
-        if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
+        processoInputVisible.disabled = false;
+        processoInputVisible.classList.add("bg-white");
+        processoInputVisible.classList.remove("bg-gray-100");
 
-        if (subprocessoInputVisible) {
-            subprocessoInputVisible.disabled = true;
-            subprocessoInputVisible.classList.add("bg-gray-100");
-            subprocessoInputVisible.value = "";
-        }
+        subprocessoInputVisible.disabled = true;
+        subprocessoInputVisible.classList.add("bg-gray-100");
+        subprocessoInputVisible.value = "";
 
-        if (parentField) {
-            parentField.disabled = true;
-            parentField.value = "";
-        }
+        parentField.disabled = true;
+        parentField.value = "";
 
         limparVisiveis();
     }
@@ -141,17 +136,17 @@ document.addEventListener("DOMContentLoaded", function () {
     async function setModeSubprocesso_inclusao() {
         aplicarEstadoVisualLabels(true);
 
-        if (processoInputVisible) processoInputVisible.classList.add("hidden");
-        if (processoSelectContainer) processoSelectContainer.classList.remove("hidden");
+        processoInputVisible.classList.add("hidden");
+        processoSelectContainer.classList.remove("hidden");
 
-        if (subprocessoInputVisible) {
-            subprocessoInputVisible.disabled = false;
-            subprocessoInputVisible.classList.add("bg-white");
-            subprocessoInputVisible.classList.remove("bg-gray-100");
-            subprocessoInputVisible.value = "";
-        }
+        subprocessoInputVisible.disabled = false;
+        subprocessoInputVisible.classList.add("bg-white");
+        subprocessoInputVisible.classList.remove("bg-gray-100");
+        subprocessoInputVisible.value = "";
 
-        if (parentField) parentField.disabled = false;
+        parentField.disabled = false;
+
+        limparVisiveis();
 
         if (processoSelectVisible) {
             const processos = await carregarProcessosPai();
@@ -163,8 +158,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 processoSelectVisible.appendChild(opt);
             });
         }
-
-        limparVisiveis();
 
         if (!selectListenerAdded && processoSelectVisible) {
             processoSelectVisible.addEventListener("change", function () {
@@ -190,32 +183,28 @@ document.addEventListener("DOMContentLoaded", function () {
             aplicarEstadoVisualLabels(true);
 
             if (modoEdicao) {
-                if (processoInputVisible) processoInputVisible.classList.add("hidden");
-                if (processoSelectContainer) processoSelectContainer.classList.remove("hidden");
+                processoInputVisible.classList.add("hidden");
+                processoSelectContainer.classList.remove("hidden");
 
                 const processos = await carregarProcessosPai();
 
-                if (processoSelectVisible) {
-                    processoSelectVisible.innerHTML = `<option value="">---------</option>`;
-                    processos.forEach(p => {
-                        const opt = document.createElement("option");
-                        opt.value = p.id;
-                        opt.textContent = p.nome;
-                        processoSelectVisible.appendChild(opt);
-                    });
+                processoSelectVisible.innerHTML = `<option value="">---------</option>`;
+                processos.forEach(p => {
+                    const opt = document.createElement("option");
+                    opt.value = p.id;
+                    opt.textContent = p.nome;
+                    processoSelectVisible.appendChild(opt);
+                });
 
-                    processoSelectVisible.value = parentIdFromServer;
-                    processoSelectVisible.disabled = !formIsEditable();
-                }
+                processoSelectVisible.value = parentIdFromServer;
+                processoSelectVisible.disabled = !formIsEditable();
 
-                if (subprocessoInputVisible) {
-                    subprocessoInputVisible.disabled = !formIsEditable();
-                    subprocessoInputVisible.value = nomeRegistro;
-                }
+                subprocessoInputVisible.disabled = !formIsEditable();
+                subprocessoInputVisible.value = nomeRegistro;
 
-                if (parentField) parentField.value = parentIdFromServer;
+                parentField.value = processoSelectVisible.value;
 
-                if (!selectListenerAdded && processoSelectVisible) {
+                if (!selectListenerAdded) {
                     processoSelectVisible.addEventListener("change", () => {
                         parentField.value = processoSelectVisible.value;
                     });
@@ -223,47 +212,36 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
             else {
-                if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
-                if (processoInputVisible) {
-                    processoInputVisible.classList.remove("hidden");
-                    processoInputVisible.disabled = true;
-                }
+                processoSelectContainer.classList.add("hidden");
+                processoInputVisible.classList.remove("hidden");
+                processoInputVisible.disabled = true;
 
                 const processos = await carregarProcessosPai();
                 const parentObj = processos.find(p => String(p.id) === String(parentIdFromServer));
-                if (processoInputVisible) processoInputVisible.value = parentObj ? parentObj.nome : "";
+                processoInputVisible.value = parentObj ? parentObj.nome : "";
 
-                if (subprocessoInputVisible) {
-                    subprocessoInputVisible.disabled = true;
-                    subprocessoInputVisible.value = nomeRegistro;
-                }
+                subprocessoInputVisible.disabled = true;
+                subprocessoInputVisible.value = nomeRegistro;
 
-                if (parentField) {
-                    parentField.value = parentIdFromServer;
-                    parentField.disabled = true;
-                }
+                parentField.value = parentIdFromServer;
+                parentField.disabled = true;
             }
 
         } else {
             if (rbProcesso) rbProcesso.checked = true;
             aplicarEstadoVisualLabels(false);
 
-            if (processoSelectContainer) processoSelectContainer.classList.add("hidden");
-            if (processoInputVisible) {
-                processoInputVisible.classList.remove("hidden");
-                processoInputVisible.disabled = !formIsEditable();
-                processoInputVisible.value = nomeRegistro;
-            }
+            processoSelectContainer.classList.add("hidden");
+            processoInputVisible.classList.remove("hidden");
 
-            if (subprocessoInputVisible) {
-                subprocessoInputVisible.disabled = true;
-                subprocessoInputVisible.value = "";
-            }
+            processoInputVisible.disabled = !formIsEditable();
+            processoInputVisible.value = nomeRegistro;
 
-            if (parentField) {
-                parentField.value = "";
-                parentField.disabled = true;
-            }
+            subprocessoInputVisible.disabled = true;
+            subprocessoInputVisible.value = "";
+
+            parentField.value = "";
+            parentField.disabled = true;
         }
     }
 
@@ -272,18 +250,213 @@ document.addEventListener("DOMContentLoaded", function () {
     // ===============================
     (async function init() {
         if (modoInclusao) {
-            if (rbProcesso) rbProcesso.disabled = false;
-            if (rbSubprocesso) rbSubprocesso.disabled = false;
+            rbProcesso.disabled = false;
+            rbSubprocesso.disabled = false;
 
-            if (rbProcesso) rbProcesso.addEventListener("change", () => rbProcesso.checked && setModeProcesso_inclusao());
-            if (rbSubprocesso) rbSubprocesso.addEventListener("change", () => rbSubprocesso.checked && setModeSubprocesso_inclusao());
+            rbProcesso.addEventListener("change", () => rbProcesso.checked && setModeProcesso_inclusao());
+            rbSubprocesso.addEventListener("change", () => rbSubprocesso.checked && setModeSubprocesso_inclusao());
 
-            if (rbSubprocesso && rbSubprocesso.checked) await setModeSubprocesso_inclusao();
+            if (rbSubprocesso.checked) await setModeSubprocesso_inclusao();
             else setModeProcesso_inclusao();
         }
         else {
             await inicializacaoNaoInclusao();
         }
+    })();
+
+    // ===============================
+    // MODELAGEM E NORMA — não alterado
+    // ===============================
+    const modeloSelect = safeGet("id_modelagem_processo");
+    const temaModelo = safeGet("tema_modelo");
+    const versaoModelo = safeGet("versao_modelo");
+    const emitenteModelo = safeGet("emitente_modelo");
+    const sistemaModelo = safeGet("sistema_modelo");
+    const vigenciaModelo = safeGet("vigencia_modelo");
+
+    function formatarDataISO_para_BR(iso) {
+        if (!iso) return "";
+        const [a,m,d] = iso.split("-");
+        return `${d}/${m}/${a}`;
+    }
+
+    function formatarVersao(v) { return v ? String(v).padStart(2,"0") : ""; }
+
+    if (modeloSelect) {
+        modeloSelect.addEventListener("change", function() {
+            const opt = this.options[this.selectedIndex];
+            if (!opt || opt.value === "") {
+                temaModelo.value = "";
+                versaoModelo.value = "";
+                emitenteModelo.value = "";
+                sistemaModelo.value = "";
+                vigenciaModelo.value = "";
+                return;
+            }
+            temaModelo.value = opt.dataset.tema || "";
+            versaoModelo.value = formatarVersao(opt.dataset.versao);
+            emitenteModelo.value = opt.dataset.emitente || "";
+            sistemaModelo.value = opt.dataset.sistema || "";
+            vigenciaModelo.value = formatarDataISO_para_BR(opt.dataset.vigencia);
+        });
+    }
+
+    // NORMA
+    const normaSelect = safeGet("norma_procedimento");
+    const temaNorma = safeGet("tema_norma");
+    const versaoNorma = safeGet("versao_norma");
+    const emitenteNorma = safeGet("emitente_norma");
+    const sistemaNorma = safeGet("sistema_norma");
+    const vigenciaNorma = safeGet("vigencia_norma");
+
+    if (normaSelect) {
+        normaSelect.addEventListener("change", function() {
+            const opt = this.options[this.selectedIndex];
+            if (!opt || opt.value === "") {
+                temaNorma.value = "";
+                versaoNorma.value = "";
+                emitenteNorma.value = "";
+                sistemaNorma.value = "";
+                vigenciaNorma.value = "";
+                return;
+            }
+            temaNorma.value = opt.dataset.tema || "";
+            versaoNorma.value = formatarVersao(opt.dataset.versao);
+            emitenteNorma.value = opt.dataset.emitente || "";
+            sistemaNorma.value = opt.dataset.sistema || "";
+            vigenciaNorma.value = formatarDataISO_para_BR(opt.dataset.vigencia);
+        });
+    }
+
+    // ===============================
+    // Triple Filter
+    // ===============================
+    (function tripleFilter() {
+        const selClass = safeGet("id_classificacao");
+        const selMacro1 = safeGet("id_macroprocesso_nivel1");
+        const selMacro2 = safeGet("id_macroprocesso_nivel2");
+
+        if (!selClass || !selMacro1 || !selMacro2) return;
+
+        const API_MACRO1_BY_CLASS = "/api/macroprocessos_por_classificacao/";
+        const API_MACRO2_BY_MACRO1 = "/api/macro2_por_macro1/";
+        const API_CLASS_BY_MACRO1 = "/api/classificacao_por_macro1/";
+        const API_MACRO1_ALL = "/api/macro1_todos/";
+        const API_MACRO2_ALL = "/api/macro2_todos/";
+
+        let cacheMacro1 = null;
+        let cacheMacro2 = null;
+
+        function clearOptions(select) {
+            while (select.options.length) select.remove(0);
+        }
+
+        function addOptions(select, items, selectedValue=null) {
+            const previous = selectedValue ?? select.value;
+            clearOptions(select);
+
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "---------";
+            select.appendChild(placeholder);
+
+            items.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item.id;
+                opt.textContent = item.nome;
+                select.appendChild(opt);
+            });
+
+            if (previous && Array.from(select.options).some(o => o.value == previous)) {
+                select.value = previous;
+            }
+        }
+
+        async function loadAllMacro1() {
+            if (cacheMacro1) return cacheMacro1;
+            const d = await safeFetchJson(API_MACRO1_ALL);
+            cacheMacro1 = d.macro1 || [];
+            return cacheMacro1;
+        }
+        async function loadAllMacro2() {
+            if (cacheMacro2) return cacheMacro2;
+            const d = await safeFetchJson(API_MACRO2_ALL);
+            cacheMacro2 = d.macro2 || [];
+            return cacheMacro2;
+        }
+
+        selClass.addEventListener("change", async function () {
+            const classId = this.value;
+
+            if (!classId) {
+                addOptions(selMacro1, await loadAllMacro1());
+                addOptions(selMacro2, await loadAllMacro2());
+                return;
+            }
+
+            const resp = await fetch(API_MACRO1_BY_CLASS + classId + "/");
+            const data = await resp.json();
+
+            addOptions(selMacro1, data.macroprocessos || []);
+
+            const all2 = await loadAllMacro2();
+            const ids = (data.macroprocessos || []).map(m => m.id);
+            const filtrado = all2.filter(m => ids.includes(m.macroprocesso_nivel1_id));
+
+            addOptions(selMacro2, filtrado);
+        });
+
+        selMacro1.addEventListener("change", async function () {
+            const macro1Id = this.value;
+
+            if (!macro1Id) {
+                addOptions(selMacro2, await loadAllMacro2());
+                return;
+            }
+
+            const respC = await fetch(API_CLASS_BY_MACRO1 + macro1Id + "/");
+            const dataC = await respC.json();
+
+            if (dataC.classificacao_id) {
+                selClass.value = String(dataC.classificacao_id);
+            }
+
+            selClass.dispatchEvent(new Event("change"));
+
+            const resp2 = await fetch(API_MACRO2_BY_MACRO1 + macro1Id + "/");
+            const data2 = await resp2.json();
+
+            addOptions(selMacro2, data2.macro2 || []);
+        });
+
+        selMacro2.addEventListener("change", async function () {
+            const macro2Id = this.value;
+
+            if (!macro2Id) return;
+            if (!ENABLE_REVERSE_UPDATE) return;
+
+            try {
+                const resp = await fetch("/api/macro1_e_classificacao_por_macro2/" + macro2Id + "/");
+                const data = await resp.json();
+
+                if (data.macroprocesso_nivel1?.id) {
+                    selMacro1.value = String(data.macroprocesso_nivel1.id);
+                }
+                if (data.classificacao?.id) {
+                    selClass.value = String(data.classificacao.id);
+                }
+
+                selClass.dispatchEvent(new Event("change"));
+            }
+            catch {}
+        });
+
+        // inicialização
+        (async function initTF() {
+            addOptions(selMacro1, await loadAllMacro1());
+            addOptions(selMacro2, await loadAllMacro2());
+        })();
+
     })();
 
     // ===============================
@@ -306,21 +479,47 @@ document.addEventListener("DOMContentLoaded", function () {
                 parentValor = "";
             }
 
-            if (hiddenNomeField) hiddenNomeField.value = nomeValor;
-            if (parentField) parentField.value = parentValor;
+            hiddenNomeField.value = nomeValor;
+            parentField.value = parentValor;
 
             if (!nomeValor) {
-                alert("Preencha o nome do Processo/Subprocesso antes de enviar.");
-                ev.preventDefault();
-                if (isTipoSubprocesso() && subprocessoInputVisible) {
+                if (isTipoSubprocesso()) {
+                    subprocessoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
                     subprocessoInputVisible.focus();
-                } else if (processoInputVisible) {
+                } else {
+                    processoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
                     processoInputVisible.focus();
+                }
+                alert("Preencha o nome antes de enviar.");
+                ev.preventDefault();
+            }
+        });
+    })();
+
+    // ===============================
+    // Destaque de erros
+    // ===============================
+    (function destaqueCamposErro() {
+        document.querySelectorAll('.alert ul li strong').forEach(err => {
+            const fieldName = err.textContent.replace(':', '').trim();
+            const field = document.querySelector(`[name="${fieldName}"]`);
+
+            if (field) {
+                field.classList.add('border-red-500', 'ring-2', 'ring-red-300');
+
+                if (fieldName === 'nome') {
+                    if (isTipoSubprocesso()) {
+                        subprocessoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
+                    } else {
+                        processoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
+                    }
+                }
+
+                if (fieldName === 'parent') {
+                    processoSelectVisible.classList.add('border-red-500','ring-2','ring-red-300');
                 }
             }
         });
     })();
 
 });
-
-

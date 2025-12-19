@@ -1,18 +1,13 @@
 import os
 import uuid
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.utils.text import slugify
 from django.conf import settings
-from django.core.validators import (
-    RegexValidator,
-    MinValueValidator,
-    MaxValueValidator,
-    FileExtensionValidator,
-)
+from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
-
+from django.urls import reverse
 
 # ============================================================
 # PERFIL / USUÁRIO / TELEFONE
@@ -202,115 +197,60 @@ class ModelagemProcesso(models.Model):
 # PROCESSO / SUBPROCESSO
 # ============================================================
 class Processo(models.Model):
-    nome = models.CharField(
-        max_length=100,
-        verbose_name="Nome do Processo"
-    )
-    gestor = models.CharField(
-        max_length=150,
-        verbose_name="Gestor do Processo"
-    )
-    email = models.EmailField(
-        max_length=200,
-        null=True,
-        blank=True,
-        verbose_name="E-mail"
-    )
-    telefone = models.CharField(
-        max_length=20,
-        null=True,
-        blank=True,
-        verbose_name="Telefone"
-    )
-    objetivo = models.TextField(
-        verbose_name="Objetivo"
-    )
-    observacao = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name="Observações"
-    )
+    nome = models.CharField(max_length=100)
+    gestor = models.CharField(max_length=150)
+    email = models.EmailField(max_length=200, null=True, blank=True)
+    telefone = models.CharField(max_length=20, null=True, blank=True)
+    objetivo = models.TextField()
+    observacao = models.TextField(null=True, blank=True)
 
-    data_criacao = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Data de Criação"
-    )
-    data_atualizacao = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="Data de Atualização"
-    )
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(null=True, blank=True)
 
     classificacao = models.ForeignKey(
         "Classificacao",
         on_delete=models.PROTECT,
-        verbose_name="Classificação"
+        related_name="processos"
     )
 
     macroprocesso_nivel1 = models.ForeignKey(
         "MacroprocessoNivel1",
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Macroprocesso Nível 1"
+        null=True, blank=True
     )
+
     macroprocesso_nivel2 = models.ForeignKey(
         "MacroprocessoNivel2",
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Macroprocesso Nível 2"
+        null=True, blank=True
     )
 
     parent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="subprocessos",
-        verbose_name="Processo Pai"
+        null=True, blank=True,
+        related_name="subprocessos"
     )
 
-    area_responsavel = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True,
-        verbose_name="Área Responsável"
-    )
+    area_responsavel = models.CharField(max_length=100, null=True, blank=True)
 
     usuario_cadastro = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        "Usuario",
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="processos_cadastrados",
-        verbose_name="Usuário de Cadastro"
+        null=True, blank=True,
+        related_name="processos_cadastrados"
     )
+
     usuario_atualizacao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        "Usuario",
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="processos_atualizados",
-        verbose_name="Usuário de Atualização"
+        null=True, blank=True,
+        related_name="processos_atualizados"
     )
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"
-        ordering = ["nome"]
-        verbose_name = "Processo"
-        verbose_name_plural = "Processos"
 
-    def __str__(self):
-        if self.parent:
-            return f"{self.parent.nome} > {self.nome}"
-        return self.nome
-
-    def clean(self):
-        if self.parent and self.parent_id == self.id:
-            raise ValidationError({
-                "parent": "O processo pai não pode ser o próprio processo."
-            })
 
 # ============================================================
 # PROCESSO – DOCUMENTO (1 Processo → N Modelagens)

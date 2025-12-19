@@ -1285,18 +1285,21 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
 # -------------------------------#
 class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
-    template_name = "processos/processos.html"
-    context_object_name = "processos"
+    template_name = 'processos/processos.html'
+    context_object_name = 'processos'
     paginate_by = 20
-    ordering = ["id"]
+    ordering = ['id']
 
     def get_queryset(self):
+
+        # === 1) Recuperar parâmetros GET ===
         nome = self.request.GET.get("nome", "").strip()
         classificacao = self.request.GET.get("classificacao", "").strip()
         macro1 = self.request.GET.get("macro1", "").strip()
         macro2 = self.request.GET.get("macro2", "").strip()
         area = self.request.GET.get("area", "").strip()
 
+        # === 2) Base inicial: TUDO (PAI + SUB) para aplicar filtros ===
         qs = (
             Processo.objects.all()
             .select_related(
@@ -1307,6 +1310,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
             .order_by("id")
         )
 
+        # === 3) Aplicação dos filtros acumulativos ===
         if nome:
             qs = qs.filter(nome__icontains=nome)
 
@@ -1314,20 +1318,29 @@ class ProcessoView(LoginRequiredMixin, ListView):
             qs = qs.filter(classificacao_id=classificacao)
 
         if macro1:
-            qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
+            qs = qs.filter(
+                macroprocesso_nivel1__nome__icontains=macro1
+            )
 
         if macro2:
-            qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
+            qs = qs.filter(
+                macroprocesso_nivel2__nome__icontains=macro2
+            )
 
         if area:
-            qs = qs.filter(area_responsavel__icontains=area)
+            qs = qs.filter(
+                area_responsavel__icontains=area
+            )
 
+        # === 4) Resolver PAI + SUBPROCESSOS ===
         pai_ids = qs.values_list("parent_id", flat=True)
         diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
 
-        ids_finais = {i for i in set(diretos) | set(pai_ids) if i is not None}
+        ids_finais = set(diretos) | set(pai_ids)
+        ids_finais = {i for i in ids_finais if i is not None}
 
-        return (
+        # === 5) Retornar apenas PROCESSOS PAI ===
+        queryset_final = (
             Processo.objects.filter(id__in=ids_finais)
             .select_related(
                 "classificacao",
@@ -1343,46 +1356,56 @@ class ProcessoView(LoginRequiredMixin, ListView):
             .order_by("id")
         )
 
+        return queryset_final
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # Necessário para preencher o select de classificação
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
+
         return context
+
 
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
-    template_name = "processos/form_processo.html"
+    template_name = 'processos/form_processo.html'
     form_class = Form_ProcessoForm
-    success_url = reverse_lazy("arquiteturaprocessos:processos")
+    success_url = reverse_lazy('arquiteturaprocessos:processos')
 
+    # Força o modo_inclusao no form
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            "modo_visualizacao": False,
-            "modo_exclusao": False,
-            "modo_edicao": False,
-        })
+        kwargs["modo_visualizacao"] = False
+        kwargs["modo_exclusao"] = False
+        kwargs["modo_edicao"] = False
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        agora = timezone.localtime(timezone.now())
+        agora_local = timezone.localtime(timezone.now())
         modelos, normas = get_modelagem_filtrada()
 
         context.update({
+            # listas para os selects
             "modelos_processo": modelos,
             "normas_procedimento": normas,
 
+            # controle de modos
             "modo_inclusao": True,
             "modo_visualizacao": False,
             "modo_exclusao": False,
             "modo_edicao": False,
 
-            "cadastro_data": agora.strftime("%d/%m/%Y %H:%M:%S"),
+            # 🔵 AUDITORIA — inclusão
+            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
             "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
+
+            # 🔵 AUDITORIA — atualização (vazia)
             "atualizacao_data": "",
             "atualizacao_user": "",
         })
@@ -1390,27 +1413,46 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        processo = form.save(commit=False)
+        processo = form.instance
 
+        # 🔵 Auditoria registro novo
         processo.usuario_cadastro = self.request.user
         processo.usuario_atualizacao = None
         processo.data_atualizacao = None
-        processo.save()
-
-        # 🔗 documentos (0..N)
-        modelagens = extrair_modelagens_do_post(self.request)
-
-        for modelagem in modelagens:
-            ProcessoDocumento.objects.get_or_create(
-                processo=processo,
-                modelagem_processo=modelagem
-            )
 
         messages.success(
             self.request,
             f"Processo '{processo.nome}' criado com sucesso!"
         )
-        return redirect(self.success_url)
+
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Há erros no formulário. Verifique os campos destacados."
+        )
+        return super().form_invalid(form)
+
+    def form_valid(self, form):
+
+        processo = form.instance
+
+        # 🔵 GRAVAÇÃO DO NOVO CAMPO
+        processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
+        processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
+
+        # auditoria
+        processo.usuario_cadastro = self.request.user
+        processo.usuario_atualizacao = None
+        processo.data_atualizacao = None
+
+        messages.success(
+            self.request,
+            f"Processo '{processo.nome}' criado com sucesso!"
+        )
+
+        return super().form_valid(form)
 
     def form_invalid(self, form):
         messages.error(
@@ -1435,57 +1477,41 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # 🔹 DOCUMENTOS ASSOCIADOS
-        modelos_associados, normas_associadas = get_documentos_por_processo(processo)
+        # form carregado corretamente
+        context['form'] = Form_ProcessoForm(
+            instance=processo,
+            modo_visualizacao=True
+        )
 
-        modelo_base = modelos_associados[0] if modelos_associados else None
-        norma_base = normas_associadas[0] if normas_associadas else None
-
-        # ✅ IDs para hidratação via JS
-        context["modelos_associados_ids"] = [m.id for m in modelos_associados]
-        context["normas_associadas_ids"] = [n.id for n in normas_associadas]
-
+        # Auditoria — Sempre readonly (o template já marca como readonly)
         context.update({
-            "form": Form_ProcessoForm(
-                instance=processo,
-                modo_visualizacao=True,
-                initial={
-                    "modelagem_processo": modelo_base,
-                    "norma_procedimento": norma_base,
-                }
-            ),
-
-            # 🔹 hidratação reversa
-            "modelos_associados": modelos_associados,
-            "normas_associadas": normas_associadas,
-
-            "modo_visualizacao": True,
-            "modo_inclusao": False,
-            "modo_exclusao": False,
-            "modo_edicao": False,
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
             "desabilitar": True,
 
-            # Auditoria
-            "cadastro_data": (
+            # 📌 Auditoria – Exibição
+            'cadastro_data': (
                 timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_criacao else ""
             ),
-            "cadastro_user": (
+            'cadastro_user': (
                 processo.usuario_cadastro.get_full_name()
                 if processo.usuario_cadastro else ""
             ),
-            "atualizacao_data": (
+
+            'atualizacao_data': (
                 timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_atualizacao else ""
             ),
-            "atualizacao_user": (
+            'atualizacao_user': (
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao else ""
             ),
         })
 
         return context
-
 
 # --------------------------------#
 # Editar Processo                 #
@@ -1497,48 +1523,62 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
     def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            processo = self.object
+        context = super().get_context_data(**kwargs)
+        processo = self.object  # Sempre disponível no UpdateView
 
+        # Carrega selects de PDF
+        modelos, normas = get_modelagem_filtrada()
+        context["modelos_processo"] = modelos
+        context["normas_procedimento"] = normas
 
+        # -------------------------------
+        # SELECTS DEPENDENTES (n1/n2)
+        # -------------------------------
+        context["macroprocesso_nivel1_list"] = (
+            MacroprocessoNivel1.objects.filter(classificacao=processo.classificacao)
+            if processo.classificacao_id else MacroprocessoNivel1.objects.none()
+        )
 
-            modelos, normas = get_modelagem_filtrada()
-            context["modelos_processo"] = modelos
-            context["normas_procedimento"] = normas
+        context["macroprocesso_nivel2_list"] = (
+            MacroprocessoNivel2.objects.filter(
+                macroprocesso_nivel1=processo.macroprocesso_nivel1
+            )
+            if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
+        )
 
-            # 🔹 DOCUMENTOS ASSOCIADOS
-            modelos_associados, normas_associadas = get_documentos_por_processo(processo)
+        # -------------------------------
+        # AUDITORIA
+        # -------------------------------
+        context.update({
+            "modo_edicao": True,
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
 
-            context.update({
-                "modelos_associados": modelos_associados,
-                "normas_associadas": normas_associadas,
+            "cadastro_data": (
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao else ""
+            ),
+            "cadastro_user": (
+                processo.usuario_cadastro.get_full_name()
+                if processo.usuario_cadastro else ""
+            ),
 
-                "modelos_associados_ids": [m.id for m in modelos_associados],
-                "normas_associadas_ids": [n.id for n in normas_associadas],
+            "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
+            "atualizacao_user": (
+                self.request.user.get_full_name() or self.request.user.username
+            ),
+        })
 
-                "modo_edicao": True,
-                "modo_inclusao": False,
-                "modo_visualizacao": False,
-                "modo_exclusao": False,
+        return context
 
-                "cadastro_data": (
-                    timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                    if processo.data_criacao else ""
-                ),
-                "cadastro_user": (
-                    processo.usuario_cadastro.get_full_name()
-                    if processo.usuario_cadastro else ""
-                ),
-                "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
-                "atualizacao_user": (
-                    self.request.user.get_full_name() or self.request.user.username
-                ),
-            })
-
-            return context
-
+    # ------------------------------------------------------------
+    # GRAVAÇÃO FINAL (validação principal já está no forms.py)
+    # ------------------------------------------------------------
     def form_valid(self, form):
         processo = form.instance
+
+        # Atualiza auditoria
         processo.usuario_atualizacao = self.request.user
         processo.data_atualizacao = timezone.now()
 
@@ -1565,45 +1605,61 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # 🔹 DOCUMENTOS ASSOCIADOS
-        modelos_associados, normas_associadas = get_documentos_por_processo(processo)
+        # Lista de subprocessos
+        subprocessos = processo.subprocessos.all()
 
+        context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
+
+        # 🔵 AUDITORIA + MODOS
         context.update({
-            "form": Form_ProcessoForm(instance=processo, modo_exclusao=True),
-
-            "modelos_associados": modelos_associados,
-            "normas_associadas": normas_associadas,
-
-            "modelos_associados_ids": [m.id for m in modelos_associados],
-            "normas_associadas_ids": [n.id for n in normas_associadas],
-
-            "modo_exclusao": True,
-            "modo_visualizacao": False,
-            "modo_inclusao": False,
-            "modo_edicao": False,
-            "desabilitar": True,
-
-            "cadastro_data": (
+            'cadastro_data': (
                 timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_criacao else ""
             ),
-            "cadastro_user": (
+            'cadastro_user': (
                 processo.usuario_cadastro.get_full_name()
                 if processo.usuario_cadastro else ""
             ),
-            "atualizacao_data": (
+            'atualizacao_data': (
                 timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_atualizacao else ""
             ),
-            "atualizacao_user": (
+            'atualizacao_user': (
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao else ""
             ),
 
-            "subprocessos_existentes": processo.subprocessos.all(),
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+            "desabilitar": True,
+
+            # 🔵 subprocessos para o template
+            "subprocessos_existentes": subprocessos,
         })
 
         return context
+
+    def post(self, request, *args, **kwargs):
+        processo = self.get_object()
+
+        # 1️⃣ Verifica se existem subprocessos
+        subprocessos = processo.subprocessos.all()
+
+        if subprocessos.exists():
+            lista = ", ".join([s.nome for s in subprocessos])
+            messages.error(
+                request,
+                f"Não é possível excluir o processo '{processo.nome}'. "
+                f"Existem subprocessos associados: {lista}"
+            )
+            return redirect(request.path)
+
+        # 2️⃣ Se não existir nenhum subprocesso → excluir normalmente
+        processo.delete()
+        messages.success(request, f"Processo '{processo.nome}' excluído com sucesso!")
+        return redirect('arquiteturaprocessos:processos')
 
 
 
