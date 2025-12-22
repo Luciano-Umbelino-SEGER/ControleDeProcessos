@@ -1486,46 +1486,101 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 # --------------------------------#
 class VisualizarProcesso(LoginRequiredMixin, DetailView):
     model = Processo
-    template_name = 'processos/form_processo.html'
-    context_object_name = 'processo'
+    template_name = "processos/form_processo.html"
+    context_object_name = "processo"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
 
+        # -------------------------------------------------
+        # Listas para os selects (já existentes)
+        # -------------------------------------------------
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # form carregado corretamente
-        context['form'] = Form_ProcessoForm(
+        # -------------------------------------------------
+        # Form em modo visualização
+        # -------------------------------------------------
+        context["form"] = Form_ProcessoForm(
             instance=processo,
             modo_visualizacao=True
         )
 
-        # Auditoria — Sempre readonly (o template já marca como readonly)
+        # -------------------------------------------------
+        # 🔥 NOVO — Busca dos documentos associados (1 → N)
+        # -------------------------------------------------
+        documentos_qs = (
+            ProcessoDocumento.objects
+            .select_related(
+                "modelagem_processo",
+                "modelagem_processo__tipo_documento"
+            )
+            .filter(processo=processo)
+        )
+
+        modelos_hidratados = []
+        normas_hidratadas = []
+
+        for doc in documentos_qs:
+            mp = doc.modelagem_processo
+            tipo = mp.tipo_documento.nome.lower()
+
+            dados = {
+                "id": mp.id,
+                "titulo": mp.titulo,
+                "tema": mp.tema,
+                "versao": mp.versao,
+                "emitente": mp.emitente,
+                "sistema": mp.sistema,
+                "vigencia": (
+                    mp.vigencia_inicio.strftime("%Y-%m-%d")
+                    if mp.vigencia_inicio else ""
+                ),
+                "arquivo": (
+                    mp.documento_modelagem_processo.url
+                    if hasattr(mp, "documento_modelagem_processo") and mp.documento_modelagem_processo
+                    else ""
+                ),
+            }
+
+            if "modelo" in tipo:
+                modelos_hidratados.append(dados)
+            else:
+                normas_hidratadas.append(dados)
+
+        # -------------------------------------------------
+        # 🔥 Envio para hidratação via JS
+        # -------------------------------------------------
         context.update({
-            'modo_visualizacao': True,
-            'modo_inclusao': False,
-            'modo_exclusao': False,
-            'modo_edicao': False,
+            "modelos_hidratados": modelos_hidratados,
+            "normas_hidratadas": normas_hidratadas,
+        })
+
+        # -------------------------------------------------
+        # Controle de modo + auditoria (inalterado)
+        # -------------------------------------------------
+        context.update({
+            "modo_visualizacao": True,
+            "modo_inclusao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
             "desabilitar": True,
 
-            # 📌 Auditoria – Exibição
-            'cadastro_data': (
+            "cadastro_data": (
                 timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_criacao else ""
             ),
-            'cadastro_user': (
+            "cadastro_user": (
                 processo.usuario_cadastro.get_full_name()
                 if processo.usuario_cadastro else ""
             ),
-
-            'atualizacao_data': (
+            "atualizacao_data": (
                 timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_atualizacao else ""
             ),
-            'atualizacao_user': (
+            "atualizacao_user": (
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao else ""
             ),

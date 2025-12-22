@@ -1376,6 +1376,22 @@ function normaProcedimentoData() {
 })();
 </script>
 
+<script>
+    // =========================================
+    // Dados hidratados vindos do backend
+    // =========================================
+
+    const MODO_VISUALIZACAO = {{ modo_visualizacao|yesno:"true,false" }};
+    const MODO_EDICAO      = {{ modo_edicao|yesno:"true,false" }};
+    const MODO_EXCLUSAO    = {{ modo_exclusao|yesno:"true,false" }};
+
+    const MODELOS_HIDRATADOS = {{ modelos_hidratados|default:"[]"|safe }};
+    const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
+
+    console.log("MODELOS_HIDRATADOS:", MODELOS_HIDRATADOS);
+    console.log("NORMAS_HIDRATADAS:", NORMAS_HIDRATADAS);
+</script>
+
 <!-- JS CENTRALIZADO -->
 <script src="{% static 'js/processos.js' %}"></script>
 {% include 'components/modal_documento_processo.html' %}

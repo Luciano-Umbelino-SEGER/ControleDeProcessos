@@ -261,6 +261,39 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         else {
             await inicializacaoNaoInclusao();
+
+            // 🔥 HIDRATAÇÃO (somente fora da inclusão)
+            if (typeof MODELOS_HIDRATADOS !== "undefined") {
+                hidratarModelos();
+                hidratarNormas();
+            }
+
+            // ⛔ BLOQUEIO FINAL — somente visualização / exclusão
+            if (modoVisualizacao || modoExclusao) {
+
+                // desabilita todos os selects de modelos e normas
+                document
+                    .querySelectorAll('#modelos_container select, #normas_container select')
+                    .forEach(el => el.disabled = true);
+
+                // esconde botões + e − dos blocos dinâmicos
+                document
+                    .querySelectorAll('[data-action="add"], [data-action="remove"]')
+                    .forEach(btn => btn.style.display = "none");
+            }
+
+            // 🎨 Ajuste visual dos blocos extras em visualização / exclusão
+            if (modoVisualizacao || modoExclusao) {
+                document
+                    .querySelectorAll(
+                        '#modelos_container input, #modelos_container select,' +
+                        '#normas_container input, #normas_container select'
+                    )
+                    .forEach(el => {
+                        el.classList.add("bg-gray-100", "opacity-70", "cursor-not-allowed");
+                    });
+            }
+
         }
     })();
 
@@ -523,3 +556,95 @@ document.addEventListener("DOMContentLoaded", function () {
     })();
 
 });
+
+// ==================================================
+// HIDRATAÇÃO DE DOCUMENTOS (1 → N)
+// ==================================================
+
+function hidratarSelect(selectEl, dados) {
+    if (!selectEl || !dados) return;
+    selectEl.value = dados.id;
+    selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function preencherCamposModelo(block, dados) {
+    block.querySelector('[id^="tema_modelo"]').value = dados.tema || "";
+    block.querySelector('[id^="versao_modelo"]').value = dados.versao || "";
+    block.querySelector('[id^="emitente_modelo"]').value = dados.emitente || "";
+    block.querySelector('[id^="sistema_modelo"]').value = dados.sistema || "";
+    block.querySelector('[id^="vigencia_modelo"]').value = dados.vigencia || "";
+}
+
+function preencherCamposNorma(block, dados) {
+    block.querySelector('[id^="tema_norma"]').value = dados.tema || "";
+    block.querySelector('[id^="versao_norma"]').value = dados.versao || "";
+    block.querySelector('[id^="emitente_norma"]').value = dados.emitente || "";
+    block.querySelector('[id^="sistema_norma"]').value = dados.sistema || "";
+    block.querySelector('[id^="vigencia_norma"]').value = dados.vigencia || "";
+}
+
+function hidratarModelos() {
+    if (!Array.isArray(MODELOS_HIDRATADOS) || MODELOS_HIDRATADOS.length === 0) return;
+
+    const container = document.getElementById("modelos_container");
+    const baseBlock = container.querySelector('.modelo-block[data-uid="base"]');
+
+    // 🔹 BLOCO BASE
+    hidratarSelect(
+        baseBlock.querySelector('select[name="modelagem_processo"]'),
+        MODELOS_HIDRATADOS[0]
+    );
+    preencherCamposModelo(baseBlock, MODELOS_HIDRATADOS[0]);
+
+    // 🔹 BLOCOS EXTRAS (sem botão +)
+    MODELOS_HIDRATADOS.slice(1).forEach((dados, idx) => {
+        const uid = `hidratado_${idx}_${Date.now()}`;
+        const novo = clonarTemplate("template-modelo", container, uid);
+        if (!novo) return;
+
+        const select = novo.querySelector('select[name="modelagem_processo_extra[]"]');
+        hidratarSelect(select, dados);
+        preencherCamposModelo(novo, dados);
+    });
+}
+
+function hidratarNormas() {
+    if (!Array.isArray(NORMAS_HIDRATADAS) || NORMAS_HIDRATADAS.length === 0) return;
+
+    const container = document.getElementById("normas_container");
+    const baseBlock = container.querySelector('.norma-block[data-uid="base"]');
+
+    // 🔹 BLOCO BASE
+    hidratarSelect(
+        baseBlock.querySelector('select[name="norma_procedimento"]'),
+        NORMAS_HIDRATADAS[0]
+    );
+    preencherCamposNorma(baseBlock, NORMAS_HIDRATADAS[0]);
+
+    // 🔹 BLOCOS EXTRAS
+    NORMAS_HIDRATADAS.slice(1).forEach((dados, idx) => {
+        const uid = `hidratado_${idx}_${Date.now()}`;
+        const novo = clonarTemplate("template-norma", container, uid);
+        if (!novo) return;
+
+        const select = novo.querySelector('select[name="norma_procedimento_extra[]"]');
+        hidratarSelect(select, dados);
+        preencherCamposNorma(novo, dados);
+    });
+}
+
+function clonarTemplate(templateId, container, uid) {
+    const tpl = document.getElementById(templateId);
+    if (!tpl) return null;
+
+    const html = tpl.innerHTML.replaceAll("__UID__", uid);
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html.trim();
+
+    const bloco = wrapper.firstElementChild;
+    if (bloco) container.appendChild(bloco);
+
+    return bloco;
+}
+
+
