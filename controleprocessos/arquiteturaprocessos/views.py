@@ -1366,24 +1366,18 @@ class ProcessoView(LoginRequiredMixin, ListView):
 
         return context
 
-
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
 class CriarProcesso(LoginRequiredMixin, CreateView):
     model = Processo
-    template_name = 'processos/form_processo.html'
+    template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
-    success_url = reverse_lazy('arquiteturaprocessos:processos')
+    success_url = reverse_lazy("arquiteturaprocessos:processos")
 
-    # Força o modo_inclusao no form
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["modo_visualizacao"] = False
-        kwargs["modo_exclusao"] = False
-        kwargs["modo_edicao"] = False
-        return kwargs
-
+    # -------------------------------------------------
+    # Contexto do template
+    # -------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -1391,7 +1385,7 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         modelos, normas = get_modelagem_filtrada()
 
         context.update({
-            # listas para os selects
+            # listas para selects dinâmicos
             "modelos_processo": modelos,
             "normas_procedimento": normas,
 
@@ -1401,24 +1395,74 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             "modo_exclusao": False,
             "modo_edicao": False,
 
-            # 🔵 AUDITORIA — inclusão
+            # auditoria — inclusão
             "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
             "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
 
-            # 🔵 AUDITORIA — atualização (vazia)
+            # auditoria — atualização (vazia)
             "atualizacao_data": "",
             "atualizacao_user": "",
         })
 
         return context
 
+    # -------------------------------------------------
+    # Persistência correta (Processo + N Documentos)
+    # -------------------------------------------------
     def form_valid(self, form):
-        processo = form.instance
+        with transaction.atomic():
 
-        # 🔵 Auditoria registro novo
-        processo.usuario_cadastro = self.request.user
-        processo.usuario_atualizacao = None
-        processo.data_atualizacao = None
+            # -------------------------------------------------
+            # 1️⃣ Salva o Processo
+            # -------------------------------------------------
+            processo = form.save(commit=False)
+
+            processo.usuario_cadastro = self.request.user
+            processo.usuario_atualizacao = None
+            processo.data_atualizacao = None
+
+            processo.save()
+
+            # -------------------------------------------------
+            # 2️⃣ Captura TODOS os documentos do POST
+            # -------------------------------------------------
+            documentos_ids = []
+
+            # 🔹 Modelo de Processo (principal)
+            modelo_principal = self.request.POST.get("modelagem_processo")
+            if modelo_principal:
+                documentos_ids.append(modelo_principal)
+
+            # 🔹 Modelos de Processo (extras)
+            modelos_extras = self.request.POST.getlist("modelagem_processo_extra[]")
+            documentos_ids.extend(modelos_extras)
+
+            # 🔹 Norma de Procedimento (principal)
+            norma_principal = self.request.POST.get("norma_procedimento")
+            if norma_principal:
+                documentos_ids.append(norma_principal)
+
+            # 🔹 Normas de Procedimento (extras)
+            normas_extras = self.request.POST.getlist("norma_procedimento_extra[]")
+            documentos_ids.extend(normas_extras)
+
+            # -------------------------------------------------
+            # 3️⃣ Remove duplicados (segurança)
+            # -------------------------------------------------
+            documentos_ids = list(set(documentos_ids))
+
+            # -------------------------------------------------
+            # 4️⃣ Persistência Processo ↔ Documento (1 → N)
+            # -------------------------------------------------
+            documentos = [
+                ProcessoDocumento(
+                    processo=processo,
+                    modelagem_processo_id=documento_id
+                )
+                for documento_id in documentos_ids
+            ]
+
+            ProcessoDocumento.objects.bulk_create(documentos)
 
         messages.success(
             self.request,
@@ -1427,33 +1471,9 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Há erros no formulário. Verifique os campos destacados."
-        )
-        return super().form_invalid(form)
-
-    def form_valid(self, form):
-
-        processo = form.instance
-
-        # 🔵 GRAVAÇÃO DO NOVO CAMPO
-        processo.norma_procedimento = form.cleaned_data.get("norma_procedimento")
-        processo.modelagem_processo = form.cleaned_data.get("modelagem_processo")
-
-        # auditoria
-        processo.usuario_cadastro = self.request.user
-        processo.usuario_atualizacao = None
-        processo.data_atualizacao = None
-
-        messages.success(
-            self.request,
-            f"Processo '{processo.nome}' criado com sucesso!"
-        )
-
-        return super().form_valid(form)
-
+    # -------------------------------------------------
+    # Erro de validação
+    # -------------------------------------------------
     def form_invalid(self, form):
         messages.error(
             self.request,
