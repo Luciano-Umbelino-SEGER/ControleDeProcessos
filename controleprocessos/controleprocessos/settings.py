@@ -129,10 +129,7 @@ USE_TZ = True
 # Static / Media
 # =========================
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR.parent / 'static',                  # <-- logo, imagens
-    BASE_DIR / 'static',                          # <-- js/processos.js
-]
+STATICFILES_DIRS = [ BASE_DIR / 'static', ]                         # <-- js/processos.js
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
