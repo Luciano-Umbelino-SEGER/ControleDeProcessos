@@ -1,5 +1,8 @@
+import unicodedata
+import re
 import os
 import uuid
+from uuid import uuid4
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -109,17 +112,41 @@ class TiposDocumento(models.Model):
             self.slug = slugify(self.nome)
         super().save(*args, **kwargs)
 
+# ==================================================================
+# Função para normalização de strings - retirar caracter especiais
+# ==================================================================
+def mp_upload_to(instance, filename):
+    """
+    Gera caminho seguro para upload de documentos de modelagem de processo.
+
+    - Remove acentos
+    - Remove caracteres especiais
+    - Substitui espaços por _
+    - Mantém extensão em minúsculo
+    - Garante unicidade com UUID
+    """
+
+    nome, ext = os.path.splitext(filename)
+    ext = ext.lower()
+
+    # Normaliza (remove acentos)
+    nome = unicodedata.normalize("NFKD", nome).encode("ascii", "ignore").decode("ascii")
+
+    # Substitui caracteres inválidos por _
+    nome = re.sub(r"[^\w\-_.]", "_", nome)
+
+    # Evita nomes vazios
+    if not nome:
+        nome = "documento"
+
+    # Garante unicidade
+    novo_nome = f"{nome}_{uuid4().hex[:8]}{ext}"
+
+    return f"modelagemprocessos/{novo_nome}"
+
 # ============================================================
 # MODELAGEM DE PROCESSO
 # ============================================================
-def mp_upload_to(instance, filename):
-    titulo, ext = os.path.splitext(filename)
-    ext = ext.lower()
-    codigo = uuid.uuid4().hex[:8]
-    titulo = titulo.replace(" ", "_").replace("–", "-")
-    return f"modelagemprocessos/{titulo}_{codigo}{ext}"
-
-
 class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 

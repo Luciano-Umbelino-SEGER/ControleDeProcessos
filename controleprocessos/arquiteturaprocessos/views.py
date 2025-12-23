@@ -1084,7 +1084,6 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
         context['termo_busca'] = self.request.GET.get('q', '')
         return context
 
-
 # ---------------------------------------------------
 # CRIAR
 # ---------------------------------------------------
@@ -1133,6 +1132,7 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
             self.request,
             f"Modelagem de Processo '{self.object.titulo}' criada com sucesso!"
         )
+
         return response
 
     def form_invalid(self, form):
@@ -1494,7 +1494,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         processo = self.get_object()
 
         # -------------------------------------------------
-        # Listas para os selects (já existentes)
+        # Listas para os selects
         # -------------------------------------------------
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
@@ -1509,7 +1509,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         )
 
         # -------------------------------------------------
-        # 🔥 NOVO — Busca dos documentos associados (1 → N)
+        # 🔥 Documentos associados (1 → N)
         # -------------------------------------------------
         documentos_qs = (
             ProcessoDocumento.objects
@@ -1525,7 +1525,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 
         for doc in documentos_qs:
             mp = doc.modelagem_processo
-            tipo = mp.tipo_documento.nome.lower()
+            tipo_nome = (mp.tipo_documento.nome or "").lower()
 
             dados = {
                 "id": mp.id,
@@ -1538,20 +1538,28 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                     mp.vigencia_inicio.strftime("%Y-%m-%d")
                     if mp.vigencia_inicio else ""
                 ),
-                "arquivo": (
-                    mp.documento_modelagem_processo.url
-                    if hasattr(mp, "documento_modelagem_processo") and mp.documento_modelagem_processo
-                    else ""
-                ),
             }
 
-            if "modelo" in tipo:
+            # ------------------------------
+            # MODELO DE PROCESSO (arquivo local)
+            # ------------------------------
+            if "modelo" in tipo_nome:
+                dados["arquivo"] = (
+                    mp.documento_modelagem_processo.url
+                    if mp.documento_modelagem_processo
+                    else ""
+                )
                 modelos_hidratados.append(dados)
+
+            # ------------------------------
+            # NORMA DE PROCEDIMENTO (URL externa)
+            # ------------------------------
             else:
+                dados["arquivo"] = mp.link_normaprocedimento or ""
                 normas_hidratadas.append(dados)
 
         # -------------------------------------------------
-        # 🔥 Envio para hidratação via JS
+        # Envio para hidratação via JS
         # -------------------------------------------------
         context.update({
             "modelos_hidratados": modelos_hidratados,
@@ -1559,7 +1567,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         })
 
         # -------------------------------------------------
-        # Controle de modo + auditoria (inalterado)
+        # Controle de modo + auditoria
         # -------------------------------------------------
         context.update({
             "modo_visualizacao": True,
@@ -1587,6 +1595,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         })
 
         return context
+
 
 # --------------------------------#
 # Editar Processo                 #
