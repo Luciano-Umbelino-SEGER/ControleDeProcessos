@@ -295,6 +295,12 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
         }
+
+        // 🔒 Bloqueio FINAL após toda a inicialização
+        setTimeout(() => {
+            bloquearModoVisualizacao();
+        }, 0);
+
     })();
 
     // ===============================
@@ -645,6 +651,43 @@ function clonarTemplate(templateId, container, uid) {
     if (bloco) container.appendChild(bloco);
 
     return bloco;
+}
+
+// ===============================
+// BLOQUEIO FINAL — VISUALIZAÇÃO / EXCLUSÃO
+// ===============================
+function bloquearModoVisualizacao() {
+    if (!modoVisualizacao && !modoExclusao) return;
+
+    // 1️⃣ Desabilita selects
+    document.querySelectorAll(
+        'select[name="modelagem_processo"], ' +
+        'select[name="modelagem_processo_extra[]"], ' +
+        'select[name="norma_procedimento"], ' +
+        'select[name="norma_procedimento_extra[]"]'
+    ).forEach(sel => {
+        sel.disabled = true;
+        sel.classList.add('bg-gray-100', 'opacity-70', 'cursor-not-allowed');
+    });
+
+    // 2️⃣ Desabilita botões + e –
+    document.querySelectorAll(
+        'button[title="Adicionar Modelo"], ' +
+        'button[title="Remover Modelo"], ' +
+        'button[title="Adicionar Norma"], ' +
+        'button[title="Remover Norma"], ' +
+        'button[data-action="add"], ' +
+        'button[data-action="remove"]'
+    ).forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('opacity-40', 'cursor-not-allowed');
+    });
+
+    // 3️⃣ Mantém 👁️ ativo
+    document.querySelectorAll('.icon-visualizar').forEach(icon => {
+        icon.classList.remove('opacity-40', 'cursor-not-allowed');
+        icon.style.pointerEvents = 'auto';
+    });
 }
 
 

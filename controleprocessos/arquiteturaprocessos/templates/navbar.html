@@ -1,31 +1,27 @@
 {% load static %}
-<nav class="bg-white shadow-md py-2 px-4 flex justify-between items-center">
+<nav class="relative bg-white shadow-md py-3 px-4 flex items-center">
 
-  <!-- Botão hamburger + Logo + Nome do Sistema -->
-  <div class="flex items-center space-x-4">
-
+  <!-- ESQUERDA: botão hamburger -->
+  <div class="flex items-center z-10">
     <button @click="toggleSidebar()" class="text-gray-700 focus:outline-none">
       <i class="fas fa-bars text-2xl"></i>
     </button>
+  </div>
 
+  <!-- CENTRO: TÍTULO DO SISTEMA -->
+  <div class="absolute inset-0 flex justify-center items-center pointer-events-none">
     <a href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}"
-       class="flex items-center space-x-3 no-underline">
-
-      <!-- LOGO ELPI / SIGEMP RESPONSIVA -->
-      <img src="{% static 'images/logo_elpi.png' %}"
-           alt="Logo ELPI"
-           class="h-14 md:h-16 object-contain">
-
-      <!-- TITULO EM UMA LINHA -->
-      <span class="font-bold text-lg md:text-xl tracking-tight"
+       class="no-underline">
+      <span class="font-bold text-xl md:text-2xl lg:text-3xl tracking-tight text-center"
             style="color:#1B4C9B;">
         SIGEMP – Sistema de Gestão de Monitoramento de Processos
       </span>
     </a>
   </div>
 
-  <!-- Área de login/sair -->
-  <div class="flex items-center space-x-4 font-medium" style="color:#1B4C9B;">
+  <!-- DIREITA: login / sair -->
+  <div class="ml-auto flex items-center space-x-4 font-medium z-10"
+       style="color:#1B4C9B;">
 
     {% if request.user.is_authenticated %}
       <form method="post" action="{% url 'arquiteturaprocessos:logout' %}">
@@ -36,7 +32,6 @@
           <i class="fas fa-sign-out-alt text-xl"></i>
         </button>
       </form>
-
     {% else %}
       <a href="{% url 'arquiteturaprocessos:fazer_login' %}"
          class="hover:opacity-80 transition no-underline flex items-center space-x-1">
@@ -44,5 +39,6 @@
         <i class="fas fa-user-circle text-xl"></i>
       </a>
     {% endif %}
+
   </div>
 </nav>

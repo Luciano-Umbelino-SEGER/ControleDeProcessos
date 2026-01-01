@@ -1,9 +1,34 @@
-<footer class="rodape">
-    <section class="rodape__secao-empresa">
-      <p>
-        SEGER - GPP
-        Contato: Tel (27)323-5272
-        email: gpp@seger.es.gov.br
-      </p>
-    </section>
-  </footer>
+{% load static %}
+
+<footer class="bg-[#0097A7] text-white px-6 py-2 fixed bottom-0 w-full">
+  <div class="flex items-center justify-between max-w-full">
+
+    <!-- ESQUERDA: LOGOS -->
+    <div class="flex items-center gap-4">
+
+      <!-- LOGO ESTADO (REFERÊNCIA VISUAL) -->
+      <img src="{% static 'images/logo_goves.png' %}"
+           alt="Logo Governo do Estado"
+           class="h-11 md:h-12 object-contain">
+
+      <!-- LOGO ELPI (PROPORCIONAL AO ESTADO) -->
+      <img src="{% static 'images/ELPI seger branco.png' %}"
+           alt="Logo ELPI"
+           class="h-9 md:h-10 max-w-[140px] object-contain">
+
+    </div>
+
+    <!-- CENTRO: INFORMAÇÕES (UMA LINHA) -->
+    <div class="text-sm md:text-base text-center whitespace-nowrap">
+      SEGER - GPP | Tel: (27) 3636-5272 | Email: gpp@seger.es.gov.br
+    </div>
+
+    <!-- DIREITA: USUÁRIO -->
+    <div class="text-sm md:text-base text-right whitespace-nowrap">
+      {% if user.is_authenticated %}
+        {{ user.first_name }} {{ user.last_name }} — {{ user.perfil.nome }}
+      {% endif %}
+    </div>
+
+  </div>
+</footer>

@@ -1106,6 +1106,9 @@ function normaProcedimentoData() {
         function updateDerived() {
             const opt = select.options[select.selectedIndex];
             const tema = opt?.dataset?.tema || "";
+            if (visBtn) {
+                visBtn.dataset.url = url;
+            }
             const versao = opt?.dataset?.versao || "";
             const emitente = opt?.dataset?.emitente || "";
             const sistema = opt?.dataset?.sistema || "";
@@ -1273,6 +1276,9 @@ function normaProcedimentoData() {
         // encontrar elementos
         const select = newBlock.querySelector('select');
         const addBtn = newBlock.querySelector('button[data-action="add"]');
+        if (visBtn) {
+            visBtn.dataset.url = url;
+        }
         const removeBtn = newBlock.querySelector('button[data-action="remove"]');
         const visBtn = newBlock.querySelector('button[data-action="visualizar"]');
 
