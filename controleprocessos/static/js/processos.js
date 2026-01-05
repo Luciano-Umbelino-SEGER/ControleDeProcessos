@@ -1,7 +1,6 @@
 // ===============================
 // processos.js – VERSÃO FINAL 100% REVISADA
 // ===============================
-
 document.addEventListener("DOMContentLoaded", function () {
 
     // =========================
@@ -266,20 +265,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (typeof MODELOS_HIDRATADOS !== "undefined") {
                 hidratarModelos();
                 hidratarNormas();
-            }
-
-            // ⛔ BLOQUEIO FINAL — somente visualização / exclusão
-            if (modoVisualizacao || modoExclusao) {
-
-                // desabilita todos os selects de modelos e normas
-                document
-                    .querySelectorAll('#modelos_container select, #normas_container select')
-                    .forEach(el => el.disabled = true);
-
-                // esconde botões + e − dos blocos dinâmicos
-                document
-                    .querySelectorAll('[data-action="add"], [data-action="remove"]')
-                    .forEach(btn => btn.style.display = "none");
             }
 
             // 🎨 Ajuste visual dos blocos extras em visualização / exclusão
@@ -653,41 +638,34 @@ function clonarTemplate(templateId, container, uid) {
     return bloco;
 }
 
-// ===============================
+// ==========================================
 // BLOQUEIO FINAL — VISUALIZAÇÃO / EXCLUSÃO
-// ===============================
+// ==========================================
 function bloquearModoVisualizacao() {
     if (!modoVisualizacao && !modoExclusao) return;
 
-    // 1️⃣ Desabilita selects
-    document.querySelectorAll(
-        'select[name="modelagem_processo"], ' +
-        'select[name="modelagem_processo_extra[]"], ' +
-        'select[name="norma_procedimento"], ' +
-        'select[name="norma_procedimento_extra[]"]'
-    ).forEach(sel => {
-        sel.disabled = true;
-        sel.classList.add('bg-gray-100', 'opacity-70', 'cursor-not-allowed');
-    });
+    window.BLOQUEIO_TOTAL_ATIVO = true;
 
-    // 2️⃣ Desabilita botões + e –
-    document.querySelectorAll(
-        'button[title="Adicionar Modelo"], ' +
-        'button[title="Remover Modelo"], ' +
-        'button[title="Adicionar Norma"], ' +
-        'button[title="Remover Norma"], ' +
-        'button[data-action="add"], ' +
-        'button[data-action="remove"]'
-    ).forEach(btn => {
-        btn.disabled = true;
-        btn.classList.add('opacity-40', 'cursor-not-allowed');
-    });
+    document
+        .querySelectorAll('button[data-action="add"], button[data-action="remove"]')
+        .forEach(btn => {
+            btn.disabled = true;
 
-    // 3️⃣ Mantém 👁️ ativo
-    document.querySelectorAll('.icon-visualizar').forEach(icon => {
-        icon.classList.remove('opacity-40', 'cursor-not-allowed');
-        icon.style.pointerEvents = 'auto';
-    });
+            btn.classList.remove(
+                'text-blue-600',
+                'text-red-600',
+                'hover:text-blue-800',
+                'hover:text-red-800',
+                'cursor-pointer'
+            );
+
+            btn.classList.add(
+                'text-gray-400',
+                'cursor-not-allowed'
+            );
+
+            btn.style.pointerEvents = 'none';
+        });
 }
 
 

@@ -12,6 +12,7 @@
 
 {% block body %}
 <script>
+    window.BLOQUEIO_TOTAL_ATIVO = false;
     document.addEventListener("DOMContentLoaded", function () {
         document.body.dataset.modoInclusao = "{{ modo_inclusao|yesno:'true,false' }}";
         document.body.dataset.modoEdicao = "{{ modo_edicao|yesno:'true,false' }}";
@@ -19,7 +20,6 @@
         document.body.dataset.modoExclusao = "{{ modo_exclusao|yesno:'true,false' }}";
     });
 </script>
-
 
 <div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
 
@@ -273,7 +273,14 @@
                                            text-blue-600
                                            cursor-pointer
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected"
+                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer':
+                                            selected && !window.BLOQUEIO_TOTAL_ATIVO,
+                                        'text-gray-400 cursor-not-allowed':
+                                            !selected || window.BLOQUEIO_TOTAL_ATIVO
+                                    }"
+                                    data-action="add"
                                     title="Adicionar Modelo"
                                     onclick="addModelo(this)">
                                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -294,7 +301,14 @@
                                            text-red-600 hover:text-red-800
                                            cursor-pointer
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected"
+                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer':
+                                            selected && !window.BLOQUEIO_TOTAL_ATIVO,
+                                        'text-gray-400 cursor-not-allowed':
+                                            !selected || window.BLOQUEIO_TOTAL_ATIVO
+                                    }"
+                                    data-action="remove"
                                     title="Remover Modelo"
                                     onclick="removeModelo(this, true)">
                                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -579,7 +593,12 @@
                                            text-blue-600
                                            cursor-pointer
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected"
+                                    :disabled="!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
+                                        'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
+                                    }"
+                                    data-action="add"
                                     title="Adicionar Norma"
                                     onclick="addNorma(this)">
                                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -600,7 +619,12 @@
                                            text-red-600 hover:text-red-800
                                            cursor-pointer
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected"
+                                    :disabled="!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}"
+                                    :class="{
+                                        'text-red-600 hover:text-red-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
+                                        'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
+                                    }"
+                                    data-action="remove"
                                     title="Remover Norma"
                                     onclick="removeNorma(this, true)">
                                 <svg xmlns="http://www.w3.org/2000/svg"
@@ -1055,6 +1079,8 @@ function normaProcedimentoData() {
         // inicializa comportamentos do bloco novo
         initModeloBlock(newBlock, uid);
 
+        bloquearModoVisualizacao();
+
         // foco no select do novo bloco
         const sel = newBlock.querySelector('select');
         if (sel) sel.focus();
@@ -1127,31 +1153,38 @@ function normaProcedimentoData() {
 
         // gerencia habilitação do botão add e remove
         function refreshButtons() {
-            const hasValue = select.value && select.value !== "";
-            if (addBtn) {
-                if (hasValue) {
-                    addBtn.classList.remove('text-gray-300');
-                    addBtn.classList.add('text-blue-600');
-                    addBtn.disabled = false;
-                } else {
-                    addBtn.classList.remove('text-blue-600');
-                    addBtn.classList.add('text-gray-300');
-                    addBtn.disabled = true;
-                }
+
+            // 🔒 BLOQUEIO GLOBAL (visualização / exclusão)
+            if (window.BLOQUEIO_TOTAL_ATIVO === true) {
+                addBtn && (addBtn.disabled = true);
+                removeBtn && (removeBtn.disabled = true);
+
+                addBtn && addBtn.classList.remove('text-blue-600', 'cursor-pointer');
+                removeBtn && removeBtn.classList.remove('text-red-600', 'cursor-pointer');
+
+                addBtn && addBtn.classList.add('text-gray-400', 'cursor-not-allowed');
+                removeBtn && removeBtn.classList.add('text-gray-400', 'cursor-not-allowed');
+
+                return;
             }
+
+            // 🧩 comportamento normal (inclusão / edição)
+            const hasValue = select.value && select.value !== "";
+
+            if (addBtn) {
+                addBtn.disabled = !hasValue;
+                addBtn.classList.toggle('text-blue-600', hasValue);
+                addBtn.classList.toggle('cursor-pointer', hasValue);
+                addBtn.classList.toggle('text-gray-400', !hasValue);
+                addBtn.classList.toggle('cursor-not-allowed', !hasValue);
+            }
+
             if (removeBtn) {
-                // remove sempre habilitado nos clones (por sua definição)
                 removeBtn.disabled = false;
-                if (hasValue) {
-                    removeBtn.classList.remove('text-gray-300');
-                    removeBtn.classList.add('text-red-600');
-                } else {
-                    // mantém vermelho mesmo vazio (mas enabled)
-                    removeBtn.classList.remove('text-gray-300');
-                    removeBtn.classList.add('text-red-600');
-                }
+                removeBtn.classList.add('text-red-600', 'cursor-pointer');
             }
         }
+
 
         // evento change do select
         select.addEventListener('change', function (ev) {
@@ -1240,6 +1273,8 @@ function normaProcedimentoData() {
         // inicializa comportamentos do bloco novo
         initNormaBlock(newBlock, uid);
 
+        bloquearModoVisualizacao();
+
         // foco no select do novo bloco
         const sel = newBlock.querySelector('select');
         if (sel) sel.focus();
@@ -1276,9 +1311,6 @@ function normaProcedimentoData() {
         // encontrar elementos
         const select = newBlock.querySelector('select');
         const addBtn = newBlock.querySelector('button[data-action="add"]');
-        if (visBtn) {
-            visBtn.dataset.url = url;
-        }
         const removeBtn = newBlock.querySelector('button[data-action="remove"]');
         const visBtn = newBlock.querySelector('button[data-action="visualizar"]');
 
@@ -1311,31 +1343,38 @@ function normaProcedimentoData() {
 
         // gerencia habilitação do botão add e remove
         function refreshButtons() {
-            const hasValue = select.value && select.value !== "";
-            if (addBtn) {
-                if (hasValue) {
-                    addBtn.classList.remove('text-gray-300');
-                    addBtn.classList.add('text-blue-600');
-                    addBtn.disabled = false;
-                } else {
-                    addBtn.classList.remove('text-blue-600');
-                    addBtn.classList.add('text-gray-300');
-                    addBtn.disabled = true;
-                }
+
+            // 🔒 BLOQUEIO GLOBAL (visualização / exclusão)
+            if (window.BLOQUEIO_TOTAL_ATIVO === true) {
+                addBtn && (addBtn.disabled = true);
+                removeBtn && (removeBtn.disabled = true);
+
+                addBtn && addBtn.classList.remove('text-blue-600', 'cursor-pointer');
+                removeBtn && removeBtn.classList.remove('text-red-600', 'cursor-pointer');
+
+                addBtn && addBtn.classList.add('text-gray-400', 'cursor-not-allowed');
+                removeBtn && removeBtn.classList.add('text-gray-400', 'cursor-not-allowed');
+
+                return;
             }
+
+            // 🧩 comportamento normal (inclusão / edição)
+            const hasValue = select.value && select.value !== "";
+
+            if (addBtn) {
+                addBtn.disabled = !hasValue;
+                addBtn.classList.toggle('text-blue-600', hasValue);
+                addBtn.classList.toggle('cursor-pointer', hasValue);
+                addBtn.classList.toggle('text-gray-400', !hasValue);
+                addBtn.classList.toggle('cursor-not-allowed', !hasValue);
+            }
+
             if (removeBtn) {
-                // remove sempre habilitado nos clones
                 removeBtn.disabled = false;
-                if (hasValue) {
-                    removeBtn.classList.remove('text-gray-300');
-                    removeBtn.classList.add('text-red-600');
-                } else {
-                    // mantém vermelho mesmo vazio (mas enabled)
-                    removeBtn.classList.remove('text-gray-300');
-                    removeBtn.classList.add('text-red-600');
-                }
+                removeBtn.classList.add('text-red-600', 'cursor-pointer');
             }
         }
+
 
         // evento change do select
         select.addEventListener('change', function (ev) {
