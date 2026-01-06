@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const modoExclusao = Boolean(MODO.exclusao);
 
         // 👉 VERDADE ÚNICA (ainda não usada em todo lugar)
-        const modoBloqueado = modoVisualizacao || modoExclusao;
+        window.modoBloqueado = modoVisualizacao || modoExclusao;
 
         // Outros
         const parentIdFromServer = (MODO.parentId || "").toString();
@@ -290,7 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 🔒 Bloqueio FINAL após toda a inicialização
         setTimeout(() => {
-            bloquearModoVisualizacao();
+            bloquearBotoesAdicionarRemover();
         }, 0);
 
     })();
@@ -648,8 +648,8 @@ function clonarTemplate(templateId, container, uid) {
 // ==========================================
 // BLOQUEIO FINAL — VISUALIZAÇÃO / EXCLUSÃO
 // ==========================================
-(function bloquearBotoesAdicionarRemover() {
-    if (!modoBloqueado) return;
+function bloquearBotoesAdicionarRemover() {
+    if (!window.modoBloqueado) return;
 
     window.BLOQUEIO_TOTAL_ATIVO = true;
 
@@ -673,7 +673,7 @@ function clonarTemplate(templateId, container, uid) {
 
             btn.style.pointerEvents = 'none';
         });
-})();
+}
 
 
 
