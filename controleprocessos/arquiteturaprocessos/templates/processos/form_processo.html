@@ -593,7 +593,7 @@
                                            text-blue-600
                                            cursor-pointer
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}"
+                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
                                     :class="{
                                         'text-blue-600 hover:text-blue-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
                                         'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
@@ -619,7 +619,7 @@
                                            text-red-600 hover:text-red-800
                                            cursor-pointer
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}"
+                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
                                     :class="{
                                         'text-red-600 hover:text-red-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
                                         'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
@@ -961,20 +961,28 @@
 </div>
 
 <script>
-    window.MODO = {
-        inclusao: {{ modo_inclusao|yesno:"true,false" }},
-        edicao: {{ modo_edicao|yesno:"true,false" }},
-        visualizacao: {{ modo_visualizacao|yesno:"true,false" }},
-        exclusao: {{ modo_exclusao|yesno:"true,false" }},
-        parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
-    };
+/* =========================================================
+   MODO GLOBAL — FONTE ÚNICA DE VERDADE (TEMPLATE)
+   ========================================================= */
+window.MODO = {
+    inclusao: {{ modo_inclusao|yesno:"true,false" }},
+    edicao: {{ modo_edicao|yesno:"true,false" }},
+    visualizacao: {{ modo_visualizacao|yesno:"true,false" }},
+    exclusao: {{ modo_exclusao|yesno:"true,false" }},
+    parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
+};
+
+// verdade absoluta para TODOS os scripts inline
+const modoBloqueado = window.MODO.visualizacao || window.MODO.exclusao;
+
+// flag global compatível com processos.js
+window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
 </script>
 
 <script>
-/* -------------------------------------------------------
-   Função x-data para Modelo de Processo (substitui x-data inline)
-   Usa |escapejs para evitar que aspas do backend quebrem o JS
-   ------------------------------------------------------- */
+/* =========================================================
+   x-data — Modelo de Processo
+   ========================================================= */
 function modeloProcessoData() {
     return {
         url: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}"{{ form.instance.modelagem_processo.documento_modelagem_processo.url|escapejs }}"{% else %}""{% endif %},
@@ -984,19 +992,20 @@ function modeloProcessoData() {
         sistema: "{{ form.instance.modelagem_processo.sistema|default_if_none:''|escapejs }}",
         vigencia: {% if form.instance.modelagem_processo.vigencia_inicio %}"{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}"{% else %}""{% endif %},
 
-        hasFile() { return this.url !== "" && this.url !== "None"; },
+        hasFile() {
+            return this.url !== "" && this.url !== "None";
+        },
 
         update(selectEl) {
-            const opt = selectEl.options[selectEl.selectedIndex];
+            const opt = selectEl.options[selectEl.selectedIndex] || {};
 
-            this.url      = opt?.dataset?.url     || "";
-            this.tema     = opt?.dataset?.tema    || "";
-            this.versao   = opt?.dataset?.versao  || "";
-            this.emitente = opt?.dataset?.emitente|| "";
-            this.sistema  = opt?.dataset?.sistema || "";
-            this.vigencia = opt?.dataset?.vigencia || "";
+            this.url      = opt.dataset?.url || "";
+            this.tema     = opt.dataset?.tema || "";
+            this.versao   = opt.dataset?.versao || "";
+            this.emitente = opt.dataset?.emitente || "";
+            this.sistema  = opt.dataset?.sistema || "";
+            this.vigencia = opt.dataset?.vigencia || "";
 
-            // preencher inputs derivados (mantém IDs originais)
             document.getElementById("tema_modelo").value     = this.tema;
             document.getElementById("versao_modelo").value   = this.versao;
             document.getElementById("emitente_modelo").value = this.emitente;
@@ -1006,9 +1015,9 @@ function modeloProcessoData() {
     };
 }
 
-/* -------------------------------------------------------
-   Função x-data para Norma de Procedimento (linha 8)
-   ------------------------------------------------------- */
+/* =========================================================
+   x-data — Norma de Procedimento
+   ========================================================= */
 function normaProcedimentoData() {
     return {
         url: "{{ form.instance.norma_procedimento.link_normaprocedimento|default_if_none:''|escapejs }}",
@@ -1018,17 +1027,19 @@ function normaProcedimentoData() {
         sistema: "{{ form.instance.norma_procedimento.sistema|default_if_none:''|escapejs }}",
         vigencia: {% if form.instance.norma_procedimento and form.instance.norma_procedimento.vigencia_inicio %}"{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}"{% else %}""{% endif %},
 
-        hasFile() { return this.url !== "" && this.url !== "None"; },
+        hasFile() {
+            return this.url !== "" && this.url !== "None";
+        },
 
         update(selectEl) {
-            const opt = selectEl.options[selectEl.selectedIndex];
+            const opt = selectEl.options[selectEl.selectedIndex] || {};
 
-            this.url      = opt?.dataset?.url || "";
-            this.tema     = opt?.dataset?.tema || "";
-            this.versao   = opt?.dataset?.versao || "";
-            this.emitente = opt?.dataset?.emitente || "";
-            this.sistema  = opt?.dataset?.sistema || "";
-            this.vigencia = opt?.dataset?.vigencia_br || "";
+            this.url      = opt.dataset?.url || "";
+            this.tema     = opt.dataset?.tema || "";
+            this.versao   = opt.dataset?.versao || "";
+            this.emitente = opt.dataset?.emitente || "";
+            this.sistema  = opt.dataset?.sistema || "";
+            this.vigencia = opt.dataset?.vigencia_br || "";
 
             document.getElementById("tema_norma").value     = this.tema;
             document.getElementById("versao_norma").value   = this.versao;
@@ -1040,401 +1051,34 @@ function normaProcedimentoData() {
 }
 </script>
 
-<!-- ========================= -->
-<!-- JS para controlar blocos dinâmicos de Modelo (Fase 2 - Etapa 1) -->
-<!-- ========================= -->
 <script>
-(function(){
-    // contador de UIDs para blocos extras
-    let modeloUidCounter = 0;
+/* =========================================================
+   BLOQUEIO IMEDIATO DE BOTÕES (+ / −)
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", function () {
+    if (!modoBloqueado) return;
 
-    // Helper: gerar UID
-    function nextUid() {
-        modeloUidCounter += 1;
-        return modeloUidCounter;
-    }
-
-    // Insere um novo bloco de modelo abaixo do bloco do botão clique (buttonEl)
-    window.addModelo = function(buttonEl) {
-        // encontra o bloco pai mais próximo (.modelo-block)
-        const currentBlock = buttonEl.closest('.modelo-block');
-        if (!currentBlock) return;
-
-        const template = document.getElementById('template-modelo');
-        if (!template) return;
-
-        const uid = nextUid();
-        // clonagem via string replace para os placeholders __UID__
-        let tplHtml = template.innerHTML;
-        tplHtml = tplHtml.replace(/__UID__/g, uid);
-
-        // criar nó a partir da string
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = tplHtml.trim();
-        const newBlock = wrapper.firstElementChild;
-
-        // inserir após o bloco atual (para manter ordem)
-        currentBlock.parentNode.insertBefore(newBlock, currentBlock.nextSibling);
-
-        // inicializa comportamentos do bloco novo
-        initModeloBlock(newBlock, uid);
-
-        bloquearModoVisualizacao();
-
-        // foco no select do novo bloco
-        const sel = newBlock.querySelector('select');
-        if (sel) sel.focus();
-    };
-
-    // Remove bloco; isBase indica se o botão veio do bloco-base (limpar) ou de um clone (remover)
-    window.removeModelo = function(buttonEl, isBase=false) {
-        const block = buttonEl.closest('.modelo-block');
-        if (!block) return;
-
-        if (isBase) {
-            // limpar todos os campos do bloco-base
-            // select id is "id_modelagem_processo"
-            const sel = block.querySelector('#id_modelagem_processo');
-            if (sel) {
-                sel.value = "";
-                // dispara evento change para preencher vazios via modeloProcessoData
-                sel.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            // limpar campos derivados do bloco-base
-            const idsToClear = ['tema_modelo','versao_modelo','emitente_modelo','sistema_modelo','vigencia_modelo'];
-            idsToClear.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = "";
-            });
-            return;
-        }
-
-        // se não for base, remove o bloco do DOM
-        block.remove();
-    };
-
-    // Inicializa um bloco clonado (newBlock: element, uid: number)
-    function initModeloBlock(newBlock, uid) {
-        // encontrar elementos
-        const select = newBlock.querySelector('select');
-        const addBtn = newBlock.querySelector('button[data-action="add"]');
-        const removeBtn = newBlock.querySelector('button[data-action="remove"]');
-        const visBtn = newBlock.querySelector('button[data-action="visualizar"]');
-
-        // IDs dos campos derivados dentro do bloco (já gerados com sufíxo _uid)
-        const temaEl = newBlock.querySelector('#tema_modelo_' + uid);
-        const versaoEl = newBlock.querySelector('#versao_modelo_' + uid);
-        const emitenteEl = newBlock.querySelector('#emitente_modelo_' + uid);
-        const sistemaEl = newBlock.querySelector('#sistema_modelo_' + uid);
-        const vigenciaEl = newBlock.querySelector('#vigencia_modelo_' + uid);
-
-        // função que atualiza os derivados no clone
-        function updateDerived() {
-            const opt = select.options[select.selectedIndex];
-            const tema = opt?.dataset?.tema || "";
-            if (visBtn) {
-                visBtn.dataset.url = url;
-            }
-            const versao = opt?.dataset?.versao || "";
-            const emitente = opt?.dataset?.emitente || "";
-            const sistema = opt?.dataset?.sistema || "";
-            const vigencia = opt?.dataset?.vigencia || "";
-
-            if (temaEl) temaEl.value = tema;
-            if (versaoEl) versaoEl.value = versao;
-            if (emitenteEl) emitenteEl.value = emitente;
-            if (sistemaEl) sistemaEl.value = sistema;
-            if (vigenciaEl) vigenciaEl.value = vigencia;
-
-            // visualizar: guarda a url no botão
-            const url = opt?.dataset?.url || "";
-            if (visBtn) visBtn.dataset.url = url;
-        }
-
-        // gerencia habilitação do botão add e remove
-        function refreshButtons() {
-
-            // 🔒 BLOQUEIO GLOBAL (visualização / exclusão)
-            if (window.BLOQUEIO_TOTAL_ATIVO === true) {
-                addBtn && (addBtn.disabled = true);
-                removeBtn && (removeBtn.disabled = true);
-
-                addBtn && addBtn.classList.remove('text-blue-600', 'cursor-pointer');
-                removeBtn && removeBtn.classList.remove('text-red-600', 'cursor-pointer');
-
-                addBtn && addBtn.classList.add('text-gray-400', 'cursor-not-allowed');
-                removeBtn && removeBtn.classList.add('text-gray-400', 'cursor-not-allowed');
-
-                return;
-            }
-
-            // 🧩 comportamento normal (inclusão / edição)
-            const hasValue = select.value && select.value !== "";
-
-            if (addBtn) {
-                addBtn.disabled = !hasValue;
-                addBtn.classList.toggle('text-blue-600', hasValue);
-                addBtn.classList.toggle('cursor-pointer', hasValue);
-                addBtn.classList.toggle('text-gray-400', !hasValue);
-                addBtn.classList.toggle('cursor-not-allowed', !hasValue);
-            }
-
-            if (removeBtn) {
-                removeBtn.disabled = false;
-                removeBtn.classList.add('text-red-600', 'cursor-pointer');
-            }
-        }
-
-
-        // evento change do select
-        select.addEventListener('change', function (ev) {
-            updateDerived();
-            refreshButtons();
+    document
+        .querySelectorAll('button[data-action="add"], button[data-action="remove"]')
+        .forEach(btn => {
+            btn.disabled = true;
+            btn.classList.remove('text-blue-600', 'text-red-600', 'cursor-pointer');
+            btn.classList.add('text-gray-400', 'cursor-not-allowed');
+            btn.style.pointerEvents = 'none';
         });
-
-        // inicializa estado (select vem vazio -> botões configurados)
-        updateDerived();
-        refreshButtons();
-
-        // ligar ação do botão add (usa a function global addModelo)
-        if (addBtn) {
-            addBtn.addEventListener('click', function() {
-                addModelo(this);
-            });
-        }
-
-        // ligar ação do botão remove (remove o bloco)
-        if (removeBtn) {
-            removeBtn.addEventListener('click', function() {
-                removeModelo(this, false);
-            });
-        }
-
-        // visualizar - chama abrirModalDocumento(url, 'Modelo de Processo') se houver url
-        if (visBtn) {
-            visBtn.addEventListener('click', function() {
-                const url = this.dataset.url || "";
-                if (url) {
-                    // abrirModalDocumento é função existente na sua página
-                    try { abrirModalDocumento(url, 'Modelo de Processo'); }
-                    catch(e){ console.warn('abrirModalDocumento not available', e); }
-                }
-            });
-        }
-    }
-
-    // Inicialização: ligar botões do DOM já existente (apenas para segurança)
-    document.addEventListener('DOMContentLoaded', function() {
-        // configurar botões add/remove do template (serão clonados)
-        // e habilitar / desabilitar do bloco-base já é feito via Alpine (x-data)
-        // Para garantir que blocos extras removidos no reload não causem problema, zera counter:
-        modeloUidCounter = 0;
-    });
-
-})();
-</script>
-
-<!-- ========================= -->
-<!-- JS para controlar blocos dinâmicos de Norma (Fase 2B - Etapa 1) -->
-<!-- ========================= -->
-<script>
-(function(){
-    // contador de UIDs para blocos extras de Norma
-    let normaUidCounter = 0;
-
-    // Helper: gerar UID
-    function nextNormaUid() {
-        normaUidCounter += 1;
-        return normaUidCounter;
-    }
-
-    // Insere um novo bloco de norma abaixo do bloco do botão clicado (buttonEl)
-    window.addNorma = function(buttonEl) {
-        // encontra o bloco pai mais próximo (.norma-block)
-        const currentBlock = buttonEl.closest('.norma-block');
-        if (!currentBlock) return;
-
-        const template = document.getElementById('template-norma');
-        if (!template) return;
-
-        const uid = nextNormaUid();
-        // clonagem via string replace para os placeholders __UID__
-        let tplHtml = template.innerHTML;
-        tplHtml = tplHtml.replace(/__UID__/g, uid);
-
-        // criar nó a partir da string
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = tplHtml.trim();
-        const newBlock = wrapper.firstElementChild;
-
-        // inserir após o bloco atual (para manter ordem)
-        currentBlock.parentNode.insertBefore(newBlock, currentBlock.nextSibling);
-
-        // inicializa comportamentos do bloco novo
-        initNormaBlock(newBlock, uid);
-
-        bloquearModoVisualizacao();
-
-        // foco no select do novo bloco
-        const sel = newBlock.querySelector('select');
-        if (sel) sel.focus();
-    };
-
-    // Remove bloco; isBase indica se o botão veio do bloco-base (limpar) ou de um clone (remover)
-    window.removeNorma = function(buttonEl, isBase=false) {
-        const block = buttonEl.closest('.norma-block');
-        if (!block) return;
-
-        if (isBase) {
-            // limpar todos os campos do bloco-base
-            const sel = block.querySelector('#norma_procedimento');
-            if (sel) {
-                sel.value = "";
-                // dispara evento change para preencher vazios via normaProcedimentoData
-                sel.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            // limpar campos derivados do bloco-base
-            const idsToClear = ['tema_norma','versao_norma','emitente_norma','sistema_norma','vigencia_norma'];
-            idsToClear.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = "";
-            });
-            return;
-        }
-
-        // se não for base, remove o bloco do DOM
-        block.remove();
-    };
-
-    // Inicializa um bloco clonado (newBlock: element, uid: number)
-    function initNormaBlock(newBlock, uid) {
-        // encontrar elementos
-        const select = newBlock.querySelector('select');
-        const addBtn = newBlock.querySelector('button[data-action="add"]');
-        const removeBtn = newBlock.querySelector('button[data-action="remove"]');
-        const visBtn = newBlock.querySelector('button[data-action="visualizar"]');
-
-        // IDs dos campos derivados dentro do bloco (já gerados com sufíxo _uid)
-        const temaEl = newBlock.querySelector('#tema_norma_' + uid);
-        const versaoEl = newBlock.querySelector('#versao_norma_' + uid);
-        const emitenteEl = newBlock.querySelector('#emitente_norma_' + uid);
-        const sistemaEl = newBlock.querySelector('#sistema_norma_' + uid);
-        const vigenciaEl = newBlock.querySelector('#vigencia_norma_' + uid);
-
-        // função que atualiza os derivados no clone
-        function updateDerived() {
-            const opt = select.options[select.selectedIndex];
-            const tema = opt?.dataset?.tema || "";
-            const versao = opt?.dataset?.versao || "";
-            const emitente = opt?.dataset?.emitente || "";
-            const sistema = opt?.dataset?.sistema || "";
-            const vigencia = opt?.dataset?.vigencia_br || "";
-
-            if (temaEl) temaEl.value = tema;
-            if (versaoEl) versaoEl.value = versao;
-            if (emitenteEl) emitenteEl.value = emitente;
-            if (sistemaEl) sistemaEl.value = sistema;
-            if (vigenciaEl) vigenciaEl.value = vigencia;
-
-            // visualizar: guarda a url no botão
-            const url = opt?.dataset?.url || "";
-            if (visBtn) visBtn.dataset.url = url;
-        }
-
-        // gerencia habilitação do botão add e remove
-        function refreshButtons() {
-
-            // 🔒 BLOQUEIO GLOBAL (visualização / exclusão)
-            if (window.BLOQUEIO_TOTAL_ATIVO === true) {
-                addBtn && (addBtn.disabled = true);
-                removeBtn && (removeBtn.disabled = true);
-
-                addBtn && addBtn.classList.remove('text-blue-600', 'cursor-pointer');
-                removeBtn && removeBtn.classList.remove('text-red-600', 'cursor-pointer');
-
-                addBtn && addBtn.classList.add('text-gray-400', 'cursor-not-allowed');
-                removeBtn && removeBtn.classList.add('text-gray-400', 'cursor-not-allowed');
-
-                return;
-            }
-
-            // 🧩 comportamento normal (inclusão / edição)
-            const hasValue = select.value && select.value !== "";
-
-            if (addBtn) {
-                addBtn.disabled = !hasValue;
-                addBtn.classList.toggle('text-blue-600', hasValue);
-                addBtn.classList.toggle('cursor-pointer', hasValue);
-                addBtn.classList.toggle('text-gray-400', !hasValue);
-                addBtn.classList.toggle('cursor-not-allowed', !hasValue);
-            }
-
-            if (removeBtn) {
-                removeBtn.disabled = false;
-                removeBtn.classList.add('text-red-600', 'cursor-pointer');
-            }
-        }
-
-
-        // evento change do select
-        select.addEventListener('change', function (ev) {
-            updateDerived();
-            refreshButtons();
-        });
-
-        // inicializa estado (select vem vazio -> botões configurados)
-        updateDerived();
-        refreshButtons();
-
-        // ligar ação do botão add (usa a function global addNorma)
-        if (addBtn) {
-            addBtn.addEventListener('click', function() {
-                addNorma(this);
-            });
-        }
-
-        // ligar ação do botão remove (remove o bloco)
-        if (removeBtn) {
-            removeBtn.addEventListener('click', function() {
-                removeNorma(this, false);
-            });
-        }
-
-        // visualizar - chama abrirModalDocumento(url, 'Norma de Procedimento') se houver url
-        if (visBtn) {
-            visBtn.addEventListener('click', function() {
-                const url = this.dataset.url || "";
-                if (url) {
-                    try { abrirModalDocumento(url, 'Norma de Procedimento'); }
-                    catch(e){ console.warn('abrirModalDocumento not available', e); }
-                }
-            });
-        }
-    }
-
-    // Inicialização: ligar botões do DOM já existente (apenas para segurança)
-    document.addEventListener('DOMContentLoaded', function() {
-        // reset counter
-        normaUidCounter = 0;
-    });
-
-})();
+});
 </script>
 
 <script>
-    // =========================================
-    // Dados hidratados vindos do backend
-    // =========================================
+/* =========================================================
+   DADOS HIDRATADOS (DEBUG / USO FUTURO)
+   ========================================================= */
+const MODELOS_HIDRATADOS = {{ modelos_hidratados|default:"[]"|safe }};
+const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
 
-    const MODO_VISUALIZACAO = {{ modo_visualizacao|yesno:"true,false" }};
-    const MODO_EDICAO      = {{ modo_edicao|yesno:"true,false" }};
-    const MODO_EXCLUSAO    = {{ modo_exclusao|yesno:"true,false" }};
-
-    const MODELOS_HIDRATADOS = {{ modelos_hidratados|default:"[]"|safe }};
-    const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
-
-    console.log("MODELOS_HIDRATADOS:", MODELOS_HIDRATADOS);
-    console.log("NORMAS_HIDRATADAS:", NORMAS_HIDRATADAS);
+console.log("MODO:", window.MODO);
+console.log("MODELOS_HIDRATADOS:", MODELOS_HIDRATADOS);
+console.log("NORMAS_HIDRATADAS:", NORMAS_HIDRATADAS);
 </script>
 
 <!-- JS CENTRALIZADO -->
@@ -1442,3 +1086,5 @@ function normaProcedimentoData() {
 {% include 'components/modal_documento_processo.html' %}
 
 {% endblock %}
+
+

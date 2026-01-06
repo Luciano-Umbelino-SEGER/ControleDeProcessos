@@ -4,23 +4,30 @@
 document.addEventListener("DOMContentLoaded", function () {
 
     // =========================
-    // Config / modos
-    // =========================
-    const MODO = (typeof window !== "undefined" && window.MODO) ? window.MODO : {
-        inclusao: document.body.dataset.modoInclusao === "true",
-        edicao: document.body.dataset.modoEdicao === "true",
-        visualizacao: document.body.dataset.modoVisualizacao === "true",
-        exclusao: document.body.dataset.modoExclusao === "true",
-        parentId: document.body.dataset.parentId || ""
-    };
+        // Config / modos (FONTE ÚNICA)
+        // =========================
+        const MODO = (typeof window !== "undefined" && window.MODO)
+            ? window.MODO
+            : {
+                inclusao: document.body.dataset.modoInclusao === "true",
+                edicao: document.body.dataset.modoEdicao === "true",
+                visualizacao: document.body.dataset.modoVisualizacao === "true",
+                exclusao: document.body.dataset.modoExclusao === "true",
+                parentId: document.body.dataset.parentId || ""
+            };
 
-    const modoInclusao = !!MODO.inclusao;
-    const modoEdicao = !!MODO.edicao;
-    const modoVisualizacao = !!MODO.visualizacao;
-    const modoExclusao = !!MODO.exclusao;
-    const parentIdFromServer = (MODO.parentId || "").toString();
+        // Flags normalizadas
+        const modoInclusao = Boolean(MODO.inclusao);
+        const modoEdicao = Boolean(MODO.edicao);
+        const modoVisualizacao = Boolean(MODO.visualizacao);
+        const modoExclusao = Boolean(MODO.exclusao);
 
-    const ENABLE_REVERSE_UPDATE = false;
+        // 👉 VERDADE ÚNICA (ainda não usada em todo lugar)
+        const modoBloqueado = modoVisualizacao || modoExclusao;
+
+        // Outros
+        const parentIdFromServer = (MODO.parentId || "").toString();
+        const ENABLE_REVERSE_UPDATE = false;
 
     function safeGet(id) {
         try { return document.getElementById(id); } catch { return null; }
@@ -641,8 +648,8 @@ function clonarTemplate(templateId, container, uid) {
 // ==========================================
 // BLOQUEIO FINAL — VISUALIZAÇÃO / EXCLUSÃO
 // ==========================================
-function bloquearModoVisualizacao() {
-    if (!modoVisualizacao && !modoExclusao) return;
+(function bloquearBotoesAdicionarRemover() {
+    if (!modoBloqueado) return;
 
     window.BLOQUEIO_TOTAL_ATIVO = true;
 
@@ -666,6 +673,7 @@ function bloquearModoVisualizacao() {
 
             btn.style.pointerEvents = 'none';
         });
-}
+})();
+
 
 
