@@ -1596,7 +1596,6 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 
         return context
 
-
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
@@ -1608,16 +1607,18 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        processo = self.object  # Sempre disponível no UpdateView
+        processo = self.object
 
-        # Carrega selects de PDF
+        # -------------------------------------------------
+        # Listas para os selects
+        # -------------------------------------------------
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # -------------------------------
-        # SELECTS DEPENDENTES (n1/n2)
-        # -------------------------------
+        # -------------------------------------------------
+        # SELECTS DEPENDENTES (macroprocessos)
+        # -------------------------------------------------
         context["macroprocesso_nivel1_list"] = (
             MacroprocessoNivel1.objects.filter(classificacao=processo.classificacao)
             if processo.classificacao_id else MacroprocessoNivel1.objects.none()
@@ -1630,9 +1631,63 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
         )
 
-        # -------------------------------
-        # AUDITORIA
-        # -------------------------------
+        # -------------------------------------------------
+        # 🔥 Documentos associados (1 → N) — IGUAL AO VISUALIZAR
+        # -------------------------------------------------
+        documentos_qs = (
+            ProcessoDocumento.objects
+            .select_related(
+                "modelagem_processo",
+                "modelagem_processo__tipo_documento"
+            )
+            .filter(processo=processo)
+        )
+
+        modelos_hidratados = []
+        normas_hidratadas = []
+
+        for doc in documentos_qs:
+            mp = doc.modelagem_processo
+            tipo_nome = (mp.tipo_documento.nome or "").lower()
+
+            dados = {
+                "id": mp.id,
+                "titulo": mp.titulo,
+                "tema": mp.tema,
+                "versao": mp.versao,
+                "emitente": mp.emitente,
+                "sistema": mp.sistema,
+                "vigencia": (
+                    mp.vigencia_inicio.strftime("%Y-%m-%d")
+                    if mp.vigencia_inicio else ""
+                ),
+            }
+
+            # MODELO DE PROCESSO
+            if "modelo" in tipo_nome:
+                dados["arquivo"] = (
+                    mp.documento_modelagem_processo.url
+                    if mp.documento_modelagem_processo
+                    else ""
+                )
+                modelos_hidratados.append(dados)
+
+            # NORMA DE PROCEDIMENTO
+            else:
+                dados["arquivo"] = mp.link_normaprocedimento or ""
+                normas_hidratadas.append(dados)
+
+        # -------------------------------------------------
+        # Envio para hidratação via JS
+        # -------------------------------------------------
+        context.update({
+            "modelos_hidratados": modelos_hidratados,
+            "normas_hidratadas": normas_hidratadas,
+        })
+
+        # -------------------------------------------------
+        # Controle de modo + auditoria
+        # -------------------------------------------------
         context.update({
             "modo_edicao": True,
             "modo_inclusao": False,
@@ -1648,21 +1703,23 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 if processo.usuario_cadastro else ""
             ),
 
-            "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
+            "atualizacao_data": timezone.localtime(
+                timezone.now()
+            ).strftime("%d/%m/%Y %H:%M:%S"),
             "atualizacao_user": (
-                self.request.user.get_full_name() or self.request.user.username
+                self.request.user.get_full_name()
+                or self.request.user.username
             ),
         })
 
         return context
 
-    # ------------------------------------------------------------
-    # GRAVAÇÃO FINAL (validação principal já está no forms.py)
-    # ------------------------------------------------------------
+    # -------------------------------------------------
+    # GRAVAÇÃO FINAL
+    # -------------------------------------------------
     def form_valid(self, form):
         processo = form.instance
 
-        # Atualiza auditoria
         processo.usuario_atualizacao = self.request.user
         processo.data_atualizacao = timezone.now()
 
@@ -1672,6 +1729,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         )
 
         return super().form_valid(form)
+
 
 # --------------------------------#
 # Excluir Processo                #
@@ -1685,42 +1743,112 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         processo = self.get_object()
 
+        # -------------------------------------------------
+        # Listas para os selects
+        # -------------------------------------------------
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # Lista de subprocessos
+        # -------------------------------------------------
+        # Form em modo exclusão
+        # -------------------------------------------------
+        context["form"] = Form_ProcessoForm(
+            instance=processo,
+            modo_exclusao=True
+        )
+
+        # -------------------------------------------------
+        # 🔥 Documentos associados (1 → N) — IGUAL AO VISUALIZAR
+        # -------------------------------------------------
+        documentos_qs = (
+            ProcessoDocumento.objects
+            .select_related(
+                "modelagem_processo",
+                "modelagem_processo__tipo_documento"
+            )
+            .filter(processo=processo)
+        )
+
+        modelos_hidratados = []
+        normas_hidratadas = []
+
+        for doc in documentos_qs:
+            mp = doc.modelagem_processo
+            tipo_nome = (mp.tipo_documento.nome or "").lower()
+
+            dados = {
+                "id": mp.id,
+                "titulo": mp.titulo,
+                "tema": mp.tema,
+                "versao": mp.versao,
+                "emitente": mp.emitente,
+                "sistema": mp.sistema,
+                "vigencia": (
+                    mp.vigencia_inicio.strftime("%Y-%m-%d")
+                    if mp.vigencia_inicio else ""
+                ),
+            }
+
+            # ------------------------------
+            # MODELO DE PROCESSO (arquivo local)
+            # ------------------------------
+            if "modelo" in tipo_nome:
+                dados["arquivo"] = (
+                    mp.documento_modelagem_processo.url
+                    if mp.documento_modelagem_processo
+                    else ""
+                )
+                modelos_hidratados.append(dados)
+
+            # ------------------------------
+            # NORMA DE PROCEDIMENTO (URL externa)
+            # ------------------------------
+            else:
+                dados["arquivo"] = mp.link_normaprocedimento or ""
+                normas_hidratadas.append(dados)
+
+        # -------------------------------------------------
+        # Envio para hidratação via JS
+        # -------------------------------------------------
+        context.update({
+            "modelos_hidratados": modelos_hidratados,
+            "normas_hidratadas": normas_hidratadas,
+        })
+
+        # -------------------------------------------------
+        # Subprocessos associados
+        # -------------------------------------------------
         subprocessos = processo.subprocessos.all()
 
-        context['form'] = Form_ProcessoForm(instance=processo, modo_exclusao=True)
-
-        # 🔵 AUDITORIA + MODOS
+        # -------------------------------------------------
+        # Controle de modo + auditoria
+        # -------------------------------------------------
         context.update({
-            'cadastro_data': (
+            "modo_exclusao": True,
+            "modo_visualizacao": False,
+            "modo_inclusao": False,
+            "modo_edicao": False,
+            "desabilitar": True,
+
+            "subprocessos_existentes": subprocessos,
+
+            "cadastro_data": (
                 timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_criacao else ""
             ),
-            'cadastro_user': (
+            "cadastro_user": (
                 processo.usuario_cadastro.get_full_name()
                 if processo.usuario_cadastro else ""
             ),
-            'atualizacao_data': (
+            "atualizacao_data": (
                 timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_atualizacao else ""
             ),
-            'atualizacao_user': (
+            "atualizacao_user": (
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao else ""
             ),
-
-            'modo_exclusao': True,
-            'modo_visualizacao': False,
-            'modo_inclusao': False,
-            'modo_edicao': False,
-            "desabilitar": True,
-
-            # 🔵 subprocessos para o template
-            "subprocessos_existentes": subprocessos,
         })
 
         return context
@@ -1728,7 +1856,9 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         processo = self.get_object()
 
+        # -------------------------------------------------
         # 1️⃣ Verifica se existem subprocessos
+        # -------------------------------------------------
         subprocessos = processo.subprocessos.all()
 
         if subprocessos.exists():
@@ -1740,10 +1870,16 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             )
             return redirect(request.path)
 
-        # 2️⃣ Se não existir nenhum subprocesso → excluir normalmente
+        # -------------------------------------------------
+        # 2️⃣ Exclusão definitiva
+        # -------------------------------------------------
         processo.delete()
-        messages.success(request, f"Processo '{processo.nome}' excluído com sucesso!")
+        messages.success(
+            request,
+            f"Processo '{processo.nome}' excluído com sucesso!"
+        )
         return redirect('arquiteturaprocessos:processos')
+
 
 
 

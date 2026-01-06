@@ -305,14 +305,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const sistemaModelo = safeGet("sistema_modelo");
     const vigenciaModelo = safeGet("vigencia_modelo");
 
-    function formatarDataISO_para_BR(iso) {
-        if (!iso) return "";
-        const [a,m,d] = iso.split("-");
-        return `${d}/${m}/${a}`;
-    }
-
-    function formatarVersao(v) { return v ? String(v).padStart(2,"0") : ""; }
-
     if (modeloSelect) {
         modeloSelect.addEventListener("change", function() {
             const opt = this.options[this.selectedIndex];
@@ -555,6 +547,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+function formatarDataISO_para_BR(iso) {
+        if (!iso) return "";
+        const [a,m,d] = iso.split("-");
+        return `${d}/${m}/${a}`;
+    }
+
+function formatarVersao(v) { return v ? String(v).padStart(2,"0") : ""; }
+
+// ==========================================
+// VISUALIZAR DOCUMENTO — BLOCOS CLONADOS
+// ==========================================
+document.addEventListener("click", function (e) {
+    const botao = e.target.closest('button[data-action="visualizar"]');
+    if (!botao) return;
+
+    const bloco = botao.closest('.modelo-block, .norma-block');
+    if (!bloco) return;
+
+    const select = bloco.querySelector("select");
+    if (!select) return;
+
+    const opt = select.options[select.selectedIndex];
+    const url = opt?.dataset?.url;
+
+    if (!url) {
+        console.warn("⚠️ Nenhuma URL encontrada para visualização");
+        return;
+    }
+
+    const titulo = bloco.classList.contains("modelo-block")
+        ? "Modelo de Processo"
+        : "Norma de Procedimento";
+
+    console.log("📂 URL recebida no abrirModalDocumento:", url);
+    abrirModalDocumento(url, titulo);
+});
+
 // ==================================================
 // HIDRATAÇÃO DE DOCUMENTOS (1 → N)
 // ==================================================
@@ -567,18 +596,24 @@ function hidratarSelect(selectEl, dados) {
 
 function preencherCamposModelo(block, dados) {
     block.querySelector('[id^="tema_modelo"]').value = dados.tema || "";
-    block.querySelector('[id^="versao_modelo"]').value = dados.versao || "";
+    //block.querySelector('[id^="versao_modelo"]').value = dados.versao || "";
+    block.querySelector('[id^="versao_modelo"]').value = formatarVersao(dados.versao);
     block.querySelector('[id^="emitente_modelo"]').value = dados.emitente || "";
     block.querySelector('[id^="sistema_modelo"]').value = dados.sistema || "";
-    block.querySelector('[id^="vigencia_modelo"]').value = dados.vigencia || "";
+    //block.querySelector('[id^="vigencia_modelo"]').value = dados.vigencia || "";
+    block.querySelector('[id^="vigencia_modelo"]').value = formatarDataISO_para_BR(dados.vigencia);
+
 }
 
 function preencherCamposNorma(block, dados) {
     block.querySelector('[id^="tema_norma"]').value = dados.tema || "";
-    block.querySelector('[id^="versao_norma"]').value = dados.versao || "";
+    //block.querySelector('[id^="versao_norma"]').value = dados.versao || "";
+    block.querySelector('[id^="versao_norma"]').value = formatarVersao(dados.versao);
     block.querySelector('[id^="emitente_norma"]').value = dados.emitente || "";
     block.querySelector('[id^="sistema_norma"]').value = dados.sistema || "";
-    block.querySelector('[id^="vigencia_norma"]').value = dados.vigencia || "";
+    //block.querySelector('[id^="vigencia_norma"]').value = dados.vigencia || "";
+    block.querySelector('[id^="vigencia_norma"]').value = formatarDataISO_para_BR(dados.vigencia);
+
 }
 
 function hidratarModelos() {
