@@ -275,11 +275,49 @@ class ArquiteruraProcessos(ListView):
             return None
         try:
             return datetime.strptime(value, "%Y-%m-%d").date()
-        except:
+        except ValueError:
             return None
 
+    # -----------------------------------------
+    # Montagem de documentos (reutilizável)
+    # -----------------------------------------
+    def montar_docs(self, documentos_qs):
+        docs = []
+
+        for pd in documentos_qs:
+            mp = pd.modelagem_processo
+            if not mp:
+                continue
+
+            if mp.documento_modelagem_processo:
+                displayname = os.path.basename(mp.documento_modelagem_processo.name)
+                url = mp.documento_modelagem_processo.url
+            else:
+                displayname = (mp.link_normaprocedimento or "").split("/")[-1]
+                url = mp.link_normaprocedimento or ""
+
+            docs.append({
+                "tipo": mp.tipo_documento.nome if mp.tipo_documento else "",
+                "codigo": mp.codigo or "",
+                "sequencial": mp.sequencial or "",
+                "versao": mp.versao or "",
+                "tema": mp.tema or "",
+                "vigencia": (
+                    mp.vigencia_inicio.strftime("%d/%m/%Y")
+                    if mp.vigencia_inicio else ""
+                ),
+                "displayname": displayname,
+                "url": url,
+            })
+
+        return docs
+
+    # -----------------------------------------
+    # Query principal
+    # -----------------------------------------
     def get_queryset(self):
         req = self.request.GET
+
         nome = req.get("nome", "").strip()
         classificacao = req.get("classificacao", "").strip()
         macro1 = req.get("macro1", "").strip()
@@ -292,25 +330,25 @@ class ArquiteruraProcessos(ListView):
         atu_ate = self.parse_date(req.get("atualizacao_ate"))
 
         qs = (
-            Processo.objects.all()
+            Processo.objects
+            .filter(parent__isnull=True)
             .select_related(
                 "classificacao",
                 "macroprocesso_nivel1",
                 "macroprocesso_nivel2",
-                "parent",
                 "usuario_cadastro",
                 "usuario_atualizacao",
             )
             .prefetch_related(
-                "subprocessos",
-                # usa related_name 'documentos' no relacionamento Processo <-> ProcessoDocumento
-                "documentos",
-                "subprocessos__documentos",
+                "documentos__modelagem_processo__tipo_documento",
+                "subprocessos__documentos__modelagem_processo__tipo_documento",
             )
+            .order_by("id")
         )
 
-        filtro_valido = True
-
+        # --------------------
+        # Filtros
+        # --------------------
         if nome:
             qs = qs.filter(nome__icontains=nome)
 
@@ -334,7 +372,7 @@ class ArquiteruraProcessos(ListView):
 
         if cri_de and cri_ate and cri_ate < cri_de:
             messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
-            filtro_valido = False
+            return qs.none()
 
         if atu_de:
             qs = qs.filter(data_atualizacao__gte=atu_de)
@@ -344,71 +382,18 @@ class ArquiteruraProcessos(ListView):
 
         if atu_de and atu_ate and atu_ate < atu_de:
             messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
-            filtro_valido = False
+            return qs.none()
 
-        if not filtro_valido:
-            return Processo.objects.filter(parent__isnull=True).order_by("id")
-
-        qs = qs.filter(parent__isnull=True).order_by("id")
-
-        # Montar documentos — cada registro de relacionamento referencia ModelagemProcesso
+        # --------------------
+        # Montagem dos docs
+        # --------------------
         for proc in qs:
-            docs = []
-            for pd in proc.documentos.all():  # related_name 'documentos'
-                mp = pd.modelagem_processo
-                if not mp:
-                    continue
-                displayname = ""
-                url = ""
-                if getattr(mp, "documento_modelagem_processo", None):
-                    displayname = os.path.basename(mp.documento_modelagem_processo.name)
-                    url = mp.documento_modelagem_processo.url
-                elif getattr(mp, "link_normaprocedimento", None):
-                    displayname = mp.link_normaprocedimento.split("/")[-1]
-                    url = mp.link_normaprocedimento
-
-                docs.append({
-                    "tipo": mp.tipo_documento.nome if getattr(mp, "tipo_documento", None) else "",
-                    "codigo": getattr(mp, "codigo", "") or "",
-                    "sequencial": getattr(mp, "sequencial", "") or "",
-                    "versao": getattr(mp, "versao", "") or "",
-                    "tema": getattr(mp, "tema", "") or "",
-                    "vigencia": mp.vigencia_inicio.strftime("%d/%m/%Y") if getattr(mp, "vigencia_inicio", None) else "",
-                    "displayname": displayname,
-                    "url": url,
-                })
-
-            proc.docs_json = docs
-            proc.docs_count = len(docs)
+            proc.docs_json = self.montar_docs(proc.documentos.all())
+            proc.docs_count = len(proc.docs_json)
 
             for sub in proc.subprocessos.all():
-                sd = []
-                for pd in sub.documentos.all():
-                    mp = pd.modelagem_processo
-                    if not mp:
-                        continue
-                    displayname = ""
-                    url = ""
-                    if getattr(mp, "documento_modelagem_processo", None):
-                        displayname = os.path.basename(mp.documento_modelagem_processo.name)
-                        url = mp.documento_modelagem_processo.url
-                    elif getattr(mp, "link_normaprocedimento", None):
-                        displayname = mp.link_normaprocedimento.split("/")[-1]
-                        url = mp.link_normaprocedimento
-
-                    sd.append({
-                        "tipo": mp.tipo_documento.nome if getattr(mp, "tipo_documento", None) else "",
-                        "codigo": getattr(mp, "codigo", "") or "",
-                        "sequencial": getattr(mp, "sequencial", "") or "",
-                        "versao": getattr(mp, "versao", "") or "",
-                        "tema": getattr(mp, "tema", "") or "",
-                        "vigencia": mp.vigencia_inicio.strftime("%d/%m/%Y") if getattr(mp, "vigencia_inicio", None) else "",
-                        "displayname": displayname,
-                        "url": url,
-                    })
-
-                sub.docs_json = sd
-                sub.docs_count = len(sd)
+                sub.docs_json = self.montar_docs(sub.documentos.all())
+                sub.docs_count = len(sub.docs_json)
 
         return qs
 

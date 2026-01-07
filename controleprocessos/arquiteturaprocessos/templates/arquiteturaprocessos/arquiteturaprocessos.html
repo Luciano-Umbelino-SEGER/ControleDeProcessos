@@ -75,36 +75,91 @@
             <!-- Datas -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação De</label>
-              <input name="criacao_de" type="date"
+              <input name="criacao_de"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="
+                       this.type='date';
+                       this.classList.remove('text-gray-400');
+                       this.classList.add('text-black');
+                     "
+                     onblur="
+                       if(!this.value){
+                         this.type='text';
+                         this.classList.remove('text-black');
+                         this.classList.add('text-gray-400');
+                       }
+                     "
                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black"
+                            focus:ring-2 focus:ring-blue-500 text-gray-400"
                      value="{{ request.GET.criacao_de }}">
             </div>
 
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação Até</label>
-              <input name="criacao_ate" type="date"
+              <input name="criacao_ate"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="
+                       this.type='date';
+                       this.classList.remove('text-gray-400');
+                       this.classList.add('text-black');
+                     "
+                     onblur="
+                       if(!this.value){
+                         this.type='text';
+                         this.classList.remove('text-black');
+                         this.classList.add('text-gray-400');
+                       }
+                     "
                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black"
+                            focus:ring-2 focus:ring-blue-500 text-gray-400"
                      value="{{ request.GET.criacao_ate }}">
             </div>
 
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">Atualização De</label>
-              <input name="atualizacao_de" type="date"
+              <input name="atualizacao_de"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="
+                       this.type='date';
+                       this.classList.remove('text-gray-400');
+                       this.classList.add('text-black');
+                     "
+                     onblur="
+                       if(!this.value){
+                         this.type='text';
+                         this.classList.remove('text-black');
+                         this.classList.add('text-gray-400');
+                       }
+                     "
                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black"
+                            focus:ring-2 focus:ring-blue-500 text-gray-400"
                      value="{{ request.GET.atualizacao_de }}">
             </div>
 
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">Atualização Até</label>
-              <input name="atualizacao_ate" type="date"
+              <input name="atualizacao_ate"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="
+                       this.type='date';
+                       this.classList.remove('text-gray-400');
+                       this.classList.add('text-black');
+                     "
+                     onblur="
+                       if(!this.value){
+                         this.type='text';
+                         this.classList.remove('text-black');
+                         this.classList.add('text-gray-400');
+                       }
+                     "
                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black"
+                            focus:ring-2 focus:ring-blue-500 text-gray-400"
                      value="{{ request.GET.atualizacao_ate }}">
             </div>
-
           </div>
 
           <!-- BOTÕES -->
@@ -241,7 +296,9 @@
                 <tr class="hover:bg-blue-100 transition-colors
                            {% if rownum|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
-                  <td class="py-3 px-6 text-blue-600">— {{ sub.nome }}</td>
+                  <td class="py-3 px-3 text-blue-600">
+                    <span class="ml-5 block">{{ sub.nome }}</span>
+                  </td>
                   <td class="py-3 px-2 text-blue-600">{{ sub.objetivo|truncatechars:120 }}</td>
 
                   <td class="py-3 px-2 text-blue-600">{{ sub.classificacao }}</td>
