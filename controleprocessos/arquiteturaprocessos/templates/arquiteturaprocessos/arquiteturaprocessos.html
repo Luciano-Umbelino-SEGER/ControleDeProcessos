@@ -181,7 +181,8 @@
 
     <!-- TABELA -->
     <div class="overflow-x-auto">
-      <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow">
+      <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow zebra-safe">
+
         <thead class="bg-blue-100 text-blue-800">
           <tr>
             <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
@@ -385,5 +386,31 @@
         console.error("❌ Função abrirListaDocumentos NÃO foi carregada! Verifique o modal_lista_documentos.");
     }
 </script>
+
+<style>
+/* =========================================
+   ZEBRADO CONTÍNUO — PRIORIDADE MÁXIMA
+   (preserva ícones, contadores e JS)
+   ========================================= */
+
+/* neutraliza qualquer bg vindo do Tailwind ou Django */
+.zebra-safe tbody tr {
+  background-color: transparent !important;
+}
+
+/* zebrado contínuo real */
+.zebra-safe tbody tr:nth-child(odd) {
+  background-color: #ffffff !important;
+}
+
+.zebra-safe tbody tr:nth-child(even) {
+  background-color: #f1f7ff !important; /* azul claro atual */
+}
+
+/* mantém hover exatamente como estava */
+.zebra-safe tbody tr:hover {
+  background-color: #e0efff !important; /* blue-100 */
+}
+</style>
 
 {% endblock %}
