@@ -251,8 +251,10 @@
                   {% with cnt=processo.docs_count %}
                     {% if cnt > 0 %}
                       <button type="button"
-                              class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
-                              onclick='abrirListaDocumentos("{{ processo.nome|escapejs }}", {{ processo.docs_json|safe }})'>
+                              class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
+                              @click="abrirModalListaDocumentos('modelagemprocessos/Atendimento_a_imprensa_e_avaliacao_de_noticias_9e8a47d6.pdf',
+                              'Lista de Documentos')"
+                              title="Visualizar Documento">
 
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                               class="w-5 h-5"
@@ -326,8 +328,10 @@
                     {% with scnt=sub.docs_count %}
                       {% if scnt > 0 %}
                         <button type="button"
-                                class="btn-docs flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition"
-                                onclick='abrirListaDocumentos("{{ sub.nome|escapejs }}", {{ sub.docs_json|safe }})'>
+                                class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
+                                @click="abrirModalListaDocumentos('modelagemprocessos/Atendimento_a_imprensa_e_avaliacao_de_noticias_9e8a47d6.pdf',
+                                'Lista sub Processos')"
+                                title="Visualizar Documento">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                                 class="w-5 h-5"
                                 fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
