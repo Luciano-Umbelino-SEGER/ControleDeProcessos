@@ -282,7 +282,9 @@ class ArquiteruraProcessos(ListView):
     # Montagem de documentos (reutilizável)
     # -----------------------------------------
     def montar_docs(self, documentos_qs):
-        docs = []
+        todos = []
+        modelos = []
+        normas = []
 
         for pd in documentos_qs:
             mp = pd.modelagem_processo
@@ -296,7 +298,7 @@ class ArquiteruraProcessos(ListView):
                 displayname = (mp.link_normaprocedimento or "").split("/")[-1]
                 url = mp.link_normaprocedimento or ""
 
-            docs.append({
+            doc = {
                 "tipo": mp.tipo_documento.nome if mp.tipo_documento else "",
                 "codigo": mp.codigo or "",
                 "sequencial": mp.sequencial or "",
@@ -308,9 +310,23 @@ class ArquiteruraProcessos(ListView):
                 ),
                 "displayname": displayname,
                 "url": url,
-            })
+                "is_modelo": bool(mp.documento_modelagem_processo),
+                "is_norma": bool(mp.link_normaprocedimento),
+            }
 
-        return docs
+            todos.append(doc)
+
+            if doc["is_modelo"]:
+                modelos.append(doc)
+
+            if doc["is_norma"]:
+                normas.append(doc)
+
+        return {
+            "todos": todos,
+            "modelos": modelos,
+            "normas": normas,
+        }
 
     # -----------------------------------------
     # Query principal
@@ -384,21 +400,36 @@ class ArquiteruraProcessos(ListView):
             messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
             return qs.none()
 
-        # --------------------
-        # Montagem dos docs
-        # --------------------
-        for proc in qs:
-            proc.docs_json = self.montar_docs(proc.documentos.all())
-            proc.docs_count = len(proc.docs_json)
-
-            for sub in proc.subprocessos.all():
-                sub.docs_json = self.montar_docs(sub.documentos.all())
-                sub.docs_count = len(sub.docs_json)
-
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
+        page = ctx.get("page_obj")
+
+        if page:
+            processos = page.object_list
+        else:
+            processos = ctx["processos"]
+
+        for proc in processos:
+            # -------- PROCESSO --------
+            docs = self.montar_docs(proc.documentos.all())
+
+            proc.docs_json = docs["todos"]
+            proc.docs_modelos = docs["modelos"]
+            proc.docs_normas = docs["normas"]
+            proc.docs_count = len(docs["todos"])
+
+            # -------- SUBPROCESSOS (restauração do comportamento antigo) --------
+            for sub in proc.subprocessos.all():
+                sub_docs = self.montar_docs(sub.documentos.all())
+
+                sub.docs_json = sub_docs["todos"]
+                sub.docs_modelos = sub_docs["modelos"]
+                sub.docs_normas = sub_docs["normas"]
+                sub.docs_count = len(sub_docs["todos"])
+
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
         return ctx
 
