@@ -2,7 +2,7 @@
 <div id="modalDocumento"
      class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 transition-opacity duration-300 ease-out">
   <div id="conteudoModal"
-       class="bg-white rounded-2xl shadow-2xl border-4 border-[#0097A7] w-11/12 max-w-[90rem] h-[90vh]
+       class="bg-white rounded-2xl shadow-2xl border-4 border-[#0097A7] w-11/12 max-w-[90rem] h-[60vh]
              flex flex-col relative overflow-hidden transform scale-95 opacity-0 transition-all duration-300 ease-out">
 
     <!-- Cabeçalho -->
@@ -47,7 +47,7 @@
           Atendimento_a_imprensa_e_avaliacao_de_noticias.pdf
         </span>
 
-        <button
+        <button>
           <!-- VISUALIZAR -->
           <a href="https://seger.es.gov.br/Media/Seger/UECI/Normas%20Gerais/Norma%20de%20Procedimento%20-%20SRH%20N%C2%BA%20006.pdf"
              target="_blank"
@@ -80,43 +80,58 @@
           Norma de Procedimento
         </h4>
         <!-- Cabeçalho das colunas -->
-        <div class="grid grid-cols-[2.5fr_2fr_0.8fr_2.5fr_1.4fr_40px]
+        <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
                     text-sm font-semibold text-blue-600 px-3 pb-0.5">
           <span>Documento</span>
+          <span></span>
           <span>Tema</span>
           <span>Versão</span>
           <span>Emitente</span>
           <span>Início de Vigência</span>
-          <span></span>
         </div>
 
         <!-- Linha verde fina -->
         <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
 
-        <div class="space-y-2">
-          <div class="flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100 transition">
-            <span class="text-sm text-gray-800 truncate">
-              Norma_de_Procedimento_SRH_001.pdf
-            </span>
-            <button
-              <a href="/media/normas/np001.pdf"
-                 target="_blank"
-                 class="text-blue-600 hover:text-blue-800"
-                 title="Visualizar">
-                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                         d="M2.458 12C3.732 7.943 7.523 5 12 5
-                            c4.477 0 8.268 2.943 9.542 7
-                            -1.274 4.057-5.065 7-9.542 7
-                            -4.477 0-8.268-2.943-9.542-7z"/>
-                 </svg>
-              </a>
-            </button>
-          </div>
+        <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
+            items-center px-3 py-1.5 text-sm text-gray-900
+            hover:bg-gray-100 rounded transition">
+
+          <!-- Documento -->
+          <span class="truncate">
+            Norma_de_Procedimento_SRH_001.pdf
+          </span>
+
+          <!-- Ícone visualizar -->
+          <a href="/media/normas/np001.pdf"
+             target="_blank"
+             class="text-blue-600 hover:text-blue-800"
+             title="Visualizar">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5
+                       c4.477 0 8.268 2.943 9.542 7
+                       -1.274 4.057-5.065 7-9.542 7
+                       -4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </a>
+
+          <!-- Tema -->
+          <span class="truncate">Concessão de Diárias</span>
+
+          <!-- Versão -->
+          <span>03</span>
+
+          <!-- Emitente -->
+          <span class="truncate">Secretaria de Gestão e Recursos Humanos – SEGER</span>
+
+          <!-- Vigência -->
+          <span>20/02/2025</span>
         </div>
+
       </div>
 
     </div>
