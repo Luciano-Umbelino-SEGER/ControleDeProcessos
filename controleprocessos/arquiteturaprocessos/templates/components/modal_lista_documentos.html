@@ -260,35 +260,37 @@
       return urlFinal;
     }
   }
-  function abrirModalListaDocumentos(url, titulo) {
-    console.log("📂 URL recebida no abrirModalListaDocumentos:", url);
+
+  function abrirModalListaDocumentos(url, nome, tipo) {
+    console.log("📂 URL:", url);
+    console.log("📌 Nome:", nome);
+    console.log("📎 Tipo:", tipo);
+
     const modal = document.getElementById('modalDocumento');
     const conteudo = document.getElementById('conteudoModal');
     const iframe = document.getElementById('iframeDocumento');
     const tituloElem = document.getElementById('tituloDocumento');
 
     if (!modal || !conteudo || !iframe || !tituloElem) {
-      console.error('[viewer] Elementos do modal não encontrados. Verifique os IDs: modalDocumento, conteudoModal, iframeDocumento, tituloDocumento.');
+      console.error('[viewer] Elementos do modal não encontrados.');
       return;
     }
 
-    // ✅ Único ajuste: resolver a URL para a rota segura, quando aplicável
     let urlIframe = url;
     if (!url.startsWith("blob:")) {
-        urlIframe = _resolverUrlParaIframe(url);
+      urlIframe = _resolverUrlParaIframe(url);
     }
     iframe.src = urlIframe;
 
-    // Título (inalterado)
-    tituloElem.textContent = titulo
-                              ? `Documentos Associados ao Processo ${titulo}`
-                              : 'Documentos Associados ao Processo';
+    const tipoLabel = tipo || 'Processo';
 
-    // Mostra o modal com fade-in + zoom-in (inalterado)
+    tituloElem.textContent = nome
+      ? `Documentos Associados ao ${tipoLabel} ${nome}`
+      : `Documentos Associados ao ${tipoLabel}`;
+
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
-    // Delay para animação suave (inalterado)
     setTimeout(() => {
       conteudo.classList.remove('scale-95', 'opacity-0');
       conteudo.classList.add('scale-100', 'opacity-100');
