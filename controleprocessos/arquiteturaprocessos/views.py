@@ -20,6 +20,7 @@ from django.core.paginator import Paginator
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pathlib import Path
+from urllib.parse import unquote
 import mimetypes
 
 from .models import (
@@ -291,18 +292,34 @@ class ArquiteruraProcessos(ListView):
             if not mp:
                 continue
 
+            # -----------------------------
+            # Documento / Display / URL
+            # -----------------------------
             if mp.documento_modelagem_processo:
-                displayname = os.path.basename(mp.documento_modelagem_processo.name)
+                # Arquivo local (Modelagem de Processo)
+                documento = os.path.basename(mp.documento_modelagem_processo.name)
+                displayname = documento
                 url = mp.documento_modelagem_processo.url
+
+            elif mp.link_normaprocedimento:
+                # URL externa (Norma de Procedimento)
+                documento = os.path.basename(mp.link_normaprocedimento)
+                documento = unquote(documento)  # decodifica %20, %C2%BA etc
+                displayname = documento
+                url = mp.link_normaprocedimento
+
             else:
-                displayname = (mp.link_normaprocedimento or "").split("/")[-1]
-                url = mp.link_normaprocedimento or ""
+                documento = ""
+                displayname = ""
+                url = ""
 
             doc = {
+                "documento": documento,
                 "tipo": mp.tipo_documento.nome if mp.tipo_documento else "",
                 "codigo": mp.codigo or "",
                 "sequencial": mp.sequencial or "",
                 "versao": mp.versao or "",
+                "emitente": mp.emitente or "",
                 "tema": mp.tema or "",
                 "vigencia": (
                     mp.vigencia_inicio.strftime("%d/%m/%Y")

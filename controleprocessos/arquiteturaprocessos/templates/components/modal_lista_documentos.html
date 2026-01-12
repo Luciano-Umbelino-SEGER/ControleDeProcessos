@@ -260,12 +260,14 @@
                   items-center px-3 py-1.5 text-sm text-gray-900
                   hover:bg-gray-100 rounded transition">
 
-        <span class="truncate">${doc.arquivo || "-"}</span>
+        <!-- Documento -->
+        <span class="truncate">${doc.displayname || "-"}</span>
 
+        <!-- Visualizar -->
         <button
           class="text-blue-600 hover:text-blue-800"
           title="Visualizar"
-          onclick="abrirModalListaDocumentos('${doc.arquivo}', '${nomeProcesso}', '${tipo}')">
+          onclick="abrirModalListaDocumentos('${doc.url}', '${nomeProcesso}', '${tipo}')">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -283,7 +285,8 @@
         <span class="truncate">${doc.emitente || "-"}</span>
         <span>${doc.vigencia || "-"}</span>
       </div>
-    `;
+`;
+
 
     (modelos || []).forEach(m => listaModelos.insertAdjacentHTML("beforeend", criarLinha(m)));
     (normas  || []).forEach(n => listaNormas.insertAdjacentHTML("beforeend", criarLinha(n)));
