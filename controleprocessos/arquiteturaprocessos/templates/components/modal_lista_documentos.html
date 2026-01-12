@@ -23,115 +23,36 @@
 
       <!-- MODELO DE PROCESSO -->
       <div>
-        <h4 class="text-sm font-semibold text-blue-800 mb-2">
-          Modelo de Processo
-        </h4>
-        <!-- Cabeçalho das colunas -->
+        <h4 class="text-sm font-semibold text-blue-800 mb-2">Modelo de Processo</h4>
+
+        <!-- Cabeçalho das colunas (mantém) -->
         <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
                     text-sm font-semibold text-blue-600 px-3 pb-0.5">
-          <span>Documento</span>
-          <span></span>
-          <span>Tema</span>
-          <span>Versão</span>
-          <span>Emitente</span>
-          <span>Início de Vigência</span>
+          <span>Documento</span><span></span><span>Tema</span>
+          <span>Versão</span><span>Emitente</span><span>Início de Vigência</span>
         </div>
-        <!-- Linha verde fina -->
         <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
 
-        <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
-                    items-center px-3 py-1.5 text-sm text-gray-900
-                    hover:bg-gray-100 rounded transition">
-
-        <span class="truncate">
-          Atendimento_a_imprensa_e_avaliacao_de_noticias.pdf
-        </span>
-
-        <button>
-          <!-- VISUALIZAR -->
-          <a href="https://seger.es.gov.br/Media/Seger/UECI/Normas%20Gerais/Norma%20de%20Procedimento%20-%20SRH%20N%C2%BA%20006.pdf"
-             target="_blank"
-             class="text-blue-600 hover:text-blue-800" title="Visualizar">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-          </a>
-        </button>
-
-        <span class="truncate">Atendimento às demandas de imprensa</span>
-        <span>01</span>
-        <span class="truncate">Secretaria de Gestão e Recursos Humanos – SEGER</span>
-        <span>23/01/2025</span>
+        <!-- 🔽 AQUI entra a lista dinâmica -->
+        <div id="lista-modelos" class="space-y-1"></div>
       </div>
 
-      </div>
-
-      <!-- Linha verde fina -->
       <div class="border-t border-[#0097A7] mt-6 mb-6"></div>
-
 
       <!-- NORMA DE PROCEDIMENTO -->
       <div>
-        <h4 class="text-sm font-semibold text-blue-800 mb-2">
-          Norma de Procedimento
-        </h4>
-        <!-- Cabeçalho das colunas -->
+        <h4 class="text-sm font-semibold text-blue-800 mb-2">Norma de Procedimento</h4>
+
+        <!-- Cabeçalho das colunas (mantém) -->
         <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
                     text-sm font-semibold text-blue-600 px-3 pb-0.5">
-          <span>Documento</span>
-          <span></span>
-          <span>Tema</span>
-          <span>Versão</span>
-          <span>Emitente</span>
-          <span>Início de Vigência</span>
+          <span>Documento</span><span></span><span>Tema</span>
+          <span>Versão</span><span>Emitente</span><span>Início de Vigência</span>
         </div>
-
-        <!-- Linha verde fina -->
         <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
 
-        <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
-            items-center px-3 py-1.5 text-sm text-gray-900
-            hover:bg-gray-100 rounded transition">
-
-          <!-- Documento -->
-          <span class="truncate">
-            Norma_de_Procedimento_SRH_001.pdf
-          </span>
-
-          <!-- Ícone visualizar -->
-          <a href="/media/normas/np001.pdf"
-             target="_blank"
-             class="text-blue-600 hover:text-blue-800"
-             title="Visualizar">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5
-                       c4.477 0 8.268 2.943 9.542 7
-                       -1.274 4.057-5.065 7-9.542 7
-                       -4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-          </a>
-
-          <!-- Tema -->
-          <span class="truncate">Concessão de Diárias</span>
-
-          <!-- Versão -->
-          <span>03</span>
-
-          <!-- Emitente -->
-          <span class="truncate">Secretaria de Gestão e Recursos Humanos – SEGER</span>
-
-          <!-- Vigência -->
-          <span>20/02/2025</span>
-        </div>
-
+        <!-- 🔽 AQUI entra a lista dinâmica -->
+        <div id="lista-normas" class="space-y-1"></div>
       </div>
 
     </div>
@@ -317,6 +238,69 @@
       modal.classList.add('hidden');
       iframe.src = ''; // limpa o iframe
     }, 250);
+  }
+</script>
+
+<script>
+  function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo = "Processo") {
+    const listaModelos = document.getElementById("lista-modelos");
+    const listaNormas  = document.getElementById("lista-normas");
+
+    if (!listaModelos || !listaNormas) {
+      console.error("[modal] Containers de lista não encontrados.");
+      return;
+    }
+
+    // Limpa conteúdo anterior
+    listaModelos.innerHTML = "";
+    listaNormas.innerHTML  = "";
+
+    const criarLinha = (doc) => `
+      <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
+                  items-center px-3 py-1.5 text-sm text-gray-900
+                  hover:bg-gray-100 rounded transition">
+
+        <span class="truncate">${doc.arquivo || "-"}</span>
+
+        <button
+          class="text-blue-600 hover:text-blue-800"
+          title="Visualizar"
+          onclick="abrirModalListaDocumentos('${doc.arquivo}', '${nomeProcesso}', '${tipo}')">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5
+                     c4.477 0 8.268 2.943 9.542 7
+                     -1.274 4.057-5.065 7-9.542 7
+                     -4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+        </button>
+
+        <span class="truncate">${doc.tema || "-"}</span>
+        <span>${doc.versao ?? "-"}</span>
+        <span class="truncate">${doc.emitente || "-"}</span>
+        <span>${doc.vigencia || "-"}</span>
+      </div>
+    `;
+
+    (modelos || []).forEach(m => listaModelos.insertAdjacentHTML("beforeend", criarLinha(m)));
+    (normas  || []).forEach(n => listaNormas.insertAdjacentHTML("beforeend", criarLinha(n)));
+
+    // Abre o modal (sem carregar PDF ainda)
+    const modal = document.getElementById('modalDocumento');
+    const conteudo = document.getElementById('conteudoModal');
+    const tituloElem = document.getElementById('tituloDocumento');
+
+    tituloElem.textContent = `Documentos Associados ao ${tipo} ${nomeProcesso}`;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    setTimeout(() => {
+      conteudo.classList.remove('scale-95', 'opacity-0');
+      conteudo.classList.add('scale-100', 'opacity-100');
+    }, 10);
   }
 </script>
 

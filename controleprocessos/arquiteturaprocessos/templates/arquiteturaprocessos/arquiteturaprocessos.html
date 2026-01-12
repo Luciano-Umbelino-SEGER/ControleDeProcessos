@@ -264,10 +264,8 @@
                           type="button"
                           class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
                           onclick='const modelos = JSON.parse(document.getElementById("modelos-debug").textContent);
-                                   const normas = JSON.parse(document.getElementById("normas-debug").textContent);
-
-                                   abrirModalListaDocumentos(modelos[0]?.arquivo || "", "{{ processo.nome|escapejs }}",
-                                      "Processo -");'>
+                                   const normas  = JSON.parse(document.getElementById("normas-debug").textContent);
+                                   abrirModalListaDocumentosPorArrays(modelos,normas,"{{ processo.nome|escapejs }}","Processo -");'>
 
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                               class="w-5 h-5"
