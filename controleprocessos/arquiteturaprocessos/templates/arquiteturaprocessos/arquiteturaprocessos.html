@@ -250,11 +250,24 @@
                 <td class="py-3 px-2 text-center">
                   {% with cnt=processo.docs_count %}
                     {% if cnt > 0 %}
-                      <button type="button"
+                        <!-- Teste geração de json
+                        <button type="button"
                               class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
                               @click="abrirModalListaDocumentos('modelagemprocessos/Atendimento_a_imprensa_e_avaliacao_de_noticias_9e8a47d6.pdf',
                               '{{ processo.nome }}', 'Processo -')"
                               title="Visualizar Documento">
+                        -->
+                        {{ processo.docs_modelos|json_script:"modelos-debug" }}
+                        {{ processo.docs_normas|json_script:"normas-debug" }}
+
+                        <button
+                          type="button"
+                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
+                          onclick='const modelos = JSON.parse(document.getElementById("modelos-debug").textContent);
+                                   const normas = JSON.parse(document.getElementById("normas-debug").textContent);
+
+                                   abrirModalListaDocumentos(modelos[0]?.arquivo || "", "{{ processo.nome|escapejs }}",
+                                      "Processo -");'>
 
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                               class="w-5 h-5"
@@ -380,16 +393,6 @@
 
 <!-- Modal: Visualização de Documento -->
 {% include "components/modal_documento_processo.html" %}
-
-<!-- Expor funções ao escopo global APÓS os includes -->
-<script>
-    if (typeof abrirListaDocumentos !== "undefined") {
-        window.abrirListaDocumentos = abrirListaDocumentos;
-        window.fecharModalListaDocs = fecharModalListaDocs;
-    } else {
-        console.error("❌ Função abrirListaDocumentos NÃO foi carregada! Verifique o modal_lista_documentos.");
-    }
-</script>
 
 <style>
 /* =========================================
