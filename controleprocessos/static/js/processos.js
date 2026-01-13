@@ -683,7 +683,7 @@ function clonarTemplate(templateId, container, uid) {
 // BLOQUEIO FINAL — VISUALIZAÇÃO / EXCLUSÃO
 // ==========================================
 function bloquearBotoesAdicionarRemover() {
-    if (!window.modoBloqueado) return;
+    if (!(window.MODO?.visualizacao || window.MODO?.exclusao)) return;
 
     window.BLOQUEIO_TOTAL_ATIVO = true;
 
@@ -709,5 +709,51 @@ function bloquearBotoesAdicionarRemover() {
         });
 }
 
+// ==========================================
+// AÇÕES GLOBAIS — BOTÕES + / -
+// ==========================================
+
+function addModelo(botao) {
+    const container = document.getElementById("modelos_container");
+    if (!container) return;
+
+    const uid = `modelo_${Date.now()}`;
+    clonarTemplate("template-modelo", container, uid);
+}
+
+function removeModelo(botao, isBase = false) {
+    const bloco = botao.closest(".modelo-block");
+    if (!bloco) return;
+
+    if (bloco.dataset.uid === "base") {
+        // bloco base: apenas limpa
+        bloco.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
+        bloco.querySelectorAll("input[type='text']").forEach(i => i.value = "");
+        return;
+    }
+
+    bloco.remove();
+}
+
+function addNorma(botao) {
+    const container = document.getElementById("normas_container");
+    if (!container) return;
+
+    const uid = `norma_${Date.now()}`;
+    clonarTemplate("template-norma", container, uid);
+}
+
+function removeNorma(botao, isBase = false) {
+    const bloco = botao.closest(".norma-block");
+    if (!bloco) return;
+
+    if (bloco.dataset.uid === "base") {
+        bloco.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
+        bloco.querySelectorAll("input[type='text']").forEach(i => i.value = "");
+        return;
+    }
+
+    bloco.remove();
+}
 
 
