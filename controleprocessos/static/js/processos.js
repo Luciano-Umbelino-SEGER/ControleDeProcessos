@@ -580,7 +580,6 @@ document.addEventListener("click", function (e) {
         ? "Modelo de Processo"
         : "Norma de Procedimento";
 
-    console.log("📂 URL recebida no abrirModalDocumento:", url);
     abrirModalDocumento(url, titulo);
 });
 
