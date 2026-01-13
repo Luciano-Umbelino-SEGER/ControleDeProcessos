@@ -721,20 +721,24 @@ function addModelo(botao) {
     clonarTemplate("template-modelo", container, uid);
 }
 
-function removeModelo(botao, isBase = false) {
-    const bloco = botao.closest(".modelo-block");
-    if (!bloco) return;
+function removeModelo(botao) {
+    const container = document.getElementById("modelos_container");
+    if (!container) return;
 
-    if (bloco.dataset.uid === "base") {
-        // bloco base: apenas limpa
-        bloco.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
-        bloco.querySelectorAll("input[type='text']").forEach(i => i.value = "");
+    const blocos = Array.from(
+        container.querySelectorAll('.modelo-block')
+    );
+
+    // só existe o bloco base
+    if (blocos.length <= 1) {
+        limparBlocoModelo(blocos[0]);
         return;
     }
 
-    bloco.remove();
+    // remove o último bloco clonado (nunca o base)
+    const ultimo = blocos[blocos.length - 1];
+    ultimo.remove();
 }
-
 function addNorma(botao) {
     const container = document.getElementById("normas_container");
     if (!container) return;
@@ -743,17 +747,95 @@ function addNorma(botao) {
     clonarTemplate("template-norma", container, uid);
 }
 
-function removeNorma(botao, isBase = false) {
-    const bloco = botao.closest(".norma-block");
-    if (!bloco) return;
+function removeNorma(botao) {
+    const container = document.getElementById("normas_container");
+    if (!container) return;
 
-    if (bloco.dataset.uid === "base") {
-        bloco.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
-        bloco.querySelectorAll("input[type='text']").forEach(i => i.value = "");
+    const blocos = Array.from(
+        container.querySelectorAll('.norma-block')
+    );
+
+    if (blocos.length <= 1) {
+        limparBlocoNorma(blocos[0]);
         return;
     }
 
-    bloco.remove();
+    const ultimo = blocos[blocos.length - 1];
+    ultimo.remove();
 }
+SSSSS
+// ==========================================
+// LIMPEZA DE BLOCOS BASE
+// ==========================================
+
+function limparBlocoModelo(bloco) {
+    const select = bloco.querySelector("select");
+    if (select) select.selectedIndex = 0;
+
+    bloco.querySelectorAll("input[type='text']").forEach(input => {
+        input.value = "";
+    });
+
+    atualizarEstadoBotoes(bloco);
+}
+
+function limparBlocoNorma(bloco) {
+    const select = bloco.querySelector("select");
+    if (select) select.selectedIndex = 0;
+
+    bloco.querySelectorAll("input[type='text']").forEach(input => {
+        input.value = "";
+    });
+
+    atualizarEstadoBotoes(bloco);
+}
+
+// ==========================================
+// CONTROLE DE ESTADO DOS BOTÕES + / -
+// ==========================================
+
+function atualizarEstadoBotoes(bloco) {
+    const select = bloco.querySelector("select");
+    const btnAdd = bloco.querySelector('button[data-action="add"]');
+    const btnRemove = bloco.querySelector('button[data-action="remove"]');
+
+    const temValor = select && select.value && select.value !== "";
+
+    [btnAdd, btnRemove].forEach(btn => {
+        if (!btn) return;
+
+        if (temValor && !window.BLOQUEIO_TOTAL_ATIVO) {
+            btn.disabled = false;
+            btn.classList.remove('text-gray-400', 'cursor-not-allowed');
+            btn.classList.add('cursor-pointer');
+            btn.style.pointerEvents = 'auto';
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('cursor-pointer');
+            btn.classList.add('text-gray-400', 'cursor-not-allowed');
+            btn.style.pointerEvents = 'none';
+        }
+    });
+}
+
+// ==========================================
+// REAÇÃO AO CHANGE DO SELECT
+// ==========================================
+document.addEventListener("change", function (e) {
+    const select = e.target.closest(
+        'select[name="modelagem_processo"], ' +
+        'select[name="modelagem_processo_extra[]"], ' +
+        'select[name="norma_procedimento"], ' +
+        'select[name="norma_procedimento_extra[]"]'
+    );
+
+    if (!select) return;
+
+    const bloco = select.closest('[data-uid]');
+    if (!bloco) return;
+
+    atualizarEstadoBotoes(bloco);
+});
+
 
 
