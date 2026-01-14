@@ -710,15 +710,58 @@ function bloquearBotoesAdicionarRemover() {
 }
 
 // ==========================================
-// AÇÕES GLOBAIS — BOTÕES + / -
+// CONTROLE DE ESTADO DOS BOTÕES + / -
 // ==========================================
 
+function atualizarEstadoBotoes(container) {
+    if (!container) return;
+
+    const baseBlock = container.querySelector('[data-uid="base"]');
+    if (!baseBlock) return;
+
+    const btnAdd = baseBlock.querySelector('button[data-action="add"]');
+    const btnRemove = baseBlock.querySelector('button[data-action="remove"]');
+
+    if (!btnAdd || !btnRemove) return;
+
+    // todos os blocos (base + clonados)
+    const blocks = Array.from(
+        container.querySelectorAll('.modelo-block, .norma-block')
+    );
+
+    if (blocks.length === 0) {
+        btnAdd.disabled = true;
+        btnRemove.disabled = true;
+        return;
+    }
+
+    const lastBlock = blocks[blocks.length - 1];
+    const lastSelect = lastBlock.querySelector('select');
+
+    const ultimoTemDocumento =
+        lastSelect && lastSelect.value && lastSelect.value !== "";
+
+    const existeAlgumDocumento = blocks.some(block => {
+        const sel = block.querySelector('select');
+        return sel && sel.value && sel.value !== "";
+    });
+
+    // regra FINAL
+    btnAdd.disabled = !ultimoTemDocumento;
+    btnRemove.disabled = !existeAlgumDocumento;
+}
+
+// ==========================================
+// AÇÕES GLOBAIS — BOTÕES + / -
+// ==========================================
 function addModelo(botao) {
     const container = document.getElementById("modelos_container");
     if (!container) return;
 
     const uid = `modelo_${Date.now()}`;
     clonarTemplate("template-modelo", container, uid);
+
+    atualizarEstadoBotoes(container);
 }
 
 function removeModelo(botao) {
@@ -729,22 +772,32 @@ function removeModelo(botao) {
         container.querySelectorAll('.modelo-block')
     );
 
-    // só existe o bloco base
+    // 🔹 só existe o bloco base → limpar
     if (blocos.length <= 1) {
         limparBlocoModelo(blocos[0]);
+
+        // 🔥 AJUSTE ESSENCIAL
+        atualizarEstadoBotoes(container);
+
         return;
     }
 
-    // remove o último bloco clonado (nunca o base)
+    // 🔹 remove o último bloco clonado (nunca o base)
     const ultimo = blocos[blocos.length - 1];
     ultimo.remove();
+
+    // 🔥 após remover, reavaliar botões
+    atualizarEstadoBotoes(container);
 }
+
 function addNorma(botao) {
     const container = document.getElementById("normas_container");
     if (!container) return;
 
     const uid = `norma_${Date.now()}`;
     clonarTemplate("template-norma", container, uid);
+
+    atualizarEstadoBotoes(container);
 }
 
 function removeNorma(botao) {
@@ -755,15 +808,24 @@ function removeNorma(botao) {
         container.querySelectorAll('.norma-block')
     );
 
+    // 🔹 só existe o bloco base → limpar
     if (blocos.length <= 1) {
         limparBlocoNorma(blocos[0]);
+
+        // 🔥 AJUSTE ESSENCIAL
+        atualizarEstadoBotoes(container);
+
         return;
     }
 
+    // 🔹 remove o último bloco clonado
     const ultimo = blocos[blocos.length - 1];
     ultimo.remove();
+
+    // 🔥 após remover, reavaliar botões
+    atualizarEstadoBotoes(container);
 }
-SSSSS
+
 // ==========================================
 // LIMPEZA DE BLOCOS BASE
 // ==========================================
@@ -791,51 +853,17 @@ function limparBlocoNorma(bloco) {
 }
 
 // ==========================================
-// CONTROLE DE ESTADO DOS BOTÕES + / -
-// ==========================================
-
-function atualizarEstadoBotoes(bloco) {
-    const select = bloco.querySelector("select");
-    const btnAdd = bloco.querySelector('button[data-action="add"]');
-    const btnRemove = bloco.querySelector('button[data-action="remove"]');
-
-    const temValor = select && select.value && select.value !== "";
-
-    [btnAdd, btnRemove].forEach(btn => {
-        if (!btn) return;
-
-        if (temValor && !window.BLOQUEIO_TOTAL_ATIVO) {
-            btn.disabled = false;
-            btn.classList.remove('text-gray-400', 'cursor-not-allowed');
-            btn.classList.add('cursor-pointer');
-            btn.style.pointerEvents = 'auto';
-        } else {
-            btn.disabled = true;
-            btn.classList.remove('cursor-pointer');
-            btn.classList.add('text-gray-400', 'cursor-not-allowed');
-            btn.style.pointerEvents = 'none';
-        }
-    });
-}
-
-// ==========================================
 // REAÇÃO AO CHANGE DO SELECT
 // ==========================================
 document.addEventListener("change", function (e) {
-    const select = e.target.closest(
-        'select[name="modelagem_processo"], ' +
-        'select[name="modelagem_processo_extra[]"], ' +
-        'select[name="norma_procedimento"], ' +
-        'select[name="norma_procedimento_extra[]"]'
-    );
+    if (!e.target.matches("#modelos_container select, #normas_container select")) {
+        return;
+    }
 
-    if (!select) return;
-
-    const bloco = select.closest('[data-uid]');
-    if (!bloco) return;
-
-    atualizarEstadoBotoes(bloco);
+    const container = e.target.closest("#modelos_container, #normas_container");
+    atualizarEstadoBotoes(container);
 });
+
 
 
 
