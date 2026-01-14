@@ -135,7 +135,53 @@ def get_documentos_por_processo(processo):
 
     return modelos, normas
 
+# =========================================
+# UTIL – Persistência de Documentos (1 → N)
+# =========================================
+def salvar_documentos_processo(request, processo):
+    """
+    Salva (recria) todos os documentos associados a um processo,
+    tanto para inclusão quanto para edição.
+    """
 
+    # 1️⃣ Remove todos os vínculos existentes (edição segura)
+    ProcessoDocumento.objects.filter(processo=processo).delete()
+
+    documentos_ids = []
+
+    # 🔹 Modelo de Processo (base)
+    modelo_principal = request.POST.get("modelagem_processo")
+    if modelo_principal:
+        documentos_ids.append(modelo_principal)
+
+    # 🔹 Modelos de Processo (extras)
+    documentos_ids.extend(
+        request.POST.getlist("modelagem_processo_extra[]")
+    )
+
+    # 🔹 Norma de Procedimento (base)
+    norma_principal = request.POST.get("norma_procedimento")
+    if norma_principal:
+        documentos_ids.append(norma_principal)
+
+    # 🔹 Normas de Procedimento (extras)
+    documentos_ids.extend(
+        request.POST.getlist("norma_procedimento_extra[]")
+    )
+
+    # 2️⃣ Remove vazios e duplicados
+    documentos_ids = list(
+        set(filter(None, documentos_ids))
+    )
+
+    # 3️⃣ Cria os vínculos Processo ↔ Documento
+    ProcessoDocumento.objects.bulk_create([
+        ProcessoDocumento(
+            processo=processo,
+            modelagem_processo_id=doc_id
+        )
+        for doc_id in documentos_ids
+    ])
 
 # ---------------------------
 # Login view
@@ -1444,58 +1490,15 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     # -------------------------------------------------
     def form_valid(self, form):
         with transaction.atomic():
-
-            # -------------------------------------------------
-            # 1️⃣ Salva o Processo
-            # -------------------------------------------------
             processo = form.save(commit=False)
 
             processo.usuario_cadastro = self.request.user
             processo.usuario_atualizacao = None
             processo.data_atualizacao = None
-
             processo.save()
 
-            # -------------------------------------------------
-            # 2️⃣ Captura TODOS os documentos do POST
-            # -------------------------------------------------
-            documentos_ids = []
-
-            # 🔹 Modelo de Processo (principal)
-            modelo_principal = self.request.POST.get("modelagem_processo")
-            if modelo_principal:
-                documentos_ids.append(modelo_principal)
-
-            # 🔹 Modelos de Processo (extras)
-            modelos_extras = self.request.POST.getlist("modelagem_processo_extra[]")
-            documentos_ids.extend(modelos_extras)
-
-            # 🔹 Norma de Procedimento (principal)
-            norma_principal = self.request.POST.get("norma_procedimento")
-            if norma_principal:
-                documentos_ids.append(norma_principal)
-
-            # 🔹 Normas de Procedimento (extras)
-            normas_extras = self.request.POST.getlist("norma_procedimento_extra[]")
-            documentos_ids.extend(normas_extras)
-
-            # -------------------------------------------------
-            # 3️⃣ Remove duplicados (segurança)
-            # -------------------------------------------------
-            documentos_ids = list(set(documentos_ids))
-
-            # -------------------------------------------------
-            # 4️⃣ Persistência Processo ↔ Documento (1 → N)
-            # -------------------------------------------------
-            documentos = [
-                ProcessoDocumento(
-                    processo=processo,
-                    modelagem_processo_id=documento_id
-                )
-                for documento_id in documentos_ids
-            ]
-
-            ProcessoDocumento.objects.bulk_create(documentos)
+            # 🔥 DOCUMENTOS (1 → N)
+            salvar_documentos_processo(self.request, processo)
 
         messages.success(
             self.request,
@@ -1751,18 +1754,22 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     # GRAVAÇÃO FINAL
     # -------------------------------------------------
     def form_valid(self, form):
-        processo = form.instance
+        with transaction.atomic():
+            processo = form.save(commit=False)
 
-        processo.usuario_atualizacao = self.request.user
-        processo.data_atualizacao = timezone.now()
+            processo.usuario_atualizacao = self.request.user
+            processo.data_atualizacao = timezone.now()
+            processo.save()
+
+            # 🔥 DOCUMENTOS (1 → N)
+            salvar_documentos_processo(self.request, processo)
 
         messages.success(
             self.request,
             f"Processo '{processo.nome}' atualizado com sucesso!"
         )
 
-        return super().form_valid(form)
-
+        return redirect(self.success_url)
 
 # --------------------------------#
 # Excluir Processo                #

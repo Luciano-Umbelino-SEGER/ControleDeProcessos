@@ -31,22 +31,35 @@
         {% else %}Inclusão de Processos{% endif %}
     </h2>
 
-    {# --- AVISO: bloqueio de exclusão quando houver subprocessos (Opção A) --- #}
+    {# --- AVISO: bloqueio de exclusão quando houver subprocessos --- #}
     {% if modo_exclusao and subprocessos_existentes %}
-        <div class="bg-red-100 border-l-4 border-red-600 text-red-800 p-4 rounded mb-6">
-            <h3 class="font-bold text-lg">Exclusão não permitida</h3>
-            <p class="mt-2">
-                Não é possível excluir o processo <strong>{{ processo.nome }}</strong>
+        <div class="bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-md mb-5">
+            <h3 class="font-semibold text-base mb-1">
+                Exclusão não permitida
+            </h3>
+
+            <p class="text-sm leading-relaxed">
+                Não é possível excluir o processo
+                <strong>{{ processo.nome }}</strong>
+            </p>
+
+            <p class="text-sm leading-relaxed mb-2">
                 porque existem subprocessos associados:
             </p>
-            <ul class="list-disc ml-6 mt-2">
+
+            <ul class="list-disc ml-5 text-sm mb-2">
                 {% for sub in subprocessos_existentes %}
                     <li>{{ sub.nome }}</li>
                 {% endfor %}
             </ul>
-            <p class="mt-2 text-sm">
-                Para excluir este processo, primeiro remova ou transfira seus subprocessos.
+
+            <p class="text-sm font-medium mb-1">
+                Para excluir este processo:
             </p>
+            <ul class="list-disc ml-5 text-sm">
+                <li>remova os subprocessos</li>
+                <li>ou transfira-os para outro processo</li>
+            </ul>
         </div>
     {% endif %}
 
