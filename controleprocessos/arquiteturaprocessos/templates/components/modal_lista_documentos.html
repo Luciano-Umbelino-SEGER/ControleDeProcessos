@@ -23,7 +23,9 @@
 
       <!-- MODELO DE PROCESSO -->
       <div>
-        <h4 class="text-sm font-semibold text-blue-800 mb-2">Modelo de Processo</h4>
+        <h4 id="titulo-modelos" class="text-sm font-semibold text-blue-800 mb-2">
+          Modelo de Processo
+        </h4>
 
         <!-- Cabeçalho das colunas (mantém) -->
         <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
@@ -41,7 +43,9 @@
 
       <!-- NORMA DE PROCEDIMENTO -->
       <div>
-        <h4 class="text-sm font-semibold text-blue-800 mt-4 mb-2">Norma de Procedimento</h4>
+        <h4 id="titulo-normas" class="text-sm font-semibold text-blue-800 mt-4 mb-2">
+          Norma de Procedimento
+        </h4>
 
         <!-- Cabeçalho das colunas (mantém) -->
         <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
@@ -75,65 +79,82 @@
 
 <!-- Script de controle do modal -->
 <script>
-  function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo = "Processo") {
-    const modal = document.getElementById('modalListaDocumentos');
-    const conteudo = document.getElementById('conteudoModalLista');
-    const tituloElem = document.getElementById('tituloListaDocumentos');
-    const listaModelos = document.getElementById("lista-modelos");
-    const listaNormas  = document.getElementById("lista-normas");
+function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo = "Processo") {
+  const modal        = document.getElementById('modalListaDocumentos');
+  const conteudo     = document.getElementById('conteudoModalLista');
+  const tituloElem   = document.getElementById('tituloListaDocumentos');
+  const listaModelos = document.getElementById("lista-modelos");
+  const listaNormas  = document.getElementById("lista-normas");
 
-    if (!modal || !conteudo || !tituloElem || !listaModelos || !listaNormas) {
-      console.error("[modal-lista] Elementos não encontrados.");
-      return;
-    }
+  const tituloModelos = document.getElementById("titulo-modelos");
+  const tituloNormas  = document.getElementById("titulo-normas");
 
-    listaModelos.innerHTML = "";
-    listaNormas.innerHTML  = "";
-
-    const criarLinha = (doc) => `
-      <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
-                  items-center px-3 py-1.5 text-sm text-gray-900
-                  hover:bg-gray-100 rounded transition">
-
-        <span class="truncate">${doc.displayname || "-"}</span>
-
-        <button class="text-blue-600 hover:text-blue-800"
-                title="Visualizar"
-                onclick="abrirModalDocumento('${doc.url}', '${doc.displayname}')">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-               fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5
-                     c4.477 0 8.268 2.943 9.542 7
-                     -1.274 4.057-5.065 7-9.542 7
-                     -4.477 0-8.268-2.943-9.542-7z"/>
-          </svg>
-        </button>
-
-        <span class="truncate">${doc.tema || "-"}</span>
-        <span>${doc.versao ?? "-"}</span>
-        <span class="truncate">${doc.emitente || "-"}</span>
-        <span>${doc.vigencia || "-"}</span>
-      </div>
-    `;
-
-    (modelos || []).forEach(m => listaModelos.insertAdjacentHTML("beforeend", criarLinha(m)));
-    (normas  || []).forEach(n => listaNormas.insertAdjacentHTML("beforeend", criarLinha(n)));
-
-    tituloElem.textContent = `Documentos Associados ao ${tipo} ${nomeProcesso}`;
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    setTimeout(() => {
-      conteudo.classList.remove('scale-95', 'opacity-0');
-      conteudo.classList.add('scale-100', 'opacity-100');
-    }, 10);
+  if (!modal || !conteudo || !tituloElem || !listaModelos || !listaNormas) {
+    console.error("[modal-lista] Elementos não encontrados.");
+    return;
   }
 
+  // Segurança absoluta
+  modelos = modelos || [];
+  normas  = normas  || [];
+
+  // Limpa listas
+  listaModelos.innerHTML = "";
+  listaNormas.innerHTML  = "";
+
+  // 🔹 Atualiza títulos com quantidade de artefatos
+  if (tituloModelos) {
+    tituloModelos.textContent = `Modelo de Processo (${modelos.length} artefato${modelos.length !== 1 ? "s" : ""})`;
+  }
+
+  if (tituloNormas) {
+    tituloNormas.textContent = `Norma de Procedimento (${normas.length} artefato${normas.length !== 1 ? "s" : ""})`;
+  }
+
+  const criarLinha = (doc) => `
+    <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
+                items-center px-3 py-1.5 text-sm text-gray-900
+                hover:bg-gray-100 rounded transition">
+
+      <span class="truncate">${doc.displayname || "-"}</span>
+
+      <button class="text-blue-600 hover:text-blue-800"
+              title="Visualizar"
+              onclick="abrirModalDocumento('${doc.url}', '${doc.displayname}')">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5
+                   c4.477 0 8.268 2.943 9.542 7
+                   -1.274 4.057-5.065 7-9.542 7
+                   -4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </button>
+
+      <span class="truncate">${doc.tema || "-"}</span>
+      <span>${doc.versao ?? "-"}</span>
+      <span class="truncate">${doc.emitente || "-"}</span>
+      <span>${doc.vigencia || "-"}</span>
+    </div>
+  `;
+
+  modelos.forEach(m => listaModelos.insertAdjacentHTML("beforeend", criarLinha(m)));
+  normas.forEach(n  => listaNormas.insertAdjacentHTML("beforeend", criarLinha(n)));
+
+  tituloElem.textContent = `Documentos Associados ao ${tipo} ${nomeProcesso}`;
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  setTimeout(() => {
+    conteudo.classList.remove('scale-95', 'opacity-0');
+    conteudo.classList.add('scale-100', 'opacity-100');
+  }, 10);
+}
 </script>
+
 
 <script>
 function fecharModalListaDocumentos() {
