@@ -349,15 +349,13 @@
                           type="button"
                           class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
                           onclick='
-                            const modelos = JSON.parse(
-                              document.getElementById("modelos-sub-{{ sub.id }}").textContent
+                            const docs = JSON.parse(
+                              document.getElementById("docs-por-processo").textContent
                             );
-                            const normas = JSON.parse(
-                              document.getElementById("normas-sub-{{ sub.id }}").textContent
-                            );
+                            const dados = docs["{{ sub.id }}"];
                             abrirModalListaDocumentosPorArrays(
-                              modelos,
-                              normas,
+                              dados.modelos,
+                              dados.normas,
                               "{{ sub.nome|escapejs }}",
                               "Subprocesso -"
                             );
