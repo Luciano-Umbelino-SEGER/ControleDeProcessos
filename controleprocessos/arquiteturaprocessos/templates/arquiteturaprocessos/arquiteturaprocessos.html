@@ -9,6 +9,8 @@
 
     <h2 class="text-2xl font-bold text-blue-800 mb-6">Arquitetura de Processos</h2>
 
+    {{ documentos_por_processo|json_script:"docs-por-processo" }}
+
     <!-- FILTROS -->
     <form method="GET" class="mb-4">
       <!-- BARRA DE FILTRAGEM -->
@@ -250,22 +252,22 @@
                 <td class="py-3 px-2 text-center">
                   {% with cnt=processo.docs_count %}
                     {% if cnt > 0 %}
-                        <!-- Teste geração de json
-                        <button type="button"
-                              class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
-                              @click="abrirModalListaDocumentos('modelagemprocessos/Atendimento_a_imprensa_e_avaliacao_de_noticias_9e8a47d6.pdf',
-                              '{{ processo.nome }}', 'Processo -')"
-                              title="Visualizar Documento">
-                        -->
-                        {{ processo.docs_modelos|json_script:"modelos-debug" }}
-                        {{ processo.docs_normas|json_script:"normas-debug" }}
-
                         <button
                           type="button"
                           class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
-                          onclick='const modelos = JSON.parse(document.getElementById("modelos-debug").textContent);
-                                   const normas  = JSON.parse(document.getElementById("normas-debug").textContent);
-                                   abrirModalListaDocumentosPorArrays(modelos,normas,"{{ processo.nome|escapejs }}","Processo -");'>
+                          onclick='
+                            const docs = JSON.parse(
+                              document.getElementById("docs-por-processo").textContent
+                            );
+                            const dados = docs["{{ processo.id }}"];
+                            abrirModalListaDocumentosPorArrays(
+                              dados.modelos,
+                              dados.normas,
+                              "{{ processo.nome|escapejs }}",
+                              "Processo -"
+                            );
+                          '
+                          title="Visualizar Documento">
 
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                               class="w-5 h-5"
@@ -306,6 +308,10 @@
               {% endcomment %}
 
               {% for sub in processo.subprocessos.all|dictsort:"id" %}
+
+                {{ sub.docs_modelos|json_script:"modelos-sub-"|add:sub.id }}
+                {{ sub.docs_normas|json_script:"normas-sub-"|add:sub.id }}
+
                 {% with rownum=forloop.parentloop.counter|add:forloop.counter %}
                 <tr class="hover:bg-blue-100 transition-colors
                            {% if rownum|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
@@ -338,11 +344,26 @@
                   <td class="py-3 px-2 text-center">
                     {% with scnt=sub.docs_count %}
                       {% if scnt > 0 %}
-                        <button type="button"
-                                class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
-                                @click="abrirModalListaDocumentos('modelagemprocessos/Atendimento_a_imprensa_e_avaliacao_de_noticias_9e8a47d6.pdf',
-                                '{{ sub.nome }}', 'Subprocesso -')"
-                                title="Visualizar Documento">
+
+                        <button
+                          type="button"
+                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
+                          onclick='
+                            const modelos = JSON.parse(
+                              document.getElementById("modelos-sub-{{ sub.id }}").textContent
+                            );
+                            const normas = JSON.parse(
+                              document.getElementById("normas-sub-{{ sub.id }}").textContent
+                            );
+                            abrirModalListaDocumentosPorArrays(
+                              modelos,
+                              normas,
+                              "{{ sub.nome|escapejs }}",
+                              "Subprocesso -"
+                            );
+                          '
+                          title="Visualizar Documento">
+
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                                 class="w-5 h-5"
                                 fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">

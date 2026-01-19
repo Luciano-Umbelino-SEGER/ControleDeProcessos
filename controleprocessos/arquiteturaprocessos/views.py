@@ -338,40 +338,29 @@ class ArquiteruraProcessos(ListView):
             if not mp:
                 continue
 
-            # -----------------------------
-            # Documento / Display / URL
-            # -----------------------------
             if mp.documento_modelagem_processo:
-                # Arquivo local (Modelagem de Processo)
                 documento = os.path.basename(mp.documento_modelagem_processo.name)
                 displayname = documento
                 url = mp.documento_modelagem_processo.url
 
             elif mp.link_normaprocedimento:
-                # URL externa (Norma de Procedimento)
                 documento = os.path.basename(mp.link_normaprocedimento)
-                documento = unquote(documento)  # decodifica %20, %C2%BA etc
+                documento = unquote(documento)
                 displayname = documento
                 url = mp.link_normaprocedimento
 
             else:
-                documento = ""
-                displayname = ""
-                url = ""
+                continue
 
             doc = {
-                "documento": documento,
-                "tipo": mp.tipo_documento.nome if mp.tipo_documento else "",
-                "codigo": mp.codigo or "",
-                "sequencial": mp.sequencial or "",
+                "displayname": displayname,
+                "tema": mp.tema or "",
                 "versao": mp.versao or "",
                 "emitente": mp.emitente or "",
-                "tema": mp.tema or "",
                 "vigencia": (
                     mp.vigencia_inicio.strftime("%d/%m/%Y")
                     if mp.vigencia_inicio else ""
                 ),
-                "displayname": displayname,
                 "url": url,
                 "is_modelo": bool(mp.documento_modelagem_processo),
                 "is_norma": bool(mp.link_normaprocedimento),
@@ -469,32 +458,41 @@ class ArquiteruraProcessos(ListView):
         ctx = super().get_context_data(**kwargs)
 
         page = ctx.get("page_obj")
+        processos = page.object_list if page else ctx["processos"]
 
-        if page:
-            processos = page.object_list
-        else:
-            processos = ctx["processos"]
+        documentos_por_processo = {}
 
         for proc in processos:
-            # -------- PROCESSO --------
             docs = self.montar_docs(proc.documentos.all())
 
-            proc.docs_json = docs["todos"]
             proc.docs_modelos = docs["modelos"]
             proc.docs_normas = docs["normas"]
             proc.docs_count = len(docs["todos"])
 
-            # -------- SUBPROCESSOS (restauração do comportamento antigo) --------
+            # 🔒 GARANTE CHAVE SEMPRE EXISTENTE (PROCESSO)
+            documentos_por_processo[str(proc.id)] = {
+                "modelos": proc.docs_modelos or [],
+                "normas": proc.docs_normas or [],
+            }
+
+            # subprocessos (mantemos, mas não usamos ainda)
             for sub in proc.subprocessos.all():
                 sub_docs = self.montar_docs(sub.documentos.all())
 
-                sub.docs_json = sub_docs["todos"]
                 sub.docs_modelos = sub_docs["modelos"]
                 sub.docs_normas = sub_docs["normas"]
                 sub.docs_count = len(sub_docs["todos"])
 
+                documentos_por_processo[str(sub.id)] = {
+                    "modelos": sub.docs_modelos or [],
+                    "normas": sub.docs_normas or [],
+                }
+
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
+        ctx["documentos_por_processo"] = documentos_por_processo
+
         return ctx
+
 
 # ---------------------------
 # Estatísticas / Backlog (simples)
