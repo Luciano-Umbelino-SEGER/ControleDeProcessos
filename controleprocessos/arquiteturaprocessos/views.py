@@ -463,19 +463,19 @@ class ArquiteruraProcessos(ListView):
         documentos_por_processo = {}
 
         for proc in processos:
+            # -------- PROCESSO --------
             docs = self.montar_docs(proc.documentos.all())
 
             proc.docs_modelos = docs["modelos"]
             proc.docs_normas = docs["normas"]
             proc.docs_count = len(docs["todos"])
 
-            # 🔒 GARANTE CHAVE SEMPRE EXISTENTE (PROCESSO)
             documentos_por_processo[str(proc.id)] = {
-                "modelos": proc.docs_modelos or [],
-                "normas": proc.docs_normas or [],
+                "modelos": docs["modelos"],
+                "normas": docs["normas"],
             }
 
-            # subprocessos (mantemos, mas não usamos ainda)
+            # -------- SUBPROCESSOS --------
             for sub in proc.subprocessos.all():
                 sub_docs = self.montar_docs(sub.documentos.all())
 
@@ -484,8 +484,8 @@ class ArquiteruraProcessos(ListView):
                 sub.docs_count = len(sub_docs["todos"])
 
                 documentos_por_processo[str(sub.id)] = {
-                    "modelos": sub.docs_modelos or [],
-                    "normas": sub.docs_normas or [],
+                    "modelos": sub_docs["modelos"],
+                    "normas": sub_docs["normas"],
                 }
 
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
