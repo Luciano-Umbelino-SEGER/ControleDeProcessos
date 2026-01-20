@@ -166,10 +166,51 @@ function fecharModalListaDocumentos() {
   conteudo.classList.remove('scale-100', 'opacity-100');
   conteudo.classList.add('scale-95', 'opacity-0');
 
+  // 🔽 AQUI É O PONTO CERTO
+  fecharPasta(pastaAbertaAtual);
+
   setTimeout(() => {
     modal.classList.remove('flex');
     modal.classList.add('hidden');
   }, 250);
 }
 </script>
+
+<script>
+  // ===============================
+  // Controle da pasta aberta atual
+  // ===============================
+  let pastaAbertaAtual = null;
+
+  function marcarPastaAberta(botao) {
+    if (!botao) return;
+
+    // fecha a anterior, se existir
+    if (pastaAbertaAtual) {
+      fecharPasta(pastaAbertaAtual);
+    }
+
+    pastaAbertaAtual = botao;
+    botao.classList.add('aberta');
+
+    const img = botao.querySelector('.pasta-icon');
+    if (img && img.dataset.srcAberta) {
+      img.src = img.dataset.srcAberta;
+    }
+  }
+
+  function fecharPasta(botao) {
+    if (!botao) return;
+
+    botao.classList.remove('aberta');
+
+    const img = botao.querySelector('.pasta-icon');
+    if (img && img.dataset.srcFechada) {
+      img.src = img.dataset.srcFechada;
+    }
+
+    pastaAbertaAtual = null;
+  }
+</script>
+
 

@@ -254,8 +254,10 @@
                     {% if cnt > 0 %}
                         <button
                           type="button"
-                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
+                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar pasta-docs"
+                          data-qtd="{{ cnt }}"
                           onclick='
+                            marcarPastaAberta(this);
                             const docs = JSON.parse(
                               document.getElementById("docs-por-processo").textContent
                             );
@@ -269,12 +271,12 @@
                           '
                           title="Visualizar Documento">
 
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                              class="w-5 h-5"
-                              fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                          <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                        </svg>
+                          <img
+                            src="{% static 'images/icones/pasta-cheia.png' %}"
+                            data-src-fechada="{% static 'images/icones/pasta-cheia.png' %}"
+                            data-src-aberta="{% static 'images/icones/pasta-aberta.png' %}"
+                            class="pasta-icon"
+                            alt="Documentos do processo">
 
                         <span class="text-blue-700 font-medium">({{ cnt }})</span>
                       </button>
@@ -282,12 +284,11 @@
                     {% else %}
                       <div class="flex items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed">
 
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                              class="w-5 h-5"
-                              fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                          <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                        </svg>
+                        <img
+                          src="{% static 'images/icones/pasta-fechada.png' %}"
+                          class="pasta-icon pasta-vazia"
+                          alt="Nenhum documento">
+
 
                         <span class="text-blue-700 font-medium">(0)</span>
                       </div>
@@ -347,8 +348,10 @@
 
                         <button
                           type="button"
-                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar"
+                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar pasta-docs"
+                          data-qtd="{{ scnt }}"
                           onclick='
+                            marcarPastaAberta(this);
                             const docs = JSON.parse(
                               document.getElementById("docs-por-processo").textContent
                             );
@@ -362,12 +365,12 @@
                           '
                           title="Visualizar Documento">
 
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                class="w-5 h-5"
-                                fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                          </svg>
+                          <img
+                            src="{% static 'images/icones/pasta-cheia.png' %}"
+                            data-src-fechada="{% static 'images/icones/pasta-cheia.png' %}"
+                            data-src-aberta="{% static 'images/icones/pasta-aberta.png' %}"
+                            class="pasta-icon"
+                            alt="Documentos do subprocesso">
 
                           <span class="text-blue-700 font-medium">({{ scnt }})</span>
                         </button>
@@ -375,12 +378,10 @@
                       {% else %}
                         <div class="flex items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed">
 
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                class="w-5 h-5"
-                                fill="#F8D96C" stroke="#D1B155" stroke-width="1.4">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
-                          </svg>
+                          <img
+                            src="{% static 'images/icones/pasta-fechada.png' %}"
+                            class="pasta-icon pasta-vazia"
+                            alt="Nenhum documento">
 
                           <span class="text-blue-700 font-medium">(0)</span>
                         </div>
@@ -412,29 +413,53 @@
 {% include "components/modal_documento_processo.html" %}
 
 <style>
-/* =========================================
-   ZEBRADO CONTÍNUO — PRIORIDADE MÁXIMA
-   (preserva ícones, contadores e JS)
-   ========================================= */
+  /* =========================================
+     ZEBRADO CONTÍNUO — PRIORIDADE MÁXIMA
+     (preserva ícones, contadores e JS)
+     ========================================= */
 
-/* neutraliza qualquer bg vindo do Tailwind ou Django */
-.zebra-safe tbody tr {
-  background-color: transparent !important;
-}
+  /* neutraliza qualquer bg vindo do Tailwind ou Django */
+  .zebra-safe tbody tr {
+    background-color: transparent !important;
+  }
 
-/* zebrado contínuo real */
-.zebra-safe tbody tr:nth-child(odd) {
-  background-color: #ffffff !important;
-}
+  /* zebrado contínuo real */
+  .zebra-safe tbody tr:nth-child(odd) {
+    background-color: #ffffff !important;
+  }
 
-.zebra-safe tbody tr:nth-child(even) {
-  background-color: #f1f7ff !important; /* azul claro atual */
-}
+  .zebra-safe tbody tr:nth-child(even) {
+    background-color: #f1f7ff !important; /* azul claro atual */
+  }
 
-/* mantém hover exatamente como estava */
-.zebra-safe tbody tr:hover {
-  background-color: #e0efff !important; /* blue-100 */
-}
+  /* mantém hover exatamente como estava */
+  .zebra-safe tbody tr:hover {
+    background-color: #e0efff !important; /* blue-100 */
+  }
+
+  .pasta-icon {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;   /* mantém proporção */
+    transition: transform 0.25s ease, filter 0.25s ease;
+  }
+
+  .pasta-docs:hover .pasta-icon {
+    transform: scale(1.15);
+  }
+
+  .pasta-docs.aberta .pasta-icon {
+    transform: scale(1.9);
+  }
+
+  .pasta-vazia {
+    filter: grayscale(15%) brightness(1.05);
+    transform: scale(1.30);
+    transform-origin: center;
+  }
+
+
+
 </style>
 
 {% endblock %}
