@@ -360,7 +360,7 @@
                                                 data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
                                                 data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
                                                 {% if form.instance.modelagem_processo_id == m.id %} selected {% endif %}>
-                                            {{ m.documento_modelagem_processo|filename }}
+                                            {{ m.titulo }}
                                         </option>
                                     {% endfor %}
 
@@ -475,7 +475,7 @@
                                                     data-sistema="{{ m.sistema }}"
                                                     data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
                                                     data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}">
-                                                {{ m.documento_modelagem_processo|filename }}
+                                                {{ m.titulo }}
                                             </option>
                                         {% endfor %}
                                     </select>
@@ -643,7 +643,7 @@
                                                 data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
                                                 data-url="{{ n.link_normaprocedimento }}"
                                                 {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
-                                            {{ n.link_normaprocedimento|filename }}
+                                            {{ n.titulo }}
                                         </option>
                                     {% endfor %}
 
@@ -759,7 +759,7 @@
                                                     data-sistema="{{ n.sistema }}"
                                                     data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
                                                     data-url="{{ n.link_normaprocedimento }}">
-                                                {{ n.link_normaprocedimento|filename }}
+                                                {{ n.titulo }}
                                             </option>
                                         {% endfor %}
                                     </select>
