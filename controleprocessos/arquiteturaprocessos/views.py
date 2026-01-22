@@ -65,29 +65,31 @@ def visualizar_pdf(request, path):
     response['Content-Security-Policy'] = "frame-ancestors 'self'"
     return response
 
-# ---------------------------
-# Modelagem filtrada helper
-# ---------------------------
+# ------------------------------------------------
+# Modelagem filtrada helper por tipo de documento
+# ------------------------------------------------
 def get_modelagem_filtrada():
     hoje = timezone.now().date()
 
-    modelos = ModelagemProcesso.objects.filter(
-        documento_modelagem_processo__isnull=False
-    ).exclude(
-        documento_modelagem_processo=""
-    ).filter(
-        Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje)
-    ).order_by("id")
+    base_qs = (
+        ModelagemProcesso.objects
+        .filter(
+            Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje)
+        )
+        .select_related("tipo_documento")
+        .order_by("titulo")
+    )
 
-    normas = ModelagemProcesso.objects.filter(
-        link_normaprocedimento__isnull=False
-    ).exclude(
-        link_normaprocedimento=""
-    ).filter(
-        Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje)
-    ).order_by("id")
+    modelos = base_qs.filter(
+        tipo_documento__nome__icontains="modelo"
+    )
+
+    normas = base_qs.filter(
+        tipo_documento__nome__icontains="norma"
+    )
 
     return modelos, normas
+
 
 # -------------------------------
 # Extrair Modelagens - Processos
