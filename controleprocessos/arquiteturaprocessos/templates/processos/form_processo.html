@@ -577,6 +577,82 @@
                         </div>
 
                     </div>
+
+                    <!-- LINHA X – Artefatos do Documento (MODELO DE PROCESSO) -->
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+
+                        <!-- Documento Modelo de Processo (PDF) -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">
+                                Documento Modelo de Processo (PDF)
+                            </label>
+
+                            <div class="flex items-center gap-2">
+                                <input type="text"
+                                       readonly
+                                       :value="url"
+                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                              pointer-events-none text-black truncate">
+
+                                <button type="button"
+                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        title="Visualizar Documento">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+
+                                </button>
+
+                            </div>
+                        </div>
+
+                        <!-- Norma de Procedimento (link) – vazio no contexto de Modelo -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">
+                                Norma de Procedimento (link)
+                            </label>
+
+                            <div class="flex items-center gap-2">
+                                <input type="text"
+                                       readonly
+                                       value=""
+                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                              pointer-events-none text-black">
+
+                                <button type="button"
+                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        title="Visualizar Documento">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+
+                                </button>
+
+                            </div>
+                        </div>
+
+                    </div>
+
                 </div>
             </template>
             <!-- fim template -->
@@ -901,6 +977,81 @@
                         </div>
 
                     </div>
+
+                    <!-- LINHA X – Artefatos do Documento (NORMA DE PROCEDIMENTO) -->
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+
+                        <!-- Documento Modelo de Processo (PDF) – vazio -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">
+                                Documento Modelo de Processo (PDF)
+                            </label>
+
+                            <div class="flex items-center gap-2">
+                                <input type="text"
+                                       readonly
+                                       value=""
+                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                              pointer-events-none text-black">
+
+                                <button type="button"
+                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        title="Visualizar Documento">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Norma de Procedimento (link) -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">
+                                Norma de Procedimento (link)
+                            </label>
+
+                            <div class="flex items-center gap-2">
+                                <input type="text"
+                                       readonly
+                                       :value="url"
+                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                              pointer-events-none text-black truncate">
+
+                                <button type="button"
+                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
+                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        title="Visualizar Documento">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="w-5 h-5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="2"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+
+                                </button>
+
+                            </div>
+                        </div>
+
+                    </div>
+
                 </div>
             </template>
             <!-- fim template -->
