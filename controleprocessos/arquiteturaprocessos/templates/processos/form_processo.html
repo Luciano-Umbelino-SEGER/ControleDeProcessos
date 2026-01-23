@@ -262,16 +262,13 @@
 
             <!-- BLOCO BASE (mantém ids originais e Alpine x-data que você já possui) -->
             <!-- Este bloco não é removido (apenas limpo quando o usuário clicar no - no bloco-base) -->
-            <div class="modelo-block" data-uid="base">
+            <div class="modelo-block" data-uid="base" x-data="modeloProcessoData()">
 
                 <!-- LINHA 6 – Modelo de Processo -->
                 <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
                     <!-- Modelo (BLOCO BASE) -->
-                    <div x-data="{
-                            selected: {{ form.instance.modelagem_processo_id|yesno:'true,false' }},
-                            check(e) { this.selected = e.target.value !== ''; }
-                        }">
+                    <div>
 
                         <!-- Label + Botão (alinhado e sem espaço extra) -->
                         <div class="flex items-center gap-2 relative -top-[5px]">
@@ -316,7 +313,7 @@
                                            disabled:text-gray-300 disabled:cursor-not-allowed"
                                     :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
                                     :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer':
+                                        'text-red-600 hover:text-red-800 cursor-pointer':
                                             selected && !window.BLOQUEIO_TOTAL_ATIVO,
                                         'text-gray-400 cursor-not-allowed':
                                             !selected || window.BLOQUEIO_TOTAL_ATIVO
@@ -334,15 +331,13 @@
                                           d="M19.5 12h-15"/>
                                 </svg>
                             </button>
-
                         </div>
 
-                        <!-- Select + Visualizar (BLOCO BASE usa sua função Alpine modeloProcessoData) -->
-                        <div class="flex items-center space-x-2 mt-[1px]"
-                             x-data="modeloProcessoData()">
-
+                        <!-- Select -->
+                        <div class="flex items-center space-x-2 mt-[1px]">
                             <div class="flex-1 min-w-0">
-                                <select id="id_modelagem_processo" name="modelagem_processo"
+                                <select id="id_modelagem_processo"
+                                        name="modelagem_processo"
                                         class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
                                                focus:ring-2 focus:ring-blue-500 focus:outline-none
                                                {% if desabilitar %} bg-gray-100 opacity-70 cursor-not-allowed {% endif %}"
@@ -359,14 +354,13 @@
                                                 data-sistema="{{ m.sistema }}"
                                                 data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
                                                 data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
-                                                {% if form.instance.modelagem_processo_id == m.id %} selected {% endif %}>
+                                                data-link-norma="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}">
                                             {{ m.titulo }}
                                         </option>
                                     {% endfor %}
 
                                 </select>
                             </div>
-
                         </div>
                     </div>
 
@@ -387,7 +381,6 @@
                                class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                       pointer-events-none text-black">
                     </div>
-
                 </div>
 
                 <!-- LINHA 7 – Derivados (BLOCO BASE) -->
@@ -416,7 +409,6 @@
                                class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                       pointer-events-none focus:outline-none text-black">
                     </div>
-
                 </div>
 
                 <!-- LINHA X – Artefatos do Documento (MODELO DE PROCESSO) -->
@@ -431,6 +423,7 @@
                         <div class="flex items-center gap-2">
                             <input type="text"
                                    readonly
+                                   x-ref="pdf"
                                    :value="url"
                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                           pointer-events-none text-black truncate">
@@ -439,7 +432,6 @@
                                     class="text-blue-600 hover:text-blue-800 icon-visualizar"
                                     @click="abrirModalDocumento(url, 'Modelo de Processo')"
                                     title="Visualizar Documento">
-
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
                                      fill="none"
@@ -451,13 +443,11 @@
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-
                             </button>
-
                         </div>
                     </div>
 
-                    <!-- Norma de Procedimento (link) – vazio no contexto de Modelo -->
+                    <!-- Norma de Procedimento (link) -->
                     <div>
                         <label class="block text-sm font-medium text-blue-700">
                             Norma de Procedimento (link)
@@ -466,15 +456,14 @@
                         <div class="flex items-center gap-2">
                             <input type="text"
                                    readonly
-                                   value=""
+                                   x-ref="link"
                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                          pointer-events-none text-black">
+                                          pointer-events-none text-black truncate">
 
                             <button type="button"
                                     class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                    @click="abrirModalDocumento(linkNorma, 'Norma de Procedimento')"
                                     title="Visualizar Documento">
-
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
                                      fill="none"
@@ -486,15 +475,11 @@
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-
                             </button>
-
                         </div>
                     </div>
 
                 </div>
-
-
             </div> <!-- fim modelo-block base -->
 
             <!-- ======================================================= -->
@@ -502,7 +487,7 @@
             <!-- ======================================================= -->
             <template id="template-modelo">
                 <!-- bloco inteiro (LINHA 6 + LINHA 7) com placeholders __UID__ -->
-                <div class="modelo-block" data-uid="__UID__">
+                <div class="modelo-block" data-uid="__UID__" x-data="modeloProcessoData()">
                     <!-- LINHA 6 -->
                     <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
@@ -673,10 +658,7 @@
                 <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
                     <!-- Norma (BLOCO BASE) -->
-                    <div x-data="{
-                            selected: {{ form.instance.norma_procedimento_id|yesno:'true,false' }},
-                            check(e) { this.selected = e.target.value !== ''; }
-                        }">
+                    <div>
 
                         <!-- Label + Botão ajustado -->
                         <div class="flex items-center gap-2 relative -top-[5px]">
@@ -830,6 +812,7 @@
                         <div class="flex items-center gap-2">
                             <input type="text"
                                    readonly
+                                   x-ref="pdf"
                                    value=""
                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                           pointer-events-none text-black">
@@ -865,6 +848,7 @@
                         <div class="flex items-center gap-2">
                             <input type="text"
                                    readonly
+                                   x-ref="link"
                                    :value="url"
                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                           pointer-events-none text-black truncate">
@@ -1162,36 +1146,84 @@ window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
 
 <script>
 /* =========================================================
-   x-data — Modelo de Processo
+   x-data — Modelo de Processo (BLOCO BASE)
    ========================================================= */
 function modeloProcessoData() {
     return {
-        url: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}"{{ form.instance.modelagem_processo.documento_modelagem_processo.url|escapejs }}"{% else %}""{% endif %},
+        /* =========================
+           Estado de controle
+           ========================= */
+        selected: {{ form.instance.modelagem_processo_id|yesno:'true,false' }},
+
+        /* =========================
+           Artefatos
+           ========================= */
+        url: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}
+                "{{ form.instance.modelagem_processo.documento_modelagem_processo.url|escapejs }}"
+             {% else %}""{% endif %},
+
+        linkNorma: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.link_normaprocedimento %}
+                "{{ form.instance.modelagem_processo.link_normaprocedimento|escapejs }}"
+             {% else %}""{% endif %},
+
+        /* =========================
+           Metadados
+           ========================= */
         tema: "{{ form.instance.modelagem_processo.tema|default_if_none:''|escapejs }}",
         versao: "{{ form.instance.modelagem_processo.versao|default_if_none:''|escapejs }}",
         emitente: "{{ form.instance.modelagem_processo.emitente|default_if_none:''|escapejs }}",
         sistema: "{{ form.instance.modelagem_processo.sistema|default_if_none:''|escapejs }}",
-        vigencia: {% if form.instance.modelagem_processo.vigencia_inicio %}"{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}"{% else %}""{% endif %},
+        vigencia: {% if form.instance.modelagem_processo.vigencia_inicio %}
+                    "{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}"
+                  {% else %}""{% endif %},
 
-        hasFile() {
-            return this.url !== "" && this.url !== "None";
+        /* =========================
+           Controle de seleção
+           ========================= */
+        check(e) {
+            this.selected = e.target.value !== "";
         },
 
+        /* =========================
+           Atualização ao trocar select
+           ========================= */
         update(selectEl) {
-            const opt = selectEl.options[selectEl.selectedIndex] || {};
+            const opt = selectEl.options[selectEl.selectedIndex];
+            if (!opt) return;
 
-            this.url      = opt.dataset?.url || "";
-            this.tema     = opt.dataset?.tema || "";
-            this.versao   = opt.dataset?.versao || "";
-            this.emitente = opt.dataset?.emitente || "";
-            this.sistema  = opt.dataset?.sistema || "";
-            this.vigencia = opt.dataset?.vigencia || "";
+            /* ===== dados vindos do option ===== */
+            this.url       = opt.dataset.url || "";
+            this.linkNorma = opt.dataset.linkNorma || "";
+            this.tema      = opt.dataset.tema || "";
+            this.versao    = opt.dataset.versao || "";
+            this.emitente  = opt.dataset.emitente || "";
+            this.sistema   = opt.dataset.sistema || "";
+            this.vigencia  = opt.dataset.vigencia || "";
 
-            document.getElementById("tema_modelo").value     = this.tema;
-            document.getElementById("versao_modelo").value   = this.versao;
-            document.getElementById("emitente_modelo").value = this.emitente;
-            document.getElementById("sistema_modelo").value  = this.sistema;
-            document.getElementById("vigencia_modelo").value = this.vigencia;
+            /* =========================
+               Campos derivados (por ID)
+               ========================= */
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val || "";
+            };
+
+            setVal("tema_modelo", this.tema);
+            setVal("versao_modelo", this.versao);
+            setVal("emitente_modelo", this.emitente);
+            setVal("sistema_modelo", this.sistema);
+            setVal("vigencia_modelo", this.vigencia);
+
+            /* =========================
+               Artefatos (x-ref)
+               ========================= */
+            if (this.$refs.pdf) {
+                this.$refs.pdf.value = this.url;
+            }
+
+            if (this.$refs.link) {
+                this.$refs.link.value = this.linkNorma;
+            }
         }
     };
 }
@@ -1222,12 +1254,18 @@ function normaProcedimentoData() {
             this.sistema  = opt.dataset?.sistema || "";
             this.vigencia = opt.dataset?.vigencia_br || "";
 
-            document.getElementById("tema_norma").value     = this.tema;
-            document.getElementById("versao_norma").value   = this.versao;
-            document.getElementById("emitente_norma").value = this.emitente;
-            document.getElementById("sistema_norma").value  = this.sistema;
-            document.getElementById("vigencia_norma").value = this.vigencia;
+            this.$refs.tema.value     = this.tema;
+            this.$refs.versao.value   = this.versao;
+            this.$refs.emitente.value = this.emitente;
+            this.$refs.sistema.value  = this.$refs.sistema.value;
+            this.$refs.vigencia.value = this.vigencia;
+
+            // 🔥 artefatos
+            if (this.$refs.pdf)  this.$refs.pdf.value  = "";
+            if (this.$refs.link) this.$refs.link.value = this.url;
         }
+
+
     };
 }
 </script>
