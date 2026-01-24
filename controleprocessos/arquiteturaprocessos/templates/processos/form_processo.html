@@ -354,7 +354,9 @@
                                                 data-sistema="{{ m.sistema }}"
                                                 data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
                                                 data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
-                                                data-link-norma="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}">
+                                                nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
+
                                             {{ m.titulo }}
                                         </option>
                                     {% endfor %}
@@ -424,7 +426,7 @@
                             <input type="text"
                                    readonly
                                    x-ref="pdf"
-                                   :value="url"
+                                   :value="nomeModelo"
                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                           pointer-events-none text-black truncate">
 
@@ -515,7 +517,9 @@
                                                     data-emitente="{{ m.emitente }}"
                                                     data-sistema="{{ m.sistema }}"
                                                     data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
-                                                    data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}">
+                                                    data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
+                                                    nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                    nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
                                                 {{ m.titulo }}
                                             </option>
                                         {% endfor %}
@@ -575,7 +579,7 @@
                             <div class="flex items-center gap-2">
                                 <input type="text"
                                        readonly
-                                       :value="url"
+                                       :value="nomeModelo"
                                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                               pointer-events-none text-black truncate">
 
@@ -741,6 +745,8 @@
                                                 data-sistema="{{ n.sistema }}"
                                                 data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
                                                 data-url="{{ n.link_normaprocedimento }}"
+                                                nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}"
                                                 {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
                                             {{ n.titulo }}
                                         </option>
@@ -913,7 +919,9 @@
                                                     data-emitente="{{ n.emitente }}"
                                                     data-sistema="{{ n.sistema }}"
                                                     data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
-                                                    data-url="{{ n.link_normaprocedimento }}">
+                                                    data-url="{{ n.link_normaprocedimento }}"
+                                                    nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                    nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
                                                 {{ n.titulo }}
                                             </option>
                                         {% endfor %}
@@ -1156,7 +1164,7 @@ function modeloProcessoData() {
         selected: {{ form.instance.modelagem_processo_id|yesno:'true,false' }},
 
         /* =========================
-           Artefatos
+           Artefatos (fonte real)
            ========================= */
         url: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}
                 "{{ form.instance.modelagem_processo.documento_modelagem_processo.url|escapejs }}"
@@ -1165,6 +1173,12 @@ function modeloProcessoData() {
         linkNorma: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.link_normaprocedimento %}
                 "{{ form.instance.modelagem_processo.link_normaprocedimento|escapejs }}"
              {% else %}""{% endif %},
+
+        /* =========================
+           Nomes amigáveis (NOVO)
+           ========================= */
+        nomeModelo: "",
+        nomeNorma: "",
 
         /* =========================
            Metadados
@@ -1192,13 +1206,16 @@ function modeloProcessoData() {
             if (!opt) return;
 
             /* ===== dados vindos do option ===== */
-            this.url       = opt.dataset.url || "";
-            this.linkNorma = opt.dataset.linkNorma || "";
-            this.tema      = opt.dataset.tema || "";
-            this.versao    = opt.dataset.versao || "";
-            this.emitente  = opt.dataset.emitente || "";
-            this.sistema   = opt.dataset.sistema || "";
-            this.vigencia  = opt.dataset.vigencia || "";
+            this.url        = opt.dataset.url || "";
+            this.tema       = opt.dataset.tema || "";
+            this.versao     = opt.dataset.versao || "";
+            this.emitente   = opt.dataset.emitente || "";
+            this.sistema    = opt.dataset.sistema || "";
+            this.vigencia   = opt.dataset.vigencia || "";
+
+            /* ===== NOVO: nomes dos arquivos ===== */
+            this.nomeModelo = opt.getAttribute("nome_modeloprocesso") || "";
+            this.nomeNorma  = opt.getAttribute("nome_norma_procedimento") || "";
 
             /* =========================
                Campos derivados (por ID)
@@ -1218,15 +1235,18 @@ function modeloProcessoData() {
                Artefatos (x-ref)
                ========================= */
             if (this.$refs.pdf) {
-                this.$refs.pdf.value = this.url;
+                // 👉 mostra o nome, não a URL
+                this.$refs.pdf.value = this.nomeModelo || "";
             }
 
             if (this.$refs.link) {
-                this.$refs.link.value = this.linkNorma;
+                this.$refs.link.value = this.nomeNorma || "";
             }
         }
     };
 }
+</script>
+
 
 /* =========================================================
    x-data — Norma de Procedimento
