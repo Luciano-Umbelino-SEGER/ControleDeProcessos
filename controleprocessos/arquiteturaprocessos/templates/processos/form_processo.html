@@ -253,9 +253,9 @@
 
         </div>
 
-        <!-- ========================= -->
+        <!-- ======================================= -->
         <!-- LINHA 6 – Modelo de Processo (Dinamico) -->
-        <!-- ========================= -->
+        <!-- ======================================= -->
 
         <!-- Container geral de blocos de Modelo -->
         <div id="modelos_container">
@@ -345,7 +345,7 @@
                                         {% if desabilitar %} disabled {% endif %}>
 
                                     <option value="">---------</option>
-
+                                    <!--- Aqui 1 -->
                                     {% for m in modelos_processo %}
                                         <option value="{{ m.id }}"
                                                 data-tema="{{ m.tema }}"
@@ -353,13 +353,16 @@
                                                 data-emitente="{{ m.emitente }}"
                                                 data-sistema="{{ m.sistema }}"
                                                 data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
-                                                data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
-                                                nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
 
+                                                data-path-modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
+                                                data-url-norma-procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}"
+
+                                                nome_modelo_processo="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
                                             {{ m.titulo }}
                                         </option>
                                     {% endfor %}
+
 
                                 </select>
                             </div>
@@ -412,7 +415,7 @@
                                       pointer-events-none focus:outline-none text-black">
                     </div>
                 </div>
-
+                <!-- Aqui2 -->
                 <!-- LINHA X – Artefatos do Documento (MODELO DE PROCESSO) -->
                 <div class="grid grid-cols-2 gap-6 mb-6">
 
@@ -432,7 +435,7 @@
 
                             <button type="button"
                                     class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                    @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                     title="Visualizar Documento">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
@@ -459,12 +462,13 @@
                             <input type="text"
                                    readonly
                                    x-ref="link"
+                                   :value="nomeNorma"
                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                           pointer-events-none text-black truncate">
 
                             <button type="button"
                                     class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(linkNorma, 'Norma de Procedimento')"
+                                    @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                     title="Visualizar Documento">
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
@@ -479,6 +483,7 @@
                                 </svg>
                             </button>
                         </div>
+
                     </div>
 
                 </div>
@@ -517,12 +522,16 @@
                                                     data-emitente="{{ m.emitente }}"
                                                     data-sistema="{{ m.sistema }}"
                                                     data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
-                                                    data-url="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
+
+                                                    data-path-modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
+                                                    data-url-normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}"
+
                                                     nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                    nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
+                                                    nome_normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
                                                 {{ m.titulo }}
                                             </option>
                                         {% endfor %}
+
                                     </select>
                                 </div>
                             </div>
@@ -746,7 +755,7 @@
                                                 data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
                                                 data-url="{{ n.link_normaprocedimento }}"
                                                 nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}"
+                                                nome_normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}"
                                                 {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
                                             {{ n.titulo }}
                                         </option>
@@ -921,7 +930,7 @@
                                                     data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
                                                     data-url="{{ n.link_normaprocedimento }}"
                                                     nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                    nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
+                                                    nome_normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
                                                 {{ n.titulo }}
                                             </option>
                                         {% endfor %}
@@ -1152,6 +1161,7 @@ const modoBloqueado = window.MODO.visualizacao || window.MODO.exclusao;
 window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
 </script>
 
+<!-- Aqui 3 -->
 <script>
 /* =========================================================
    x-data — Modelo de Processo (BLOCO BASE)
@@ -1164,18 +1174,13 @@ function modeloProcessoData() {
         selected: {{ form.instance.modelagem_processo_id|yesno:'true,false' }},
 
         /* =========================
-           Artefatos (fonte real)
+           Artefatos (fontes reais)
            ========================= */
-        url: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.documento_modelagem_processo %}
-                "{{ form.instance.modelagem_processo.documento_modelagem_processo.url|escapejs }}"
-             {% else %}""{% endif %},
-
-        linkNorma: {% if form.instance.modelagem_processo and form.instance.modelagem_processo.link_normaprocedimento %}
-                "{{ form.instance.modelagem_processo.link_normaprocedimento|escapejs }}"
-             {% else %}""{% endif %},
+        pathModelo: "",   // path do PDF do modelo (modal)
+        urlNorma: "",     // URL da norma de procedimento (modal)
 
         /* =========================
-           Nomes amigáveis (NOVO)
+           Nomes amigáveis (exibição)
            ========================= */
         nomeModelo: "",
         nomeNorma: "",
@@ -1205,17 +1210,20 @@ function modeloProcessoData() {
             const opt = selectEl.options[selectEl.selectedIndex];
             if (!opt) return;
 
-            /* ===== dados vindos do option ===== */
-            this.url        = opt.dataset.url || "";
-            this.tema       = opt.dataset.tema || "";
-            this.versao     = opt.dataset.versao || "";
-            this.emitente   = opt.dataset.emitente || "";
-            this.sistema    = opt.dataset.sistema || "";
-            this.vigencia   = opt.dataset.vigencia || "";
+            /* ===== fontes reais ===== */
+            this.pathModelo = opt.dataset.pathModeloprocesso || "";
+            this.urlNorma   = opt.dataset.urlNormaProcedimento || "";
 
-            /* ===== NOVO: nomes dos arquivos ===== */
-            this.nomeModelo = opt.getAttribute("nome_modeloprocesso") || "";
+            /* ===== nomes amigáveis ===== */
+            this.nomeModelo = opt.getAttribute("nome_modelo_processo") || "";
             this.nomeNorma  = opt.getAttribute("nome_norma_procedimento") || "";
+
+            /* ===== metadados ===== */
+            this.tema     = opt.dataset.tema || "";
+            this.versao   = opt.dataset.versao || "";
+            this.emitente = opt.dataset.emitente || "";
+            this.sistema  = opt.dataset.sistema || "";
+            this.vigencia = opt.dataset.vigencia || "";
 
             /* =========================
                Campos derivados (por ID)
@@ -1232,21 +1240,19 @@ function modeloProcessoData() {
             setVal("vigencia_modelo", this.vigencia);
 
             /* =========================
-               Artefatos (x-ref)
+               Campos visuais (x-ref)
                ========================= */
             if (this.$refs.pdf) {
-                // 👉 mostra o nome, não a URL
-                this.$refs.pdf.value = this.nomeModelo || "";
+                this.$refs.pdf.value = this.nomeModelo;
             }
 
             if (this.$refs.link) {
-                this.$refs.link.value = this.nomeNorma || "";
+                this.$refs.link.value = this.nomeNorma;
             }
         }
     };
 }
 </script>
-
 
 /* =========================================================
    x-data — Norma de Procedimento
