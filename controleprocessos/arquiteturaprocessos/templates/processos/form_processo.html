@@ -900,7 +900,8 @@
             <!-- ======================================================= -->
             <template id="template-norma">
                 <!-- bloco inteiro (LINHA 8 + LINHA 9) com placeholders __UID__ -->
-                <div class="norma-block" data-uid="__UID__">
+                <div class="norma-block" data-uid="__UID__" x-data="normaProcedimentoData()">
+
                     <!-- LINHA 8 -->
                     <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
@@ -918,6 +919,7 @@
 
                                 <div class="flex-1 min-w-0">
                                     <select id="norma_procedimento___UID__" name="norma_procedimento_extra[]"
+                                            @change="check($event); update($el)"
                                             class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none">
                                         <option value="">---------</option>
 
@@ -927,10 +929,13 @@
                                                     data-versao="{{ n.versao|stringformat:'02d' }}"
                                                     data-emitente="{{ n.emitente }}"
                                                     data-sistema="{{ n.sistema }}"
-                                                    data-vigencia_br="{{ n.vigencia_inicio|date:'d/m/Y' }}"
-                                                    data-url="{{ n.link_normaprocedimento }}"
-                                                    nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                    nome_normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
+                                                    data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
+
+                                                    data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
+                                                    data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
+
+                                                    nome_modelo_processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                    nome_norma_procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}">
                                                 {{ n.titulo }}
                                             </option>
                                         {% endfor %}
@@ -991,13 +996,14 @@
                             <div class="flex items-center gap-2">
                                 <input type="text"
                                        readonly
-                                       value=""
+                                       x-ref="pdf"
+                                       :value="nomeModelo"
                                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                              pointer-events-none text-black">
+                                              pointer-events-none text-black truncate">
 
                                 <button type="button"
                                         class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                         title="Visualizar Documento">
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -1025,13 +1031,14 @@
                             <div class="flex items-center gap-2">
                                 <input type="text"
                                        readonly
-                                       :value="url"
+                                       x-ref="link"
+                                       :value="nomeNorma"
                                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                               pointer-events-none text-black truncate">
 
                                 <button type="button"
                                         class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                         title="Visualizar Documento">
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -1325,24 +1332,39 @@ function normaProcedimentoData() {
 
             /* ===== metadados ===== */
             this.tema     = opt.dataset.tema || "";
-            this.versao   = opt.dataset.versao || "";
+
+            const v = opt.dataset.versao || "";
+            this.versao = v ? String(v).padStart(2, "0") : "";
+
             this.emitente = opt.dataset.emitente || "";
             this.sistema  = opt.dataset.sistema || "";
-            this.vigencia = opt.dataset.vigencia || "";
 
-            /* =========================
-               Campos derivados (por ID)
-               ========================= */
-            const setVal = (id, val) => {
-                const el = document.getElementById(id);
-                if (el) el.value = val || "";
-            };
+            const iso = opt.dataset.vigencia || "";
+            if (iso) {
+                const [y, m, d] = iso.split("-");
+                this.vigencia = `${d}/${m}/${y}`;
+            } else {
+                this.vigencia = "";
+            }
 
-            setVal("tema_norma", this.tema);
-            setVal("versao_norma", this.versao);
-            setVal("emitente_norma", this.emitente);
-            setVal("sistema_norma", this.sistema);
-            setVal("vigencia_norma", this.vigencia);
+
+            /* ==================================
+               Campos derivados (escopo do bloco)
+            ===================================== */
+            const bloco = selectEl.closest('.norma-block');
+            if (bloco) {
+                const setValInBlock = (selector, val) => {
+                    const el = bloco.querySelector(selector);
+                    if (el) el.value = val || "";
+                };
+
+                setValInBlock('[id^="tema_norma"]', this.tema);
+                setValInBlock('[id^="versao_norma"]', this.versao);
+                setValInBlock('[id^="emitente_norma"]', this.emitente);
+                setValInBlock('[id^="sistema_norma"]', this.sistema);
+                setValInBlock('[id^="vigencia_norma"]', this.vigencia);
+            }
+
         }
     };
 }
