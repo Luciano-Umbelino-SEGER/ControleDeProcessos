@@ -434,9 +434,15 @@
                                           pointer-events-none text-black truncate">
 
                             <button type="button"
-                                    class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
+                                    class="icon-visualizar transition"
+                                    :disabled="!pathModelo"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
+                                        'text-gray-400 cursor-not-allowed': !pathModelo
+                                    }"
+                                    @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                     title="Visualizar Documento">
+
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
                                      fill="none"
@@ -467,9 +473,15 @@
                                           pointer-events-none text-black truncate">
 
                             <button type="button"
-                                    class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
+                                    class="icon-visualizar transition"
+                                    :disabled="!urlNorma"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
+                                        'text-gray-400 cursor-not-allowed': !urlNorma
+                                    }"
+                                    @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                     title="Visualizar Documento">
+
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
                                      fill="none"
@@ -594,8 +606,13 @@
                                               pointer-events-none text-black truncate">
 
                                 <button type="button"
-                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
+                                        class="icon-visualizar transition"
+                                        :disabled="!pathModelo"
+                                        :class="{
+                                            'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
+                                            'text-gray-400 cursor-not-allowed': !pathModelo
+                                        }"
+                                        @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                         title="Visualizar Documento">
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -630,9 +647,15 @@
                                               pointer-events-none text-black">
 
                                 <button type="button"
-                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
+                                        class="icon-visualizar transition"
+                                        :disabled="!urlNorma"
+                                        :class="{
+                                            'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
+                                            'text-gray-400 cursor-not-allowed': !urlNorma
+                                        }"
+                                        @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                         title="Visualizar Documento">
+
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                          class="w-5 h-5"
@@ -839,9 +862,15 @@
                                           pointer-events-none text-black truncate">
 
                             <button type="button"
-                                    class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
+                                    class="icon-visualizar transition"
+                                    :disabled="!pathModelo"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
+                                        'text-gray-400 cursor-not-allowed': !pathModelo
+                                    }"
+                                    @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                     title="Visualizar Documento">
+
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
                                      fill="none"
@@ -872,9 +901,15 @@
                                           pointer-events-none text-black truncate">
 
                             <button type="button"
-                                    class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                    @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
+                                    class="icon-visualizar transition"
+                                    :disabled="!urlNorma"
+                                    :class="{
+                                        'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
+                                        'text-gray-400 cursor-not-allowed': !urlNorma
+                                    }"
+                                    @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                     title="Visualizar Documento">
+
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                      class="w-5 h-5"
                                      fill="none"
@@ -1002,9 +1037,15 @@
                                               pointer-events-none text-black truncate">
 
                                 <button type="button"
-                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
+                                        class="icon-visualizar transition"
+                                        :disabled="!pathModelo"
+                                        :class="{
+                                            'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
+                                            'text-gray-400 cursor-not-allowed': !pathModelo
+                                        }"
+                                        @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                         title="Visualizar Documento">
+
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                          class="w-5 h-5"
@@ -1037,9 +1078,15 @@
                                               pointer-events-none text-black truncate">
 
                                 <button type="button"
-                                        class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
+                                        class="icon-visualizar transition"
+                                        :disabled="!urlNorma"
+                                        :class="{
+                                            'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
+                                            'text-gray-400 cursor-not-allowed': !urlNorma
+                                        }"
+                                        @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                         title="Visualizar Documento">
+
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                          class="w-5 h-5"
