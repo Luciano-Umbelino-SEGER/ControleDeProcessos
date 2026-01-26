@@ -415,7 +415,7 @@
                                       pointer-events-none focus:outline-none text-black">
                     </div>
                 </div>
-                <!-- Aqui2 -->
+
                 <!-- LINHA X – Artefatos do Documento (MODELO DE PROCESSO) -->
                 <div class="grid grid-cols-2 gap-6 mb-6">
 
@@ -488,7 +488,7 @@
 
                 </div>
             </div> <!-- fim modelo-block base -->
-
+            <!-- Aqui 1 -->
             <!-- ======================================================= -->
             <!-- TEMPLATE para blocos de Modelo adicionais (invisível) -->
             <!-- ======================================================= -->
@@ -512,7 +512,8 @@
 
                                 <div class="flex-1 min-w-0">
                                     <select id="id_modelagem_processo___UID__" name="modelagem_processo_extra[]"
-                                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            @change="check($event); update($el)">
                                         <option value="">---------</option>
 
                                         {% for m in modelos_processo %}
@@ -524,10 +525,10 @@
                                                     data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
 
                                                     data-path-modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
-                                                    data-url-normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}"
+                                                    data-url-norma-procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}"
 
-                                                    nome_modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                    nome_normaprocedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
+                                                    nome_modelo_processo="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                    nome_norma_procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
                                                 {{ m.titulo }}
                                             </option>
                                         {% endfor %}
@@ -594,7 +595,7 @@
 
                                 <button type="button"
                                         class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        @click="abrirModalDocumento(pathModelo, 'Modelo de Processo')"
                                         title="Visualizar Documento">
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -623,13 +624,14 @@
                             <div class="flex items-center gap-2">
                                 <input type="text"
                                        readonly
-                                       value=""
+                                       x-ref="link"
+                                       :value="nomeNorma"
                                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                               pointer-events-none text-black">
 
                                 <button type="button"
                                         class="text-blue-600 hover:text-blue-800 icon-visualizar"
-                                        @click="abrirModalDocumento(url, 'Modelo de Processo')"
+                                        @click="abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
                                         title="Visualizar Documento">
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -1218,24 +1220,38 @@ function modeloProcessoData() {
 
             /* ===== metadados ===== */
             this.tema     = opt.dataset.tema || "";
-            this.versao   = opt.dataset.versao || "";
+
+            const v = opt.dataset.versao || "";
+            this.versao = v ? String(v).padStart(2, "0") : "";
+
             this.emitente = opt.dataset.emitente || "";
             this.sistema  = opt.dataset.sistema || "";
-            this.vigencia = opt.dataset.vigencia || "";
 
-            /* =========================
-               Campos derivados (por ID)
-               ========================= */
-            const setVal = (id, val) => {
-                const el = document.getElementById(id);
-                if (el) el.value = val || "";
-            };
+            const iso = opt.dataset.vigencia || "";
+            if (iso) {
+                const [y, m, d] = iso.split("-");
+                this.vigencia = `${d}/${m}/${y}`;
+            } else {
+                this.vigencia = "";
+            }
 
-            setVal("tema_modelo", this.tema);
-            setVal("versao_modelo", this.versao);
-            setVal("emitente_modelo", this.emitente);
-            setVal("sistema_modelo", this.sistema);
-            setVal("vigencia_modelo", this.vigencia);
+
+            /* ==================================
+               Campos derivados (escopo do bloco)
+            ===================================== */
+            const bloco = selectEl.closest('.modelo-block');
+            if (bloco) {
+                const setValInBlock = (selector, val) => {
+                    const el = bloco.querySelector(selector);
+                    if (el) el.value = val || "";
+                };
+
+                setValInBlock('[id^="tema_modelo"]', this.tema);
+                setValInBlock('[id^="versao_modelo"]', this.versao);
+                setValInBlock('[id^="emitente_modelo"]', this.emitente);
+                setValInBlock('[id^="sistema_modelo"]', this.sistema);
+                setValInBlock('[id^="vigencia_modelo"]', this.vigencia);
+            }
 
             /* =========================
                Campos visuais (x-ref)
