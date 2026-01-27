@@ -355,6 +355,7 @@ class ArquiteruraProcessos(ListView):
                 continue
 
             doc = {
+                "titulo": mp.titulo or "",
                 "displayname": displayname,
                 "tema": mp.tema or "",
                 "versao": mp.versao or "",
