@@ -340,23 +340,25 @@ class ArquiteruraProcessos(ListView):
             if not mp:
                 continue
 
+            displayname = None
+            url = None
+
             if mp.documento_modelagem_processo:
                 documento = os.path.basename(mp.documento_modelagem_processo.name)
                 displayname = documento
                 url = mp.documento_modelagem_processo.url
 
-            elif mp.link_normaprocedimento:
+            if mp.link_normaprocedimento:
                 documento = os.path.basename(mp.link_normaprocedimento)
                 documento = unquote(documento)
-                displayname = documento
-                url = mp.link_normaprocedimento
+                # ⚠️ NÃO sobrescreve displayname/url do PDF
+                # apenas registra que existe norma
 
-            else:
+            if not displayname and not mp.link_normaprocedimento:
                 continue
 
             doc = {
                 "titulo": mp.titulo or "",
-                "displayname": displayname,
                 "tema": mp.tema or "",
                 "versao": mp.versao or "",
                 "emitente": mp.emitente or "",
@@ -364,6 +366,8 @@ class ArquiteruraProcessos(ListView):
                     mp.vigencia_inicio.strftime("%d/%m/%Y")
                     if mp.vigencia_inicio else ""
                 ),
+                "tipo_documento_id": mp.tipo_documento_id,
+                "displayname": displayname,
                 "url": url,
                 "is_modelo": bool(mp.documento_modelagem_processo),
                 "is_norma": bool(mp.link_normaprocedimento),
@@ -371,10 +375,11 @@ class ArquiteruraProcessos(ListView):
 
             todos.append(doc)
 
-            if doc["is_modelo"]:
+            # ✅ CLASSIFICAÇÃO CORRETA
+            if doc["tipo_documento_id"] == 1:
                 modelos.append(doc)
 
-            if doc["is_norma"]:
+            elif doc["tipo_documento_id"] == 2:
                 normas.append(doc)
 
         return {
