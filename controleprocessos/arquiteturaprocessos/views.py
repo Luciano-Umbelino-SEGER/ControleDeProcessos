@@ -331,7 +331,6 @@ class ArquiteruraProcessos(ListView):
     # Montagem de documentos (reutilizável)
     # -----------------------------------------
     def montar_docs(self, documentos_qs):
-        todos = []
         modelos = []
         normas = []
 
@@ -340,22 +339,24 @@ class ArquiteruraProcessos(ListView):
             if not mp:
                 continue
 
-            displayname = None
-            url = None
+            modelo_pdf = None
+            norma_link = None
 
+            # 📄 PDF – Modelo de Processo
             if mp.documento_modelagem_processo:
-                documento = os.path.basename(mp.documento_modelagem_processo.name)
-                displayname = documento
-                url = mp.documento_modelagem_processo.url
+                nome_pdf = os.path.basename(mp.documento_modelagem_processo.name)
+                modelo_pdf = {
+                    "displayname": nome_pdf,
+                    "url": mp.documento_modelagem_processo.url,
+                }
 
+            # 🔗 LINK – Norma de Procedimento
             if mp.link_normaprocedimento:
-                documento = os.path.basename(mp.link_normaprocedimento)
-                documento = unquote(documento)
-                # ⚠️ NÃO sobrescreve displayname/url do PDF
-                # apenas registra que existe norma
-
-            if not displayname and not mp.link_normaprocedimento:
-                continue
+                nome_link = os.path.basename(unquote(mp.link_normaprocedimento))
+                norma_link = {
+                    "displayname": nome_link,
+                    "url": mp.link_normaprocedimento,
+                }
 
             doc = {
                 "titulo": mp.titulo or "",
@@ -366,24 +367,17 @@ class ArquiteruraProcessos(ListView):
                     mp.vigencia_inicio.strftime("%d/%m/%Y")
                     if mp.vigencia_inicio else ""
                 ),
-                "tipo_documento_id": mp.tipo_documento_id,
-                "displayname": displayname,
-                "url": url,
-                "is_modelo": bool(mp.documento_modelagem_processo),
-                "is_norma": bool(mp.link_normaprocedimento),
+                "modelo": modelo_pdf,  # 👈 PDF
+                "norma": norma_link,  # 👈 LINK
             }
 
-            todos.append(doc)
-
-            # ✅ CLASSIFICAÇÃO CORRETA
-            if doc["tipo_documento_id"] == 1:
+            # separação por tipo de documento
+            if mp.tipo_documento_id == 1:
                 modelos.append(doc)
-
-            elif doc["tipo_documento_id"] == 2:
+            elif mp.tipo_documento_id == 2:
                 normas.append(doc)
 
         return {
-            "todos": todos,
             "modelos": modelos,
             "normas": normas,
         }
@@ -476,7 +470,7 @@ class ArquiteruraProcessos(ListView):
 
             proc.docs_modelos = docs["modelos"]
             proc.docs_normas = docs["normas"]
-            proc.docs_count = len(docs["todos"])
+            proc.docs_count = len(docs["modelos"]) + len(docs["normas"])
 
             documentos_por_processo[str(proc.id)] = {
                 "modelos": docs["modelos"],
@@ -489,7 +483,7 @@ class ArquiteruraProcessos(ListView):
 
                 sub.docs_modelos = sub_docs["modelos"]
                 sub.docs_normas = sub_docs["normas"]
-                sub.docs_count = len(sub_docs["todos"])
+                sub.docs_count = len(sub_docs["modelos"]) + len(sub_docs["normas"])
 
                 documentos_por_processo[str(sub.id)] = {
                     "modelos": sub_docs["modelos"],
