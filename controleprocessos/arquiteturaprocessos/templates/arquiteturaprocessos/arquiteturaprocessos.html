@@ -187,11 +187,11 @@
 
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
-            <th class="py-3 px-2 text-left w-[14%]">Objetivo</th>
+            <th class="py-3 px-3 text-left w-[15%]">Processo / Subprocesso</th>
+            <th class="py-3 px-2 text-left w-[12%]">Objetivo</th>
             <th class="py-3 px-2 text-left w-[8%]">Classificação</th>
-            <th class="py-3 px-2 text-left w-[8%]">Macro N1</th>
-            <th class="py-3 px-2 text-left w-[8%]">Macro N2</th>
+            <th class="py-3 px-2 text-left w-[10%]">Macro N1</th>
+            <th class="py-3 px-2 text-left w-[10%]">Macro N2</th>
             <th class="py-3 px-2 text-left w-[8%]">Área Responsável</th>
             <th class="py-3 px-2 text-left w-[8%]">Gestor</th>
             <th class="py-3 px-2 text-left w-[6%]">E-mail</th>
@@ -216,36 +216,46 @@
                          {% if rownum|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
                 <!-- Processo -->
-                <td class="py-3 px-3 font-semibold text-blue-800">
+                <td class="py-3 px-3 font-semibold text-blue-800 text-blue-800 text-[0.8rem] leading-snug">
                   {{ processo.nome }}
                   {% if processo.parent %}
-                    <div class="text-xs text-blue-500">Subprocesso de {{ processo.parent.nome }}</div>
+                    <div class="text-xs text-blue-500 text-blue-800 text-[0.8rem] leading-snug">Subprocesso de {{ processo.parent.nome }}</div>
                   {% endif %}
                 </td>
 
                 <!-- Objetivo -->
-                <td class="py-3 px-2 text-blue-600">
-                  {{ processo.objetivo|truncatechars:160 }}
+                <td class="py-3 px-2 text-blue-600 text-blue-800 text-[0.8rem] leading-snug">
+                  <span
+                    class="objetivo-truncate"
+                    title="{{ processo.objetivo }}">
+                    {{ processo.objetivo }}
+                  </span>
                 </td>
 
-                <td class="py-3 px-2 text-blue-600">{{ processo.classificacao }}</td>
-                <td class="py-3 px-2 text-blue-600">{{ processo.macroprocesso_nivel1 }}</td>
-                <td class="py-3 px-2 text-blue-600">{{ processo.macroprocesso_nivel2 }}</td>
-                <td class="py-3 px-2 text-blue-600">{{ processo.area_responsavel }}</td>
-                <td class="py-3 px-2 text-blue-600">{{ processo.gestor }}</td>
-                <td class="py-3 px-2 text-blue-600">{{ processo.email }}</td>
-                <td class="py-3 px-2 text-blue-600">{{ processo.telefone }}</td>
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.classificacao }}</td>
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.macroprocesso_nivel1 }}</td>
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.macroprocesso_nivel2 }}</td>
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.area_responsavel }}</td>
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.gestor }}</td>
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.email }}</td>
+                <td class="py-3 px-2 text-blue-600text-[0.8rem] leading-snug">{{ processo.telefone }}</td>
 
-                <td class="py-3 px-2 text-blue-600">
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">
                   {% if processo.data_criacao %}{{ processo.data_criacao|date:"d/m/Y" }}{% endif %}
                 </td>
 
-                <td class="py-3 px-2 text-blue-600">
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">
                   {% if processo.data_atualizacao %}{{ processo.data_atualizacao|date:"d/m/Y" }}{% endif %}
                 </td>
 
-                <td class="py-3 px-2 text-blue-600 text-sm">
-                  {% if processo.observacao %}{{ processo.observacao|truncatechars:120 }}{% endif %}
+                <td class="py-3 px-2 text-blue-600 text-sm text-blue-800 text-[0.8rem] leading-snug">
+                  {% if processo.observacao %}
+                    <span
+                      class="objetivo-truncate"
+                      title="{{ processo.observacao }}">
+                      {{ processo.observacao }}
+                    </span>
+                  {% endif %}
                 </td>
 
                 <!-- Documentos -->
@@ -320,7 +330,13 @@
                   <td class="py-3 px-3 text-blue-600">
                     <span class="ml-5 block">{{ sub.nome }}</span>
                   </td>
-                  <td class="py-3 px-2 text-blue-600">{{ sub.objetivo|truncatechars:120 }}</td>
+                  <td class="py-3 px-2 text-blue-600">
+                    <span
+                      class="objetivo-truncate"
+                      title="{{ sub.objetivo }}">
+                      {{ sub.objetivo }}
+                    </span>
+                  </td>
 
                   <td class="py-3 px-2 text-blue-600">{{ sub.classificacao }}</td>
                   <td class="py-3 px-2 text-blue-600">{{ sub.macroprocesso_nivel1 }}</td>
@@ -339,7 +355,13 @@
                   </td>
 
                   <td class="py-3 px-2 text-blue-600 text-sm">
-                    {% if sub.observacao %}{{ sub.observacao|truncatechars:100 }}{% endif %}
+                    {% if sub.observacao %}
+                      <span
+                        class="objetivo-truncate"
+                        title="{{ sub.observacao }}">
+                        {{ sub.observacao }}
+                      </span>
+                    {% endif %}
                   </td>
 
                   <td class="py-3 px-2 text-center">
@@ -458,7 +480,19 @@
     transform-origin: center;
   }
 
+  /* Fonte base mais compacta para a tabela */
+  .zebra-safe td {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
 
+  /* Objetivo: limitar a 2 linhas com reticências */
+  .objetivo-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;   /* número de linhas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
 </style>
 
