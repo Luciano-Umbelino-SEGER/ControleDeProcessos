@@ -1444,7 +1444,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
 
         return context
-
+# Aqui 1 #
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
@@ -1576,22 +1576,23 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                 ),
             }
 
-            # ------------------------------
-            # MODELO DE PROCESSO (arquivo local)
-            # ------------------------------
-            if "modelo" in tipo_nome:
-                dados["arquivo"] = (
-                    mp.documento_modelagem_processo.url
-                    if mp.documento_modelagem_processo
-                    else ""
-                )
-                modelos_hidratados.append(dados)
+            # -------------------------------------------------
+            # PDF e LINK (sempre presentes, mesmo que vazios)
+            # -------------------------------------------------
+            dados["pdf"] = (
+                mp.documento_modelagem_processo.url
+                if mp.documento_modelagem_processo
+                else ""
+            )
 
-            # ------------------------------
-            # NORMA DE PROCEDIMENTO (URL externa)
-            # ------------------------------
+            dados["link"] = mp.link_normaprocedimento or ""
+
+            # -------------------------------------------------
+            # Separação por tipo de documento
+            # -------------------------------------------------
+            if "modelo" in tipo_nome:
+                modelos_hidratados.append(dados)
             else:
-                dados["arquivo"] = mp.link_normaprocedimento or ""
                 normas_hidratadas.append(dados)
 
         # -------------------------------------------------
@@ -1699,18 +1700,23 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 ),
             }
 
-            # MODELO DE PROCESSO
-            if "modelo" in tipo_nome:
-                dados["arquivo"] = (
-                    mp.documento_modelagem_processo.url
-                    if mp.documento_modelagem_processo
-                    else ""
-                )
-                modelos_hidratados.append(dados)
+            # -------------------------------------------------
+            # PDF e LINK (sempre presentes, mesmo que vazios)
+            # -------------------------------------------------
+            dados["pdf"] = (
+                mp.documento_modelagem_processo.url
+                if mp.documento_modelagem_processo
+                else ""
+            )
 
-            # NORMA DE PROCEDIMENTO
+            dados["link"] = mp.link_normaprocedimento or ""
+
+            # -------------------------------------------------
+            # Separação por tipo de documento
+            # -------------------------------------------------
+            if "modelo" in tipo_nome:
+                modelos_hidratados.append(dados)
             else:
-                dados["arquivo"] = mp.link_normaprocedimento or ""
                 normas_hidratadas.append(dados)
 
         # -------------------------------------------------
