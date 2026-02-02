@@ -629,15 +629,32 @@ function hidratarModelos() {
     preencherCamposModelo(baseBlock, MODELOS_HIDRATADOS[0]);
 
     // 🔹 BLOCOS EXTRAS (sem botão +)
+    // ==========================================
+    // HIDRATAÇÃO — BLOCOS CLONADOS (MODELO)
+    // Usa $nextTick para garantir Alpine pronto
+    // ==========================================
     MODELOS_HIDRATADOS.slice(1).forEach((dados, idx) => {
         const uid = `hidratado_${idx}_${Date.now()}`;
-        const novo = clonarTemplate("template-modelo", container, uid);
-        if (!novo) return;
+        const bloco = clonarTemplate("template-modelo", container, uid);
+        if (!bloco) return;
 
-        const select = novo.querySelector('select[name="modelagem_processo_extra[]"]');
-        hidratarSelect(select, dados);
-        preencherCamposModelo(novo, dados);
+        const select = bloco.querySelector('select[name="modelagem_processo_extra[]"]');
+        if (!select) return;
+
+        // Seleciona o modelo correto
+        select.value = dados.id;
+
+        // 🔥 AGORA SIM: espera Alpine finalizar completamente
+        if (window.Alpine) {
+            Alpine.nextTick(() => {
+                const alpineData = Alpine.$data(bloco);
+                if (alpineData && typeof alpineData.update === "function") {
+                    alpineData.update(select);
+                }
+            });
+        }
     });
+
 }
 
 function hidratarNormas() {
@@ -654,15 +671,32 @@ function hidratarNormas() {
     preencherCamposNorma(baseBlock, NORMAS_HIDRATADAS[0]);
 
     // 🔹 BLOCOS EXTRAS
+    // ==========================================
+    // HIDRATAÇÃO — BLOCOS CLONADOS (NORMA)
+    // Usa Alpine.nextTick para garantir x-data pronto
+    // ==========================================
     NORMAS_HIDRATADAS.slice(1).forEach((dados, idx) => {
-        const uid = `hidratado_${idx}_${Date.now()}`;
-        const novo = clonarTemplate("template-norma", container, uid);
-        if (!novo) return;
+        const uid = `hidratado_norma_${idx}_${Date.now()}`;
+        const bloco = clonarTemplate("template-norma", container, uid);
+        if (!bloco) return;
 
-        const select = novo.querySelector('select[name="norma_procedimento_extra[]"]');
-        hidratarSelect(select, dados);
-        preencherCamposNorma(novo, dados);
+        const select = bloco.querySelector('select[name="norma_procedimento_extra[]"]');
+        if (!select) return;
+
+        // 1️⃣ Seleciona a norma correta
+        select.value = dados.id;
+
+        // 2️⃣ Aguarda Alpine finalizar completamente
+        if (window.Alpine) {
+            Alpine.nextTick(() => {
+                const alpineData = Alpine.$data(bloco);
+                if (alpineData && typeof alpineData.update === "function") {
+                    alpineData.update(select);
+                }
+            });
+        }
     });
+
 }
 
 function clonarTemplate(templateId, container, uid) {
@@ -674,10 +708,18 @@ function clonarTemplate(templateId, container, uid) {
     wrapper.innerHTML = html.trim();
 
     const bloco = wrapper.firstElementChild;
-    if (bloco) container.appendChild(bloco);
+    if (!bloco) return null;
+
+    container.appendChild(bloco);
+
+    // 🔥 PASSO ESSENCIAL — inicializar Alpine no bloco clonado
+    if (window.Alpine) {
+        window.Alpine.initTree(bloco);
+    }
 
     return bloco;
 }
+
 
 // ==========================================
 // BLOQUEIO FINAL — VISUALIZAÇÃO / EXCLUSÃO
