@@ -11,16 +11,6 @@
 {% endblock %}
 
 {% block body %}
-<script>
-    window.BLOQUEIO_TOTAL_ATIVO = false;
-    document.addEventListener("DOMContentLoaded", function () {
-        document.body.dataset.modoInclusao = "{{ modo_inclusao|yesno:'true,false' }}";
-        document.body.dataset.modoEdicao = "{{ modo_edicao|yesno:'true,false' }}";
-        document.body.dataset.modoVisualizacao = "{{ modo_visualizacao|yesno:'true,false' }}";
-        document.body.dataset.modoExclusao = "{{ modo_exclusao|yesno:'true,false' }}";
-    });
-</script>
-
 <div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
 
     <!-- Título -->
@@ -1419,24 +1409,6 @@ function normaProcedimentoData() {
         }
     };
 }
-</script>
-
-<script>
-/* =========================================================
-   BLOQUEIO IMEDIATO DE BOTÕES (+ / −)
-   ========================================================= */
-document.addEventListener("DOMContentLoaded", function () {
-    if (!modoBloqueado) return;
-
-    document
-        .querySelectorAll('button[data-action="add"], button[data-action="remove"]')
-        .forEach(btn => {
-            btn.disabled = true;
-            btn.classList.remove('text-blue-600', 'text-red-600', 'cursor-pointer');
-            btn.classList.add('text-gray-400', 'cursor-not-allowed');
-            btn.style.pointerEvents = 'none';
-        });
-});
 </script>
 
 <script>
