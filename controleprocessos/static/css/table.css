@@ -1,0 +1,44 @@
+/* =========================================
+   PADRÃO GLOBAL DE TABELAS DE LISTAGEM
+   Referência: Arquitetura de Processos
+   ========================================= */
+
+/* Cabeçalho */
+.table-listagem thead th {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #1e40af; /* text-blue-800 */
+  padding-top: 0.75rem;   /* py-3 */
+  padding-bottom: 0.75rem;
+}
+
+/* Corpo */
+.table-listagem tbody td {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* =========================================
+   RESPIRO LATERAL – FORÇANDO PRIORIDADE
+   ========================================= */
+
+.table-listagem thead th:first-child,
+.table-listagem tbody td:first-child {
+  padding-left: 1.20rem !important; /* px-4 */
+}
+
+.table-listagem thead th:last-child,
+.table-listagem tbody td:last-child {
+  padding-right: 1rem !important; /* px-4 */
+}
+
+/* Centralizar o label da coluna Ações (somente o cabeçalho) */
+.table-listagem thead th:last-child {
+  text-align: center;
+}
+
+
+
