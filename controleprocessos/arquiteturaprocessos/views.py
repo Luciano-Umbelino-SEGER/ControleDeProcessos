@@ -884,7 +884,11 @@ class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return MacroprocessoNivel2.objects.select_related(
             'macroprocesso_nivel1', 'macroprocesso_nivel1__classificacao'
-        ).order_by('nome')
+        ).order_by(
+        "macroprocesso_nivel1__classificacao__nome",
+        "macroprocesso_nivel1__nome",
+        "nome"
+        )
 
 class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_macroprocessonivel2.html'
