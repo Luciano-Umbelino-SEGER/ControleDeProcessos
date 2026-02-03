@@ -22,18 +22,18 @@
         {% endif %}
 
         <div class="overflow-x-auto">
-            <table class="w-full bg-white border border-gray-200 rounded-lg shadow">
+            <table class="table-listagem w-full bg-white border border-gray-200 rounded-lg shadow">
                 <thead class="bg-blue-100 text-blue-800">
                     <tr>
-                        <th class="py-3 px-4 text-left">Tipo</th>
+                        <th class="py-3 px-4 text-left whitespace-nowrap">Tipo</th>
                         <th class="py-3 px-4 text-left">Descrição</th>
-                        <th class="py-3 px-4 text-right">Ações</th>
+                        <th class="py-3 px-4 ">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tipodocumento in tiposdocumento %}
                     <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %}">
-                        <td class="py-3 px-4 align-top">{{ tipodocumento.nome }}</td>
+                        <td class="py-3 px-4 align-top whitespace-nowrap">{{ tipodocumento.nome }}</td>
                         <td class="py-3 px-4 whitespace-pre-line break-words align-top">{{ tipodocumento.descricao }}</td>
                         <td class="py-3 px-4 text-right align-middle">
                             <div class="flex justify-end items-center space-x-2 h-full">
