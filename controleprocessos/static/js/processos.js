@@ -547,13 +547,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+// ==========================================
+// UTILITÁRIOS DE FORMATAÇÃO
+// ==========================================
 function formatarDataISO_para_BR(iso) {
-        if (!iso) return "";
-        const [a,m,d] = iso.split("-");
-        return `${d}/${m}/${a}`;
-    }
+    if (!iso) return "";
+    const [a, m, d] = iso.split("-");
+    return `${d}/${m}/${a}`;
+}
 
-function formatarVersao(v) { return v ? String(v).padStart(2,"0") : ""; }
+function formatarVersao(v) {
+    return v ? String(v).padStart(2, "0") : "";
+}
 
 // ==========================================
 // VISUALIZAR DOCUMENTO — BLOCOS CLONADOS
@@ -615,6 +620,20 @@ function preencherCamposNorma(block, dados) {
 
 }
 
+// ==========================================
+// HELPER — Atualiza bloco Alpine após clonagem
+// ==========================================
+function atualizarBlocoAlpine(bloco, select) {
+    if (!window.Alpine || !bloco || !select) return;
+
+    Alpine.nextTick(() => {
+        const alpineData = Alpine.$data(bloco);
+        if (alpineData && typeof alpineData.update === "function") {
+            alpineData.update(select);
+        }
+    });
+}
+
 function hidratarModelos() {
     if (!Array.isArray(MODELOS_HIDRATADOS) || MODELOS_HIDRATADOS.length === 0) return;
 
@@ -645,14 +664,8 @@ function hidratarModelos() {
         select.value = dados.id;
 
         // 🔥 AGORA SIM: espera Alpine finalizar completamente
-        if (window.Alpine) {
-            Alpine.nextTick(() => {
-                const alpineData = Alpine.$data(bloco);
-                if (alpineData && typeof alpineData.update === "function") {
-                    alpineData.update(select);
-                }
-            });
-        }
+        atualizarBlocoAlpine(bloco, select);
+
     });
 
 }
@@ -687,14 +700,8 @@ function hidratarNormas() {
         select.value = dados.id;
 
         // 2️⃣ Aguarda Alpine finalizar completamente
-        if (window.Alpine) {
-            Alpine.nextTick(() => {
-                const alpineData = Alpine.$data(bloco);
-                if (alpineData && typeof alpineData.update === "function") {
-                    alpineData.update(select);
-                }
-            });
-        }
+        atualizarBlocoAlpine(bloco, select);
+
     });
 
 }
