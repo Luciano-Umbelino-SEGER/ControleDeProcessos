@@ -41,6 +41,12 @@ class Telefone(models.Model):
     def __str__(self):
         return f"{self.ddd} - {self.numero} - {self.ramal}"
 
+# ============================================================
+# Usuários
+# ============================================================
+# ============================================================
+# Usuários
+# ============================================================
 class Usuario(AbstractUser):
     """
     Modelo de usuário customizado baseado em AbstractUser,
@@ -50,10 +56,20 @@ class Usuario(AbstractUser):
     setor = models.CharField(max_length=100, null=True, blank=True)
     cargo = models.CharField(max_length=100, null=True, blank=True)
     funcao = models.CharField(max_length=100, null=True, blank=True)
-    perfil = models.ForeignKey("Perfil", null=True, blank=True, on_delete=models.SET_NULL)
+    perfil = models.ForeignKey(
+        "Perfil",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
     data_ativacaodesativacao = models.DateTimeField(default=timezone.now)
 
-    # campos obrigatórios além de USERNAME_FIELD
+    # 🔐 FLAG DE SISTEMA
+    is_master = models.BooleanField(
+        default=False,
+        help_text="Usuário Master do sistema (invisível e não excluível)"
+    )
+
     REQUIRED_FIELDS = ["email"]
 
     def __str__(self):
@@ -61,12 +77,48 @@ class Usuario(AbstractUser):
         cargo_nome = self.cargo if self.cargo else "Sem cargo"
         return f"{self.username} - {cargo_nome} - {perfil_nome}"
 
+    # ========================================================
+    # 🛡️ CAMADA 3 — BLINDAGEM NO MODEL
+    # ========================================================
+
+    def save(self, *args, **kwargs):
+        """
+        Impede alterações críticas no Usuário Master:
+        - não pode ser desativado
+        - não pode perder status de master
+        """
+        if self.pk:
+            original = Usuario.objects.get(pk=self.pk)
+
+            # 🔒 Master não pode ser desativado
+            if original.is_master and not self.is_active:
+                raise ValidationError(
+                    "Usuário master não pode ser desativado."
+                )
+
+            # 🔒 Master não pode perder status
+            if original.is_master and not self.is_master:
+                raise ValidationError(
+                    "Não é permitido remover o status de usuário master."
+                )
+
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Impede exclusão do Usuário Master em qualquer cenário
+        (views, admin, shell, scripts)
+        """
+        if self.is_master:
+            raise ValidationError(
+                "Usuário master é protegido pelo sistema e não pode ser excluído."
+            )
+        super().delete(*args, **kwargs)
 
 
 # ============================================================
 # CLASSIFICAÇÃO / MACROPROCESSOS
 # ============================================================
-
 class Classificacao(models.Model):
     nome = models.CharField(max_length=100)
     descricao = models.TextField(max_length=500)

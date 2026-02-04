@@ -18,7 +18,7 @@
 
     </div>
 
-    <!-- CENTRO: INFORMAÇÕES (UMA LINHA) -->
+    <!-- CENTRO: INFORMAÇÕES -->
     <div class="text-sm md:text-base text-center whitespace-nowrap">
       SEGER - GPP | Tel: (27) 3636-5272 | Email: gpp@seger.es.gov.br
     </div>
@@ -26,7 +26,15 @@
     <!-- DIREITA: USUÁRIO -->
     <div class="text-sm md:text-base text-right whitespace-nowrap">
       {% if user.is_authenticated %}
-        {{ user.first_name }} {{ user.last_name }} — {{ user.perfil.nome }}
+        {{ user.first_name }} {{ user.last_name }}
+        —
+        {% if user.is_master %}
+          <span class="font-semibold">Administrador do Sistema</span>
+        {% elif user.perfil %}
+          {{ user.perfil.nome }}
+        {% else %}
+          Sem perfil
+        {% endif %}
       {% endif %}
     </div>
 

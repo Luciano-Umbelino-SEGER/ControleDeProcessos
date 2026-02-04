@@ -5,7 +5,7 @@ import json
 import re
 from django.utils import timezone
 from django.utils.safestring import mark_safe
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -22,6 +22,8 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pathlib import Path
 from urllib.parse import unquote
 import mimetypes
+from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total
+from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
@@ -507,168 +509,34 @@ class BackLog(LoginRequiredMixin, ListView):
     template_name = 'backlog.html'
     model = Processo
 
-# ---------------------------
-# Usuário — Visualizar
-# ---------------------------
-class VisualizarUsuario(LoginRequiredMixin, DetailView):
-    template_name = 'usuario/form_usuario.html'
-    model = Usuario
-    context_object_name = 'usuario'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        usuario = self.get_object()
-        context['form'] = Form_UsuarioForm(instance=usuario, modo_visualizacao=True)
-        TelefoneFormSetVisualizacao = inlineformset_factory(
-            Usuario,
-            Telefone,
-            form=TelefoneForm,
-            extra=0,
-            can_delete=False
-        )
-        context['telefones'] = TelefoneFormSetVisualizacao(instance=usuario, prefix='telefones')
-        context.update({
-            'modo_visualizacao': True,
-            'modo_inclusao': False,
-            'modo_exclusao': False,
-            'modo_edicao': False,
-        })
-        return context
-
-# ---------------------------
-# Usuário — Editar
-# ---------------------------
-class EditarUsuario(LoginRequiredMixin, UpdateView):
-    template_name = 'usuario/form_usuario.html'
-    model = Usuario
-    form_class = EditarUsuarioForm
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        TelefoneFormSetEdicao = inlineformset_factory(
-            Usuario,
-            Telefone,
-            form=TelefoneForm,
-            extra=0,
-            can_delete=True
-        )
-
-        if self.request.POST:
-            context['telefones'] = TelefoneFormSetEdicao(self.request.POST, instance=self.object, prefix='telefones')
-        else:
-            context['telefones'] = TelefoneFormSetEdicao(instance=self.object, prefix='telefones')
-
-        context.update({
-            'modo_edicao': True,
-            'modo_inclusao': False,
-            'modo_visualizacao': False,
-            'modo_exclusao': False,
-        })
-        return context
-
-    def form_valid(self, form):
-        context = self.get_context_data()
-        telefones = context['telefones']
-
-        if not telefones.is_valid():
-            messages.error(self.request, "Corrija os erros abaixo nos telefones.")
-            return self.render_to_response(self.get_context_data(form=form))
-
-        self.object = form.save(commit=False)
-
-        if not self.object.date_joined:
-            self.object.date_joined = timezone.now()
-
-        is_active = self.request.POST.get("is_active")
-        self.object.is_active = is_active == "True"
-
-        password1 = form.cleaned_data.get("password1")
-        if password1:
-            self.object.set_password(password1)
-
-        self.object.save()
-
-        telefones.instance = self.object
-        telefones.save()
-
-        messages.success(self.request, f"Usuário {self.object.get_full_name()} atualizado com sucesso!")
-        return redirect(self.get_success_url())
-
-    def get_success_url(self):
-        return reverse('arquiteturaprocessos:cadastrousuarios')
-
-# -------------------------------
-# Usuário — Excluir (desativar)
-# -------------------------------
-class ExcluirUsuario(LoginRequiredMixin, DetailView):
-    template_name = 'usuario/form_usuario.html'
-    model = Usuario
-
-    def post(self, request, *args, **kwargs):
-        usuario = self.get_object()
-        usuario.is_active = False
-        usuario.data_ativacaodesativacao = timezone.now()
-        usuario.save()
-        messages.success(request, f"Usuário {usuario.get_full_name()} desativado com sucesso!")
-        return redirect('arquiteturaprocessos:cadastrousuarios')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        usuario = self.get_object()
-        usuario.is_active = False
-        usuario.data_ativacaodesativacao = timezone.now()
-        context['form'] = Form_UsuarioForm(
-            instance=usuario,
-            initial={
-                'is_active': False,
-                'data_ativacaodesativacao': timezone.now().strftime("%Y-%m-%d %H:%M:%S")
-            },
-            modo_exclusao=True
-        )
-        TelefoneFormSetExclusao = inlineformset_factory(
-            Usuario,
-            Telefone,
-            form=TelefoneForm,
-            extra=0,
-            can_delete=False
-        )
-        context['telefones'] = TelefoneFormSetExclusao(instance=usuario, prefix='telefones')
-        context.update({
-            'modo_exclusao': True,
-            'modo_visualizacao': False,
-            'modo_inclusao': False,
-            'modo_edicao': False,
-        })
-        return context
-
-# ---------------------------
+# ------------------------------
 # Cadastro / Listagem Usuários
-# ---------------------------
-class CadastroUsuarios(LoginRequiredMixin, ListView):
+# ------------------------------
+class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
     template_name = 'usuario/cadastrousuarios.html'
     model = Usuario
     context_object_name = 'usuarios'
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-
-        if not request.user.perfil or request.user.perfil.nome.casefold() != 'administrador':
-            messages.warning(request, "Você não tem permissão para acessar esta página.")
-            return redirect('arquiteturaprocessos:arquiteturaprocessos')
-
-        return super().dispatch(request, *args, **kwargs)
-
     def get_queryset(self):
         status = self.request.GET.get("status", "ativos")
-        if status == "inativos":
-            return Usuario.objects.filter(is_active=False).order_by("perfil__nome", "username")
-        return Usuario.objects.filter(is_active=True).order_by("perfil__nome", "username")
 
-# ---------------------------
+        queryset = Usuario.objects.filter(is_master=False)
+
+        if status == "inativos":
+            return queryset.filter(is_active=False).order_by(
+                "perfil__nome",
+                "username"
+            )
+
+        return queryset.filter(is_active=True).order_by(
+            "perfil__nome",
+            "username"
+        )
+
+# ----------------------------------------
 # Criar Usuário (com username automático)
-# ---------------------------
-class CriarUsuario(LoginRequiredMixin, CreateView):
+# ----------------------------------------
+class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
     template_name = 'usuario/form_usuario.html'
     form_class = Form_UsuarioForm
 
@@ -694,46 +562,194 @@ class CriarUsuario(LoginRequiredMixin, CreateView):
             messages.error(self.request, "Corrija os erros abaixo nos telefones.")
             return self.render_to_response(self.get_context_data(form=form))
 
-        # cria usuário sem salvar para ajustar username automático
         user = form.save(commit=False)
 
-        # Gera username automático nome.sobrenome
+        # 🔐 Garantia de segurança
+        user.is_master = False
+
         username = make_username_from_names(user.first_name, user.last_name)
         if not username:
             messages.error(self.request, "Nome e Sobrenome são necessários para gerar o username.")
             return self.render_to_response(self.get_context_data(form=form))
 
-        # se já existe, não cria e mostra mensagem (opção escolhida)
         if Usuario.objects.filter(username=username).exists():
-            messages.error(self.request, f"Não foi possível criar o usuário: o username '{username}' já existe. Ajuste Nome/Sobrenome.")
+            messages.error(
+                self.request,
+                f"Não foi possível criar o usuário: o username '{username}' já existe."
+            )
             return self.render_to_response(self.get_context_data(form=form))
 
         user.username = username
-
-        # auditoria e flags
         user.is_active = self.request.POST.get("is_active") == "True"
         user.data_ativacaodesativacao = timezone.now()
         user.date_joined = timezone.now()
 
-        try:
-            user.save()
-        except IntegrityError:
-            messages.error(self.request, f"Erro ao salvar usuário. Username '{username}' pode já existir.")
-            return self.render_to_response(self.get_context_data(form=form))
+        user.save()
 
-        # salva telefones vinculando ao usuário
         telefones.instance = user
         telefones.save()
 
         messages.success(self.request, f"Usuário {user.get_full_name()} criado com sucesso!")
         return redirect(self.get_success_url())
 
-    def form_invalid(self, form):
-        messages.error(self.request, "Por favor, corrija os erros abaixo.")
-        return self.render_to_response(self.get_context_data(form=form))
-
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')
+
+
+# ---------------------------
+# Usuário — Visualizar
+# ---------------------------
+class VisualizarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
+    template_name = 'usuario/form_usuario.html'
+    model = Usuario
+    context_object_name = 'usuario'
+
+    def get_object(self):
+        return get_object_or_404(
+            Usuario,
+            pk=self.kwargs['pk'],
+            is_master=False
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        usuario = self.object
+
+        context['form'] = Form_UsuarioForm(instance=usuario, modo_visualizacao=True)
+
+        TelefoneFormSetVisualizacao = inlineformset_factory(
+             Usuario,
+             Telefone,
+             form=TelefoneForm,
+             extra=0,
+             can_delete=False
+        )
+        context['telefones'] = TelefoneFormSetVisualizacao(instance=usuario, prefix='telefones')
+
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
+        return context
+
+# ---------------------------
+# Usuário — Editar
+# ---------------------------
+class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
+    template_name = 'usuario/form_usuario.html'
+    model = Usuario
+    form_class = EditarUsuarioForm
+
+    def get_object(self):
+        return get_object_or_404(
+            Usuario,
+            pk=self.kwargs['pk'],
+            is_master=False
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        TelefoneFormSetEdicao = inlineformset_factory(
+            Usuario,
+            Telefone,
+            form=TelefoneForm,
+            extra=0,
+            can_delete=True
+        )
+
+        if self.request.POST:
+            context['telefones'] = TelefoneFormSetEdicao(
+                self.request.POST,
+                instance=self.object,
+                prefix='telefones'
+            )
+        else:
+            context['telefones'] = TelefoneFormSetEdicao(
+                instance=self.object,
+                prefix='telefones'
+            )
+
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
+        return context
+
+# -------------------------------
+# Usuário — Excluir (desativar)
+# -------------------------------
+class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
+    template_name = 'usuario/form_usuario.html'
+    model = Usuario
+
+    def get_object(self):
+        usuario = get_object_or_404(
+            Usuario,
+            pk=self.kwargs['pk']
+        )
+
+        # 🛡️ TRAVA ABSOLUTA — Usuário Master
+        if usuario.is_master:
+            messages.error(
+                self.request,
+                "Este usuário é protegido pelo sistema e não pode ser desativado."
+            )
+            raise PermissionDenied
+
+        return usuario
+
+    def post(self, request, *args, **kwargs):
+        usuario = self.get_object()
+
+        usuario.is_active = False
+        usuario.data_ativacaodesativacao = timezone.now()
+        usuario.save()
+
+        messages.success(
+            request,
+            f"Usuário {usuario.get_full_name()} desativado com sucesso!"
+        )
+        return redirect('arquiteturaprocessos:cadastrousuarios')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        usuario = self.object
+
+        context['form'] = Form_UsuarioForm(
+            instance=usuario,
+            initial={
+                'is_active': False,
+                'data_ativacaodesativacao': timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+            },
+            modo_exclusao=True
+        )
+
+        TelefoneFormSetExclusao = inlineformset_factory(
+            Usuario,
+            Telefone,
+            form=TelefoneForm,
+            extra=0,
+            can_delete=False
+        )
+
+        context['telefones'] = TelefoneFormSetExclusao(
+            instance=usuario,
+            prefix='telefones'
+        )
+
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
+        return context
+
 
 # ---------------------------------
 # LogAcoes — lista de logs (admin)
