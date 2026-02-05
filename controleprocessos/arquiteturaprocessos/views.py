@@ -214,6 +214,11 @@ def alterar_senha(request):
         form = PasswordChangeForm(user=request.user, data=request.POST)
         if form.is_valid():
             user = form.save()
+
+            # 🔓 Libera o sistema após troca real de senha
+            user.must_change_password = False
+            user.save()
+
             update_session_auth_hash(request, user)  # mantém usuário logado
 
             messages.success(
@@ -596,6 +601,9 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
 
         # 🔐 Garantia de segurança
         user.is_master = False
+
+        # 🔐 Primeiro acesso exige troca de senha
+        user.must_change_password = True
 
         username = make_username_from_names(user.first_name, user.last_name)
         if not username:

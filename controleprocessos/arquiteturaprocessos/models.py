@@ -69,7 +69,7 @@ class Usuario(AbstractUser):
     )
 
     must_change_password = models.BooleanField(
-        default=False,
+        default=True,
         help_text="Usuário deve trocar a senha no próximo login"
     )
 
