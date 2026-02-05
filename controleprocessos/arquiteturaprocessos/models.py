@@ -41,9 +41,7 @@ class Telefone(models.Model):
     def __str__(self):
         return f"{self.ddd} - {self.numero} - {self.ramal}"
 
-# ============================================================
-# Usuários
-# ============================================================
+
 # ============================================================
 # Usuários
 # ============================================================
@@ -68,6 +66,11 @@ class Usuario(AbstractUser):
     is_master = models.BooleanField(
         default=False,
         help_text="Usuário Master do sistema (invisível e não excluível)"
+    )
+
+    must_change_password = models.BooleanField(
+        default=False,
+        help_text="Usuário deve trocar a senha no próximo login"
     )
 
     REQUIRED_FIELDS = ["email"]

@@ -3,13 +3,18 @@ from datetime import datetime
 import os
 import json
 import re
+
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
@@ -19,6 +24,7 @@ from django.db.models import Q, Max, Exists, OuterRef
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_sameorigin
+
 from pathlib import Path
 from urllib.parse import unquote
 import mimetypes
@@ -199,6 +205,30 @@ class CustomLoginView(LoginView):
             return redirect('arquiteturaprocessos:arquiteturaprocessos')
         return super().dispatch(request, *args, **kwargs)
 
+# ---------------------------
+# Alterar Senha
+# ---------------------------
+@login_required
+def alterar_senha(request):
+    if request.method == "POST":
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # mantém usuário logado
+
+            messages.success(
+                request,
+                "Senha alterada com sucesso."
+            )
+            return redirect("arquiteturaprocessos:arquiteturaprocessos")
+    else:
+        form = PasswordChangeForm(user=request.user)
+
+    return render(
+        request,
+        "usuario/alterar_senha.html",
+        {"form": form}
+    )
 # ---------------------------
 # Classificações CRUD
 # ---------------------------

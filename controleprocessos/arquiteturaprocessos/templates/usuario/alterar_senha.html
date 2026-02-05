@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block titulo %}
+Alterar Senha
+{% endblock %}
+
+{% block body %}
+<header class="w-[500px] min-h-[40vh] mx-auto bg-blue-50 bg-blend-overlay showcase border-blue-800 border-2 rounded-lg flex justify-center items-center bg-no-repeat">
+    <div class="container showcase d-flex justify-content-center align-items-center min-vh-75 py-5">
+      <div class="z-10 h-full py-32 md:py-0 text-blue-800 text-center flex items-center flex-col">
+
+        <form method="post">
+            {% csrf_token %}
+
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">
+                    🔐 Altere sua senha
+                </legend>
+
+                {{ form|crispy }}
+            </fieldset>
+
+            <div class="flex gap-2 mt-4">
+              <button
+                class="bg-blue-600 py-1 px-3 w-full text-white md:text-lg rounded-md hover:bg-blue-700 transition"
+                type="submit">
+                Salvar nova senha
+              </button>
+
+              <a class="py-1 px-3 w-full text-center md:text-lg rounded-md border bg-gray-300 border-gray-400 text-gray-800 hover:bg-gray-400 transition"
+                 href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}">
+                Cancelar
+              </a>
+          </a>
+            </div>
+
+        </form>
+
+      </div>
+    </div>
+</header>
+{% endblock %}

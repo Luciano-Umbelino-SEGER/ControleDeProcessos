@@ -37,6 +37,8 @@ urlpatterns = [
     path('usuario/<int:pk>/visualizar/', VisualizarUsuario.as_view(), name='visualizar_usuario'),
     path('usuario/<int:pk>/editar/', EditarUsuario.as_view(), name='editar_usuario'),
     path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
+    # --> Perfil Usuário
+    path('usuario/alterar_senha/', views.alterar_senha, name='alterar_senha'),
     # Log de Ações
     path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     # Login
