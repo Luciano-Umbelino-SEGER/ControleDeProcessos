@@ -29,11 +29,12 @@ Alterar Senha
                 Salvar nova senha
               </button>
 
-              <a class="py-1 px-3 w-full text-center md:text-lg rounded-md border bg-gray-300 border-gray-400 text-gray-800 hover:bg-gray-400 transition"
-                 href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}">
-                Cancelar
-              </a>
-          </a>
+              {% if not request.user.must_change_password %}
+                  <a class="py-1 px-3 w-full text-center md:text-lg rounded-md border bg-gray-300 border-gray-400 text-gray-800 hover:bg-gray-400 transition"
+                     href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}">
+                    Cancelar
+                  </a>
+              {% endif %}
             </div>
 
         </form>
