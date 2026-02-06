@@ -56,65 +56,135 @@
 
       {# --- CAMPOS USUÁRIO --- #}
       {% for field in form %}
-      <div class="flex flex-col">
-        <label class="text-sm font-medium text-blue-800 mb-1"
-               {% if field.id_for_label %} for="{{ field.id_for_label }}" {% endif %}>
-          {{ field.label }}
-        </label>
-
-        {% if field.name == "password1" or field.name == "password2" %}
-          {% if modo_inclusao %}
-            {{ field }}
-          {% else %}
-            {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
-          {% endif %}
-        {% else %}
-          {% if field.name == "date_joined" or field.name == "data_ativacaodesativacao" %}
-            {{ field|disable_field:"bg-gray-100 text-black border border-gray-800" }}
-          {% else %}
-            {{ field }}
-          {% endif %}
-        {% endif %}
-
-        {% if field.errors %}
-          <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
-        {% endif %}
-      </div>
-
-      {% if field.name == "perfil" %}
-      <div class="flex flex-col md:flex-row gap-4 items-center mt-2">
-        <div class="flex flex-col border rounded p-2 items-center">
-          <label class="text-sm font-medium text-blue-800 mb-2 text-center">Status Usuário</label>
-          <div class="flex gap-4">
-            <label class="flex items-center text-blue-800 gap-1">
-              <input type="radio" name="is_active" value="True"
-                     {% if form.instance.is_active %}checked{% endif %}
-                     {% if modo_visualizacao or modo_exclusao %}disabled readonly{% endif %}/> Ativo
+        {% if field.name != "funcao" and field.name != "perfil" and field.name != "date_joined" and field.name != "data_ativacaodesativacao" %}
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-blue-800 mb-1"
+                   {% if field.id_for_label %} for="{{ field.id_for_label }}" {% endif %}>
+              {{ field.label }}
             </label>
-            <label class="flex items-center text-blue-800 gap-1">
-              <input type="radio" name="is_active" value="False"
-                     {% if not form.instance.is_active %}checked{% endif %}
-                     {% if modo_visualizacao or modo_exclusao %}disabled readonly{% endif %}/> Inativo
-            </label>
+
+            {{ field }}
+
+            {% if field.errors %}
+              <p class="text-sm text-red-600 mt-1">
+                {{ field.errors|striptags }}
+              </p>
+            {% endif %}
           </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- FUNÇÃO + PERFIL -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Função -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-blue-800 mb-1">
+              {{ form.funcao.label }}
+            </label>
+            {{ form.funcao }}
+            {% if form.funcao.errors %}
+              <p class="text-sm text-red-600 mt-1">
+                {{ form.funcao.errors|striptags }}
+              </p>
+            {% endif %}
+          </div>
+
+          <!-- Perfil -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-blue-800 mb-1">
+              {{ form.perfil.label }}
+            </label>
+            {{ form.perfil }}
+            {% if form.perfil.errors %}
+              <p class="text-sm text-red-600 mt-1">
+                {{ form.perfil.errors|striptags }}
+              </p>
+            {% endif %}
+          </div>
+
         </div>
-        <div class="flex flex-col">
-          <label class="text-sm font-medium text-blue-800 mb-1">Data Ativação/Desativação</label>
-          <input class="border border-gray-800 rounded px-2 py-1 bg-gray-100 text-black max-w-[180px] truncate"
-                 disabled readonly
-                 id="data-ativacao" name="data_ativacaodesativacao" type="text"
-                 value="{{ form.instance.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"/>
+      </div>
+      
+      <!-- STATUS + DATAS + RESET SENHA -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-3">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end mt-2">
+
+          <!-- Status Usuário -->
+          <div class="flex flex-col border rounded p-3 items-center">
+            <label class="text-sm font-medium text-blue-800 mb-2">
+              Status Usuário
+            </label>
+            <div class="flex gap-4">
+              <label class="flex items-center text-blue-800 gap-1">
+                <input
+                  type="radio"
+                  name="is_active"
+                  value="True"
+                  {% if form.instance.is_active %}checked{% endif %}
+                  {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}
+                >
+                Ativo
+              </label>
+              <label class="flex items-center text-blue-800 gap-1">
+                <input
+                  type="radio"
+                  name="is_active"
+                  value="False"
+                  {% if not form.instance.is_active %}checked{% endif %}
+                  {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}
+                >
+                Inativo
+              </label>
+            </div>
+          </div>
+
+          <!-- Data Ativação/Desativação -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-blue-800 mb-1">
+              Data Ativação/Desativação
+            </label>
+            <input
+              class="border border-gray-800 rounded px-3 py-2 bg-gray-100 text-black min-w-[230px]"
+              disabled
+              readonly
+              value="{{ form.instance.data_ativacaodesativacao|date:'d/m/Y H:i:s' }}"
+            >
+          </div>
+
+          <!-- Data Cadastro -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-blue-800 mb-1">
+              Data Cadastro
+            </label>
+            <input
+              class="border border-gray-800 rounded px-3 py-2 bg-gray-100 text-black min-w-[230px]"
+              disabled
+              readonly
+              value="{{ form.instance.date_joined|date:'d/m/Y H:i:s' }}"
+            >
+          </div>
+
+          <!-- Resetar Senha -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-blue-800 mb-1">
+              &nbsp;
+            </label>
+            <button
+              type="button"
+              disabled
+              class="w-full bg-gray-300 text-gray-600 font-semibold py-2 px-4 rounded
+                     cursor-not-allowed flex items-center justify-center gap-2"
+              title="Reset de senha disponível apenas para administradores"
+            >
+              🔐 Resetar Senha
+            </button>
+          </div>
+
         </div>
       </div>
 
-      <div class="flex flex-col mt-2">
-        <label class="text-sm font-medium text-blue-800 mb-1">Data Cadastro</label>
-        <input class="border border-gray-800 rounded px-2 py-1 bg-gray-100 text-black"
-               disabled readonly
-               name="date_joined" type="text" value="{{ form.instance.date_joined|date:'d/m/Y H:i:s' }}"/>
-      </div>
-      {% endif %}
-      {% endfor %}
 
       {# --- TELEFONES --- #}
       <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-1">

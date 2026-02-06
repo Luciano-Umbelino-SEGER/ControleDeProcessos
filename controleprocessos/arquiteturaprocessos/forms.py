@@ -86,7 +86,7 @@ class EmailAuthenticationForm(AuthenticationForm):
 # ============================================================
 # FORMULÁRIO DE USUÁRIO (CRIAÇÃO) — versão estável (username editável)
 # ============================================================
-class Form_UsuarioForm(UserCreationForm):
+class Form_UsuarioForm(forms.ModelForm):
     """
     Formulário para criação de usuário (mantém username editável).
     Desabilita campos nos modos visualização/exclusão.
@@ -98,7 +98,6 @@ class Form_UsuarioForm(UserCreationForm):
         fields = (
             "username", "first_name", "last_name", "email",
             "setor", "cargo", "funcao", "perfil",
-            "password1", "password2",
         )
 
     def __init__(self, *args, **kwargs):
@@ -119,8 +118,6 @@ class Form_UsuarioForm(UserCreationForm):
             "first_name": "given-name",
             "last_name": "family-name",
             "email": "email",
-            "password1": "new-password",
-            "password2": "new-password",
         }
 
         for name, field in self.fields.items():
@@ -161,23 +158,12 @@ class Form_UsuarioForm(UserCreationForm):
 # ============================================================
 class EditarUsuarioForm(forms.ModelForm):
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
-    password1 = forms.CharField(
-        label="Senha",
-        widget=forms.PasswordInput(attrs={'placeholder': 'Senha'}),
-        required=False
-    )
-    password2 = forms.CharField(
-        label="Confirmação de Senha",
-        widget=forms.PasswordInput(attrs={'placeholder': 'Confirme a Senha'}),
-        required=False
-    )
 
     class Meta:
         model = Usuario
         fields = (
             "username", "first_name", "last_name", "email",
             "setor", "cargo", "funcao", "perfil",
-            "password1", "password2"
         )
 
     def __init__(self, *args, **kwargs):
@@ -195,15 +181,13 @@ class EditarUsuarioForm(forms.ModelForm):
             "first_name": "given-name",
             "last_name": "family-name",
             "email": "email",
-            "password1": "new-password",
-            "password2": "new-password",
         }
 
         for name, field in self.fields.items():
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = (existing + " " + base).strip()
             input_type = getattr(field.widget, "input_type", "")
-            if input_type in {"text", "email", "password"}:
+            if input_type in {"text", "email"}:
                 field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = autocomplete_map.get(name, "off")
 
@@ -215,25 +199,6 @@ class EditarUsuarioForm(forms.ModelForm):
                 choices = list(f.choices)
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
-
-    def clean(self):
-        cleaned_data = super().clean()
-        password1 = cleaned_data.get("password1")
-        password2 = cleaned_data.get("password2")
-
-        # Se for inclusão (instance sem pk) valida senha; ao editar (pk existe) só valida se os campos foram preenchidos
-        if self.instance.pk is None:
-            if not password1 or not password2:
-                raise forms.ValidationError("Os campos de senha são obrigatórios.")
-            if password1 != password2:
-                raise forms.ValidationError("As senhas não coincidem.")
-        else:
-            # se algum dos campos de senha foi preenchido, exige que os dois coincidam
-            if password1 or password2:
-                if password1 != password2:
-                    raise forms.ValidationError("As senhas não coincidem.")
-        return cleaned_data
-
 
 # ============================================================
 # TELEFONE + FORMSET
