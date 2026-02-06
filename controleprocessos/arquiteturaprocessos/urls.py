@@ -17,8 +17,6 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
-
-
 app_name = "arquiteturaprocessos"
 
 urlpatterns = [
@@ -39,6 +37,7 @@ urlpatterns = [
     path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
     # --> Perfil Usuário
     path('usuario/alterar_senha/', views.alterar_senha, name='alterar_senha'),
+    path('usuario/<int:pk>/resetar-senha/', views.resetar_senha_usuario,name='resetar_senha_usuario'),
     # Log de Ações
     path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     # Login

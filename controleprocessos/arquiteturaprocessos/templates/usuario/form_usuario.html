@@ -167,24 +167,26 @@
           </div>
 
           <!-- Resetar Senha -->
-          <div class="flex flex-col">
-            <label class="text-sm font-medium text-blue-800 mb-1">
-              &nbsp;
+          <div class="flex flex-col items-end justify-end">
+            <label class="text-sm font-medium text-blue-800 mb-1 invisible">
+              Reset
             </label>
-            <button
-              type="button"
-              disabled
-              class="w-full bg-gray-300 text-gray-600 font-semibold py-2 px-4 rounded
-                     cursor-not-allowed flex items-center justify-center gap-2"
-              title="Reset de senha disponível apenas para administradores"
-            >
-              🔐 Resetar Senha
-            </button>
+
+            <a href="{% url 'arquiteturaprocessos:resetar_senha_usuario' form.instance.id %}"
+               class="flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold w-48 transition
+                      {% if modo_edicao %}
+                        bg-gray-200 hover:bg-gray-300 text-gray-800 border border-gray-400
+                      {% else %}
+                        bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none
+                      {% endif %}"
+               title="Reset de senha disponível apenas no modo edição">
+               🔐 Resetar Senha
+            </a>
           </div>
+
 
         </div>
       </div>
-
 
       {# --- TELEFONES --- #}
       <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-1">
@@ -257,12 +259,16 @@
               <button
                 type="button"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48"
-                @click="$dispatch('abrir-modal-confirmacao', {
-                    url: '{% url "arquiteturaprocessos:excluir_usuario" form.instance.id %}',
-                    mensagem: 'Será realizada uma <strong>exclusão lógica</strong>.<br>Confirma a desativação do usuário <strong>{{ form.instance.username }}</strong>?'
-                })">
+                data-url-exclusao="{% url 'arquiteturaprocessos:excluir_usuario' form.instance.pk %}"
+                @click="
+                  $dispatch('abrir-modal-confirmacao', {
+                    url: $el.dataset.urlExclusao,
+                    mensagem: 'Será realizada uma <strong>exclusão lógica</strong>.<br>'
+                             + 'Confirma a desativação do usuário '
+                             + '<strong>{{ form.instance.username }}</strong>?'})">
                 Confirmar Exclusão
               </button>
+
             {% elif modo_edicao %}
               <button type="submit"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-48">

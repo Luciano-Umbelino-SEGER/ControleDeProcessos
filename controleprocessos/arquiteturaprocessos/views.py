@@ -28,9 +28,9 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pathlib import Path
 from urllib.parse import unquote
 import mimetypes
-from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total
+from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
-from arquiteturaprocessos.utils.utils import gerar_senha_temporaria_e_aplicar
+from arquiteturaprocessos.utils.utils import definir_senha_e_enviar_email
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
@@ -235,6 +235,33 @@ def alterar_senha(request):
         "usuario/alterar_senha.html",
         {"form": form}
     )
+
+@login_required
+def resetar_senha_usuario(request, pk):
+    # 🔒 Controle de acesso
+    if not usuario_tem_acesso_total(request.user):
+        messages.error(
+            request,
+            "Você não tem permissão para resetar a senha de usuários."
+        )
+        return redirect("arquiteturaprocessos:cadastrousuarios")
+
+    usuario = get_object_or_404(
+        Usuario,
+        pk=pk,
+        is_master=False  # 🔐 nunca resetar master
+    )
+
+    definir_senha_e_enviar_email(usuario, reset=True)
+
+    messages.success(
+        request,
+        f"A senha do usuário {usuario.username} foi redefinida com sucesso. "
+        "Uma nova senha temporária foi enviada por e-mail."
+    )
+
+    return redirect("arquiteturaprocessos:cadastrousuarios")
+
 # ---------------------------
 # Classificações CRUD
 # ---------------------------
@@ -628,7 +655,7 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
         user.save()
 
         # 🔐 Geração de senha temporária (Parte 5.2)
-        senha_temporaria = gerar_senha_temporaria_e_aplicar(user)
+        definir_senha_e_enviar_email(user)
 
         # Telefones
         telefones.instance = user

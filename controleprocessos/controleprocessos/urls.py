@@ -16,8 +16,9 @@ from arquiteturaprocessos.utils.media_serve_safe import media_serve_allow_iframe
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('arquiteturaprocessos.urls', namespace='arquiteturaprocessos')),
+    path('', include(('arquiteturaprocessos.urls', 'arquiteturaprocessos'), namespace='arquiteturaprocessos')),
 ]
+
 
 # --- Servindo arquivos de mídia em modo DEBUG com permissão para iframe ---
 if settings.DEBUG:
