@@ -55,56 +55,51 @@ def definir_senha_e_enviar_email(usuario, *, reset=False):
     usuario.must_change_password = True
     usuario.save(update_fields=["password", "must_change_password"])
 
-    # 📧 Conteúdo do e-mail
-    assunto = "SIGEMP — Senha temporária de acesso"
+    nome = usuario.get_full_name() or usuario.username
 
     if reset:
+        assunto = "SIGEMP — Senha redefinida"
         mensagem = f"""
-                    Assunto: SIGEMP — Senha redefinida
+Olá {nome},
 
-                    Olá {{ nome_usuario }},
-                    
-                    Sua senha de acesso ao SIGEMP foi redefinida por um administrador do sistema.
-                    
-                    Segue abaixo sua nova senha temporária:
-                    
-                    Senha temporária: {{ senha }}
-                    
-                    ⚠️ Importante:
-                    Ao acessar o sistema, será obrigatório criar uma nova senha.
-                    Essa ação é necessária para garantir a segurança da sua conta.
-                    
-                    Se você não solicitou esta redefinição ou identificar qualquer comportamento incomum,
-                    entre em contato com o administrador do sistema imediatamente.
-                    
-                    Atenciosamente,
-                    SIGEMP - Sistema de Gestão de Monitoramento de Processos
-                    """
+Sua senha de acesso ao SIGEMP foi redefinida por um administrador do sistema.
+
+Senha temporária:
+{senha_temporaria}
+
+⚠️ Importante:
+No próximo acesso ao sistema, será obrigatório criar uma nova senha.
+Essa medida é necessária para garantir a segurança da sua conta.
+
+Caso você não reconheça esta ação ou identifique qualquer irregularidade,
+entre em contato com o administrador do sistema.
+
+Atenciosamente,
+SIGEMP — Sistema de Gestão de Monitoramento de Processos
+"""
     else:
+        assunto = "SIGEMP — Acesso criado com sucesso"
         mensagem = f"""
-                    Olá {usuario.get_full_name() or usuario.username},
-                    
-                    Assunto: SIGEMP — Acesso criado com sucesso
+Olá {nome},
 
-                    Olá {{ nome_usuario }},
-                    
-                    Seu acesso ao SIGEMP (Sistema de Gestão de Monitoramento de Processos) foi criado com sucesso.
-                    
-                    Abaixo estão suas credenciais iniciais de acesso:
-                    
-                    Usuário: {{ username }}
-                    Senha temporária: {{ senha }}
-                    
-                    ⚠️ Importante:
-                    No primeiro acesso ao sistema, será obrigatório criar uma nova senha de sua escolha.
-                    Essa medida garante a segurança das suas informações.
-                    
-                    Caso você não reconheça este cadastro ou tenha qualquer dificuldade de acesso,
-                    entre em contato com o administrador do sistema.
-                    
-                    Atenciosamente,
-                    SIGEMP - Sistema de Gestão de Monitoramento de Processos
-                    """
+Seu acesso ao SIGEMP (Sistema de Gestão de Monitoramento de Processos)
+foi criado com sucesso.
+
+Credenciais de acesso:
+
+Usuário: {usuario.username}
+Senha temporária: {senha_temporaria}
+
+⚠️ Importante:
+No primeiro acesso ao sistema, será obrigatório criar uma nova senha.
+Essa medida garante a segurança das suas informações.
+
+Caso você não reconheça este cadastro ou tenha qualquer dificuldade de acesso,
+entre em contato com o administrador do sistema.
+
+Atenciosamente,
+SIGEMP — Sistema de Gestão de Monitoramento de Processos
+"""
 
     send_mail(
         subject=assunto,
@@ -113,3 +108,4 @@ def definir_senha_e_enviar_email(usuario, *, reset=False):
         recipient_list=[usuario.email],
         fail_silently=False,
     )
+
