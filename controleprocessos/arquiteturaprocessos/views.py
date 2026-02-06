@@ -30,6 +30,7 @@ from urllib.parse import unquote
 import mimetypes
 from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
+from arquiteturaprocessos.utils.utils import gerar_senha_temporaria_e_aplicar
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
@@ -567,7 +568,7 @@ class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
             "perfil__nome",
             "username"
         )
-
+# Aqui 1
 # ----------------------------------------
 # Criar Usuário (com username automático)
 # ----------------------------------------
@@ -599,15 +600,16 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
 
         user = form.save(commit=False)
 
-        # 🔐 Garantia de segurança
+        # 🔐 Garantias de segurança
         user.is_master = False
 
-        # 🔐 Primeiro acesso exige troca de senha
-        user.must_change_password = True
-
+        # Username automático
         username = make_username_from_names(user.first_name, user.last_name)
         if not username:
-            messages.error(self.request, "Nome e Sobrenome são necessários para gerar o username.")
+            messages.error(
+                self.request,
+                "Nome e Sobrenome são necessários para gerar o username."
+            )
             return self.render_to_response(self.get_context_data(form=form))
 
         if Usuario.objects.filter(username=username).exists():
@@ -622,12 +624,22 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
         user.data_ativacaodesativacao = timezone.now()
         user.date_joined = timezone.now()
 
+        # Salva para obter PK
         user.save()
 
+        # 🔐 Geração de senha temporária (Parte 5.2)
+        senha_temporaria = gerar_senha_temporaria_e_aplicar(user)
+
+        # Telefones
         telefones.instance = user
         telefones.save()
 
-        messages.success(self.request, f"Usuário {user.get_full_name()} criado com sucesso!")
+        # (Parte 5.3) — envio de e-mail com senha_temporaria
+
+        messages.success(
+            self.request,
+            f"Usuário {user.get_full_name()} criado com sucesso!"
+        )
         return redirect(self.get_success_url())
 
     def get_success_url(self):
@@ -1502,7 +1514,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
 
         return context
-# Aqui 1 #
+
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
