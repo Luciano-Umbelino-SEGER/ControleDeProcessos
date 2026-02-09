@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from decouple import config
+import logging
 
 # =========================
 # Paths / Ambiente (.env)
@@ -17,9 +18,21 @@ if env_file.exists():
     load_dotenv(env_file)
     CURRENT_ENV_FILE = str(env_file)
 else:
-    if fallback_env.exists():
+    if DJANGO_ENV == "prod":
+        raise RuntimeError("Arquivo .env.prod não encontrado!")
+    elif fallback_env.exists():
         load_dotenv(fallback_env)
         CURRENT_ENV_FILE = str(fallback_env)
+
+# print(">>> DJANGO_ENV =", DJANGO_ENV)
+# print(">>> ENV FILE =", CURRENT_ENV_FILE)
+
+# =========================
+# Debug ambiente
+# =========================
+logger = logging.getLogger(__name__)
+
+logger.info(f"Ambiente carregado: {CURRENT_ENV_FILE}")
 
 # =========================
 # Configs base
@@ -144,8 +157,24 @@ LOGOUT_REDIRECT_URL = 'arquiteturaprocessos:arquiteturaprocessos'
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-# Email (console por padrão)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 25))
+
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS") == "True"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL") == "True"
+
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "elpi@seger.es.gov.br"
+)
+
+
 
 # Segurança: permitir PDF em iframe no mesmo domínio
 X_FRAME_OPTIONS = 'SAMEORIGIN'
