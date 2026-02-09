@@ -216,11 +216,7 @@ def alterar_senha(request):
         if form.is_valid():
             user = form.save()
 
-            # 🔓 Libera o sistema após troca real de senha
-            user.must_change_password = False
-            user.save()
-
-            update_session_auth_hash(request, user)  # mantém usuário logado
+            update_session_auth_hash(request, user)
 
             messages.success(
                 request,
@@ -238,29 +234,30 @@ def alterar_senha(request):
 
 @login_required
 def resetar_senha_usuario(request, pk):
-    # 🔒 Controle de acesso
     if not usuario_tem_acesso_total(request.user):
         messages.error(
             request,
-            "Você não tem permissão para resetar a senha de usuários."
+            "Você não tem permissão para reenviar link de senha."
         )
         return redirect("arquiteturaprocessos:cadastrousuarios")
 
     usuario = get_object_or_404(
         Usuario,
         pk=pk,
-        is_master=False  # 🔐 nunca resetar master
+        is_master=False
     )
 
     definir_senha_e_enviar_email(usuario, reset=True)
 
     messages.success(
         request,
-        f"A senha do usuário {usuario.username} foi redefinida com sucesso. "
-        "Uma nova senha temporária foi enviada por e-mail."
+        f"Um link para redefinição de senha foi enviado para "
+        f"{usuario.get_full_name() or usuario.username}."
     )
 
     return redirect("arquiteturaprocessos:cadastrousuarios")
+
+
 
 # ---------------------------
 # Classificações CRUD
@@ -629,6 +626,7 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
 
         # 🔐 Garantias de segurança
         user.is_master = False
+        user.set_unusable_password()
 
         # Username automático
         username = make_username_from_names(user.first_name, user.last_name)
@@ -654,8 +652,14 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
         # Salva para obter PK
         user.save()
 
-        # 🔐 Geração de senha temporária (Parte 5.2)
-        definir_senha_e_enviar_email(user)
+        # 🔐 Envio de e-mail para definição de senha
+        try:
+            definir_senha_e_enviar_email(user, reset=False)
+        except Exception as e:
+            messages.warning(
+                self.request,
+                "Usuário criado, mas houve falha no envio do e-mail de definição de senha."
+            )
 
         # Telefones
         telefones.instance = user

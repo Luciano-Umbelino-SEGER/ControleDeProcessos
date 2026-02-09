@@ -2,7 +2,10 @@ import secrets
 import string
 from django.conf import settings
 from django.core.mail import send_mail
-
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.urls import reverse
 
 # ============================================================
 # Controle de acesso
@@ -23,82 +26,43 @@ def usuario_tem_acesso_total(user):
 
     return False
 
-
-# ============================================================
-# 🔐 Utilitário interno — geração de senha forte
-# ============================================================
-def _gerar_senha_forte(tamanho=12):
-    caracteres = (
-        string.ascii_uppercase +
-        string.ascii_lowercase +
-        string.digits +
-        "!@#$%&*"
-    )
-    return "".join(secrets.choice(caracteres) for _ in range(tamanho))
-
-
 # ============================================================
 # 🔐 Função pública — definir senha e enviar e-mail
 # ============================================================
 def definir_senha_e_enviar_email(usuario, *, reset=False):
-    """
-    Gera senha temporária, aplica no usuário, força troca no
-    próximo login e envia e-mail.
+    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
+    token = default_token_generator.make_token(usuario)
 
-    Usada tanto no cadastro quanto no reset de senha.
-    """
-
-    senha_temporaria = _gerar_senha_forte()
-
-    # 🔐 Aplica senha criptografada
-    usuario.set_password(senha_temporaria)
-    usuario.must_change_password = True
-    usuario.save(update_fields=["password", "must_change_password"])
+    link = reverse(
+        'password_reset_confirm',
+        kwargs={'uidb64': uid, 'token': token}
+    )
 
     nome = usuario.get_full_name() or usuario.username
 
     if reset:
-        assunto = "SIGEMP — Senha redefinida"
+        assunto = "SIGEMP — Redefinição de senha"
         mensagem = f"""
 Olá {nome},
 
-Sua senha de acesso ao SIGEMP foi redefinida por um administrador do sistema.
+Recebemos uma solicitação para redefinição da sua senha no SIGEMP.
 
-Senha temporária:
-{senha_temporaria}
+Para criar uma nova senha, acesse o link abaixo:
+{settings.SITE_URL}{link}
 
-⚠️ Importante:
-No próximo acesso ao sistema, será obrigatório criar uma nova senha.
-Essa medida é necessária para garantir a segurança da sua conta.
-
-Caso você não reconheça esta ação ou identifique qualquer irregularidade,
-entre em contato com o administrador do sistema.
-
-Atenciosamente,
-SIGEMP — Sistema de Gestão de Monitoramento de Processos
+Se você não solicitou essa ação, ignore este e-mail.
 """
     else:
         assunto = "SIGEMP — Acesso criado com sucesso"
         mensagem = f"""
 Olá {nome},
 
-Seu acesso ao SIGEMP (Sistema de Gestão de Monitoramento de Processos)
-foi criado com sucesso.
-
-Credenciais de acesso:
+Seu acesso ao SIGEMP foi criado com sucesso.
 
 Usuário: {usuario.username}
-Senha temporária: {senha_temporaria}
 
-⚠️ Importante:
-No primeiro acesso ao sistema, será obrigatório criar uma nova senha.
-Essa medida garante a segurança das suas informações.
-
-Caso você não reconheça este cadastro ou tenha qualquer dificuldade de acesso,
-entre em contato com o administrador do sistema.
-
-Atenciosamente,
-SIGEMP — Sistema de Gestão de Monitoramento de Processos
+Para definir sua senha de acesso, clique no link abaixo:
+{settings.SITE_URL}{link}
 """
 
     send_mail(
@@ -108,4 +72,5 @@ SIGEMP — Sistema de Gestão de Monitoramento de Processos
         recipient_list=[usuario.email],
         fail_silently=False,
     )
+
 

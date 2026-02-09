@@ -10,7 +10,6 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
-from django.urls import reverse
 
 # ============================================================
 # PERFIL / USUÁRIO / TELEFONE
@@ -66,11 +65,6 @@ class Usuario(AbstractUser):
     is_master = models.BooleanField(
         default=False,
         help_text="Usuário Master do sistema (invisível e não excluível)"
-    )
-
-    must_change_password = models.BooleanField(
-        default=True,
-        help_text="Usuário deve trocar a senha no próximo login"
     )
 
     REQUIRED_FIELDS = ["email"]
