@@ -53,6 +53,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8001',
 ]
 
+# URL base do sistema
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
+
+
 # Sessões no banco (isola por DB)
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
@@ -96,6 +100,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'arquiteturaprocessos.middleware.ForceLogoutOnPasswordResetMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

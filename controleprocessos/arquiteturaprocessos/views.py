@@ -232,6 +232,9 @@ def alterar_senha(request):
         {"form": form}
     )
 
+# ---------------------------
+# Resetar Senha
+# ---------------------------
 @login_required
 def resetar_senha_usuario(request, pk):
     if not usuario_tem_acesso_total(request.user):
@@ -256,8 +259,6 @@ def resetar_senha_usuario(request, pk):
     )
 
     return redirect("arquiteturaprocessos:cadastrousuarios")
-
-
 
 # ---------------------------
 # Classificações CRUD

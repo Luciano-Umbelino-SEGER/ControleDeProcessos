@@ -33,36 +33,54 @@ def definir_senha_e_enviar_email(usuario, *, reset=False):
     uid = urlsafe_base64_encode(force_bytes(usuario.pk))
     token = default_token_generator.make_token(usuario)
 
-    link = reverse(
-        'password_reset_confirm',
-        kwargs={'uidb64': uid, 'token': token}
+    link = settings.SITE_URL + reverse(
+        "arquiteturaprocessos:password_reset_confirm",
+        kwargs={"uidb64": uid, "token": token},
     )
 
     nome = usuario.get_full_name() or usuario.username
 
     if reset:
-        assunto = "SIGEMP — Redefinição de senha"
+        assunto = "SIGEMP - Sistema de Gestão de Monitoramento de Processos — Redefinição de senha"
         mensagem = f"""
 Olá {nome},
 
-Recebemos uma solicitação para redefinição da sua senha no SIGEMP.
+Recebemos uma solicitação para redefinição da sua senha no SIGEMP - Sistema de Gestão de Monitoramento de Processos.
 
 Para criar uma nova senha, acesse o link abaixo:
-{settings.SITE_URL}{link}
+{link}
+
+⚠️ Atenção:
+Este link deve ser acessado a partir do navegador da máquina
+onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
+
+Caso esteja acessando de outra máquina, copie o link e abra
+no navegador da máquina virtual.
 
 Se você não solicitou essa ação, ignore este e-mail.
 """
     else:
-        assunto = "SIGEMP — Acesso criado com sucesso"
+        assunto = "SIGEMP - Sistema de Gestão de Monitoramento de Processos — Acesso criado com sucesso"
         mensagem = f"""
 Olá {nome},
 
-Seu acesso ao SIGEMP foi criado com sucesso.
+Seu acesso ao SIGEMP - Sistema de Gestão de Monitoramento de Processos, foi criado com sucesso.
 
 Usuário: {usuario.username}
+Setor  : {usuario.setor}
+Cargo  : {usuario.cargo}
+Função : {usuario.funcao}
+Perfil : {usuario.perfil}
 
 Para definir sua senha de acesso, clique no link abaixo:
-{settings.SITE_URL}{link}
+{link}
+
+⚠️ Atenção:
+Este link deve ser acessado a partir do navegador da máquina
+onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
+
+Caso esteja acessando de outra máquina, copie o link e abra
+no navegador da máquina virtual.
 """
 
     send_mail(

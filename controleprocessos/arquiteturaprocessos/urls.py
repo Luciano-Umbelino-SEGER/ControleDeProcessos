@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, Estatisticas, BackLog, CadastroUsuarios,  LogAcoes, CustomLoginView,
+from .views import (ArquiteruraProcessos, Estatisticas, BackLog, CadastroUsuarios,  LogAcoes, CustomLoginView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
@@ -35,9 +35,15 @@ urlpatterns = [
     path('usuario/<int:pk>/visualizar/', VisualizarUsuario.as_view(), name='visualizar_usuario'),
     path('usuario/<int:pk>/editar/', EditarUsuario.as_view(), name='editar_usuario'),
     path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
-    # --> Perfil Usuário
-    path('usuario/alterar_senha/', views.alterar_senha, name='alterar_senha'),
-    path('usuario/<int:pk>/resetar-senha/', views.resetar_senha_usuario,name='resetar_senha_usuario'),
+    # --> Reset de Senha (fluxo por link)
+    path("usuario/<int:pk>/resetar-senha/", views.resetar_senha_usuario, name="resetar_senha_usuario",),
+    path("senha/reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(
+          template_name="usuario/password_reset_confirm.html", success_url=reverse_lazy("arquiteturaprocessos:password_reset_complete"),),
+          name="password_reset_confirm",),
+    path("senha/reset/concluido/", auth_views.PasswordResetCompleteView.as_view(template_name="usuario/password_reset_complete.html"),
+          name="password_reset_complete",),
+    # --> Alterar senha (usuário logado)
+    path("senha/alterar/", alterar_senha, name="alterar_senha",),
     # Log de Ações
     path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     # Login
