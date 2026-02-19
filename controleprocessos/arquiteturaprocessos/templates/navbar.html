@@ -42,29 +42,38 @@
           </div>
 
       <!-- Dropdown Meu Perfil -->
-      <div class="relative group">
-        <button type="button"
-                class="flex items-center space-x-1 hover:opacity-80 transition">
-          <span>Meu Perfil</span>
-          <i class="fas fa-chevron-down text-xs"></i>
+      <div x-data="{ open: false }" class="relative">
+
+      <!-- Botão -->
+      <button type="button"
+              @click="open = !open"
+              class="flex items-center space-x-1 hover:opacity-80 transition focus:outline-none">
+        <span>Meu Perfil</span>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200"
+           :class="{ 'rotate-180': open }"></i>
+      </button>
+
+      <!-- Dropdown -->
+      <div x-show="open"
+           x-transition
+           @click.outside="open = false"
+           class="absolute right-0 mt-2 w-52 bg-white border rounded-md shadow-lg z-50 text-sm"
+           style="color:#1B4C9B;"
+           x-cloak>
+
+        <button @click="$dispatch('open-profile'); open = false"
+                class="block w-full text-left px-4 py-2 hover:bg-gray-100 transition">
+          👤 Meus dados
         </button>
 
-        <div class="absolute right-0 mt-2 w-52 bg-white border rounded-md shadow-lg
-                    hidden group-hover:block z-50 text-sm"
-             style="color:#1B4C9B;">
+        <a href="{% url 'arquiteturaprocessos:alterar_senha' %}"
+           class="block px-4 py-2 hover:bg-gray-100 transition">
+          🔐 Alterar minha senha
+        </a>
 
-          <a href="#"
-             class="block px-4 py-2 hover:bg-gray-100 transition">
-            Meus dados
-          </a>
-
-          <a href="{% url 'arquiteturaprocessos:alterar_senha' %}"
-             class="block px-4 py-2 hover:bg-gray-100 transition">
-            🔐 Alterar minha senha
-          </a>
-
-        </div>
       </div>
+    </div>
+
 
       <!-- Sair -->
       <form method="post" action="{% url 'arquiteturaprocessos:logout' %}">
