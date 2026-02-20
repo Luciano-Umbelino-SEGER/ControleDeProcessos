@@ -43,22 +43,26 @@ def definir_senha_e_enviar_email(usuario, *, reset=False):
     if reset:
         assunto = "SIGEMP - Sistema de Gestão de Monitoramento de Processos — Redefinição de senha"
         mensagem = f"""
-Olá {nome},
+    Olá {nome},
 
-Recebemos uma solicitação para redefinição da sua senha no SIGEMP - Sistema de Gestão de Monitoramento de Processos.
+    Recebemos uma solicitação para redefinição da sua senha no SIGEMP - Sistema de Gestão de Monitoramento de Processos.
 
-Para criar uma nova senha, acesse o link abaixo:
-{link}
+    Dados da conta:
+    Usuário: {usuario.username}
+    Perfil : {usuario.perfil}
 
-⚠️ Atenção:
-Este link deve ser acessado a partir do navegador da máquina
-onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
+    Para criar uma nova senha, acesse o link abaixo:
+    {link}
 
-Caso esteja acessando de outra máquina, copie o link e abra
-no navegador da máquina virtual.
+    Atenção:
+    Este link deve ser acessado a partir do navegador da máquina
+    onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
 
-Se você não solicitou essa ação, ignore este e-mail.
-"""
+    Caso esteja acessando de outra máquina, copie o link e abra
+    no navegador da máquina virtual.
+
+    Se você não solicitou essa ação, ignore este e-mail.
+    """
     else:
         assunto = "SIGEMP - Sistema de Gestão de Monitoramento de Processos — Acesso criado com sucesso"
         mensagem = f"""
@@ -75,7 +79,7 @@ Perfil : {usuario.perfil}
 Para definir sua senha de acesso, clique no link abaixo:
 {link}
 
-⚠️ Atenção:
+Atenção:
 Este link deve ser acessado a partir do navegador da máquina
 onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
 
