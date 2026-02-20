@@ -56,10 +56,30 @@
                 </div>
 
                 <div class="col-span-12">
-                    <label for="id_descricao" class="block text-sm font-semibold text-blue-800 mb-1">Descrição</label>
-                    {{ form.descricao }}
+                    <label for="id_descricao" class="block text-sm font-semibold text-blue-800 mb-1">
+                        Descrição
+                    </label>
+
+                    <div x-data="{ count: 0, max: 3000 }" class="relative">
+
+                        {{ form.descricao|add_attr:"@input:count = $event.target.value.length"|add_attr:"maxlength:3000" }}
+
+                        <div class="text-sm mt-1 text-right"
+                             x-init="count = $el.previousElementSibling.value.length"
+                             :class="{
+                                'text-gray-500': count < 2800,
+                                'text-yellow-600': count >= 2800 && count < max,
+                                'text-red-600': count >= max
+                             }">
+                            <span x-text="count"></span> / 3000
+                        </div>
+
+                    </div>
+
                     {% if form.descricao.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.descricao.errors|striptags }}</p>
+                        <p class="text-red-500 text-sm mt-1">
+                            {{ form.descricao.errors|striptags }}
+                        </p>
                     {% endif %}
                 </div>
             </div>

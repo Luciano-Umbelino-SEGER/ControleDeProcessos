@@ -118,7 +118,7 @@ class Usuario(AbstractUser):
 # ============================================================
 class Classificacao(models.Model):
     nome = models.CharField(max_length=100)
-    descricao = models.TextField(max_length=500)
+    descricao = models.TextField()
 
     def __str__(self):
         return self.nome
@@ -126,7 +126,7 @@ class Classificacao(models.Model):
 
 class MacroprocessoNivel1(models.Model):
     nome = models.CharField(max_length=200)
-    descricao = models.TextField(max_length=500)
+    descricao = models.TextField()
     classificacao = models.ForeignKey("Classificacao", on_delete=models.PROTECT)
 
     def __str__(self):
@@ -135,7 +135,7 @@ class MacroprocessoNivel1(models.Model):
 
 class MacroprocessoNivel2(models.Model):
     nome = models.CharField(max_length=200)
-    descricao = models.TextField(max_length=500)
+    descricao = models.TextField()
     macroprocesso_nivel1 = models.ForeignKey("MacroprocessoNivel1", on_delete=models.PROTECT)
 
     def __str__(self):
@@ -147,7 +147,7 @@ class MacroprocessoNivel2(models.Model):
 class TiposDocumento(models.Model):
     nome = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True)
-    descricao = models.TextField(blank=True, null=True)
+    descricao = models.TextField(blank=True)
 
     class Meta:
         db_table = "arquiteturaprocessos_tiposdocumento"

@@ -249,6 +249,11 @@ class Form_ClassificacaoForm(forms.ModelForm):
         modo_edicao = kwargs.pop('modo_edicao', False)
 
         super().__init__(*args, **kwargs)
+        if "descricao" in self.fields:
+            self.fields["descricao"].max_length = 3000
+            self.fields["descricao"].widget.attrs["maxlength"] = 3000
+            self.fields["descricao"].widget.attrs["rows"] = 4
+
         self.label_suffix = ""
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -287,6 +292,11 @@ class Form_MacroProcessoNivel1Form(forms.ModelForm):
         modo_edicao = kwargs.pop('modo_edicao', False)
 
         super().__init__(*args, **kwargs)
+        if "descricao" in self.fields:
+            self.fields["descricao"].max_length = 3000
+            self.fields["descricao"].widget.attrs["maxlength"] = 3000
+            self.fields["descricao"].widget.attrs["rows"] = 4
+
         self.label_suffix = ""
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -332,6 +342,11 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
         modo_edicao       = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
+        if "descricao" in self.fields:
+            self.fields["descricao"].max_length = 3000
+            self.fields["descricao"].widget.attrs["maxlength"] = 3000
+            self.fields["descricao"].widget.attrs["rows"] = 4
+
         self.label_suffix = ""
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -411,6 +426,10 @@ class Form_TipoDocumentoForm(forms.ModelForm):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
         modo_exclusao = kwargs.pop('modo_exclusao', False)
         super().__init__(*args, **kwargs)
+        if "descricao" in self.fields:
+            self.fields["descricao"].max_length = 3000
+            self.fields["descricao"].widget.attrs["maxlength"] = 3000
+            self.fields["descricao"].widget.attrs["rows"] = 4
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
