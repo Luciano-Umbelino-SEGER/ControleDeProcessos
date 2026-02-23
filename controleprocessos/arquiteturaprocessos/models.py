@@ -268,7 +268,87 @@ class ModelagemProcesso(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.codigo}-{self.sequencial} - V{self.versao}"
+#Aqui 1
+# ============================================================
+# Backlog de PROCESSO / SUBPROCESSO
+# ============================================================
+class BacklogProcesso(models.Model):
 
+    nome = models.CharField(max_length=100)
+
+    gestor = models.CharField(max_length=150)
+    email = models.EmailField(max_length=200)
+    telefone = models.CharField(max_length=20)
+
+    objetivo = models.TextField()
+    observacao = models.TextField(blank=True, null=True)
+
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+
+    area_responsavel = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    classificacao = models.ForeignKey(
+        'Classificacao',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True
+    )
+
+    macroprocesso_nivel_1 = models.ForeignKey(
+        'MacroprocessoNivel1',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True
+    )
+
+    macroprocesso_nivel_2 = models.ForeignKey(
+        'MacroprocessoNivel2',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True
+    )
+
+    # 🔗 Vínculo futuro com Processo pai
+    parent = models.ForeignKey(
+        'Processo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='subprocessos_backlog'
+    )
+
+    usuario_cadastro = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='backlogs_criados'
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='backlogs_atualizados',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        ordering = ['-data_criacao']
+        indexes = [
+            models.Index(fields=['nome']),  # 🔍 busca por processo/subprocesso
+            models.Index(fields=['classificacao']),
+            models.Index(fields=['macroprocesso_nivel_1']),
+            models.Index(fields=['macroprocesso_nivel_2']),
+            models.Index(fields=['parent']),
+            models.Index(fields=['data_criacao']),
+        ]
+
+    def __str__(self):
+        return self.nome
 # ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================
