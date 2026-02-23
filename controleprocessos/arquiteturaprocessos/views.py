@@ -34,7 +34,7 @@ from arquiteturaprocessos.utils.utils import definir_senha_e_enviar_email
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
-    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento
+    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, BacklogProcesso,
 )
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
@@ -559,16 +559,39 @@ class ArquiteruraProcessos(ListView):
         return ctx
 
 
-# ---------------------------
-# Estatísticas / Backlog (simples)
-# ---------------------------
+# --------------
+# Estatísticas
+# --------------
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
     model = Processo
+#Aqui 1
+# ---------------------------
+#  Backlog de Processos
+# ---------------------------
+class BacklogProcessos(LoginRequiredMixin, ListView):
+    model = BacklogProcesso
+    template_name = 'backlogprocessos/backlogprocessos.html'
+    context_object_name = 'backlogprocessos'
+    paginate_by = 10
 
-class BackLog(LoginRequiredMixin, ListView):
-    template_name = 'backlog.html'
-    model = Processo
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by('-data_criacao')
+
+        # Futuramente aqui entram os filtros
+        # Ex: nome, classificacao, macroprocesso, etc.
+
+        return queryset.select_related(
+            'classificacao',
+            'macroprocesso_nivel_1',
+            'macroprocesso_nivel_2',
+            'parent'
+        )
 
 # ------------------------------
 # Cadastro / Listagem Usuários

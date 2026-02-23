@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, Estatisticas, BackLog, CadastroUsuarios,  LogAcoes, CustomLoginView, alterar_senha,
+from .views import (ArquiteruraProcessos, Estatisticas, CadastroUsuarios,  LogAcoes, CustomLoginView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
@@ -9,7 +9,7 @@ from .views import (ArquiteruraProcessos, Estatisticas, BackLog, CadastroUsuario
                     EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
-                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView)
+                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView, BacklogProcessos)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 
@@ -28,7 +28,7 @@ urlpatterns = [
     # Estatísticas
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     # Backlog
-    path('backlog/', BackLog.as_view(), name='backlog'),
+    path('backlogprocessos/', BacklogProcessos.as_view(), name='backlog'),
     # Usuários
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('usuario/novo/', CriarUsuario.as_view(), name='criar_usuario'),
