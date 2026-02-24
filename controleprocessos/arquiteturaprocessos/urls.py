@@ -9,7 +9,8 @@ from .views import (ArquiteruraProcessos, Estatisticas, CadastroUsuarios,  LogAc
                     EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
-                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView, BacklogProcessos)
+                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
+                    BacklogProcessos, CriarBacklogProcesso, VisualizarBacklogProcesso, EditarBacklogProcesso, ExcluirBacklogProcesso,)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 
@@ -29,6 +30,10 @@ urlpatterns = [
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     # Backlog
     path('backlogprocessos/', BacklogProcessos.as_view(), name='backlog'),
+    path('backlogprocesso/novo/', CriarBacklogProcesso.as_view(), name='criar_backlog'),
+    path('backlogprocesso/<int:pk>/visualizar/', VisualizarBacklogProcesso.as_view(), name='visualizar_backlog'),
+    path('backlogprocesso/<int:pk>/editar/', EditarBacklogProcesso.as_view(), name='editar_backlog'),
+    path('backlogprocesso/<int:pk>/excluir/', ExcluirBacklogProcesso.as_view(), name='excluir_backlog'),
     # Usuários
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('usuario/novo/', CriarUsuario.as_view(), name='criar_usuario'),

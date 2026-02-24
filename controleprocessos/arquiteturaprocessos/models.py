@@ -276,11 +276,22 @@ class BacklogProcesso(models.Model):
 
     nome = models.CharField(max_length=100)
 
-    gestor = models.CharField(max_length=150)
-    email = models.EmailField(max_length=200)
-    telefone = models.CharField(max_length=20)
+    gestor = models.CharField(
+        max_length=150,
+        blank=True
+    )
+    email = models.EmailField(
+        max_length=200,
+        blank=True
+    )
+    telefone = models.CharField(
+        max_length=20,
+        blank=True
+    )
 
-    objetivo = models.TextField()
+    objetivo = models.TextField(
+        blank=False
+    )
     observacao = models.TextField(blank=True, null=True)
 
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -288,8 +299,7 @@ class BacklogProcesso(models.Model):
 
     area_responsavel = models.CharField(
         max_length=100,
-        blank=True,
-        null=True
+        blank=False,  # obrigatório
     )
 
     classificacao = models.ForeignKey(
@@ -339,11 +349,7 @@ class BacklogProcesso(models.Model):
     class Meta:
         ordering = ['-data_criacao']
         indexes = [
-            models.Index(fields=['nome']),  # 🔍 busca por processo/subprocesso
-            models.Index(fields=['classificacao']),
-            models.Index(fields=['macroprocesso_nivel_1']),
-            models.Index(fields=['macroprocesso_nivel_2']),
-            models.Index(fields=['parent']),
+            models.Index(fields=['nome']),
             models.Index(fields=['data_criacao']),
         ]
 

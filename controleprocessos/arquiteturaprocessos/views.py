@@ -39,7 +39,7 @@ from .models import (
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
-    Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm
+    Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_BacklogProcessoForm,
 )
 
 # ---------------------------------------------------
@@ -565,6 +565,7 @@ class ArquiteruraProcessos(ListView):
 class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
     model = Processo
+
 #Aqui 1
 # ---------------------------
 #  Backlog de Processos
@@ -592,6 +593,44 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
             'macroprocesso_nivel_2',
             'parent'
         )
+
+#Aqui 2
+# --------------------------------#
+# Criar Backlog                   #
+# --------------------------------#
+class CriarBacklogProcesso(LoginRequiredMixin, CreateView):
+    model = BacklogProcesso
+    form_class = Form_BacklogProcessoForm
+    template_name = 'backlogprocessos/form_backlogprocesso.html'
+    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+
+# --------------------------------#
+# Visualizar Backlog              #
+# --------------------------------#
+class VisualizarBacklogProcesso(LoginRequiredMixin, DetailView):
+    model = BacklogProcesso
+    form_class = Form_BacklogProcessoForm
+    template_name = 'backlogprocessos/form_backlogprocesso.html'
+    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+
+# --------------------------------#
+# Editar Backlog                  #
+# --------------------------------#
+class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
+    model = BacklogProcesso
+    form_class = Form_BacklogProcessoForm
+    template_name = 'backlogprocessos/form_backlogprocesso.html'
+    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+
+# --------------------------------#
+# Excluir Backlog                 #
+# --------------------------------#
+class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
+    model = BacklogProcesso
+    form_class = Form_BacklogProcessoForm
+    template_name = 'backlogprocessos/form_backlogprocesso.html'
+    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+
 
 # ------------------------------
 # Cadastro / Listagem Usuários

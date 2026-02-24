@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% load form_tags %}
+
+{% block titulo %}
+    {% if modo_visualizacao %}Visualização de Backlog
+    {% elif modo_edicao %}Edição de Backlog
+    {% elif modo_exclusao %}Exclusão de Backlog
+    {% else %}Inclusão de Backlog{% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
+
+    <h2 class="text-2xl font-bold text-center mb-8 text-blue-800">
+        {% if modo_visualizacao %}Visualização de Backlog
+        {% elif modo_edicao %}Edição de Backlog
+        {% elif modo_exclusao %}Exclusão de Backlog
+        {% else %}Inclusão de Backlog{% endif %}
+    </h2>
+
+    {% if form.errors %}
+    <div class="alert alert-danger mb-4">
+        <strong>Erros ao salvar:</strong>
+        <ul>
+            {% for field, errors in form.errors.items %}
+                <li><strong>{{ field }}:</strong> {{ errors|striptags }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" id="form-backlog">
+        {% csrf_token %}
+
+        <!-- LINHA 1 -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Classificação</label>
+                {{ form.classificacao }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
+                {{ form.macroprocesso_nivel_1 }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
+                {{ form.macroprocesso_nivel_2 }}
+            </div>
+        </div>
+
+        <!-- PROCESSO / SUBPROCESSO -->
+        <div class="mb-4">
+            <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="tipo" value="processo" id="rb_processo" checked>
+                    <span class="font-medium text-blue-700">Processo</span>
+                </label>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="tipo" value="subprocesso" id="rb_subprocesso">
+                    <span class="font-medium text-gray-400" id="lbl_subprocesso">Subprocesso</span>
+                </label>
+
+            </div>
+        </div>
+
+        <!-- NOME -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <div id="container_processo">
+                <label class="block text-sm font-medium text-blue-700">Nome do Processo</label>
+                {{ form.nome }}
+            </div>
+
+            <div id="container_subprocesso" class="hidden">
+                <label class="block text-sm font-medium text-blue-700">Subprocesso vinculado a</label>
+                {{ form.parent }}
+            </div>
+
+        </div>
+
+        <!-- OBJETIVO / OBSERVAÇÃO -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Objetivo</label>
+                <div class="relative">
+                    {{ form.objetivo|add_attr:"style:text-align:justify;resize:none;" }}
+                    <div class="text-xs text-gray-500 text-right mt-1">
+                        <span id="contador_objetivo">0</span>/500
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Observação</label>
+                <div class="relative">
+                    {{ form.observacao|add_attr:"style:text-align:justify;resize:none;" }}
+                    <div class="text-xs text-gray-500 text-right mt-1">
+                        <span id="contador_observacao">0</span>/500
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ÁREA / GESTOR -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
+                {{ form.area_responsavel }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Gestor</label>
+                {{ form.gestor }}
+            </div>
+        </div>
+
+        <!-- TELEFONE / EMAIL -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
+                {{ form.telefone }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">E-mail</label>
+                {{ form.email }}
+            </div>
+        </div>
+
+        <!-- AUDITORIA -->
+        <div class="grid grid-cols-4 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Cadastro</label>
+                <input type="text" value="{{ cadastro_data }}" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
+                <input type="text" value="{{ cadastro_user }}" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Atualização</label>
+                <input type="text" value="{{ atualizacao_data }}" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
+                <input type="text" value="{{ atualizacao_user }}" readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+            </div>
+
+        </div>
+
+        <!-- BOTÕES -->
+        <div class="flex justify-end mt-8 space-x-4">
+
+            {% if not modo_visualizacao %}
+                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                    {% if modo_edicao %}Salvar Alterações{% else %}Adicionar Backlog{% endif %}
+                </button>
+            {% endif %}
+
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+               href="{% url 'arquiteturaprocessos:backlog' %}">
+                {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+            </a>
+
+        </div>
+    </form>
+</div>
+
+<script>
+/* RADIO PROCESSO / SUBPROCESSO */
+const rbProcesso = document.getElementById("rb_processo");
+const rbSubprocesso = document.getElementById("rb_subprocesso");
+const containerProcesso = document.getElementById("container_processo");
+const containerSub = document.getElementById("container_subprocesso");
+const lblSub = document.getElementById("lbl_subprocesso");
+
+rbProcesso.addEventListener("change", () => {
+    containerProcesso.classList.remove("hidden");
+    containerSub.classList.add("hidden");
+    lblSub.classList.remove("text-blue-700");
+    lblSub.classList.add("text-gray-400");
+});
+
+rbSubprocesso.addEventListener("change", () => {
+    containerProcesso.classList.add("hidden");
+    containerSub.classList.remove("hidden");
+    lblSub.classList.remove("text-gray-400");
+    lblSub.classList.add("text-blue-700");
+});
+
+/* CONTADOR */
+function contador(idCampo, idContador) {
+    const campo = document.getElementById(idCampo);
+    const contadorSpan = document.getElementById(idContador);
+
+    function atualizar() {
+        contadorSpan.textContent = campo.value.length;
+    }
+
+    campo.addEventListener("input", atualizar);
+    atualizar();
+}
+
+contador("id_objetivo", "contador_objetivo");
+contador("id_observacao", "contador_observacao");
+</script>
+
+<!-- Macro Classificação Engine -->
+<script src="{% static 'js/macro_classificacao.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    initMacroClassificacao({
+        classificacaoId: "id_classificacao",
+        macro1Id: "id_macroprocesso_nivel_1",
+        macro2Id: "id_macroprocesso_nivel_2",
+        modoBloqueado: false
+    });
+});
+</script>
+{% endblock %}

@@ -9,13 +9,61 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import date
+from django.forms.widgets import Select
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-    ModelagemProcesso, Processo, TiposDocumento
+    ModelagemProcesso, Processo, TiposDocumento, BacklogProcesso
 )
 
 UserModel = get_user_model()
+
+# ============================================================
+# WidGet Customizado para Macro Engine
+# ============================================================
+class MacroSelect(forms.Select):
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+
+        option = super().create_option(
+            name, value, label, selected, index,
+            subindex=subindex, attrs=attrs
+        )
+
+        if not value:
+            return option
+
+        # 🔥 Django 5: value é ModelChoiceIteratorValue
+        try:
+            real_value = value.value
+        except AttributeError:
+            real_value = value
+
+        queryset = getattr(self.choices, "queryset", None)
+        if not queryset:
+            return option
+
+        try:
+            obj = queryset.get(pk=real_value)
+        except queryset.model.DoesNotExist:
+            return option
+
+        # =========================
+        # Macro N1
+        # =========================
+        if hasattr(obj, "classificacao_id"):
+            option["attrs"]["data-classificacao"] = str(obj.classificacao_id)
+
+        # =========================
+        # Macro N2
+        # =========================
+        if hasattr(obj, "macroprocesso_nivel1_id"):
+            option["attrs"]["data-macro1"] = str(obj.macroprocesso_nivel1_id)
+
+            macro1 = obj.macroprocesso_nivel1
+            option["attrs"]["data-classificacao"] = str(macro1.classificacao_id)
+
+        return option
 
 # ============================================================
 # AUTENTICAÇÃO
@@ -801,6 +849,100 @@ class Form_ProcessoForm(forms.ModelForm):
                     "macroprocesso_nivel2",
                     "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
                 )
+
+        return cleaned
+
+#Aqui 1
+# ----------------------------------
+# Backlog de Processos - Formulário
+# ----------------------------------
+class Form_BacklogProcessoForm(forms.ModelForm):
+
+    classificacao = forms.ModelChoiceField(
+        queryset=Classificacao.objects.all(),
+        required=False,
+        label="Classificação"
+    )
+
+    macroprocesso_nivel_1 = forms.ModelChoiceField(
+        queryset=MacroprocessoNivel1.objects.all(),
+        required=False,
+        label="Macroprocesso Nível 1",
+        widget=MacroSelect()
+    )
+
+    macroprocesso_nivel_2 = forms.ModelChoiceField(
+        queryset=MacroprocessoNivel2.objects.all(),
+        required=False,
+        label="Macroprocesso Nível 2",
+        widget=MacroSelect()
+    )
+
+    parent = forms.ModelChoiceField(
+        queryset=Processo.objects.filter(parent__isnull=True),
+        required=False,
+        label="Processo Pai"
+    )
+
+    class Meta:
+        model = BacklogProcesso
+        exclude = (
+            "usuario_cadastro",
+            "usuario_atualizacao",
+            "data_criacao",
+            "data_atualizacao",
+        )
+
+        widgets = {
+            "objetivo": forms.Textarea(attrs={"rows": "2"}),
+            "observacao": forms.Textarea(attrs={"rows": "2"}),
+        }
+
+    # ------------------------------------------------
+    # INIT – Estilização padrão SIGEMP
+    # ------------------------------------------------
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop("modo_visualizacao", False)
+        modo_exclusao = kwargs.pop("modo_exclusao", False)
+        modo_edicao = kwargs.pop("modo_edicao", False)
+
+        super().__init__(*args, **kwargs)
+
+        self.label_suffix = ""
+
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        # -------------------------------------------------------
+        # ESTILIZAÇÃO PADRÃO
+        # -------------------------------------------------------
+        for name, field in self.fields.items():
+            bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            field.widget.attrs["class"] = f"{base} {bg}"
+            field.widget.attrs.setdefault("placeholder", field.label)
+            field.widget.attrs["autocomplete"] = "off"
+
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+
+    # ------------------------------------------------
+    # CLEAN – Regras leves para Backlog
+    # ------------------------------------------------
+    def clean(self):
+        cleaned = super().clean()
+
+        nome = cleaned.get("nome")
+        objetivo = cleaned.get("objetivo")
+
+        if not nome or nome.strip() == "":
+            self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
+
+        if not objetivo or objetivo.strip() == "":
+            self.add_error("objetivo", "Informe o objetivo do Processo.")
 
         return cleaned
 
