@@ -26,15 +26,15 @@ class Migration(migrations.Migration):
                 ('data_atualizacao', models.DateTimeField(auto_now=True)),
                 ('area_responsavel', models.CharField(blank=True, max_length=100, null=True)),
                 ('classificacao', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='arquiteturaprocessos.classificacao')),
-                ('macroprocesso_nivel_1', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='arquiteturaprocessos.macroprocessonivel1')),
-                ('macroprocesso_nivel_2', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='arquiteturaprocessos.macroprocessonivel2')),
+                ('macroprocesso_nivel1', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='arquiteturaprocessos.macroprocessonivel1')),
+                ('macroprocesso_nivel2', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='arquiteturaprocessos.macroprocessonivel2')),
                 ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='subprocessos_backlog', to='arquiteturaprocessos.processo')),
                 ('usuario_atualizacao', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='backlogs_atualizados', to=settings.AUTH_USER_MODEL)),
                 ('usuario_cadastro', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='backlogs_criados', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ['-data_criacao'],
-                'indexes': [models.Index(fields=['nome'], name='arquitetura_nome_c7b529_idx'), models.Index(fields=['classificacao'], name='arquitetura_classif_b09c3e_idx'), models.Index(fields=['macroprocesso_nivel_1'], name='arquitetura_macropr_d18f20_idx'), models.Index(fields=['macroprocesso_nivel_2'], name='arquitetura_macropr_937f8f_idx'), models.Index(fields=['parent'], name='arquitetura_parent__700931_idx'), models.Index(fields=['data_criacao'], name='arquitetura_data_cr_3daf5f_idx')],
+                'indexes': [models.Index(fields=['nome'], name='arquitetura_nome_c7b529_idx'), models.Index(fields=['classificacao'], name='arquitetura_classif_b09c3e_idx'), models.Index(fields=['macroprocesso_nivel1'], name='arquitetura_macropr_d18f20_idx'), models.Index(fields=['macroprocesso_nivel2'], name='arquitetura_macropr_937f8f_idx'), models.Index(fields=['parent'], name='arquitetura_parent__700931_idx'), models.Index(fields=['data_criacao'], name='arquitetura_data_cr_3daf5f_idx')],
             },
         ),
     ]

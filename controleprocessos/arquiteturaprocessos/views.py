@@ -589,8 +589,8 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
 
         return queryset.select_related(
             'classificacao',
-            'macroprocesso_nivel_1',
-            'macroprocesso_nivel_2',
+            'macroprocesso_nivel1',
+            'macroprocesso_nivel2',
             'parent'
         )
 
@@ -655,7 +655,7 @@ class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
             "perfil__nome",
             "username"
         )
-# Aqui 1
+
 # ----------------------------------------
 # Criar Usuário (com username automático)
 # ----------------------------------------

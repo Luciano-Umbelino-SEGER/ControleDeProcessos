@@ -43,47 +43,96 @@
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
-                {{ form.macroprocesso_nivel_1 }}
+                {{ form.macroprocesso_nivel1 }}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
-                {{ form.macroprocesso_nivel_2 }}
+                {{ form.macroprocesso_nivel2 }}
             </div>
         </div>
 
-        <!-- PROCESSO / SUBPROCESSO -->
-        <div class="mb-4">
+        <!-- LINHA – PROCESSO / SUBPROCESSO -->
+        <div class="mb-0 -mt-1">
             <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
 
+                <!-- PROCESSO -->
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="tipo" value="processo" id="rb_processo" checked>
-                    <span class="font-medium text-blue-700">Processo</span>
+                    <input type="radio"
+                           id="rb_processo"
+                           name="tipo"
+                           value="processo"
+                           {% if form.instance.tipo != "subprocesso" %}checked{% endif %}>
+                    <span id="lbl_processo"
+                          class="font-medium {% if form.instance.tipo != 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                        Processo
+                    </span>
                 </label>
 
+                <!-- SUBPROCESSO -->
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="tipo" value="subprocesso" id="rb_subprocesso">
-                    <span class="font-medium text-gray-400" id="lbl_subprocesso">Subprocesso</span>
+                    <input type="radio"
+                           id="rb_subprocesso"
+                           name="tipo"
+                           value="subprocesso"
+                           {% if form.instance.tipo == "subprocesso" %}checked{% endif %}>
+                    <span id="lbl_subprocesso"
+                          class="font-medium {% if form.instance.tipo == 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                        Subprocesso
+                    </span>
                 </label>
 
             </div>
         </div>
 
-        <!-- NOME -->
         <div class="grid grid-cols-2 gap-6 mb-6">
 
-            <div id="container_processo">
-                <label class="block text-sm font-medium text-blue-700">Nome do Processo</label>
-                {{ form.nome }}
-            </div>
+        <!-- CAMPO ESQUERDO -->
+        <div>
+            <label id="lbl_campo_esquerdo" class="block text-sm font-medium text-blue-700">
+                {% if form.instance.tipo == "subprocesso" %}
+                    Selecionar Processo
+                {% else %}
+                    Nome do Processo
+                {% endif %}
+            </label>
 
-            <div id="container_subprocesso" class="hidden">
-                <label class="block text-sm font-medium text-blue-700">Subprocesso vinculado a</label>
-                {{ form.parent }}
-            </div>
+            <!-- INPUT PROCESSO -->
+            <input id="processo_input_visible"
+                   type="text"
+                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500"
+                   placeholder="Nome do Processo"
+                   {% if form.instance.tipo == "subprocesso" %}class="hidden"{% endif %}>
 
+            <!-- SELECT PROCESSO -->
+            <input type="hidden" id="id_parent" name="parent">
+
+            <div id="processo_select_container" class="hidden">
+                <select id="processo_select_visible"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="">---------</option>
+                </select>
+            </div>
         </div>
 
+        <!-- CAMPO DIREITO -->
+        <div>
+            <label id="lbl_campo_direito"
+                   class="block text-sm font-medium {% if form.instance.tipo == 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                Nome do Subprocesso
+            </label>
+
+            <input id="subprocesso_input_visible"
+                   type="text"
+                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500"
+                   placeholder="Nome do Subprocesso"
+                   {% if form.instance.tipo != "subprocesso" %}disabled class="bg-gray-100"{% endif %}>
+
+            <!-- Hidden nome -->
+            {{ form.nome.as_hidden }}
+        </div>
+
+    </div>
         <!-- OBJETIVO / OBSERVAÇÃO -->
         <div class="grid grid-cols-2 gap-6 mb-6">
 
@@ -184,24 +233,120 @@
 
 <script>
 /* RADIO PROCESSO / SUBPROCESSO */
-const rbProcesso = document.getElementById("rb_processo");
-const rbSubprocesso = document.getElementById("rb_subprocesso");
-const containerProcesso = document.getElementById("container_processo");
-const containerSub = document.getElementById("container_subprocesso");
-const lblSub = document.getElementById("lbl_subprocesso");
+document.addEventListener("DOMContentLoaded", function () {
 
-rbProcesso.addEventListener("change", () => {
-    containerProcesso.classList.remove("hidden");
-    containerSub.classList.add("hidden");
-    lblSub.classList.remove("text-blue-700");
-    lblSub.classList.add("text-gray-400");
-});
+    const rbProcesso = document.getElementById("rb_processo");
+    const rbSubprocesso = document.getElementById("rb_subprocesso");
 
-rbSubprocesso.addEventListener("change", () => {
-    containerProcesso.classList.add("hidden");
-    containerSub.classList.remove("hidden");
-    lblSub.classList.remove("text-gray-400");
-    lblSub.classList.add("text-blue-700");
+    const lblProcesso = document.getElementById("lbl_processo");
+    const lblSub = document.getElementById("lbl_subprocesso");
+
+    const lblCampoEsquerdo = document.getElementById("lbl_campo_esquerdo");
+
+    const processoInput = document.getElementById("processo_input_visible");
+    const processoSelectContainer = document.getElementById("processo_select_container");
+
+    const subprocessoInput = document.getElementById("subprocesso_input_visible");
+    const hiddenNome = document.getElementById("id_nome");
+
+    function atualizarLayout() {
+
+        if (rbProcesso.checked) {
+
+            // Estética radios
+            lblProcesso.classList.add("text-blue-700");
+            lblSub.classList.remove("text-blue-700");
+            lblSub.classList.add("text-gray-400");
+
+            // Label esquerdo
+            lblCampoEsquerdo.textContent = "Nome do Processo";
+
+            // Mostrar input texto
+            processoInput.classList.remove("hidden");
+            processoSelectContainer.classList.add("hidden");
+
+            // Limpar select parent
+            const selectParent = document.getElementById("id_parent");
+            if (selectParent) {
+                selectParent.value = "";
+            }
+
+            // Limpar subprocesso
+            subprocessoInput.value = "";
+            hiddenNome.value = processoInput.value;
+
+            // Desabilitar subprocesso
+            subprocessoInput.disabled = true;
+            subprocessoInput.classList.add("bg-gray-100");
+
+            document.getElementById("lbl_campo_direito")
+                .classList.remove("text-blue-700");
+            document.getElementById("lbl_campo_direito")
+                .classList.add("text-gray-400");
+
+        } else {
+
+            // Estética radios
+            lblSub.classList.add("text-blue-700");
+            lblProcesso.classList.remove("text-blue-700");
+            lblProcesso.classList.add("text-gray-400");
+
+            // Label esquerdo
+            lblCampoEsquerdo.textContent = "Selecionar Processo para associar";
+
+            // Mostrar select
+            processoInput.classList.add("hidden");
+            processoSelectContainer.classList.remove("hidden");
+
+            // Forçar select para placeholder
+            const selectParent = document.getElementById("id_parent");
+            if (selectParent) {
+                selectParent.value = "";
+            }
+
+            // Habilitar subprocesso
+            subprocessoInput.disabled = false;
+            subprocessoInput.classList.remove("bg-gray-100");
+
+            document.getElementById("lbl_campo_direito")
+                .classList.remove("text-gray-400");
+            document.getElementById("lbl_campo_direito")
+                .classList.add("text-blue-700");
+        }
+    }
+
+    function sincronizarNome() {
+        if (rbProcesso.checked) {
+            hiddenNome.value = processoInput.value.trim();
+        } else {
+            hiddenNome.value = subprocessoInput.value.trim();
+        }
+    }
+
+    function carregarProcessos() {
+        fetch("/processos/lista-json/")  // ou a rota que você já usa
+            .then(response => response.json())
+            .then(data => {
+
+                const select = document.getElementById("processo_select_visible");
+                select.innerHTML = '<option value="">---------</option>';
+
+                data.forEach(proc => {
+                    const option = document.createElement("option");
+                    option.value = proc.id;
+                    option.textContent = proc.nome;
+                    select.appendChild(option);
+                });
+            });
+    }
+
+    processoInput.addEventListener("input", sincronizarNome);
+    subprocessoInput.addEventListener("input", sincronizarNome);
+
+    rbProcesso.addEventListener("change", atualizarLayout);
+    rbSubprocesso.addEventListener("change", atualizarLayout);
+
+    atualizarLayout();
 });
 
 /* CONTADOR */
@@ -229,8 +374,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     initMacroClassificacao({
         classificacaoId: "id_classificacao",
-        macro1Id: "id_macroprocesso_nivel_1",
-        macro2Id: "id_macroprocesso_nivel_2",
+        macro1Id: "id_macroprocesso_nivel1",
+        macro2Id: "id_macroprocesso_nivel2",
         modoBloqueado: false
     });
 });

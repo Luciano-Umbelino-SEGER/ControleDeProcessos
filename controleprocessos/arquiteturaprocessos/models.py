@@ -274,33 +274,27 @@ class ModelagemProcesso(models.Model):
 # ============================================================
 class BacklogProcesso(models.Model):
 
+    TIPO_PROCESSO = "processo"
+    TIPO_SUBPROCESSO = "subprocesso"
+
+    TIPO_CHOICES = (
+        (TIPO_PROCESSO, "Processo"),
+        (TIPO_SUBPROCESSO, "Subprocesso"),
+    )
+
     nome = models.CharField(max_length=100)
 
-    gestor = models.CharField(
-        max_length=150,
-        blank=True
-    )
-    email = models.EmailField(
-        max_length=200,
-        blank=True
-    )
-    telefone = models.CharField(
-        max_length=20,
-        blank=True
-    )
+    gestor = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(max_length=200, blank=True)
+    telefone = models.CharField(max_length=20, blank=True)
 
-    objetivo = models.TextField(
-        blank=False
-    )
-    observacao = models.TextField(blank=True, null=True)
+    objetivo = models.TextField()
+    observacao = models.TextField(blank=True)
 
     data_criacao = models.DateTimeField(auto_now_add=True)
     data_atualizacao = models.DateTimeField(auto_now=True)
 
-    area_responsavel = models.CharField(
-        max_length=100,
-        blank=False,  # obrigatório
-    )
+    area_responsavel = models.CharField(max_length=100)
 
     classificacao = models.ForeignKey(
         'Classificacao',
@@ -309,21 +303,20 @@ class BacklogProcesso(models.Model):
         null=True
     )
 
-    macroprocesso_nivel_1 = models.ForeignKey(
+    macroprocesso_nivel1 = models.ForeignKey(
         'MacroprocessoNivel1',
         on_delete=models.PROTECT,
         blank=True,
         null=True
     )
 
-    macroprocesso_nivel_2 = models.ForeignKey(
+    macroprocesso_nivel2 = models.ForeignKey(
         'MacroprocessoNivel2',
         on_delete=models.PROTECT,
         blank=True,
         null=True
     )
 
-    # 🔗 Vínculo futuro com Processo pai
     parent = models.ForeignKey(
         'Processo',
         on_delete=models.SET_NULL,
@@ -346,11 +339,20 @@ class BacklogProcesso(models.Model):
         blank=True
     )
 
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default=TIPO_PROCESSO
+    )
+
     class Meta:
         ordering = ['-data_criacao']
         indexes = [
             models.Index(fields=['nome']),
             models.Index(fields=['data_criacao']),
+            models.Index(fields=['tipo']),
+            models.Index(fields=['tipo', 'macroprocesso_nivel1']),
+            models.Index(fields=['tipo', 'macroprocesso_nivel2']),
         ]
 
     def __str__(self):

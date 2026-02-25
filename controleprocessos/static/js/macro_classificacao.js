@@ -20,8 +20,8 @@
 function initMacroClassificacao(config = {}) {
 
     const classificacaoSelect = document.getElementById(config.classificacaoId || "id_classificacao");
-    const macro1Select        = document.getElementById(config.macro1Id || "id_macroprocesso_nivel_1");
-    const macro2Select        = document.getElementById(config.macro2Id || "id_macroprocesso_nivel_2");
+    const macro1Select        = document.getElementById(config.macro1Id || "id_macroprocesso_nivel1");
+    const macro2Select        = document.getElementById(config.macro2Id || "id_macroprocesso_nivel2");
 
     if (!classificacaoSelect || !macro1Select || !macro2Select) {
         console.warn("Macro Engine: campos não encontrados.");

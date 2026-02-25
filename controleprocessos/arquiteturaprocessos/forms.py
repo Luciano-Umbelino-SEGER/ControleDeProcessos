@@ -864,14 +864,14 @@ class Form_BacklogProcessoForm(forms.ModelForm):
         label="Classificação"
     )
 
-    macroprocesso_nivel_1 = forms.ModelChoiceField(
+    macroprocesso_nivel1 = forms.ModelChoiceField(
         queryset=MacroprocessoNivel1.objects.all(),
         required=False,
         label="Macroprocesso Nível 1",
         widget=MacroSelect()
     )
 
-    macroprocesso_nivel_2 = forms.ModelChoiceField(
+    macroprocesso_nivel2 = forms.ModelChoiceField(
         queryset=MacroprocessoNivel2.objects.all(),
         required=False,
         label="Macroprocesso Nível 2",
@@ -879,7 +879,7 @@ class Form_BacklogProcessoForm(forms.ModelForm):
     )
 
     parent = forms.ModelChoiceField(
-        queryset=Processo.objects.filter(parent__isnull=True),
+        queryset=Processo.objects.none(),
         required=False,
         label="Processo Pai"
     )
@@ -909,6 +909,13 @@ class Form_BacklogProcessoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.label_suffix = ""
+
+        # 🔵 AJUSTE AQUI — logo após super()
+        self.fields["parent"].queryset = (
+            Processo.objects.filter(parent__isnull=True)
+            .order_by("nome")
+        )
+        self.fields["parent"].empty_label = "--------"
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
