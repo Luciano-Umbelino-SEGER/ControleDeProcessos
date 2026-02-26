@@ -1,3 +1,5 @@
+<!-- {% language "django" %} -->
+
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_tags %}
@@ -100,9 +102,8 @@
             <!-- INPUT PROCESSO -->
             <input id="processo_input_visible"
                    type="text"
-                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500"
-                   placeholder="Nome do Processo"
-                   {% if form.instance.tipo == "subprocesso" %}class="hidden"{% endif %}>
+                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo == 'subprocesso' %}hidden{% endif %}"
+                   placeholder="Nome do Processo">
 
             <!-- SELECT PROCESSO -->
             <input type="hidden" id="id_parent" name="parent">
@@ -129,7 +130,7 @@
                    {% if form.instance.tipo != "subprocesso" %}disabled class="bg-gray-100"{% endif %}>
 
             <!-- Hidden nome -->
-            {{ form.nome.as_hidden }}
+            <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
         </div>
 
     </div>
@@ -232,123 +233,19 @@
 </div>
 
 <script>
-/* RADIO PROCESSO / SUBPROCESSO */
-document.addEventListener("DOMContentLoaded", function () {
+/* =========================================================
+   MODO GLOBAL — FONTE ÚNICA DE VERDADE (TEMPLATE)
+   ========================================================= */
+window.MODO = {
+    inclusao: {{ modo_inclusao|yesno:"true,false" }},
+    edicao: {{ modo_edicao|yesno:"true,false" }},
+    visualizacao: {{ modo_visualizacao|yesno:"true,false" }},
+    exclusao: {{ modo_exclusao|yesno:"true,false" }},
+    parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
+};
+</script>
 
-    const rbProcesso = document.getElementById("rb_processo");
-    const rbSubprocesso = document.getElementById("rb_subprocesso");
-
-    const lblProcesso = document.getElementById("lbl_processo");
-    const lblSub = document.getElementById("lbl_subprocesso");
-
-    const lblCampoEsquerdo = document.getElementById("lbl_campo_esquerdo");
-
-    const processoInput = document.getElementById("processo_input_visible");
-    const processoSelectContainer = document.getElementById("processo_select_container");
-
-    const subprocessoInput = document.getElementById("subprocesso_input_visible");
-    const hiddenNome = document.getElementById("id_nome");
-
-    function atualizarLayout() {
-
-        if (rbProcesso.checked) {
-
-            // Estética radios
-            lblProcesso.classList.add("text-blue-700");
-            lblSub.classList.remove("text-blue-700");
-            lblSub.classList.add("text-gray-400");
-
-            // Label esquerdo
-            lblCampoEsquerdo.textContent = "Nome do Processo";
-
-            // Mostrar input texto
-            processoInput.classList.remove("hidden");
-            processoSelectContainer.classList.add("hidden");
-
-            // Limpar select parent
-            const selectParent = document.getElementById("id_parent");
-            if (selectParent) {
-                selectParent.value = "";
-            }
-
-            // Limpar subprocesso
-            subprocessoInput.value = "";
-            hiddenNome.value = processoInput.value;
-
-            // Desabilitar subprocesso
-            subprocessoInput.disabled = true;
-            subprocessoInput.classList.add("bg-gray-100");
-
-            document.getElementById("lbl_campo_direito")
-                .classList.remove("text-blue-700");
-            document.getElementById("lbl_campo_direito")
-                .classList.add("text-gray-400");
-
-        } else {
-
-            // Estética radios
-            lblSub.classList.add("text-blue-700");
-            lblProcesso.classList.remove("text-blue-700");
-            lblProcesso.classList.add("text-gray-400");
-
-            // Label esquerdo
-            lblCampoEsquerdo.textContent = "Selecionar Processo para associar";
-
-            // Mostrar select
-            processoInput.classList.add("hidden");
-            processoSelectContainer.classList.remove("hidden");
-
-            // Forçar select para placeholder
-            const selectParent = document.getElementById("id_parent");
-            if (selectParent) {
-                selectParent.value = "";
-            }
-
-            // Habilitar subprocesso
-            subprocessoInput.disabled = false;
-            subprocessoInput.classList.remove("bg-gray-100");
-
-            document.getElementById("lbl_campo_direito")
-                .classList.remove("text-gray-400");
-            document.getElementById("lbl_campo_direito")
-                .classList.add("text-blue-700");
-        }
-    }
-
-    function sincronizarNome() {
-        if (rbProcesso.checked) {
-            hiddenNome.value = processoInput.value.trim();
-        } else {
-            hiddenNome.value = subprocessoInput.value.trim();
-        }
-    }
-
-    function carregarProcessos() {
-        fetch("/processos/lista-json/")  // ou a rota que você já usa
-            .then(response => response.json())
-            .then(data => {
-
-                const select = document.getElementById("processo_select_visible");
-                select.innerHTML = '<option value="">---------</option>';
-
-                data.forEach(proc => {
-                    const option = document.createElement("option");
-                    option.value = proc.id;
-                    option.textContent = proc.nome;
-                    select.appendChild(option);
-                });
-            });
-    }
-
-    processoInput.addEventListener("input", sincronizarNome);
-    subprocessoInput.addEventListener("input", sincronizarNome);
-
-    rbProcesso.addEventListener("change", atualizarLayout);
-    rbSubprocesso.addEventListener("change", atualizarLayout);
-
-    atualizarLayout();
-});
-
+<script>
 /* CONTADOR */
 function contador(idCampo, idContador) {
     const campo = document.getElementById(idCampo);
@@ -368,6 +265,9 @@ contador("id_observacao", "contador_observacao");
 
 <!-- Macro Classificação Engine -->
 <script src="{% static 'js/macro_classificacao.js' %}"></script>
+
+<!-- JS CENTRALIZADO -->
+<script src="{% static 'js/processos.js' %}"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
