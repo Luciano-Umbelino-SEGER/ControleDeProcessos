@@ -415,6 +415,8 @@ class Processo(models.Model):
     class Meta:
         db_table = "arquiteturaprocessos_processo"
 
+    def __str__(self):
+        return self.nome
 
 # ============================================================
 # PROCESSO – DOCUMENTO (1 Processo → N Modelagens)

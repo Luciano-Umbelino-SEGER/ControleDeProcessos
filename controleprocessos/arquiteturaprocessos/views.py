@@ -601,8 +601,49 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
 class CriarBacklogProcesso(LoginRequiredMixin, CreateView):
     model = BacklogProcesso
     form_class = Form_BacklogProcessoForm
-    template_name = 'backlogprocessos/form_backlogprocesso.html'
-    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+    template_name = "backlogprocessos/form_backlogprocesso.html"
+    success_url = reverse_lazy("arquiteturaprocessos:backlogprocessos")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        agora_local = timezone.localtime(timezone.now())
+
+        context.update({
+            "modo_inclusao": True,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+
+            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+            "cadastro_user": self.request.user.get_full_name()
+                             or self.request.user.username,
+
+            "atualizacao_data": "",
+            "atualizacao_user": "",
+        })
+
+        return context
+
+    def form_valid(self, form):
+        backlog = form.save(commit=False)
+
+        # 🔥 REGRA MÍNIMA ESTRUTURAL
+        if backlog.tipo == BacklogProcesso.TIPO_PROCESSO:
+            backlog.parent = None
+
+        backlog.usuario_cadastro = self.request.user
+        backlog.usuario_atualizacao = None
+
+        backlog.save()
+
+        messages.success(
+            self.request,
+            f"Backlog de Processos '{backlog.nome}' criado com sucesso!"
+        )
+
+        self.object = backlog
+        return redirect(self.success_url)
 
 # --------------------------------#
 # Visualizar Backlog              #
@@ -610,17 +651,102 @@ class CriarBacklogProcesso(LoginRequiredMixin, CreateView):
 class VisualizarBacklogProcesso(LoginRequiredMixin, DetailView):
     model = BacklogProcesso
     form_class = Form_BacklogProcessoForm
-    template_name = 'backlogprocessos/form_backlogprocesso.html'
-    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+    template_name = "backlogprocessos/form_backlogprocesso.html"
+    context_object_name = 'backlogprocessos'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        backlog = self.object
+
+        context["form"] = Form_BacklogProcessoForm(
+            instance=backlog
+        )
+
+        context.update({
+            "modo_visualizacao": True,
+            "modo_inclusao": False,
+            "modo_edicao": False,
+            "modo_exclusao": False,
+
+            "cadastro_data": (
+                timezone.localtime(backlog.data_criacao)
+                .strftime("%d/%m/%Y %H:%M:%S")
+            ),
+
+            "cadastro_user": (
+                backlog.usuario_cadastro.get_full_name()
+                if backlog.usuario_cadastro else ""
+            ),
+
+            "atualizacao_data": (
+                timezone.localtime(backlog.data_atualizacao)
+                .strftime("%d/%m/%Y %H:%M:%S")
+            ),
+
+            "atualizacao_user": (
+                backlog.usuario_atualizacao.get_full_name()
+                if backlog.usuario_atualizacao else ""
+            ),
+        })
+
+        return context
 # --------------------------------#
 # Editar Backlog                  #
 # --------------------------------#
 class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
     model = BacklogProcesso
     form_class = Form_BacklogProcessoForm
-    template_name = 'backlogprocessos/form_backlogprocesso.html'
-    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+    template_name = "backlogprocessos/form_backlogprocesso.html"
+    success_url = reverse_lazy("arquiteturaprocessos:backlogprocessos")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        backlog = self.object
+
+        context.update({
+            "modo_edicao": True,
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+
+            "cadastro_data": (
+                timezone.localtime(backlog.data_criacao)
+                .strftime("%d/%m/%Y %H:%M:%S")
+            ),
+
+            "cadastro_user": (
+                backlog.usuario_cadastro.get_full_name()
+                if backlog.usuario_cadastro else ""
+            ),
+
+            "atualizacao_data": timezone.localtime(
+                timezone.now()
+            ).strftime("%d/%m/%Y %H:%M:%S"),
+
+            "atualizacao_user": (
+                self.request.user.get_full_name()
+                or self.request.user.username
+            ),
+        })
+
+        return context
+
+    def form_valid(self, form):
+        backlog = form.save(commit=False)
+
+        # 🔥 REGRA ESTRUTURAL MÍNIMA
+        if backlog.tipo == BacklogProcesso.TIPO_PROCESSO:
+            backlog.parent = None
+
+        backlog.usuario_atualizacao = self.request.user
+        backlog.save()
+
+        messages.success(
+            self.request,
+            f"Backlog de Processos '{backlog.nome}' atualizado com sucesso!"
+        )
+
+        return super().form_valid(form)
 
 # --------------------------------#
 # Excluir Backlog                 #
@@ -628,9 +754,34 @@ class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
 class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
     model = BacklogProcesso
     form_class = Form_BacklogProcessoForm
-    template_name = 'backlogprocessos/form_backlogprocesso.html'
-    success_url = reverse_lazy('arquiteturaprocessos:backlog')
+    template_name = "backlogprocessos/form_backlogprocesso.html"
+    context_object_name = "backlogprocesso"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        backlog = self.object
+
+        context["form"] = Form_BacklogProcessoForm(instance=backlog)
+
+        context.update({
+            "modo_exclusao": True,
+            "modo_visualizacao": False,
+            "modo_inclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        backlog = self.get_object()
+        backlog.delete()
+
+        messages.success(
+            request,
+            f"Backlog '{backlog.nome}' excluído com sucesso!"
+        )
+
+        return redirect("arquiteturaprocessos:backlog")
 
 # ------------------------------
 # Cadastro / Listagem Usuários

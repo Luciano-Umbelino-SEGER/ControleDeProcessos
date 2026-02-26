@@ -928,7 +928,8 @@ class Form_BacklogProcessoForm(forms.ModelForm):
         # -------------------------------------------------------
         for name, field in self.fields.items():
             bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
-            field.widget.attrs["class"] = f"{base} {bg}"
+            existing = field.widget.attrs.get("class", "")
+            field.widget.attrs["class"] = f"{existing} {base} {bg}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
