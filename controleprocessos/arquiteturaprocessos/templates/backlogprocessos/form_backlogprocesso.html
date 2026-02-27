@@ -132,86 +132,86 @@
             <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
         </div>
 
-    </div>
-        <!-- OBJETIVO / OBSERVAÇÃO -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
+        </div>
+            <!-- OBJETIVO / OBSERVAÇÃO -->
+            <div class="grid grid-cols-2 gap-6 mb-6">
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Objetivo</label>
-                <div class="relative">
-                    {{ form.objetivo|add_attr:"style:text-align:justify;resize:none;" }}
-                    <div class="text-xs text-gray-500 text-right mt-1">
-                        <span id="contador_objetivo">0</span>/500
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Objetivo</label>
+                    <div class="relative">
+                        {{ form.objetivo|add_attr:"style:text-align:justify;resize:none;" }}
+                        <div class="text-xs text-gray-500 text-right mt-1">
+                            <span id="contador_objetivo">0</span>/500
+                        </div>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Observação</label>
+                    <div class="relative">
+                        {{ form.observacao|add_attr:"style:text-align:justify;resize:none;" }}
+                        <div class="text-xs text-gray-500 text-right mt-1">
+                            <span id="contador_observacao">0</span>/500
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ÁREA / GESTOR -->
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
+                    {{ form.area_responsavel }}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Gestor</label>
+                    {{ form.gestor }}
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Observação</label>
-                <div class="relative">
-                    {{ form.observacao|add_attr:"style:text-align:justify;resize:none;" }}
-                    <div class="text-xs text-gray-500 text-right mt-1">
-                        <span id="contador_observacao">0</span>/500
-                    </div>
+            <!-- TELEFONE / EMAIL -->
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
+                    {{ form.telefone }}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">E-mail</label>
+                    {{ form.email }}
                 </div>
             </div>
 
-        </div>
+            <!-- AUDITORIA -->
+            <div class="grid grid-cols-4 gap-6 mb-6">
 
-        <!-- ÁREA / GESTOR -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
-                {{ form.area_responsavel }}
-            </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Cadastro</label>
+                    <input type="text" value="{{ cadastro_data }}" readonly
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                </div>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Gestor</label>
-                {{ form.gestor }}
-            </div>
-        </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
+                    <input type="text" value="{{ cadastro_user }}" readonly
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                </div>
 
-        <!-- TELEFONE / EMAIL -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
-                {{ form.telefone }}
-            </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Atualização</label>
+                    <input type="text" value="{{ atualizacao_data }}" readonly
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                </div>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">E-mail</label>
-                {{ form.email }}
-            </div>
-        </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
+                    <input type="text" value="{{ atualizacao_user }}" readonly
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                 </div>
 
-        <!-- AUDITORIA -->
-        <div class="grid grid-cols-4 gap-6 mb-6">
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Cadastro</label>
-                <input type="text" value="{{ cadastro_data }}" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
-                <input type="text" value="{{ cadastro_user }}" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Atualização</label>
-                <input type="text" value="{{ atualizacao_data }}" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
-                <input type="text" value="{{ atualizacao_user }}" readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-        </div>
+            </div> <!-- fecha grid auditoria -->
 
         </fieldset>
 
@@ -246,10 +246,9 @@
              {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
           </a>
         </div>
-    </div>
 
-    </form>
-</div>
+    </form>  <!-- ✅ fecha form primeiro -->
+</div>      <!-- ✅ depois fecha container externo -->
 
 <script>
 /* =========================================================
