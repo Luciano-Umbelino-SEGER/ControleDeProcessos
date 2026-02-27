@@ -755,7 +755,7 @@ class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
     model = BacklogProcesso
     form_class = Form_BacklogProcessoForm
     template_name = "backlogprocessos/form_backlogprocesso.html"
-    context_object_name = "backlogprocesso"
+    context_object_name = "backlogprocessos"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -781,7 +781,7 @@ class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
             f"Backlog '{backlog.nome}' excluído com sucesso!"
         )
 
-        return redirect("arquiteturaprocessos:backlog")
+        return redirect("arquiteturaprocessos:backlogprocessos")
 
 # ------------------------------
 # Cadastro / Listagem Usuários

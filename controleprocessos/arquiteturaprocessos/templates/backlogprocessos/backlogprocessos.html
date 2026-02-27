@@ -11,7 +11,7 @@
 
      <!-- DIREITA (botão adicionar) -->
       <div class="flex justify-end shrink-0">
-        <a href="{% url 'arquiteturaprocessos:criar_backlog' %}"
+        <a href="{% url 'arquiteturaprocessos:criar_backlogprocesso' %}"
            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded shadow-sm hover:bg-blue-700 transition whitespace-nowrap">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -144,7 +144,7 @@
               <div class="flex justify-center items-center space-x-1.5">
 
                 <!-- VISUALIZAR -->
-                <a href="{% url 'arquiteturaprocessos:visualizar_backlog' processo.pk %}"
+                <a href="{% url 'arquiteturaprocessos:visualizar_backlogprocesso' backlog.pk %}"
                    class="text-blue-600 hover:text-blue-800" title="Visualizar">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,7 +157,7 @@
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
                 <!-- EDITAR -->
-                <a href="{% url 'arquiteturaprocessos:editar_backlog' processo.pk %}"
+                <a href="{% url 'arquiteturaprocessos:editar_backlogprocesso' backlog.pk %}"
                    class="text-yellow-600 hover:text-yellow-800" title="Editar">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                        viewBox="0 0 24 24" stroke="currentColor">
@@ -169,7 +169,7 @@
                 </a>
 
                 <!-- EXCLUIR -->
-                <a href="{% url 'arquiteturaprocessos:excluir_backlog' processo.pk %}"
+                <a href="{% url 'arquiteturaprocessos:excluir_backlogprocesso' backlog.pk %}"
                    class="text-red-600 hover:text-red-800" title="Excluir">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">

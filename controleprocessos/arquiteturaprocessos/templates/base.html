@@ -137,7 +137,7 @@
                 </a>
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
-                <a href="{% url 'arquiteturaprocessos:backlog' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+                <a href="{% url 'arquiteturaprocessos:backlogprocessos' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Backlog de Processos' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-list-check text-xl"></i>

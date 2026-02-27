@@ -29,11 +29,11 @@ urlpatterns = [
     # Estatísticas
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     # Backlog
-    path('backlogprocessos/', BacklogProcessos.as_view(), name='backlog'),
-    path('backlogprocesso/novo/', CriarBacklogProcesso.as_view(), name='criar_backlog'),
-    path('backlogprocesso/<int:pk>/visualizar/', VisualizarBacklogProcesso.as_view(), name='visualizar_backlog'),
-    path('backlogprocesso/<int:pk>/editar/', EditarBacklogProcesso.as_view(), name='editar_backlog'),
-    path('backlogprocesso/<int:pk>/excluir/', ExcluirBacklogProcesso.as_view(), name='excluir_backlog'),
+    path('backlogprocessos/', BacklogProcessos.as_view(), name='backlogprocessos'),
+    path('backlogprocessos/novo/', CriarBacklogProcesso.as_view(), name='criar_backlogprocesso'),
+    path('backlogprocessos/<int:pk>/visualizar/', VisualizarBacklogProcesso.as_view(), name='visualizar_backlogprocesso'),
+    path('backlogprocessos/<int:pk>/editar/', EditarBacklogProcesso.as_view(), name='editar_backlogprocesso'),
+    path('backlogprocessos/<int:pk>/excluir/', ExcluirBacklogProcesso.as_view(), name='excluir_backlogprocesso'),
     # Usuários
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('usuario/novo/', CriarUsuario.as_view(), name='criar_usuario'),
