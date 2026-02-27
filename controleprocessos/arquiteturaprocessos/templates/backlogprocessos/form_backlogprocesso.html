@@ -104,7 +104,10 @@
                    placeholder="Nome do Processo">
 
             <!-- SELECT PROCESSO -->
-            <input type="hidden" id="id_parent" name="parent">
+            <input type="hidden"
+                   id="id_parent"
+                   name="parent"
+                   value="{{ form.instance.parent_id|default_if_none:'' }}">
 
             <div id="processo_select_container" class="hidden">
                 {{ form.parent }}
