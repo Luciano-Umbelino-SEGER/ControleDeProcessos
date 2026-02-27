@@ -33,6 +33,7 @@
 
     <form method="post" id="form-backlog">
         {% csrf_token %}
+        <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
         <!-- LINHA 1 -->
         <div class="grid grid-cols-3 gap-6 mb-6">
@@ -212,21 +213,41 @@
 
         </div>
 
+        </fieldset>
+
         <!-- BOTÕES -->
         <div class="flex justify-end mt-8 space-x-4">
 
-            {% if not modo_visualizacao %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-                    {% if modo_edicao %}Salvar Alterações{% else %}Adicionar Backlog{% endif %}
-                </button>
-            {% endif %}
+          {% if modo_exclusao %}
+            <button @click="$dispatch('abrir-modal-confirmacao', {
+                          url: '{% url 'arquiteturaprocessos:excluir_backlogprocesso' form.instance.pk %}',
+                          mensagem: 'Confirma a exclusão do Backlog de Processo <strong>{{ form.instance.nome }}</strong>?'
+                      })"
+                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                    type="button">
+              Confirmar Exclusão
+            </button>
 
-            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-               href="{% url 'arquiteturaprocessos:backlogprocessos' %}">
-                {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
-            </a>
+          {% elif modo_edicao %}
+            <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                    type="submit">
+              Salvar Alterações
+            </button>
 
+          {% elif modo_inclusao %}
+            <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                    type="submit">
+              Adicionar Backlog
+            </button>
+          {% endif %}
+
+          <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+             href="{% url 'arquiteturaprocessos:backlogprocessos' %}">
+             {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+          </a>
         </div>
+    </div>
+
     </form>
 </div>
 
@@ -282,5 +303,20 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
 initTipoProcesso();
 </script>
+
+<style>
+fieldset[disabled] input,
+fieldset[disabled] select,
+fieldset[disabled] textarea {
+    background-color: #f3f4f6 !important; /* bg-gray-100 real */
+    opacity: 1 !important;               /* remove fade do navegador */
+    color: #374151;                      /* text-gray-700 */
+    cursor: not-allowed;
+}
+
+fieldset[disabled] input[type="radio"] {
+    accent-color: #9ca3af; /* radio cinza */
+}
+</style>
 
 {% endblock %}
