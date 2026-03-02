@@ -27,8 +27,27 @@ function initTipoProcesso(config = {}) {
 
     if (!rbProcesso || !rbSubprocesso) return;
 
+    // 🔥 Memória inicia com valor real atual
+    let memoriaSubprocesso = hiddenNome?.value || "";
+
     /* =====================================================
-       ATUALIZA LAYOUT (VISUAL)
+       FONTE ÚNICA DE VERDADE
+    ====================================================== */
+    function sincronizarNome() {
+        if (!hiddenNome) return;
+
+        if (rbProcesso.checked) {
+            hiddenNome.value = processoInput?.value.trim() || "";
+        } else {
+            hiddenNome.value = subprocessoInput?.value.trim() || "";
+        }
+    }
+
+    processoInput?.addEventListener("input", sincronizarNome);
+    subprocessoInput?.addEventListener("input", sincronizarNome);
+
+    /* =====================================================
+       ATUALIZA LAYOUT
     ====================================================== */
     function atualizarLayout() {
 
@@ -36,85 +55,65 @@ function initTipoProcesso(config = {}) {
 
         if (modoProcesso) {
 
-            // Radios
+            // Visual
             lblProcesso?.classList.add("text-blue-700");
             lblProcesso?.classList.remove("text-gray-400");
 
             lblSubprocesso?.classList.remove("text-blue-700");
             lblSubprocesso?.classList.add("text-gray-400");
 
-            // Labels
             if (lblCampoProcesso) {
                 lblCampoProcesso.textContent = "Nome do Processo";
-                lblCampoProcesso.classList.add("text-blue-700");
-                lblCampoProcesso.classList.remove("text-gray-400");
             }
 
-            lblCampoSubprocesso?.classList.remove("text-blue-700");
-            lblCampoSubprocesso?.classList.add("text-gray-400");
-
-            // Campos
             processoInput?.classList.remove("hidden");
             processoSelectContainer?.classList.add("hidden");
 
+            // 🔥 Guarda antes de limpar
             if (subprocessoInput) {
+                memoriaSubprocesso = subprocessoInput.value;
+                subprocessoInput.value = "";
                 subprocessoInput.disabled = true;
                 subprocessoInput.classList.add("bg-gray-100");
             }
 
-            if (parentField) parentField.value = "";
+            if (parentField) {
+                parentField.value = "";
+            }
 
         } else {
 
-            // Radios
+            // Visual
             lblSubprocesso?.classList.add("text-blue-700");
             lblSubprocesso?.classList.remove("text-gray-400");
 
             lblProcesso?.classList.remove("text-blue-700");
             lblProcesso?.classList.add("text-gray-400");
 
-            // Labels
             if (lblCampoProcesso) {
                 lblCampoProcesso.textContent = "Selecionar Processo para associar";
-                lblCampoProcesso.classList.add("text-blue-700");
-                lblCampoProcesso.classList.remove("text-gray-400");
             }
 
-            lblCampoSubprocesso?.classList.add("text-blue-700");
-            lblCampoSubprocesso?.classList.remove("text-gray-400");
-
-            // Campos
             processoInput?.classList.add("hidden");
             processoSelectContainer?.classList.remove("hidden");
 
             if (subprocessoInput) {
                 subprocessoInput.disabled = false;
                 subprocessoInput.classList.remove("bg-gray-100");
+
+                // 🔥 RESTAURA
+                subprocessoInput.value = memoriaSubprocesso;
             }
         }
+
+        sincronizarNome();
     }
-
-    /* =====================================================
-       SINCRONIZA NOME COM HIDDEN
-    ====================================================== */
-    function sincronizarNome() {
-        if (!hiddenNome) return;
-
-        if (rbProcesso.checked && processoInput) {
-            hiddenNome.value = processoInput.value.trim();
-        } else if (rbSubprocesso.checked && subprocessoInput) {
-            hiddenNome.value = subprocessoInput.value.trim();
-        }
-    }
-
-    processoInput?.addEventListener("input", sincronizarNome);
-    subprocessoInput?.addEventListener("input", sincronizarNome);
 
     rbProcesso.addEventListener("change", atualizarLayout);
     rbSubprocesso.addEventListener("change", atualizarLayout);
 
     /* =====================================================
-       HIDRATAÇÃO INICIAL (AQUI ESTAVA O PROBLEMA)
+       HIDRATAÇÃO INICIAL
     ====================================================== */
 
     if (hiddenNome) {
@@ -128,22 +127,19 @@ function initTipoProcesso(config = {}) {
     }
 
     /* =====================================================
-       SINCRONIZA SELECT DO DJANGO COM HIDDEN PARENT
+       SINCRONIZA SELECT DJANGO COM HIDDEN PARENT
     ====================================================== */
 
     const djangoSelectParent = document.querySelector("#processo_select_container select");
 
     if (djangoSelectParent && parentField) {
 
-        // Preenche select com valor existente
         djangoSelectParent.value = parentField.value || "";
 
-        // Mantém hidden atualizado
         djangoSelectParent.addEventListener("change", function () {
             parentField.value = this.value;
         });
     }
 
-    // Aplica layout final
     atualizarLayout();
 }

@@ -945,12 +945,17 @@ class Form_BacklogProcessoForm(forms.ModelForm):
 
         nome = cleaned.get("nome")
         objetivo = cleaned.get("objetivo")
+        parent = cleaned.get("parent")
 
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
 
         if not objetivo or objetivo.strip() == "":
             self.add_error("objetivo", "Informe o objetivo do Processo.")
+
+        # 🔥 Regra de domínio
+        if cleaned.get("tipo") == "processo":
+            cleaned["parent"] = None
 
         return cleaned
 
