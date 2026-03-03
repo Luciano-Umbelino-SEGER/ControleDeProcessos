@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
-from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView
+from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
@@ -594,7 +594,7 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
             'parent'
         )
 
-#Aqui 2
+#
 # --------------------------------#
 # Criar Backlog                   #
 # --------------------------------#
@@ -681,6 +681,7 @@ class VisualizarBacklogProcesso(LoginRequiredMixin, DetailView):
             "atualizacao_data": (
                 timezone.localtime(backlog.data_atualizacao)
                 .strftime("%d/%m/%Y %H:%M:%S")
+                if backlog.data_atualizacao else ""
             ),
 
             "atualizacao_user": (
@@ -703,6 +704,9 @@ class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         backlog = self.object
 
+        if self.request.session.pop("confirmar_iniciar", None):
+            context["confirmar_iniciar"] = True
+
         context.update({
             "modo_edicao": True,
             "modo_inclusao": False,
@@ -719,13 +723,15 @@ class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
                 if backlog.usuario_cadastro else ""
             ),
 
-            "atualizacao_data": timezone.localtime(
-                timezone.now()
-            ).strftime("%d/%m/%Y %H:%M:%S"),
+            "atualizacao_data": (
+                timezone.localtime(backlog.data_atualizacao)
+                .strftime("%d/%m/%Y %H:%M:%S")
+                if backlog.data_atualizacao else ""
+            ),
 
             "atualizacao_user": (
-                self.request.user.get_full_name()
-                or self.request.user.username
+                backlog.usuario_atualizacao.get_full_name()
+                if backlog.usuario_atualizacao else ""
             ),
         })
 
@@ -734,19 +740,86 @@ class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         backlog = form.save(commit=False)
 
-        # 🔥 REGRA ESTRUTURAL MÍNIMA
         if backlog.tipo == BacklogProcesso.TIPO_PROCESSO:
             backlog.parent = None
 
+        acao = self.request.POST.get("acao")
+
+        # 🔥 Validação forte antes do modal
+        if acao == "iniciar":
+
+            erros = backlog.validar_para_iniciar()
+
+            if erros:
+                for erro in erros:
+                    form.add_error(None, erro)
+
+                return self.form_invalid(form)
+
+        # 🔥 Persistência normal
         backlog.usuario_atualizacao = self.request.user
+        backlog.data_atualizacao = timezone.now()
         backlog.save()
+        self.object = backlog
+
+        if acao == "iniciar":
+            self.request.session["confirmar_iniciar"] = True
+            return redirect(
+                "arquiteturaprocessos:editar_backlogprocesso",
+                pk=backlog.pk
+            )
 
         messages.success(
             self.request,
-            f"Backlog de Processos '{backlog.nome}' atualizado com sucesso!"
+            f"Backlog '{backlog.nome}' atualizado com sucesso!"
         )
 
-        return super().form_valid(form)
+        return redirect(self.success_url)
+
+#Aqui 2
+# ----------------------------------------#
+# Iniciar Processo - Backlog --> processo #
+# ----------------------------------------#
+class ExecutarIniciarBacklogProcesso(LoginRequiredMixin, View):
+
+    def post(self, request, pk):
+
+        backlog = get_object_or_404(BacklogProcesso, pk=pk)
+
+        erros = backlog.validar_para_iniciar()
+
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+
+            return redirect("arquiteturaprocessos:editar_backlogprocesso", pk=pk)
+
+        # 🔥 Transformação segura
+        with transaction.atomic():
+
+            processo = Processo.objects.create(
+                nome=backlog.nome.strip(),
+                gestor=backlog.gestor.strip(),
+                email=backlog.email.strip(),
+                telefone=backlog.telefone.strip(),
+                objetivo=backlog.objetivo.strip(),
+                observacao=backlog.observacao,
+                classificacao=backlog.classificacao,
+                macroprocesso_nivel1=backlog.macroprocesso_nivel1,
+                macroprocesso_nivel2=backlog.macroprocesso_nivel2,
+                parent=backlog.parent if backlog.tipo == BacklogProcesso.TIPO_SUBPROCESSO else None,
+                area_responsavel=backlog.area_responsavel.strip(),
+                usuario_cadastro=backlog.usuario_cadastro,  # mantém autor original
+            )
+
+            backlog.delete()
+
+        messages.success(
+            request,
+            f"Processo '{processo.nome}' criado com sucesso!"
+        )
+
+        return redirect("arquiteturaprocessos:processos")
 
 # --------------------------------#
 # Excluir Backlog                 #
@@ -761,13 +834,23 @@ class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         backlog = self.object
 
-        context["form"] = Form_BacklogProcessoForm(instance=backlog)
+        context["form"] = Form_BacklogProcessoForm(
+            instance=backlog,
+            modo_exclusao=True
+        )
 
         context.update({
             "modo_exclusao": True,
             "modo_visualizacao": False,
             "modo_inclusao": False,
             "modo_edicao": False,
+
+            # 🔵 CAMPOS DE AUDITORIA
+            "cadastro_data": backlog.data_criacao.strftime("%d/%m/%Y %H:%M:%S") if backlog.data_criacao else "",
+            "cadastro_user": backlog.usuario_cadastro if backlog.usuario_cadastro else "",
+            "atualizacao_data": backlog.data_atualizacao.strftime(
+                "%d/%m/%Y %H:%M:%S") if backlog.data_atualizacao else "",
+            "atualizacao_user": backlog.usuario_atualizacao if backlog.usuario_atualizacao else "",
         })
 
         return context

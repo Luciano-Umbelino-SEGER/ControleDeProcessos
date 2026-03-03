@@ -22,12 +22,25 @@
 
     {% if form.errors %}
     <div class="alert alert-danger mb-4">
-        <strong>Erros ao salvar:</strong>
-        <ul>
-            {% for field, errors in form.errors.items %}
-                <li><strong>{{ field }}:</strong> {{ errors|striptags }}</li>
-            {% endfor %}
-        </ul>
+         {% if form.errors %}
+             <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-6">
+                 <strong class="block mb-2">
+                     Não foi possível iniciar o processo devido às seguintes inconsistências:
+                 </strong>
+
+                 <ul class="list-disc list-inside space-y-1">
+                     {% for error in form.non_field_errors %}
+                         <li>{{ error }}</li>
+                     {% endfor %}
+
+                     {% for field in form %}
+                         {% for error in field.errors %}
+                             <li>{{ error }}</li>
+                         {% endfor %}
+                     {% endfor %}
+                 </ul>
+             </div>
+         {% endif %}
     </div>
     {% endif %}
 
@@ -124,9 +137,9 @@
 
             <input id="subprocesso_input_visible"
                    type="text"
-                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500"
+                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' %}bg-gray-100{% endif %}"
                    placeholder="Nome do Subprocesso"
-                   {% if form.instance.tipo != "subprocesso" %}disabled class="bg-gray-100"{% endif %}>
+                   {% if form.instance.tipo != "subprocesso" %}disabled{% endif %}>
 
             <!-- Hidden nome -->
             <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
@@ -229,6 +242,14 @@
             </button>
 
           {% elif modo_edicao %}
+
+           <button type="submit"
+                   name="acao"
+                   value="iniciar"
+                   class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
+              Iniciar Processo
+           </button>
+
             <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="submit">
               Salvar Alterações
@@ -302,6 +323,42 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
 initTipoProcesso();
 </script>
+
+{# =========================================================
+   MODAL AUTOMÁTICO – CONFIRMAÇÃO DE INICIALIZAÇÃO
+   ---------------------------------------------------------
+   Este bloco escuta a mensagem especial "CONFIRMAR_INICIAR"
+   enviada pela UpdateView após salvar o formulário quando
+   o usuário clica em "Iniciar Processo".
+
+   Fluxo:
+   1) Usuário salva (acao=iniciar)
+   2) View salva o Backlog e adiciona message CONFIRMAR_INICIAR
+   3) Página recarrega
+   4) Este script detecta a flag e dispara o modal global
+   5) Modal chama a URL executar_iniciar_backlog
+
+   ⚠ Importante:
+   - Não remover sem revisar o fluxo de transformação
+   - Depende do modal global 'abrir-modal-confirmacao'
+   ========================================================= #}
+
+{% if confirmar_iniciar %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            window.dispatchEvent(new CustomEvent("abrir-modal-confirmacao", {
+                detail: {
+                    url: "{% url 'arquiteturaprocessos:executar_iniciar_backlog' form.instance.pk %}",
+                    mensagem: `
+                        Você está prestes a transformar o backlog {{ form.instance.tipo }} -
+                        <strong>{{ form.instance.nome }}</strong>.<br><br>
+                        Confirma a inicialização do processo?
+                    `
+                }
+            }));
+        });
+    </script>
+{% endif %}
 
 <style>
 fieldset[disabled] input,

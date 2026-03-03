@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator, FileExtensionValidator, validate_email
 from django.core.exceptions import ValidationError
 
 # ============================================================
@@ -292,7 +292,7 @@ class BacklogProcesso(models.Model):
     observacao = models.TextField(blank=True)
 
     data_criacao = models.DateTimeField(auto_now_add=True)
-    data_atualizacao = models.DateTimeField(auto_now=True)
+    data_atualizacao = models.DateTimeField(null=True, blank=True)
 
     area_responsavel = models.CharField(max_length=100)
 
@@ -354,6 +354,46 @@ class BacklogProcesso(models.Model):
             models.Index(fields=['tipo', 'macroprocesso_nivel1']),
             models.Index(fields=['tipo', 'macroprocesso_nivel2']),
         ]
+
+    def validar_para_iniciar(self):
+        erros = []
+
+        if not self.nome or not self.nome.strip():
+            erros.append("Nome do Processo/Subprocesso é obrigatório.")
+
+        if not self.classificacao:
+            erros.append("Classificação é obrigatória.")
+
+        if self.macroprocesso_nivel2 and not self.macroprocesso_nivel1:
+            erros.append("Macroprocesso Nível 1 é obrigatório quando Macroprocesso Nível 2 for informado.")
+
+        if self.tipo not in dict(self.TIPO_CHOICES):
+            erros.append("Tipo de processo inválido.")
+
+        if self.tipo == self.TIPO_SUBPROCESSO and not self.parent:
+            erros.append("Subprocesso deve estar vinculado a um Processo.")
+
+        if not self.objetivo or not self.objetivo.strip():
+            erros.append("Objetivo é obrigatório.")
+
+        if not self.area_responsavel or not self.area_responsavel.strip():
+            erros.append("Área Responsável é obrigatória.")
+
+        if not self.gestor or not self.gestor.strip():
+            erros.append("Gestor é obrigatório.")
+
+        if not self.telefone or not self.telefone.strip():
+            erros.append("Telefone é obrigatório.")
+
+        if not self.email or not self.email.strip():
+            erros.append("E-mail é obrigatório.")
+        else:
+            try:
+                validate_email(self.email)
+            except ValidationError:
+                erros.append("E-mail inválido.")
+
+        return erros
 
     def __str__(self):
         return self.nome
