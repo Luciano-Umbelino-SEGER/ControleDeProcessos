@@ -581,11 +581,39 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['classificacoes'] = Classificacao.objects.all()
+        return context
+
     def get_queryset(self):
         queryset = super().get_queryset().order_by('-data_criacao')
 
-        # Futuramente aqui entram os filtros
-        # Ex: nome, classificacao, macroprocesso, etc.
+        # ===== FILTROS =====
+        nome = self.request.GET.get("nome")
+        pai = self.request.GET.get("pai")
+        classificacao = self.request.GET.get("classificacao")
+        macro1 = self.request.GET.get("macro1")
+        macro2 = self.request.GET.get("macro2")
+        area = self.request.GET.get("area")
+
+        if nome:
+            queryset = queryset.filter(nome__icontains=nome)
+
+        if pai:
+            queryset = queryset.filter(parent__nome__icontains=pai)
+
+        if classificacao:
+            queryset = queryset.filter(classificacao_id=classificacao)
+
+        if macro1:
+            queryset = queryset.filter(macroprocesso_nivel1__nome__icontains=macro1)
+
+        if macro2:
+            queryset = queryset.filter(macroprocesso_nivel2__nome__icontains=macro2)
+
+        if area:
+            queryset = queryset.filter(area_responsavel__icontains=area)
 
         return queryset.select_related(
             'classificacao',
@@ -594,7 +622,6 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
             'parent'
         )
 
-#
 # --------------------------------#
 # Criar Backlog                   #
 # --------------------------------#
