@@ -585,6 +585,11 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         context['classificacoes'] = Classificacao.objects.all()
         return context
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_registros'] = self.get_queryset().count()
+        return context
+
     def get_queryset(self):
 
         queryset = super().get_queryset().order_by('-data_criacao')
