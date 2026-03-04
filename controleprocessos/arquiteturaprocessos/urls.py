@@ -29,7 +29,7 @@ urlpatterns = [
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     # Estatísticas
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
-    # Backlog
+    # BProcesso a Mapear
     path('processosmapear/', ProcessosMapear.as_view(), name='processosmapear'),
     path('processosmapear/novo/', CriarProcessoMapear.as_view(), name='criar_processomapear'),
     path('processosmapear/<int:pk>/visualizar/', VisualizarProcessoMapear.as_view(), name='visualizar_processomapear'),

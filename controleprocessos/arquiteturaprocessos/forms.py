@@ -13,7 +13,7 @@ from django.forms.widgets import Select
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-    ModelagemProcesso, Processo, TiposDocumento, BacklogProcesso
+    ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear
 )
 
 UserModel = get_user_model()
@@ -852,9 +852,8 @@ class Form_ProcessoForm(forms.ModelForm):
 
         return cleaned
 
-#Aqui 1
 # ----------------------------------
-# Backlog de Processos - Formulário
+# Processo a Mapear - Formulário
 # ----------------------------------
 class Form_ProcessoMapearForm(forms.ModelForm):
 
@@ -885,7 +884,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
     )
 
     class Meta:
-        model = BacklogProcesso
+        model = ProcessoMapear
         exclude = (
             "usuario_cadastro",
             "usuario_atualizacao",
@@ -938,7 +937,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
                 field.disabled = True
 
     # ------------------------------------------------
-    # CLEAN – Regras leves para Backlog
+    # CLEAN – Regras leves para Processos a Mapear
     # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
@@ -955,10 +954,10 @@ class Form_ProcessoMapearForm(forms.ModelForm):
             self.add_error("objetivo", "Informe o objetivo do Processo.")
 
         # 🔥 Regra de domínio
-        if tipo == BacklogProcesso.TIPO_PROCESSO:
+        if tipo == ProcessoMapear.TIPO_PROCESSO:
             cleaned["parent"] = None
 
-        if tipo == BacklogProcesso.TIPO_SUBPROCESSO and not parent:
+        if tipo == ProcessoMapear.TIPO_SUBPROCESSO and not parent:
             self.add_error("parent", "Subprocesso deve estar vinculado a um Processo.")
 
         return cleaned

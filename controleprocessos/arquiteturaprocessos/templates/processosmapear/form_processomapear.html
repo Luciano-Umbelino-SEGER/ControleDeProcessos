@@ -234,7 +234,7 @@
           {% if modo_exclusao %}
             <button @click="$dispatch('abrir-modal-confirmacao', {
                           url: '{% url 'arquiteturaprocessos:excluir_processomapear' form.instance.pk %}',
-                          mensagem: 'Confirma a exclusão do Processo a Mapear de Processo <strong>{{ form.instance.nome }}</strong>?'
+                          mensagem: 'Confirma a exclusão do Processo a Mapear <strong>{{ form.instance.nome }}</strong>?'
                       })"
                     class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="button">
@@ -352,9 +352,9 @@ document.addEventListener("DOMContentLoaded", function() {
         detail: {
             url: "{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}",
             mensagem: `
-                Você está prestes a transformar o Processo a Mapear {{ form.instance.tipo }} -
-                <strong>{{ form.instance.nome }}</strong>.<br><br>
-                Confirma a inicialização do processo?
+                Você está prestes a transformar o Processo a Mapear -
+                <strong>{{ form.instance.nome }}</strong>, em um {{ form.instance.tipo }}.<br><br>
+                Confirma a inicialização do {{ form.instance.tipo }}?
             `
         }
     }));

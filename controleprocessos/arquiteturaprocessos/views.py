@@ -34,7 +34,7 @@ from arquiteturaprocessos.utils.utils import definir_senha_e_enviar_email
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
-    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, BacklogProcesso,
+    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,
 )
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
@@ -566,12 +566,11 @@ class Estatisticas(LoginRequiredMixin, ListView):
     template_name = 'estatisticas.html'
     model = Processo
 
-#Aqui 1
 # ---------------------------
-#  Backlog de Processos
+#  Processo a Mapear
 # ---------------------------
 class ProcessosMapear(LoginRequiredMixin, ListView):
-    model = BacklogProcesso
+    model = ProcessoMapear
     template_name = 'processosmapear/processosmapear.html'
     context_object_name = 'processosmapear'
     paginate_by = 10
@@ -623,10 +622,10 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         )
 
 # --------------------------------#
-# Criar Backlog                   #
+# Criar Processo a Mapear         #
 # --------------------------------#
 class CriarProcessoMapear(LoginRequiredMixin, CreateView):
-    model = BacklogProcesso
+    model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
@@ -653,40 +652,40 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        backlog = form.save(commit=False)
+        processomapear = form.save(commit=False)
 
         # 🔥 REGRA MÍNIMA ESTRUTURAL
-        if backlog.tipo == BacklogProcesso.TIPO_PROCESSO:
-            backlog.parent = None
+        if processomapear.tipo == ProcessoMapear.TIPO_PROCESSO:
+            processomapear.parent = None
 
-        backlog.usuario_cadastro = self.request.user
-        backlog.usuario_atualizacao = None
+        processomapear.usuario_cadastro = self.request.user
+        processomapear.usuario_atualizacao = None
 
-        backlog.save()
+        processomapear.save()
 
         messages.success(
             self.request,
-            f"Backlog de Processos '{backlog.nome}' criado com sucesso!"
+            f"Processo a Mapear '{processomapear.nome}' criado com sucesso!"
         )
 
-        self.object = backlog
+        self.object = processomapear
         return redirect(self.success_url)
 
 # --------------------------------#
-# Visualizar Backlog              #
+# Visualizar Processo a Mapear    #
 # --------------------------------#
 class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
-    model = BacklogProcesso
+    model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
-    context_object_name = 'processosmapear'
+    context_object_name = 'processomapear'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        backlog = self.object
+        processomapear = self.object
 
         context["form"] = Form_ProcessoMapearForm(
-            instance=backlog
+            instance=processomapear
         )
 
         context.update({
@@ -696,40 +695,40 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
             "modo_exclusao": False,
 
             "cadastro_data": (
-                timezone.localtime(backlog.data_criacao)
+                timezone.localtime(processomapear.data_criacao)
                 .strftime("%d/%m/%Y %H:%M:%S")
             ),
 
             "cadastro_user": (
-                backlog.usuario_cadastro.get_full_name()
-                if backlog.usuario_cadastro else ""
+                processomapear.usuario_cadastro.get_full_name()
+                if processomapear.usuario_cadastro else ""
             ),
 
             "atualizacao_data": (
-                timezone.localtime(backlog.data_atualizacao)
+                timezone.localtime(processomapear.data_atualizacao)
                 .strftime("%d/%m/%Y %H:%M:%S")
-                if backlog.data_atualizacao else ""
+                if processomapear.data_atualizacao else ""
             ),
 
             "atualizacao_user": (
-                backlog.usuario_atualizacao.get_full_name()
-                if backlog.usuario_atualizacao else ""
+                processomapear.usuario_atualizacao.get_full_name()
+                if processomapear.usuario_atualizacao else ""
             ),
         })
 
         return context
 # --------------------------------#
-# Editar Backlog                  #
+# Editar Processo a Mapear        #
 # --------------------------------#
 class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
-    model = BacklogProcesso
+    model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        backlog = self.object
+        processomapear = self.object
 
         if self.request.session.pop("confirmar_iniciar", None):
             context["confirmar_iniciar"] = True
@@ -741,41 +740,41 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             "modo_exclusao": False,
 
             "cadastro_data": (
-                timezone.localtime(backlog.data_criacao)
+                timezone.localtime(processomapear.data_criacao)
                 .strftime("%d/%m/%Y %H:%M:%S")
             ),
 
             "cadastro_user": (
-                backlog.usuario_cadastro.get_full_name()
-                if backlog.usuario_cadastro else ""
+                processomapear.usuario_cadastro.get_full_name()
+                if processomapear.usuario_cadastro else ""
             ),
 
             "atualizacao_data": (
-                timezone.localtime(backlog.data_atualizacao)
+                timezone.localtime(processomapear.data_atualizacao)
                 .strftime("%d/%m/%Y %H:%M:%S")
-                if backlog.data_atualizacao else ""
+                if processomapear.data_atualizacao else ""
             ),
 
             "atualizacao_user": (
-                backlog.usuario_atualizacao.get_full_name()
-                if backlog.usuario_atualizacao else ""
+                processomapear.usuario_atualizacao.get_full_name()
+                if processomapear.usuario_atualizacao else ""
             ),
         })
 
         return context
 
     def form_valid(self, form):
-        backlog = form.save(commit=False)
+        processomapear = form.save(commit=False)
 
-        if backlog.tipo == BacklogProcesso.TIPO_PROCESSO:
-            backlog.parent = None
+        if processomapear.tipo == ProcessoMapear.TIPO_PROCESSO:
+            processomapear.parent = None
 
         acao = self.request.POST.get("acao")
 
         # 🔥 Validação forte antes do modal
         if acao == "iniciar":
 
-            erros = backlog.validar_para_iniciar()
+            erros = processomapear.validar_para_iniciar()
 
             if erros:
                 for erro in erros:
@@ -784,36 +783,35 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 return self.form_invalid(form)
 
         # 🔥 Persistência normal
-        backlog.usuario_atualizacao = self.request.user
-        backlog.data_atualizacao = timezone.now()
-        backlog.save()
-        self.object = backlog
+        processomapear.usuario_atualizacao = self.request.user
+        processomapear.data_atualizacao = timezone.now()
+        processomapear.save()
+        self.object = processomapear
 
         if acao == "iniciar":
             self.request.session["confirmar_iniciar"] = True
             return redirect(
                 "arquiteturaprocessos:editar_processomapear",
-                pk=backlog.pk
+                pk=processomapear.pk
             )
 
         messages.success(
             self.request,
-            f"Backlog '{backlog.nome}' atualizado com sucesso!"
+            f"Processo a Mapear '{processomapear.nome}' atualizado com sucesso!"
         )
 
         return redirect(self.success_url)
 
-#Aqui 2
-# ----------------------------------------#
-# Iniciar Processo - Backlog --> processo #
-# ----------------------------------------#
+# --------------------------------------------------#
+# Iniciar Processo - Processo a Mapear --> processo #
+# --------------------------------------------------#
 class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
 
     def post(self, request, pk):
 
-        backlog = get_object_or_404(BacklogProcesso, pk=pk)
+        processomapear = get_object_or_404(ProcessoMapear, pk=pk)
 
-        erros = backlog.validar_para_iniciar()
+        erros = processomapear.validar_para_iniciar()
 
         if erros:
             for erro in erros:
@@ -825,21 +823,21 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
         with transaction.atomic():
 
             processo = Processo.objects.create(
-                nome=backlog.nome.strip(),
-                gestor=backlog.gestor.strip(),
-                email=backlog.email.strip(),
-                telefone=backlog.telefone.strip(),
-                objetivo=backlog.objetivo.strip(),
-                observacao=backlog.observacao,
-                classificacao=backlog.classificacao,
-                macroprocesso_nivel1=backlog.macroprocesso_nivel1,
-                macroprocesso_nivel2=backlog.macroprocesso_nivel2,
-                parent=backlog.parent if backlog.tipo == BacklogProcesso.TIPO_SUBPROCESSO else None,
-                area_responsavel=backlog.area_responsavel.strip(),
-                usuario_cadastro=backlog.usuario_cadastro,  # mantém autor original
+                nome=processomapear.nome.strip(),
+                gestor=processomapear.gestor.strip(),
+                email=processomapear.email.strip(),
+                telefone=processomapear.telefone.strip(),
+                objetivo=processomapear.objetivo.strip(),
+                observacao=processomapear.observacao,
+                classificacao=processomapear.classificacao,
+                macroprocesso_nivel1=processomapear.macroprocesso_nivel1,
+                macroprocesso_nivel2=processomapear.macroprocesso_nivel2,
+                parent=processomapear.parent if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO else None,
+                area_responsavel=processomapear.area_responsavel.strip(),
+                usuario_cadastro=processomapear.usuario_cadastro,  # mantém autor original
             )
 
-            backlog.delete()
+            processomapear.delete()
 
         messages.success(
             request,
@@ -849,20 +847,20 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
         return redirect("arquiteturaprocessos:processos")
 
 # --------------------------------#
-# Excluir Backlog                 #
+# Excluir Processo a Mapear       #
 # --------------------------------#
 class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
-    model = BacklogProcesso
+    model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     context_object_name = "processosmapear"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        backlog = self.object
+        processomapear = self.object
 
         context["form"] = Form_ProcessoMapearForm(
-            instance=backlog,
+            instance=processomapear,
             modo_exclusao=True
         )
 
@@ -873,22 +871,22 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
             "modo_edicao": False,
 
             # 🔵 CAMPOS DE AUDITORIA
-            "cadastro_data": backlog.data_criacao.strftime("%d/%m/%Y %H:%M:%S") if backlog.data_criacao else "",
-            "cadastro_user": backlog.usuario_cadastro if backlog.usuario_cadastro else "",
-            "atualizacao_data": backlog.data_atualizacao.strftime(
-                "%d/%m/%Y %H:%M:%S") if backlog.data_atualizacao else "",
-            "atualizacao_user": backlog.usuario_atualizacao if backlog.usuario_atualizacao else "",
+            "cadastro_data": processomapear.data_criacao.strftime("%d/%m/%Y %H:%M:%S") if processomapear.data_criacao else "",
+            "cadastro_user": processomapear.usuario_cadastro if processomapear.usuario_cadastro else "",
+            "atualizacao_data": processomapear.data_atualizacao.strftime(
+                "%d/%m/%Y %H:%M:%S") if processomapear.data_atualizacao else "",
+            "atualizacao_user": processomapear.usuario_atualizacao if processomapear.usuario_atualizacao else "",
         })
 
         return context
 
     def post(self, request, *args, **kwargs):
-        backlog = self.get_object()
-        backlog.delete()
+        processomapear = self.get_object()
+        processomapear.delete()
 
         messages.success(
             request,
-            f"Backlog '{backlog.nome}' excluído com sucesso!"
+            f"Processo a Mapear '{processomapear.nome}' excluído com sucesso!"
         )
 
         return redirect("arquiteturaprocessos:processosmapear")

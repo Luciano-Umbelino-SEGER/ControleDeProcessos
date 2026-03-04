@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Antes do submit – sincronizar nome e parent
     // ===============================
     (function syncBeforeSubmit() {
-        const form = document.getElementById("form-processo") || document.getElementById("form-backlog");
+        const form = document.getElementById("form-processo") || document.getElementById("form-processomapear");
         if (!form) return;
 
         form.addEventListener("submit", function (ev) {

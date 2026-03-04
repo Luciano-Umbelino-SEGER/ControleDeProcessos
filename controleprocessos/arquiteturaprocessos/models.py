@@ -270,9 +270,9 @@ class ModelagemProcesso(models.Model):
         return f"{self.titulo} - {self.codigo}-{self.sequencial} - V{self.versao}"
 #Aqui 1
 # ============================================================
-# Backlog de PROCESSO / SUBPROCESSO
+# Processos a Mapear
 # ============================================================
-class BacklogProcesso(models.Model):
+class ProcessoMapear(models.Model):
 
     TIPO_PROCESSO = "processo"
     TIPO_SUBPROCESSO = "subprocesso"
@@ -322,19 +322,19 @@ class BacklogProcesso(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='subprocessos_backlog'
+        related_name='subprocessos_processomapear'
     )
 
     usuario_cadastro = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name='backlogs_criados'
+        related_name='processosmapear_criados'
     )
 
     usuario_atualizacao = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name='backlogs_atualizados',
+        related_name='processosmapear_atualizados',
         null=True,
         blank=True
     )
