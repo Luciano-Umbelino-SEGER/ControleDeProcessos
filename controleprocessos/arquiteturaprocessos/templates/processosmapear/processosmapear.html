@@ -30,17 +30,30 @@
                             text-black placeholder-gray-400">
             </div>
 
-            <!-- Processo Pai -->
+            <!-- Tipo -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Processo Pai
+                Tipo
               </label>
-              <input type="text" name="pai"
-                     value="{{ request.GET.pai }}"
-                     placeholder="Digite processo pai..."
-                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 focus:outline-none
-                            text-black placeholder-gray-400">
+
+              <select name="tipo"
+                  class="w-36 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                         focus:ring-2 focus:ring-blue-500 focus:outline-none
+                         {% if request.GET.tipo %}text-black{% else %}text-gray-400{% endif %}">
+
+                  <option value="">Todos</option>
+
+                  <option value="processo"
+                      {% if request.GET.tipo == "processo" %}selected{% endif %}>
+                      Processo
+                  </option>
+
+                  <option value="subprocesso"
+                      {% if request.GET.tipo == "subprocesso" %}selected{% endif %}>
+                      Subprocesso
+                  </option>
+
+              </select>
             </div>
 
             <!-- Classificação -->
@@ -135,18 +148,16 @@
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 px-3 text-left w-[14%]">Processo / Subprocesso</th>
-            <th class="py-3 px-3 text-left w-[18%]">Objetivo</th>
-            <th class="py-3 px-2 text-left w-[10%]">Processo Pai</th>
+            <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
+            <th class="py-3 px-2 text-left w-[7%]">Tipo</th>
             <th class="py-3 px-2 text-left w-[8%]">Classificação</th>
-            <th class="py-3 px-2 text-left w-[8%]">Macro N1</th>
-            <th class="py-3 px-2 text-left w-[8%]">Macro N2</th>
-            <th class="py-3 px-2 text-left w-[8%]">Área</th>
+            <th class="py-3 px-2 text-left w-[10%]">Macro N1</th>
+            <th class="py-3 px-2 text-left w-[10%]">Macro N2</th>
+            <th class="py-3 px-2 text-left w-[9%]">Área</th>
             <th class="py-3 px-2 text-left w-[8%]">Gestor</th>
             <th class="py-3 px-2 text-left w-[10%]">E-mail</th>
             <th class="py-3 px-2 text-left w-[6%]">Telefone</th>
             <th class="py-3 px-2 text-left w-[6%]">Criação</th>
-            <th class="py-3 px-2 text-left w-[6%]">Atualização</th>
             <th class="py-3 px-2 text-center w-[8%]">Ações</th>
           </tr>
         </thead>
@@ -162,14 +173,18 @@
               {{ processomapear.nome }}
             </td>
 
-            <td class="py-3 px-3">
-              <div class="line-clamp-2">
-                {{ processomapear.objetivo }}
-              </div>
-            </td>
-
             <td class="py-3 px-2">
-              {{ processomapear.parent|default:"—" }}
+              {% if processomapear.tipo == "processo" %}
+                  <span class="px-2 py-0.5 text-xs font-semibold bg-blue-600 text-white rounded">
+                      Processo
+                  </span>
+
+              {% elif processomapear.tipo == "subprocesso" %}
+                  <span class="px-2 py-0.5 text-xs font-semibold bg-blue-200 text-blue-800 rounded">
+                      Subprocesso
+                  </span>
+
+              {% endif %}
             </td>
 
             <td class="py-3 px-2">
@@ -203,12 +218,6 @@
             <td class="py-3 px-2">
               {% if processomapear.data_criacao %}
                   {{ processomapear.data_criacao|date:"d/m/Y" }}
-              {% else %}—{% endif %}
-            </td>
-
-            <td class="py-3 px-2">
-              {% if processomapear.data_atualizacao %}
-                  {{ processomapear.data_atualizacao|date:"d/m/Y" }}
               {% else %}—{% endif %}
             </td>
 
@@ -264,7 +273,7 @@
           {% empty %}
 
             <tr>
-              <td colspan="13" class="py-4 px-4 text-center text-gray-500">
+              <td colspan="11" class="py-4 px-4 text-center text-gray-500">
                 Nenhum Processo a Mapear cadastrado.
               </td>
             </tr>

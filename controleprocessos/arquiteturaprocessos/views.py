@@ -586,11 +586,12 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
+
         queryset = super().get_queryset().order_by('-data_criacao')
 
         # ===== FILTROS =====
         nome = self.request.GET.get("nome")
-        pai = self.request.GET.get("pai")
+        tipo = self.request.GET.get("tipo")
         classificacao = self.request.GET.get("classificacao")
         macro1 = self.request.GET.get("macro1")
         macro2 = self.request.GET.get("macro2")
@@ -599,8 +600,8 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         if nome:
             queryset = queryset.filter(nome__icontains=nome)
 
-        if pai:
-            queryset = queryset.filter(parent__nome__icontains=pai)
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
 
         if classificacao:
             queryset = queryset.filter(classificacao_id=classificacao)
