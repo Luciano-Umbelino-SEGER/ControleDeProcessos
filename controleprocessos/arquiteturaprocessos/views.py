@@ -39,7 +39,7 @@ from .models import (
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
-    Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_BacklogProcessoForm,
+    Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
 
 # ---------------------------------------------------
@@ -570,10 +570,10 @@ class Estatisticas(LoginRequiredMixin, ListView):
 # ---------------------------
 #  Backlog de Processos
 # ---------------------------
-class BacklogProcessos(LoginRequiredMixin, ListView):
+class ProcessosMapear(LoginRequiredMixin, ListView):
     model = BacklogProcesso
-    template_name = 'backlogprocessos/backlogprocessos.html'
-    context_object_name = 'backlogprocessos'
+    template_name = 'processosmapear/processosmapear.html'
+    context_object_name = 'processosmapear'
     paginate_by = 10
 
     def dispatch(self, request, *args, **kwargs):
@@ -625,11 +625,11 @@ class BacklogProcessos(LoginRequiredMixin, ListView):
 # --------------------------------#
 # Criar Backlog                   #
 # --------------------------------#
-class CriarBacklogProcesso(LoginRequiredMixin, CreateView):
+class CriarProcessoMapear(LoginRequiredMixin, CreateView):
     model = BacklogProcesso
-    form_class = Form_BacklogProcessoForm
-    template_name = "backlogprocessos/form_backlogprocesso.html"
-    success_url = reverse_lazy("arquiteturaprocessos:backlogprocessos")
+    form_class = Form_ProcessoMapearForm
+    template_name = "processosmapear/form_processomapear.html"
+    success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -675,17 +675,17 @@ class CriarBacklogProcesso(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Backlog              #
 # --------------------------------#
-class VisualizarBacklogProcesso(LoginRequiredMixin, DetailView):
+class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
     model = BacklogProcesso
-    form_class = Form_BacklogProcessoForm
-    template_name = "backlogprocessos/form_backlogprocesso.html"
-    context_object_name = 'backlogprocessos'
+    form_class = Form_ProcessoMapearForm
+    template_name = "processosmapear/form_processomapear.html"
+    context_object_name = 'processosmapear'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         backlog = self.object
 
-        context["form"] = Form_BacklogProcessoForm(
+        context["form"] = Form_ProcessoMapearForm(
             instance=backlog
         )
 
@@ -721,11 +721,11 @@ class VisualizarBacklogProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Editar Backlog                  #
 # --------------------------------#
-class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
+class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
     model = BacklogProcesso
-    form_class = Form_BacklogProcessoForm
-    template_name = "backlogprocessos/form_backlogprocesso.html"
-    success_url = reverse_lazy("arquiteturaprocessos:backlogprocessos")
+    form_class = Form_ProcessoMapearForm
+    template_name = "processosmapear/form_processomapear.html"
+    success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -792,7 +792,7 @@ class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
         if acao == "iniciar":
             self.request.session["confirmar_iniciar"] = True
             return redirect(
-                "arquiteturaprocessos:editar_backlogprocesso",
+                "arquiteturaprocessos:editar_processomapear",
                 pk=backlog.pk
             )
 
@@ -807,7 +807,7 @@ class EditarBacklogProcesso(LoginRequiredMixin, UpdateView):
 # ----------------------------------------#
 # Iniciar Processo - Backlog --> processo #
 # ----------------------------------------#
-class ExecutarIniciarBacklogProcesso(LoginRequiredMixin, View):
+class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
 
     def post(self, request, pk):
 
@@ -819,7 +819,7 @@ class ExecutarIniciarBacklogProcesso(LoginRequiredMixin, View):
             for erro in erros:
                 messages.error(request, erro)
 
-            return redirect("arquiteturaprocessos:editar_backlogprocesso", pk=pk)
+            return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
 
         # 🔥 Transformação segura
         with transaction.atomic():
@@ -851,17 +851,17 @@ class ExecutarIniciarBacklogProcesso(LoginRequiredMixin, View):
 # --------------------------------#
 # Excluir Backlog                 #
 # --------------------------------#
-class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
+class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
     model = BacklogProcesso
-    form_class = Form_BacklogProcessoForm
-    template_name = "backlogprocessos/form_backlogprocesso.html"
-    context_object_name = "backlogprocessos"
+    form_class = Form_ProcessoMapearForm
+    template_name = "processosmapear/form_processomapear.html"
+    context_object_name = "processosmapear"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         backlog = self.object
 
-        context["form"] = Form_BacklogProcessoForm(
+        context["form"] = Form_ProcessoMapearForm(
             instance=backlog,
             modo_exclusao=True
         )
@@ -891,7 +891,7 @@ class ExcluirBacklogProcesso(LoginRequiredMixin, DetailView):
             f"Backlog '{backlog.nome}' excluído com sucesso!"
         )
 
-        return redirect("arquiteturaprocessos:backlogprocessos")
+        return redirect("arquiteturaprocessos:processosmapear")
 
 # ------------------------------
 # Cadastro / Listagem Usuários

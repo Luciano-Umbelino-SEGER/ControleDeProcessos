@@ -10,8 +10,8 @@ from .views import (ArquiteruraProcessos, Estatisticas, CadastroUsuarios,  LogAc
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
-                    BacklogProcessos, CriarBacklogProcesso, VisualizarBacklogProcesso, EditarBacklogProcesso, ExcluirBacklogProcesso,
-                    ExecutarIniciarBacklogProcesso)
+                    ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
+                    ExecutarIniciarProcessoMapear)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 
@@ -30,12 +30,12 @@ urlpatterns = [
     # Estatísticas
     path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
     # Backlog
-    path('backlogprocessos/', BacklogProcessos.as_view(), name='backlogprocessos'),
-    path('backlogprocessos/novo/', CriarBacklogProcesso.as_view(), name='criar_backlogprocesso'),
-    path('backlogprocessos/<int:pk>/visualizar/', VisualizarBacklogProcesso.as_view(), name='visualizar_backlogprocesso'),
-    path('backlogprocessos/<int:pk>/editar/', EditarBacklogProcesso.as_view(), name='editar_backlogprocesso'),
-    path('backlogprocessos/<int:pk>/excluir/', ExcluirBacklogProcesso.as_view(), name='excluir_backlogprocesso'),
-    path("backlogprocessos/<int:pk>/executar-iniciar/", ExecutarIniciarBacklogProcesso.as_view(), name="executar_iniciar_backlog"),
+    path('processosmapear/', ProcessosMapear.as_view(), name='processosmapear'),
+    path('processosmapear/novo/', CriarProcessoMapear.as_view(), name='criar_processomapear'),
+    path('processosmapear/<int:pk>/visualizar/', VisualizarProcessoMapear.as_view(), name='visualizar_processomapear'),
+    path('processosmapear/<int:pk>/editar/', EditarProcessoMapear.as_view(), name='editar_processomapear'),
+    path('processosmapear/<int:pk>/excluir/', ExcluirProcessoMapear.as_view(), name='excluir_processomapear'),
+    path("processosmapear/<int:pk>/executar-iniciar/", ExecutarIniciarProcessoMapear.as_view(), name="executar_iniciar_processomapear"),
     # Usuários
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('usuario/novo/', CriarUsuario.as_view(), name='criar_usuario'),

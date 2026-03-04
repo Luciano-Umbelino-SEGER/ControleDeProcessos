@@ -6,7 +6,7 @@
   <div class="w-full max-w-[98%]">
 
     <h2 class="text-2xl font-bold text-blue-800 mb-6">
-      Backlog de Processos
+      Processos a Mapear
     </h2>
 
     {% if request.user.perfil.nome|lower == 'administrador' %}
@@ -106,7 +106,7 @@
                 Filtrar
               </button>
 
-              <a href="{% url 'arquiteturaprocessos:backlogprocessos' %}"
+              <a href="{% url 'arquiteturaprocessos:processosmapear' %}"
                  class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
                 Limpar
               </a>
@@ -116,14 +116,14 @@
 
           <!-- DIREITA (Adicionar) -->
           <div class="flex justify-end shrink-0">
-            <a href="{% url 'arquiteturaprocessos:criar_backlogprocesso' %}"
+            <a href="{% url 'arquiteturaprocessos:criar_processomapear' %}"
                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded shadow-sm hover:bg-blue-700 transition whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round"
                       stroke-width="2" d="M12 4v16m8-8H4"/>
               </svg>
-              Adicionar Backlog
+              Novo Processo a Mapear
             </a>
           </div>
 
@@ -153,7 +153,7 @@
 
         <tbody>
 
-        {% for backlog in backlogprocessos %}
+        {% for backlog in processosmapear %}
 
           <tr class="text-blue-500 hover:bg-blue-100 transition-colors
                      {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
@@ -217,7 +217,7 @@
               <div class="flex justify-center items-center space-x-1.5">
 
                 <!-- VISUALIZAR -->
-                <a href="{% url 'arquiteturaprocessos:visualizar_backlogprocesso' backlog.pk %}"
+                <a href="{% url 'arquiteturaprocessos:visualizar_processomapear' backlog.pk %}"
                    class="text-blue-600 hover:text-blue-800" title="Visualizar">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,7 +231,7 @@
                 {% if request.user.perfil.nome|lower == 'administrador' %}
 
                 <!-- EDITAR -->
-                <a href="{% url 'arquiteturaprocessos:editar_backlogprocesso' backlog.pk %}"
+                <a href="{% url 'arquiteturaprocessos:editar_processomapear' backlog.pk %}"
                    class="text-yellow-600 hover:text-yellow-800" title="Editar">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                        viewBox="0 0 24 24" stroke="currentColor">
@@ -243,7 +243,7 @@
                 </a>
 
                 <!-- EXCLUIR -->
-                <a href="{% url 'arquiteturaprocessos:excluir_backlogprocesso' backlog.pk %}"
+                <a href="{% url 'arquiteturaprocessos:excluir_processomapear' backlog.pk %}"
                    class="text-red-600 hover:text-red-800" title="Excluir">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">

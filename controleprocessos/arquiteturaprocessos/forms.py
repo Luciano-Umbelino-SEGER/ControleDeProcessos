@@ -856,7 +856,7 @@ class Form_ProcessoForm(forms.ModelForm):
 # ----------------------------------
 # Backlog de Processos - Formulário
 # ----------------------------------
-class Form_BacklogProcessoForm(forms.ModelForm):
+class Form_ProcessoMapearForm(forms.ModelForm):
 
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),

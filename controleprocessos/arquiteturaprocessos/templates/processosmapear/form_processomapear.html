@@ -4,20 +4,20 @@
 {% load form_tags %}
 
 {% block titulo %}
-    {% if modo_visualizacao %}Visualização de Backlog
-    {% elif modo_edicao %}Edição de Backlog
-    {% elif modo_exclusao %}Exclusão de Backlog
-    {% else %}Inclusão de Backlog{% endif %}
+    {% if modo_visualizacao %}Visualização de Processo a Mapear
+    {% elif modo_edicao %}Edição de Processo a Mapear
+    {% elif modo_exclusao %}Exclusão de Processo a Mapear
+    {% else %}Inclusão de Processo a Mapear{% endif %}
 {% endblock %}
 
 {% block body %}
 <div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
 
     <h2 class="text-2xl font-bold text-center mb-8 text-blue-800">
-        {% if modo_visualizacao %}Visualização de Backlog
-        {% elif modo_edicao %}Edição de Backlog
-        {% elif modo_exclusao %}Exclusão de Backlog
-        {% else %}Inclusão de Backlog{% endif %}
+        {% if modo_visualizacao %}Visualização de Processo a Mapear
+        {% elif modo_edicao %}Edição de Processo a Mapear
+        {% elif modo_exclusao %}Exclusão de Processo a Mapear
+        {% else %}Inclusão de Processo a Mapear{% endif %}
     </h2>
 
     {% if form.errors %}
@@ -44,7 +44,7 @@
     </div>
     {% endif %}
 
-    <form method="post" id="form-backlog">
+    <form method="post" id="form-processomapear">
         {% csrf_token %}
         <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
@@ -233,8 +233,8 @@
 
           {% if modo_exclusao %}
             <button @click="$dispatch('abrir-modal-confirmacao', {
-                          url: '{% url 'arquiteturaprocessos:excluir_backlogprocesso' form.instance.pk %}',
-                          mensagem: 'Confirma a exclusão do Backlog de Processo <strong>{{ form.instance.nome }}</strong>?'
+                          url: '{% url 'arquiteturaprocessos:excluir_processomapear' form.instance.pk %}',
+                          mensagem: 'Confirma a exclusão do Processo a Mapear de Processo <strong>{{ form.instance.nome }}</strong>?'
                       })"
                     class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="button">
@@ -258,12 +258,12 @@
           {% elif modo_inclusao %}
             <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="submit">
-              Adicionar Backlog
+              Adicionar Processo a Mapear
             </button>
           {% endif %}
 
           <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-             href="{% url 'arquiteturaprocessos:backlogprocessos' %}">
+             href="{% url 'arquiteturaprocessos:processosmapear' %}">
              {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
           </a>
         </div>
@@ -320,10 +320,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <!-- TIPO PROCESSO/SUBPROCESSO -->
 <script src="{% static 'js/tipo_processo_engine.js' %}"></script>
 
-<script>
-initTipoProcesso();
-</script>
-
+{% comment %}
 {# =========================================================
    MODAL AUTOMÁTICO – CONFIRMAÇÃO DE INICIALIZAÇÃO
    ---------------------------------------------------------
@@ -333,32 +330,38 @@ initTipoProcesso();
 
    Fluxo:
    1) Usuário salva (acao=iniciar)
-   2) View salva o Backlog e adiciona message CONFIRMAR_INICIAR
+   2) View salva o Processo a Mapear e adiciona message CONFIRMAR_INICIAR
    3) Página recarrega
    4) Este script detecta a flag e dispara o modal global
-   5) Modal chama a URL executar_iniciar_backlog
+   5) Modal chama a URL executar_iniciar_processomapear
 
    ⚠ Importante:
    - Não remover sem revisar o fluxo de transformação
    - Depende do modal global 'abrir-modal-confirmacao'
    ========================================================= #}
+{% endcomment %}
 
-{% if confirmar_iniciar %}
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            window.dispatchEvent(new CustomEvent("abrir-modal-confirmacao", {
-                detail: {
-                    url: "{% url 'arquiteturaprocessos:executar_iniciar_backlog' form.instance.pk %}",
-                    mensagem: `
-                        Você está prestes a transformar o backlog {{ form.instance.tipo }} -
-                        <strong>{{ form.instance.nome }}</strong>.<br><br>
-                        Confirma a inicialização do processo?
-                    `
-                }
-            }));
-        });
-    </script>
-{% endif %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // Inicializa engine de tipo processo/subprocesso
+    initTipoProcesso();
+
+    {% if confirmar_iniciar %}
+    window.dispatchEvent(new CustomEvent("abrir-modal-confirmacao", {
+        detail: {
+            url: "{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}",
+            mensagem: `
+                Você está prestes a transformar o Processo a Mapear {{ form.instance.tipo }} -
+                <strong>{{ form.instance.nome }}</strong>.<br><br>
+                Confirma a inicialização do processo?
+            `
+        }
+    }));
+    {% endif %}
+
+});
+</script>
 
 <style>
 fieldset[disabled] input,
