@@ -6,7 +6,12 @@
 <div class="py-10 px-2 flex justify-center">
   <div class="w-full max-w-[98%]">
 
-    <h2 class="text-2xl font-bold text-blue-800 mb-6">Processos</h2>
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">
+      Processos
+      <span class="text-base font-normal text-gray-600">
+          ({{ total_registros }} registro{{ total_registros|pluralize:"s" }})
+      </span>
+    </h2>
 
     {% if request.user.perfil.nome|lower == 'administrador' %}
     <form method="GET" class="mb-4">
@@ -118,6 +123,7 @@
         <thead class="bg-blue-100 text-blue-800">
           <tr>
             <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
+            <th class="py-3 px-2 text-center w-[7%]">Estado</th>
             <th class="py-3 px-2 text-left w-[10%]">Classificação</th>
             <th class="py-3 px-2 text-left w-[10%]">Macroprocesso Nível 1</th>
             <th class="py-3 px-2 text-left w-[10%]">Macroprocesso Nível 2</th>
@@ -136,11 +142,28 @@
         {% for processo in processos %}
 
           <!-- LINHA DO PROCESSO (PAI) -->
-          <tr class="text-blue-500 hover:bg-blue-100 transition-colors
+          <tr x-data="{ open: false }" class="text-blue-500 hover:bg-blue-100 transition-colors
                      {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
-            <td class="py-3 px-3 font-semibold text-blue-800">{{ processo.nome }}</td>
-
+              <td class="py-3 px-3 font-semibold text-blue-800 flex items-center">
+                  {% if processo.subprocessos.exists %}
+                    <button x-data="{open:false}"
+                        @click=" open=!open; document.querySelectorAll('.subprocesso-{{ processo.id }}')
+                               .forEach(el=>el.classList.toggle('hidden'))"
+                        class="mr-2 w-6 flex justify-center text-blue-700 hover:text-blue-900 text-lg font-bold">
+                        <span x-show="!open">▸</span>
+                        <span x-show="open">▾</span>
+                    </button>
+                  {% else %}
+                    <span class="mr-3"></span>
+                  {% endif %}
+                  <span>{{ processo.nome }}</span>
+              </td>
+              <td class="py-3 px-2 text-center">
+                <span class="{{ processo.status_css }} px-2 py-1 rounded text-xs font-semibold">
+                    {{ processo.status_label }}
+                </span>
+            </td>
             <td class="py-3 px-2">{{ processo.classificacao }}</td>
             <td class="py-3 px-2">{{ processo.macroprocesso_nivel1 }}</td>
             <td class="py-3 px-2">{{ processo.macroprocesso_nivel2 }}</td>
@@ -209,11 +232,16 @@
           <!-- SUBPROCESSOS -->
           {% for sub in processo.subprocessos.all|dictsort:"id" %}
             {% with pos=forloop.parentloop.counter0|add:forloop.counter0 %}
-            <tr class="text-blue-500 hover:bg-blue-100 transition-colors
-                       {% if pos|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+            <tr class="subprocesso-{{ processo.id }} hidden text-blue-500 hover:bg-blue-100 transition-colors
+                      {% if pos|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
 
               <td class="py-3 px-3 text-blue-600">
                   <span class="ml-5 block">{{ sub.nome }}</span>
+              </td>
+              <td class="py-3 px-2 text-center">
+                  <span class="{{ sub.status_css }} px-2 py-1 rounded text-xs font-semibold">
+                      {{ sub.status_label }}
+                  </span>
               </td>
               <td class="py-3 px-2">{{ sub.classificacao }}</td>
               <td class="py-3 px-2">{{ sub.macroprocesso_nivel1 }}</td>
@@ -285,12 +313,12 @@
             {% endwith %}
           {% endfor %}
 
-        {% empty %}
-          <tr>
-            <td colspan="11" class="py-4 px-4 text-center text-gray-500">
-              Nenhum processo encontrado.
-            </td>
-          </tr>
+          {% empty %}
+            <tr>
+              <td colspan="12" class="py-4 px-4 text-center text-gray-500">
+                Nenhum processo encontrado.
+              </td>
+            </tr>
         {% endfor %}
 
         </tbody>

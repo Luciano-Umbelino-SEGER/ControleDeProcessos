@@ -401,7 +401,7 @@ class ProcessoMapear(models.Model):
 # PROCESSO / SUBPROCESSO
 # ============================================================
 class Processo(models.Model):
-    nome = models.CharField(max_length=100)
+    nome = models.CharField(max_length=200)
     gestor = models.CharField(max_length=150)
     email = models.EmailField(max_length=200, null=True, blank=True)
     telefone = models.CharField(max_length=20, null=True, blank=True)
@@ -420,13 +420,15 @@ class Processo(models.Model):
     macroprocesso_nivel1 = models.ForeignKey(
         "MacroprocessoNivel1",
         on_delete=models.SET_NULL,
-        null=True, blank=True
+        null=True, blank=True,
+        related_name="macro_nivel1"
     )
 
     macroprocesso_nivel2 = models.ForeignKey(
         "MacroprocessoNivel2",
         on_delete=models.SET_NULL,
-        null=True, blank=True
+        null=True, blank=True,
+        related_name="macro_nivel2"
     )
 
     parent = models.ForeignKey(
@@ -439,21 +441,75 @@ class Processo(models.Model):
     area_responsavel = models.CharField(max_length=100, null=True, blank=True)
 
     usuario_cadastro = models.ForeignKey(
-        "Usuario",
+        settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         null=True, blank=True,
         related_name="processos_cadastrados"
     )
 
     usuario_atualizacao = models.ForeignKey(
-        "Usuario",
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name="processos_atualizados"
     )
 
+    versao_processo = models.CharField(
+        "Versão do Processo",
+        max_length=10,
+        blank=True,
+        null=True
+    )
+
+    data_conclusao = models.DateTimeField(
+        "Data de Conclusão do Processo",
+        blank=True,
+        null=True
+    )
+
+    usuario_conclusao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processos_concluidos",
+        verbose_name="Usuário Conclusão"
+    )
+
+    @property
+    def status(self):
+
+        if self.data_conclusao:
+            return "concluido"
+
+        if self.documentos.exists():
+            return "ativo"
+
+        return "iniciado"
+
+    @property
+    def status_label(self):
+
+        return {
+            "iniciado": "Iniciado",
+            "ativo": "Ativo",
+            "concluido": "Concluído"
+        }.get(self.status)
+
+    @property
+    def status_css(self):
+
+        return {
+            "iniciado": "bg-orange-200 text-orange-900",
+            "ativo": "bg-green-200 text-green-900",
+            "concluido": "bg-blue-200 text-blue-900"
+        }.get(self.status)
+
     class Meta:
         db_table = "arquiteturaprocessos_processo"
+        ordering = ["nome"]
+        verbose_name = "Processo"
+        verbose_name_plural = "Processos"
 
     def __str__(self):
         return self.nome

@@ -1856,6 +1856,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
                 "macroprocesso_nivel2",
             )
             .prefetch_related(
+                "documentos",
                 "subprocessos",
                 "subprocessos__classificacao",
                 "subprocessos__macroprocesso_nivel1",
@@ -1868,6 +1869,11 @@ class ProcessoView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        total_processos = Processo.objects.filter(parent__isnull=True).count()
+        total_subprocessos = Processo.objects.filter(parent__isnull=False).count()
+
+        context["total_registros"] = total_processos + total_subprocessos
 
         # Necessário para preencher o select de classificação
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
