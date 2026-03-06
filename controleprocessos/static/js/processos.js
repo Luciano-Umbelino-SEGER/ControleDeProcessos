@@ -706,6 +706,9 @@ function removeModelo(botao) {
 
     // 🔥 após remover, reavaliar botões
     atualizarEstadoBotoes(container);
+
+    // 🔥 Atualiza o Estado do Processo
+    setTimeout(atualizarStatus, 50)
 }
 
 function addNorma(botao) {
@@ -742,6 +745,9 @@ function removeNorma(botao) {
 
     // 🔥 após remover, reavaliar botões
     atualizarEstadoBotoes(container);
+
+    // 🔥 Atualiza o Estado do Processo
+    setTimeout(atualizarStatus, 50)
 }
 
 // ==========================================

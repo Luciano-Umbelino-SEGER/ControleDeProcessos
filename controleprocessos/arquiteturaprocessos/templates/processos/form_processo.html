@@ -92,58 +92,75 @@
 
         </div>
 
-        <!-- LINHA 2 – PROCESSO / SUBPROCESSO -->
-        <div class="mb-0 -mt-1">
+        <!-- LINHA 2 – PROCESSO / SUBPROCESSO + VERSÃO + ESTADO -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
 
-            <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
+            <!-- COLUNA 1 – PROCESSO / SUBPROCESSO -->
+            <div class="flex items-end">
 
-                <!-- ✔️ PROCESSO -->
-                <label class="flex items-center gap-2 cursor-pointer">
+                <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
 
-                    <input type="radio"
-                           id="rb_processo"
-                           name="tipo_processo_fake"
-                           value="processo"
+                    <!-- PROCESSO -->
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio"
+                               id="rb_processo"
+                               name="tipo_processo_fake"
+                               value="processo"
+                               {% if not form.instance.parent_id %}checked{% endif %}
+                               {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                           {% if not form.instance.parent_id %}
-                               checked
-                           {% endif %}
+                        <span class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                            Processo
+                        </span>
+                    </label>
 
-                           {% if not modo_inclusao %}
-                               style="pointer-events:none;"
-                           {% endif %}
-                    >
+                    <!-- SUBPROCESSO -->
+                    <label class="flex items-center gap-2 cursor-pointer">
 
-                    <span id="lbl_processo"
-                          class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
-                        Processo
-                    </span>
-                </label>
+                        <input type="radio"
+                               id="rb_subprocesso"
+                               name="tipo_processo_fake"
+                               value="subprocesso"
+                               {% if form.instance.parent_id %}checked{% endif %}
+                               {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                <!-- ✔️ SUBPROCESSO -->
-                <label class="flex items-center gap-2 cursor-pointer">
+                        <span class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                            Subprocesso
+                        </span>
 
-                    <input type="radio"
-                           id="rb_subprocesso"
-                           name="tipo_processo_fake"
-                           value="subprocesso"
+                    </label>
 
-                           {% if form.instance.parent_id %}
-                               checked
-                           {% endif %}
-
-                           {% if not modo_inclusao %}
-                               style="pointer-events:none;"
-                           {% endif %}
-                    >
-
-                    <span id="lbl_subprocesso"
-                          class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
-                        Subprocesso
-                    </span>
-                </label>
+                </div>
 
             </div>
+
+
+            <!-- COLUNA 2 – VERSÃO -->
+            <div class="flex flex-col">
+
+                <label class="text-sm font-medium text-blue-700">
+                    Versão do Processo
+                </label>
+
+                {{ form.versao_processo|add_class:"w-48 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500" }}
+
+            </div>
+
+            <!-- COLUNA 3 – ESTADO -->
+            <div class="flex flex-col">
+
+                <label class="text-sm font-medium text-blue-700">
+                    Estado
+                </label>
+
+                <span id="status_processo"
+                      class="{{ processo.status_css|default:'bg-orange-200 text-orange-900' }}
+                             px-3 py-2 rounded text-sm font-semibold text-center w-full">
+                    {{ processo.status_label|default:"Iniciado" }}
+                </span>
+
+            </div>
+
         </div>
 
 
@@ -203,12 +220,24 @@
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Objetivo</label>
-                {{ form.objetivo|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
+
+                <div class="relative">
+                    {{ form.objetivo|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
+                    <div class="text-xs text-gray-500 text-right mt-1">
+                        <span id="contador_objetivo">0</span>/500
+                    </div>
+                </div>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Observação</label>
-                {{ form.observacao|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
+
+                <div class="relative">
+                    {{ form.observacao|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
+                    <div class="text-xs text-gray-500 text-right mt-1">
+                        <span id="contador_observacao">0</span>/500
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -1204,6 +1233,87 @@ const modoBloqueado = window.MODO.visualizacao || window.MODO.exclusao;
 
 // flag global compatível com processos.js
 window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
+
+</script>
+
+<script>
+/* CONTADOR */
+function contador(idCampo, idContador) {
+    const campo = document.getElementById(idCampo);
+    const contadorSpan = document.getElementById(idContador);
+
+    function atualizar() {
+        contadorSpan.textContent = campo.value.length;
+    }
+
+    campo.addEventListener("input", atualizar);
+    atualizar();
+}
+
+contador("id_objetivo", "contador_objetivo");
+contador("id_observacao", "contador_observacao");
+</script>
+
+<script>
+
+function atualizarStatus() {
+
+    const status = document.getElementById("status_processo")
+    if (!status) return
+
+    /* verifica TODOS os selects de modelo */
+    const modelos = document.querySelectorAll('[id^="id_modelagem_processo"]')
+
+    /* verifica TODOS os selects de norma */
+    const normas = document.querySelectorAll('[id^="norma_procedimento"]')
+
+    let temDocumento = false
+
+    modelos.forEach(select => {
+        if (select.value) temDocumento = true
+    })
+
+    normas.forEach(select => {
+        if (select.value) temDocumento = true
+    })
+
+    if (temDocumento) {
+
+        status.textContent = "Ativo"
+        status.className =
+            "bg-green-200 text-green-900 px-3 py-2 rounded text-sm font-semibold text-center w-full"
+
+    } else {
+
+        status.textContent = "Iniciado"
+        status.className =
+            "bg-orange-200 text-orange-900 px-3 py-2 rounded text-sm font-semibold text-center w-full"
+
+    }
+
+}
+
+/* =====================================
+   atualiza quando selects mudam
+===================================== */
+
+document.addEventListener("change", function(e){
+
+    if (
+        e.target.id?.startsWith("id_modelagem_processo") ||
+        e.target.id?.startsWith("norma_procedimento")
+    ) {
+        atualizarStatus()
+    }
+
+})
+
+/* =====================================
+   inicialização ao carregar página
+===================================== */
+
+document.addEventListener("DOMContentLoaded", atualizarStatus)
+
 </script>
 
 <!-- Aqui 3 -->
