@@ -84,6 +84,95 @@
                         text-black placeholder-gray-400">
         </div>
 
+        <!-- Estado -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Estado</label>
+          <select name="estado" class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none
+                  {% if request.GET.estado %}text-black{% else %}text-gray-400{% endif %}">
+            <option value="">Todos</option>
+            <option value="ativo"
+              {% if request.GET.estado == "ativo" %}selected{% endif %}>
+              Ativo
+            </option>
+            <option value="iniciado"
+              {% if request.GET.estado == "iniciado" %}selected{% endif %}>
+              Iniciado
+            </option>
+            <option value="concluido"
+              {% if request.GET.estado == "concluido" %}selected{% endif %}>
+              Concluído
+            </option>
+          </select>
+        </div>
+
+        <!-- intervalo de criação -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação De</label>
+          <input name="criacao_de"
+                 type="text"
+                 placeholder="dd/mm/aaaa"
+                 value="{{ request.GET.criacao_de }}"
+                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none
+                        text-black placeholder-gray-400">
+        </div>
+
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação Até</label>
+          <input name="criacao_ate"
+                 type="text"
+                 placeholder="dd/mm/aaaa"
+                 value="{{ request.GET.criacao_ate }}"
+                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none
+                        text-black placeholder-gray-400">
+        </div>
+
+         <!-- intervalo de conclusão -->
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Conclusão De</label>
+          <input name="conclusao_de"
+                 type="text"
+                 placeholder="dd/mm/aaaa"
+                 onfocus="
+                   this.type='date';
+                   this.classList.remove('text-gray-400');
+                   this.classList.add('text-black');
+                 "
+                 onblur="
+                   if(!this.value){
+                     this.type='text';
+                     this.classList.remove('text-black');
+                     this.classList.add('text-gray-400');
+                   }
+                 "
+                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 text-gray-400"
+                 value="{{ request.GET.conclusao_de }}">
+        </div>
+
+        <div class="flex flex-col">
+          <label class="text-sm font-semibold text-blue-800 mb-0.5">Conclusão Até</label>
+          <input name="conclusao_ate"
+                 type="text"
+                 placeholder="dd/mm/aaaa"
+                 onfocus="
+                   this.type='date';
+                   this.classList.remove('text-gray-400');
+                   this.classList.add('text-black');
+                 "
+                 onblur="
+                   if(!this.value){
+                     this.type='text';
+                     this.classList.remove('text-black');
+                     this.classList.add('text-gray-400');
+                   }
+                 "
+                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
+                        focus:ring-2 focus:ring-blue-500 text-gray-400"
+                 value="{{ request.GET.conclusao_ate }}">
+        </div>
+
         <!-- Botões -->
         <div class="flex items-center gap-2 mt-4 md:mt-0">
           <button type="submit"
@@ -122,17 +211,16 @@
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow">
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
+            <th class="py-3 px-3 text-left w-[22%]">Processo / Subprocesso</th>
+            <th class="py-3 px-2 text-center w-[6%]">Versão</th>
             <th class="py-3 px-2 text-center w-[7%]">Estado</th>
             <th class="py-3 px-2 text-left w-[10%]">Classificação</th>
             <th class="py-3 px-2 text-left w-[10%]">Macroprocesso Nível 1</th>
             <th class="py-3 px-2 text-left w-[10%]">Macroprocesso Nível 2</th>
             <th class="py-3 px-2 text-left w-[10%]">Área Responsável</th>
             <th class="py-3 px-2 text-left w-[10%]">Gestor</th>
-            <th class="py-3 px-2 text-left w-[10%]">E-mail</th>
-            <th class="py-3 px-2 text-left w-[8%]">Telefone</th>
-            <th class="py-3 px-2 text-left w-[6%]">Criação</th>
-            <th class="py-3 px-2 text-left w-[6%]">Atualização</th>
+            <th class="py-3 px-2 text-left w-[7%]">Criação</th>
+            <th class="py-3 px-2 text-left w-[7%]">Conclusão</th>
             <th class="py-3 px-2 text-center w-[6%]">Ações</th>
           </tr>
         </thead>
@@ -159,28 +247,31 @@
                   {% endif %}
                   <span>{{ processo.nome }}</span>
               </td>
-              <td class="py-3 px-2 text-center">
-                <span class="{{ processo.status_css }} px-2 py-1 rounded text-xs font-semibold">
-                    {{ processo.status_label }}
-                </span>
+            <td class="py-3 px-2 text-center">
+            {{ processo.versao_processo|default:"—" }}
+            </td>
+            <td class="py-3 px-2 text-center">
+              <span class="{{ processo.status_css }} px-2 py-1 rounded text-xs font-semibold">
+                  {{ processo.status_label }}
+              </span>
             </td>
             <td class="py-3 px-2">{{ processo.classificacao }}</td>
             <td class="py-3 px-2">{{ processo.macroprocesso_nivel1 }}</td>
             <td class="py-3 px-2">{{ processo.macroprocesso_nivel2 }}</td>
             <td class="py-3 px-2">{{ processo.area_responsavel }}</td>
             <td class="py-3 px-2">{{ processo.gestor }}</td>
-            <td class="py-3 px-2">{{ processo.email }}</td>
-            <td class="py-3 px-2">{{ processo.telefone }}</td>
-
             <td class="py-3 px-2">
               {% if processo.data_criacao %}
                 {{ processo.data_criacao|date:"d/m/Y" }}
+              {% else %}
+                —
               {% endif %}
             </td>
-
             <td class="py-3 px-2">
-              {% if processo.data_atualizacao %}
-                {{ processo.data_atualizacao|date:"d/m/Y" }}
+              {% if processo.data_conclusao %}
+                {{ processo.data_conclusao|date:"d/m/Y" }}
+              {% else %}
+                —
               {% endif %}
             </td>
 
@@ -239,6 +330,9 @@
                   <span class="ml-5 block">{{ sub.nome }}</span>
               </td>
               <td class="py-3 px-2 text-center">
+                {{ sub.versao_processo|default:"—" }}
+              </td>
+              <td class="py-3 px-2 text-center">
                   <span class="{{ sub.status_css }} px-2 py-1 rounded text-xs font-semibold">
                       {{ sub.status_label }}
                   </span>
@@ -248,19 +342,19 @@
               <td class="py-3 px-2">{{ sub.macroprocesso_nivel2 }}</td>
               <td class="py-3 px-2">{{ sub.area_responsavel }}</td>
               <td class="py-3 px-2">{{ sub.gestor }}</td>
-
-              <td class="py-3 px-2">{{ sub.email }}</td>
-              <td class="py-3 px-2">{{ sub.telefone }}</td>
-
               <td class="py-3 px-2">
                 {% if sub.data_criacao %}
                   {{ sub.data_criacao|date:"d/m/Y" }}
+                {% else %}
+                  —
                 {% endif %}
               </td>
 
               <td class="py-3 px-2">
-                {% if sub.data_atualizacao %}
-                  {{ sub.data_atualizacao|date:"d/m/Y" }}
+                {% if sub.data_conclusao %}
+                  {{ sub.data_conclusao|date:"d/m/Y" }}
+                {% else %}
+                  —
                 {% endif %}
               </td>
 
@@ -315,7 +409,7 @@
 
           {% empty %}
             <tr>
-              <td colspan="12" class="py-4 px-4 text-center text-gray-500">
+              <td colspan="11" class="py-4 px-4 text-center text-gray-500">
                 Nenhum processo encontrado.
               </td>
             </tr>

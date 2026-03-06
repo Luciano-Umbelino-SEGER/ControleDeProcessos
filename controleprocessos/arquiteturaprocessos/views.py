@@ -28,9 +28,8 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from pathlib import Path
 from urllib.parse import unquote
 import mimetypes
-from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email
+from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
-from arquiteturaprocessos.utils.utils import definir_senha_e_enviar_email
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
@@ -193,6 +192,22 @@ def salvar_documentos_processo(request, processo):
         )
         for doc_id in documentos_ids
     ])
+
+# ---------------------------
+# Parse de Data
+# ---------------------------
+def parse_data(valor):
+    """
+    Converte string dd/mm/yyyy para datetime.
+    Retorna None se inválido.
+    """
+    if not valor:
+        return None
+
+    try:
+        return datetime.strptime(valor, "%d/%m/%Y")
+    except ValueError:
+        return None
 
 # ---------------------------
 # Login view
@@ -382,15 +397,7 @@ class ArquiteruraProcessos(ListView):
     paginate_by = 30
     ordering = ["id"]
 
-    def parse_date(self, value):
-        if not value:
-            return None
-        try:
-            return datetime.strptime(value, "%Y-%m-%d").date()
-        except ValueError:
-            return None
-
-    # -----------------------------------------
+        # -----------------------------------------
     # Montagem de documentos (reutilizável)
     # -----------------------------------------
     def montar_docs(self, documentos_qs):
@@ -1807,6 +1814,12 @@ class ProcessoView(LoginRequiredMixin, ListView):
         macro2 = self.request.GET.get("macro2", "").strip()
         area = self.request.GET.get("area", "").strip()
 
+        estado = self.request.GET.get("estado", "").strip().lower()
+        criacao_de = self.request.GET.get("criacao_de", "").strip()
+        criacao_ate = self.request.GET.get("criacao_ate", "").strip()
+        conclusao_de = self.request.GET.get("conclusao_de", "").strip()
+        conclusao_ate = self.request.GET.get("conclusao_ate", "").strip()
+
         # === 2) Base inicial: TUDO (PAI + SUB) para aplicar filtros ===
         qs = (
             Processo.objects.all()
@@ -1839,6 +1852,36 @@ class ProcessoView(LoginRequiredMixin, ListView):
             qs = qs.filter(
                 area_responsavel__icontains=area
             )
+
+        # === Estado do processo (calculado) ===
+        print(estado)
+        estado = self.request.GET.get("estado")
+        if estado == "ativo":
+            qs = qs.filter(data_conclusao__isnull=True, versao_processo__isnull=False)
+
+        elif estado == "iniciado":
+            qs = qs.filter(versao_processo__isnull=True)
+
+        elif estado == "concluido":
+            qs = qs.filter(data_conclusao__isnull=False)
+
+        # === Data de criação ===
+        data = parse_data(criacao_de)
+        if data:
+            qs = qs.filter(data_criacao__gte=data)
+
+        data = parse_data(criacao_ate)
+        if data:
+            qs = qs.filter(data_criacao__gte=data)
+
+        # === Data de conclusão ===
+        data = parse_data(conclusao_de)
+        if data:
+            qs = qs.filter(data_conclusao__date__gte=data)
+
+        data = parse_data(conclusao_ate)
+        if data:
+            qs = qs.filter(data_conclusao__date__lte=data)
 
         # === 4) Resolver PAI + SUBPROCESSOS ===
         pai_ids = qs.values_list("parent_id", flat=True)

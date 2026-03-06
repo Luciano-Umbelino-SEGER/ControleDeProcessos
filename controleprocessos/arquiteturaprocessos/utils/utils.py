@@ -6,6 +6,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.urls import reverse
+from datetime import datetime
 
 # ============================================================
 # Controle de acesso
@@ -96,3 +97,30 @@ no navegador da máquina virtual.
     )
 
 
+# -----------------------------------------------------------
+# Função utilitária para conversão segura de datas (filtros)
+# -----------------------------------------------------------
+# Converte uma string no formato 'YYYY-MM-DD' (padrão enviado
+# por inputs HTML do tipo <input type="date">) para um objeto
+# datetime.date do Python.
+#
+# Caso o valor esteja vazio ou em formato inválido, a função
+# retorna None em vez de gerar exceção. Isso evita que filtros
+# de data nas views quebrem a execução da aplicação.
+#
+# Uso típico nas views:
+#
+#     data = parse_date(request.GET.get("criacao_de"))
+#     if data:
+#         queryset = queryset.filter(data_criacao__date__gte=data)
+#
+# Essa função foi criada para reutilização em múltiplas views
+# que utilizam filtros por intervalo de datas.
+# -----------------------------------------------------------
+def parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
