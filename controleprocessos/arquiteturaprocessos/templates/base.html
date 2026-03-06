@@ -116,6 +116,16 @@
                     </div>
                 </a>
 
+                <a href="{% url 'arquiteturaprocessos:processosmapear' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+                   @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Processos a Mapear' : ''">
+                    <div class="w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-list-check text-xl"></i>
+                    </div>
+                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+                        Processos a Mapear
+                    </div>
+                </a>
+
                 <a href="{% url 'arquiteturaprocessos:processos' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
                    @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Cadastro de Processos' : ''">
                     <div class="w-12 h-12 flex items-center justify-center">
@@ -137,36 +147,6 @@
                 </a>
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
-                <a href="{% url 'arquiteturaprocessos:processosmapear' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-                   @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Processos a Mapear' : ''">
-                    <div class="w-12 h-12 flex items-center justify-center">
-                        <i class="fas fa-list-check text-xl"></i>
-                    </div>
-                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
-                        Processos a Mapear
-                    </div>
-                </a>
-
-                <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-                   @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Cadastro de Usuários' : ''">
-                    <div class="w-12 h-12 flex items-center justify-center">
-                        <i class="fas fa-users text-xl"></i>
-                    </div>
-                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
-                        Cadastro de Usuários
-                    </div>
-                </a>
-
-                <a href="{% url 'arquiteturaprocessos:logacoes' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-                   @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Log de Ações' : ''">
-                    <div class="w-12 h-12 flex items-center justify-center">
-                        <i class="fas fa-clipboard-list text-xl"></i>
-                    </div>
-                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
-                        Log de Ações
-                    </div>
-                </a>
-
                 <div role="menuitem">
                     <button @click="sidebarOpen ? submenuOpen = !submenuOpen : (sidebarOpen = true, submenuOpen = true)"
                             class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
@@ -188,6 +168,26 @@
                         <a href="{% url 'arquiteturaprocessos:modelagemprocessos' %}" class="block p-2 rounded hover:bg-[#00796B]" role="menuitem" @click="closeSidebar()">Modelagem Processos</a>
                     </div>
                 </div>
+
+                <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+                   @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Cadastro de Usuários' : ''">
+                    <div class="w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+                        Cadastro de Usuários
+                    </div>
+                </a>
+
+                <a href="{% url 'arquiteturaprocessos:logacoes' %}" class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+                   @click="closeSidebar()" role="menuitem" :title="!sidebarOpen ? 'Log de Ações' : ''">
+                    <div class="w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-clipboard-list text-xl"></i>
+                    </div>
+                    <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+                        Log de Ações
+                    </div>
+                </a>
                 {% endif %}
             </nav>
         </aside>

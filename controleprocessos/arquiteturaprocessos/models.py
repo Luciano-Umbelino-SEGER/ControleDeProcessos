@@ -397,6 +397,7 @@ class ProcessoMapear(models.Model):
 
     def __str__(self):
         return self.nome
+
 # ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================
@@ -479,12 +480,15 @@ class Processo(models.Model):
     @property
     def status(self):
 
+        # 1️⃣ Processo concluído tem prioridade
         if self.data_conclusao:
             return "concluido"
 
+        # 2️⃣ Processo ativo se tiver pelo menos um documento associado
         if self.documentos.exists():
             return "ativo"
 
+        # 3️⃣ Caso contrário permanece iniciado
         return "iniciado"
 
     @property
@@ -503,7 +507,7 @@ class Processo(models.Model):
             "iniciado": "bg-orange-200 text-orange-900",
             "ativo": "bg-green-200 text-green-900",
             "concluido": "bg-blue-200 text-blue-900"
-        }.get(self.status)
+        }.get(self.status, "")
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"

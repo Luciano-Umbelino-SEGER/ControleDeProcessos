@@ -194,22 +194,6 @@ def salvar_documentos_processo(request, processo):
     ])
 
 # ---------------------------
-# Parse de Data
-# ---------------------------
-def parse_data(valor):
-    """
-    Converte string dd/mm/yyyy para datetime.
-    Retorna None se inválido.
-    """
-    if not valor:
-        return None
-
-    try:
-        return datetime.strptime(valor, "%d/%m/%Y")
-    except ValueError:
-        return None
-
-# ---------------------------
 # Login view
 # ---------------------------
 class CustomLoginView(LoginView):
@@ -464,10 +448,10 @@ class ArquiteruraProcessos(ListView):
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
 
-        cri_de = self.parse_date(req.get("criacao_de"))
-        cri_ate = self.parse_date(req.get("criacao_ate"))
-        atu_de = self.parse_date(req.get("atualizacao_de"))
-        atu_ate = self.parse_date(req.get("atualizacao_ate"))
+        cri_de = parse_date(req.get("criacao_de"))
+        cri_ate = parse_date(req.get("criacao_ate"))
+        atu_de = parse_date(req.get("atualizacao_de"))
+        atu_ate = parse_date(req.get("atualizacao_ate"))
 
         qs = (
             Processo.objects
@@ -1795,6 +1779,7 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
+# Aqui 1
 # -------------------------------#
 # Listagem - Processos           #
 # -------------------------------#
@@ -1854,32 +1839,36 @@ class ProcessoView(LoginRequiredMixin, ListView):
             )
 
         # === Estado do processo (calculado) ===
-        print(estado)
-        estado = self.request.GET.get("estado")
-        if estado == "ativo":
-            qs = qs.filter(data_conclusao__isnull=True, versao_processo__isnull=False)
-
-        elif estado == "iniciado":
-            qs = qs.filter(versao_processo__isnull=True)
-
-        elif estado == "concluido":
+        if estado == "concluido":
             qs = qs.filter(data_conclusao__isnull=False)
 
+        elif estado == "ativo":
+            qs = qs.filter(
+                data_conclusao__isnull=True,
+                documentos__isnull=False
+            ).distinct()
+
+        elif estado == "iniciado":
+            qs = qs.filter(
+                data_conclusao__isnull=True,
+                documentos__isnull=True
+            )
+
         # === Data de criação ===
-        data = parse_data(criacao_de)
+        data = parse_date(criacao_de)
         if data:
             qs = qs.filter(data_criacao__gte=data)
 
-        data = parse_data(criacao_ate)
+        data = parse_date(criacao_ate)
         if data:
-            qs = qs.filter(data_criacao__gte=data)
+            qs = qs.filter(data_criacao__lte=data)
 
         # === Data de conclusão ===
-        data = parse_data(conclusao_de)
+        data = parse_date(conclusao_de)
         if data:
             qs = qs.filter(data_conclusao__date__gte=data)
 
-        data = parse_data(conclusao_ate)
+        data = parse_date(conclusao_ate)
         if data:
             qs = qs.filter(data_conclusao__date__lte=data)
 

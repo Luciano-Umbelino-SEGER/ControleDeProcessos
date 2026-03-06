@@ -19,185 +19,194 @@
     <div class="flex flex-wrap justify-between items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
 
       <!-- ESQUERDA (filtros compactados) -->
-      <div class="flex flex-wrap items-end gap-3">
+      <div class="flex items-end justify-between w-full">
+        <div class="flex items-end gap-1.5">
 
-        <!-- Processo/Subprocesso -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
-          <input type="text" name="nome"
-                 placeholder="Digite Processo/Subprocesso ou parte..."
-                 value="{{ request.GET.nome }}"
-                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 focus:outline-none
-                        text-black placeholder-gray-400">
+          <!-- Processo/Subprocesso -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
+            <input type="text" name="nome"
+                   placeholder="Digite Processo/Subprocesso ou parte..."
+                   value="{{ request.GET.nome }}"
+                   class="w-40 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          text-black placeholder-gray-400">
+          </div>
+
+          <!-- Classificação -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Classificação</label>
+
+            <select name="classificacao"
+                    class="w-28 px-2 py-[3px] border border-gray-300 rounded-md bg-white
+                           focus:ring-2 focus:ring-blue-500 focus:outline-none
+                           {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
+                <option value="">Todas</option>
+
+                {% for c in classificacoes %}
+                    <option value="{{ c.id }}"
+                        {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
+                        {{ c.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+          </div>
+
+          <!-- Macroprocesso Nível 1 -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 1</label>
+            <input type="text" name="macro1"
+                   placeholder="Digite Macroprocesso Nível 1 ou parte..."
+                   value="{{ request.GET.macro1 }}"
+                   class="w-36 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          text-black placeholder-gray-400">
+          </div>
+
+          <!-- Macroprocesso Nível 2 -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 2</label>
+            <input type="text" name="macro2"
+                   placeholder="Digite Macroprocesso Nível 2 ou parte..."
+                   value="{{ request.GET.macro2 }}"
+                   class="w-36 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          text-black placeholder-gray-400">
+          </div>
+
+          <!-- Área Responsável -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Área Responsável</label>
+            <input type="text" name="area"
+                   placeholder="Digite Área Responsável ou parte..."
+                   value="{{ request.GET.area }}"
+                   class="w-32 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          text-black placeholder-gray-400">
+          </div>
+
+          <!-- Estado -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Estado</label>
+            <select name="estado" class="w-24 px-2 py-[3px] border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none
+                    {% if request.GET.estado %}text-black{% else %}text-gray-400{% endif %}">
+              <option value="">Todos</option>
+              <option value="ativo"
+                {% if request.GET.estado == "ativo" %}selected{% endif %}>
+                Ativo
+              </option>
+              <option value="iniciado"
+                {% if request.GET.estado == "iniciado" %}selected{% endif %}>
+                Iniciado
+              </option>
+              <option value="concluido"
+                {% if request.GET.estado == "concluido" %}selected{% endif %}>
+                Concluído
+              </option>
+            </select>
+          </div>
+
+          <!-- intervalo de criação -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Criação De</label>
+            <input name="criacao_de"
+                   type="text"
+                   placeholder="dd/mm/aaaa"
+                   value="{{ request.GET.criacao_de }}"
+                   class="w-24 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          text-black placeholder-gray-400">
+          </div>
+
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Criação Até</label>
+            <input name="criacao_ate"
+                   type="text"
+                   placeholder="dd/mm/aaaa"
+                   value="{{ request.GET.criacao_ate }}"
+                   class="w-24 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          text-black placeholder-gray-400">
+          </div>
+
+           <!-- intervalo de conclusão -->
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Conclusão De</label>
+            <input name="conclusao_de"
+                   type="text"
+                   placeholder="dd/mm/aaaa"
+                   onfocus="
+                     this.type='date';
+                     this.classList.remove('text-gray-400');
+                     this.classList.add('text-black');
+                   "
+                   onblur="
+                     if(!this.value){
+                       this.type='text';
+                       this.classList.remove('text-black');
+                       this.classList.add('text-gray-400');
+                     }
+                   "
+                   class="w-24 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 text-gray-400"
+                   value="{{ request.GET.conclusao_de }}">
+          </div>
+
+          <div class="flex flex-col">
+            <label class="text-xs font-semibold text-blue-800 mb-0.5">Conclusão Até</label>
+            <input name="conclusao_ate"
+                   type="text"
+                   placeholder="dd/mm/aaaa"
+                   onfocus="
+                     this.type='date';
+                     this.classList.remove('text-gray-400');
+                     this.classList.add('text-black');
+                   "
+                   onblur="
+                     if(!this.value){
+                       this.type='text';
+                       this.classList.remove('text-black');
+                       this.classList.add('text-gray-400');
+                     }
+                   "
+                   class="w-24 px-2 py-[3px] border border-gray-300 rounded-md
+                          focus:ring-2 focus:ring-blue-500 text-gray-400"
+                   value="{{ request.GET.conclusao_ate }}">
+          </div>
+
+          <!-- Botões -->
+          <div class="flex items-center gap-2 mt-4 md:mt-0">
+            <button type="submit"
+                    class="px-6 py-[3px] bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+              Filtrar
+            </button>
+
+            <a href="{% url 'arquiteturaprocessos:processos' %}"
+               class="px-6 py-[3px] bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+              Limpar
+            </a>
+          </div>
         </div>
 
-        <!-- Classificação -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
+        <!-- DIREITA (botão adicionar) -->
+        <div class="flex items-center shrink-0">
+          <a href="{% url 'arquiteturaprocessos:criar_processo' %}"
+             class="inline-flex items-center px-2 py-[8px] bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition whitespace-nowrap">
 
-          <select name="classificacao"
-                  class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white
-                         focus:ring-2 focus:ring-blue-500 focus:outline-none
-                         {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
-              <option value="">Todas</option>
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-4 w-4 mr-1.5"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor">
+              <path stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"/>
+            </svg>
 
-              {% for c in classificacoes %}
-                  <option value="{{ c.id }}"
-                      {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
-                      {{ c.nome }}
-                  </option>
-              {% endfor %}
-          </select>
-        </div>
-
-        <!-- Macroprocesso Nível 1 -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 1</label>
-          <input type="text" name="macro1"
-                 placeholder="Digite Macroprocesso Nível 1 ou parte..."
-                 value="{{ request.GET.macro1 }}"
-                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 focus:outline-none
-                        text-black placeholder-gray-400">
-        </div>
-
-        <!-- Macroprocesso Nível 2 -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Macroprocesso Nível 2</label>
-          <input type="text" name="macro2"
-                 placeholder="Digite Macroprocesso Nível 2 ou parte..."
-                 value="{{ request.GET.macro2 }}"
-                 class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 focus:outline-none
-                        text-black placeholder-gray-400">
-        </div>
-
-        <!-- Área Responsável -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Área Responsável</label>
-          <input type="text" name="area"
-                 placeholder="Digite Área Responsável ou parte..."
-                 value="{{ request.GET.area }}"
-                 class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 focus:outline-none
-                        text-black placeholder-gray-400">
-        </div>
-
-        <!-- Estado -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Estado</label>
-          <select name="estado" class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none
-                  {% if request.GET.estado %}text-black{% else %}text-gray-400{% endif %}">
-            <option value="">Todos</option>
-            <option value="ativo"
-              {% if request.GET.estado == "ativo" %}selected{% endif %}>
-              Ativo
-            </option>
-            <option value="iniciado"
-              {% if request.GET.estado == "iniciado" %}selected{% endif %}>
-              Iniciado
-            </option>
-            <option value="concluido"
-              {% if request.GET.estado == "concluido" %}selected{% endif %}>
-              Concluído
-            </option>
-          </select>
-        </div>
-
-        <!-- intervalo de criação -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação De</label>
-          <input name="criacao_de"
-                 type="text"
-                 placeholder="dd/mm/aaaa"
-                 value="{{ request.GET.criacao_de }}"
-                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 focus:outline-none
-                        text-black placeholder-gray-400">
-        </div>
-
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação Até</label>
-          <input name="criacao_ate"
-                 type="text"
-                 placeholder="dd/mm/aaaa"
-                 value="{{ request.GET.criacao_ate }}"
-                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 focus:outline-none
-                        text-black placeholder-gray-400">
-        </div>
-
-         <!-- intervalo de conclusão -->
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Conclusão De</label>
-          <input name="conclusao_de"
-                 type="text"
-                 placeholder="dd/mm/aaaa"
-                 onfocus="
-                   this.type='date';
-                   this.classList.remove('text-gray-400');
-                   this.classList.add('text-black');
-                 "
-                 onblur="
-                   if(!this.value){
-                     this.type='text';
-                     this.classList.remove('text-black');
-                     this.classList.add('text-gray-400');
-                   }
-                 "
-                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 text-gray-400"
-                 value="{{ request.GET.conclusao_de }}">
-        </div>
-
-        <div class="flex flex-col">
-          <label class="text-sm font-semibold text-blue-800 mb-0.5">Conclusão Até</label>
-          <input name="conclusao_ate"
-                 type="text"
-                 placeholder="dd/mm/aaaa"
-                 onfocus="
-                   this.type='date';
-                   this.classList.remove('text-gray-400');
-                   this.classList.add('text-black');
-                 "
-                 onblur="
-                   if(!this.value){
-                     this.type='text';
-                     this.classList.remove('text-black');
-                     this.classList.add('text-gray-400');
-                   }
-                 "
-                 class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                        focus:ring-2 focus:ring-blue-500 text-gray-400"
-                 value="{{ request.GET.conclusao_ate }}">
-        </div>
-
-        <!-- Botões -->
-        <div class="flex items-center gap-2 mt-4 md:mt-0">
-          <button type="submit"
-                  class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-            Filtrar
-          </button>
-
-          <a href="{% url 'arquiteturaprocessos:processos' %}"
-             class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
-            Limpar
+            Novo Processo
           </a>
         </div>
-
-      </div>
-
-      <!-- DIREITA (botão adicionar) -->
-      <div class="flex justify-end shrink-0">
-        <a href="{% url 'arquiteturaprocessos:criar_processo' %}"
-           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded shadow-sm hover:bg-blue-700 transition whitespace-nowrap">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 4v16m8-8H4"/>
-          </svg>
-          Novo Processo
-        </a>
       </div>
 
     </div>
@@ -293,16 +302,18 @@
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
                 <!-- EDITAR -->
-                <a href="{% url 'arquiteturaprocessos:editar_processo' processo.pk %}"
-                   class="text-yellow-600 hover:text-yellow-800" title="Editar">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                       viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                    <path fill-rule="evenodd"
-                          d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </a>
+                {% if processo.status != "concluido" %}
+                  <a href="{% url 'arquiteturaprocessos:editar_processo' processo.pk %}"
+                     class="text-yellow-600 hover:text-yellow-800" title="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor">
+                      <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                      <path fill-rule="evenodd"
+                            d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                            clip-rule="evenodd"/>
+                    </svg>
+                  </a>
+                {% endif %}
 
                 <!-- EXCLUIR -->
                 <a href="{% url 'arquiteturaprocessos:excluir_processo' processo.pk %}"
@@ -375,18 +386,19 @@
                   </a>
 
                   {% if request.user.perfil.nome|lower == 'administrador' %}
-                  <!-- EDITAR -->
-                  <a href="{% url 'arquiteturaprocessos:editar_processo' sub.pk %}"
-                     class="text-yellow-600 hover:text-yellow-800" title="Editar">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                       viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                    <path fill-rule="evenodd"
-                          d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                  </a>
-
+                    {% if sub.status != "concluido" %}
+                      <!-- EDITAR -->
+                      <a href="{% url 'arquiteturaprocessos:editar_processo' sub.pk %}"
+                         class="text-yellow-600 hover:text-yellow-800" title="Editar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                           viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                        <path fill-rule="evenodd"
+                              d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                              clip-rule="evenodd"/>
+                      </svg>
+                      </a>
+                    {% endif %}
                   <!-- EXCLUIR -->
                   <a href="{% url 'arquiteturaprocessos:excluir_processo' sub.pk %}"
                      class="text-red-600 hover:text-red-800" title="Excluir">
