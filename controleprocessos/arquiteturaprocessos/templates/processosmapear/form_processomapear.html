@@ -154,7 +154,7 @@
                     <div class="relative">
                         {{ form.objetivo|add_attr:"style:text-align:justify;resize:none;" }}
                         <div class="text-xs text-gray-500 text-right mt-1">
-                            <span id="contador_objetivo">0</span>/500
+                            <span id="contador_objetivo">0</span>/3000
                         </div>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
                     <div class="relative">
                         {{ form.observacao|add_attr:"style:text-align:justify;resize:none;" }}
                         <div class="text-xs text-gray-500 text-right mt-1">
-                            <span id="contador_observacao">0</span>/500
+                            <span id="contador_observacao">0</span>/3000
                         </div>
                     </div>
                 </div>
@@ -285,21 +285,40 @@ window.MODO = {
 </script>
 
 <script>
-/* CONTADOR */
-function contador(idCampo, idContador) {
+  // Atualiza contador e cores (cinza < max-200; amarelo [max-200..max-1]; vermelho >= max)
+  function contadorColorido(idCampo, idSpan, avisoFaltando = 200) {
     const campo = document.getElementById(idCampo);
-    const contadorSpan = document.getElementById(idContador);
+    const span  = document.getElementById(idSpan);
+    if (!campo || !span) return;
 
-    function atualizar() {
-        contadorSpan.textContent = campo.value.length;
+    const wrapper = span.parentElement; // <div class="text-sm mt-1 text-right">
+    const max = parseInt(campo.getAttribute('maxlength')) || 0;
+
+    function aplicarCor(len) {
+      wrapper.classList.remove('text-gray-500','text-yellow-600','text-red-600');
+      if (!max || len < (max - avisoFaltando)) {
+        wrapper.classList.add('text-gray-500');
+      } else if (len < max) {
+        wrapper.classList.add('text-yellow-600');
+      } else {
+        wrapper.classList.add('text-red-600');
+      }
     }
 
-    campo.addEventListener("input", atualizar);
-    atualizar();
-}
+    function atualizar() {
+      const len = (campo.value || '').length;
+      span.textContent = len;
+      aplicarCor(len);
+    }
 
-contador("id_objetivo", "contador_objetivo");
-contador("id_observacao", "contador_observacao");
+    campo.addEventListener('input', atualizar);
+    atualizar(); // inicial
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    contadorColorido('id_objetivo', 'contador_objetivo');
+    contadorColorido('id_observacao', 'contador_observacao');
+  });
 </script>
 
 <!-- Macro Classificação Engine -->

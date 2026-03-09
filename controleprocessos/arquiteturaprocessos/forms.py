@@ -786,6 +786,17 @@ class Form_ProcessoForm(forms.ModelForm):
         if "macroprocesso_nivel2" in self.fields:
             self.fields["macroprocesso_nivel2"].widget.attrs["id"] = "id_macroprocesso_nivel2"
 
+
+        if "objetivo" in self.fields:
+            self.fields["objetivo"].max_length = 3000
+            self.fields["objetivo"].widget.attrs["maxlength"] = 3000
+            self.fields["objetivo"].widget.attrs["rows"] = 4
+
+        if "observacao" in self.fields:
+            self.fields["observacao"].max_length = 3000
+            self.fields["observacao"].widget.attrs["maxlength"] = 3000
+            self.fields["observacao"].widget.attrs["rows"] = 4
+
         self.label_suffix = ""
 
         base = (
@@ -906,6 +917,15 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
+        if "objetivo" in self.fields:
+            self.fields["objetivo"].max_length = 3000
+            self.fields["objetivo"].widget.attrs["maxlength"] = 3000
+            self.fields["objetivo"].widget.attrs["rows"] = 4
+
+        if "observacao" in self.fields:
+            self.fields["observacao"].max_length = 3000
+            self.fields["observacao"].widget.attrs["maxlength"] = 3000
+            self.fields["observacao"].widget.attrs["rows"] = 4
 
         self.label_suffix = ""
 
