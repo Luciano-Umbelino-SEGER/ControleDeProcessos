@@ -154,9 +154,9 @@
                 </label>
 
                 <span id="status_processo"
-                      class="{{ processo.status_css|default:'bg-orange-200 text-orange-900' }}
+                      class="{{ processo.status_css }}
                              px-3 py-2 rounded text-sm font-semibold text-center w-full">
-                    {{ processo.status_label|default:"Iniciado" }}
+                    {{ processo.status_label }}
                 </span>
 
             </div>
@@ -1132,7 +1132,7 @@
         </div> <!-- fim normas_container -->
 
         <!-- LINHA 10 – Auditoria -->
-        <div class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-6 mb-6">
+        <div class="grid grid-cols-6 gap-6 mb-6">
 
             <!-- Cadastro -->
             <div>
@@ -1145,7 +1145,7 @@
 
             <!-- Responsável Cadastro -->
             <div>
-                <label class="block text-sm font-medium text-blue-700">Responsável Cadastro</label>
+                <label class="block text-sm font-medium text-blue-700">Resp. Cadastro</label>
                 <input type="text"
                        value="{{ cadastro_user }}"
                        readonly
@@ -1163,9 +1163,27 @@
 
             <!-- Responsável Atualização -->
             <div>
-                <label class="block text-sm font-medium text-blue-700">Responsável Atualização</label>
+                <label class="block text-sm font-medium text-blue-700">Resp. Atualização</label>
                 <input type="text"
                        value="{{ atualizacao_user }}"
+                       readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+            </div>
+
+            <!-- Conclusão -->
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Conclusão</label>
+                <input type="text"
+                       value="{{ conclusao_data }}"
+                       readonly
+                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+            </div>
+
+            <!-- Responsável Conclusão -->
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Resp. Conclusão</label>
+                <input type="text"
+                       value="{{ conclusao_user }}"
                        readonly
                        class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
             </div>
@@ -1207,6 +1225,19 @@
               </button>
             {% endif %}
           {% endif %}
+
+          {% if not modo_visualizacao and not modo_exclusao and processo and processo.status == "ativo" %}
+            <button
+                @click='$dispatch("abrir-modal-confirmacao", {
+                    url: "{% url "arquiteturaprocessos:concluir_processo" processo.pk %}",
+                    mensagem: `Confirma a conclusão do {{ processo.parent_id|yesno:"Subprocesso,Processo" }}
+                    <strong>{{ processo.classificacao.nome|escapejs }} - {{ processo.nome|escapejs }}</strong>?`
+                })'
+                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
+                type="button">
+                Concluir Processo
+            </button>
+            {% endif %}
 
           <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition" href="{% url 'arquiteturaprocessos:processos' %}">
              {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
@@ -1317,6 +1348,11 @@ function atualizarStatus() {
 
 document.addEventListener("change", function(e){
 
+    const modoVisualizacao = "{{ modo_visualizacao|yesno:'true,false' }}" === "true"
+    const modoExclusao = "{{ modo_exclusao|yesno:'true,false' }}" === "true"
+
+    if (modoVisualizacao || modoExclusao) return
+
     if (
         e.target.id?.startsWith("id_modelagem_processo") ||
         e.target.id?.startsWith("norma_procedimento")
@@ -1330,7 +1366,16 @@ document.addEventListener("change", function(e){
    inicialização ao carregar página
 ===================================== */
 
-document.addEventListener("DOMContentLoaded", atualizarStatus)
+document.addEventListener("DOMContentLoaded", function () {
+
+    const modoVisualizacao = "{{ modo_visualizacao|yesno:'true,false' }}" === "true"
+    const modoExclusao = "{{ modo_exclusao|yesno:'true,false' }}" === "true"
+
+    if (!modoVisualizacao && !modoExclusao) {
+        atualizarStatus()
+    }
+
+})
 
 </script>
 

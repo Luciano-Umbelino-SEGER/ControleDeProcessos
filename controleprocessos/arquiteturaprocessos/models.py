@@ -506,8 +506,17 @@ class Processo(models.Model):
         return {
             "iniciado": "bg-orange-200 text-orange-900",
             "ativo": "bg-green-200 text-green-900",
-            "concluido": "bg-blue-200 text-blue-900"
+            "concluido": "bg-red-200 text-red-900"
         }.get(self.status, "")
+
+    @property
+    def pode_concluir(self):
+
+        for sub in self.subprocessos.all():
+            if sub.status == "iniciado":
+                return False
+
+        return True
 
     class Meta:
         db_table = "arquiteturaprocessos_processo"

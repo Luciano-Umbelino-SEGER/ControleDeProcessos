@@ -1948,6 +1948,10 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             # auditoria — atualização (vazia)
             "atualizacao_data": "",
             "atualizacao_user": "",
+
+            # auditoria — conclusão (vazia)
+            "conclusao_data": "",
+            "conclusao_user": "",
         })
 
         return context
@@ -2096,6 +2100,15 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao else ""
             ),
+            # auditoria — conclusao
+            "conclusao_data": (
+                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_conclusao else ""
+            ),
+            "conclusao_user": (
+                processo.usuario_conclusao.get_full_name()
+                if processo.usuario_conclusao else ""
+            ),
         })
 
         return context
@@ -2108,6 +2121,19 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     template_name = 'processos/form_processo.html'
     form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
+
+    def dispatch(self, request, *args, **kwargs):
+
+        processo = self.get_object()
+
+        if processo.status == "concluido":
+            messages.error(
+                request,
+                f"O processo '{processo.nome}' já está concluído e não pode ser editado."
+            )
+            return redirect("arquiteturaprocessos:processos")
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2218,6 +2244,15 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             "atualizacao_user": (
                 self.request.user.get_full_name()
                 or self.request.user.username
+            ),
+            "conclusao_data": (
+                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_conclusao else ""
+            ),
+            "conclusao_user": (
+                processo.usuario_conclusao.get_full_name()
+                or processo.usuario_conclusao.username
+                if processo.usuario_conclusao else ""
             ),
         })
 
@@ -2362,6 +2397,16 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao else ""
             ),
+            # auditoria — conclusao
+            "conclusao_data": (
+                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_conclusao else ""
+            ),
+            "conclusao_user": (
+                processo.usuario_conclusao.get_full_name()
+                or processo.usuario_conclusao.username
+                if processo.usuario_conclusao else ""
+            ),
         })
 
         return context
@@ -2393,6 +2438,79 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:processos')
 
+# --------------------------------#
+# Concluir Processo               #
+# --------------------------------#
+@login_required
+def concluir_processo(request, pk):
+
+    processo = get_object_or_404(Processo, pk=pk)
+
+    # ---------------------------------
+    # Segurança: só POST pode concluir
+    # ---------------------------------
+    if request.method != "POST":
+        return redirect("arquiteturaprocessos:editar_processo", pk=pk)
+
+    # ---------------------------------
+    # Verifica se pode concluir
+    # ---------------------------------
+    if not processo.pode_concluir:
+
+        subprocessos_nao_iniciados = [
+            sub.nome for sub in processo.subprocessos.all()
+            if sub.status == "iniciado"
+        ]
+
+        lista_html = "<br>".join(
+            f"<strong>{nome}</strong>"
+            for nome in subprocessos_nao_iniciados
+        )
+
+        messages.error(
+            request,
+            mark_safe(
+                f"""
+                Não é possível concluir o processo '<strong>{processo.nome}</strong>'.
+                <br><br>
+                Existem subprocessos que ainda estão no estado de 'Iniciado':
+                <br>
+                {lista_html}
+                <br><br>
+                Conclua ou exclua os subprocessos que não são necessários.
+                """
+            )
+        )
+
+        return redirect("arquiteturaprocessos:editar_processo", pk=pk)
+
+    # ---------------------------------
+    # Conclusão em cascata
+    # ---------------------------------
+    agora = timezone.now()
+
+    with transaction.atomic():
+
+        # conclui subprocessos ativos
+        for sub in processo.subprocessos.all():
+
+            if sub.status == "ativo":
+
+                sub.data_conclusao = agora
+                sub.usuario_conclusao = request.user
+                sub.save()
+
+        # conclui processo pai
+        processo.data_conclusao = agora
+        processo.usuario_conclusao = request.user
+        processo.save()
+
+    messages.success(
+        request,
+        f"Processo '{processo.nome}' concluído com sucesso!"
+    )
+
+    return redirect("arquiteturaprocessos:processos")
 
 
 

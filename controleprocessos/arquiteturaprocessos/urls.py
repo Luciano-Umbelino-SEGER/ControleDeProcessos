@@ -93,6 +93,7 @@ urlpatterns = [
     path('processo/<int:pk>/visualizar/', VisualizarProcesso.as_view(), name='visualizar_processo'),
     path('processo/<int:pk>/editar/', EditarProcesso.as_view(), name='editar_processo'),
     path('processo/<int:pk>/excluir/', ExcluirProcesso.as_view(), name='excluir_processo'),
+    path("processos/<int:pk>/concluir/", views.concluir_processo, name="concluir_processo"),
     # Endpoints - APIs
     # --> Classificação → Macro1
     path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
