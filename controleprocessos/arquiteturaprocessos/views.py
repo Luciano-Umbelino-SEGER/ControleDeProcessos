@@ -2477,7 +2477,7 @@ def concluir_processo(request, pk):
                 <br>
                 {lista_html}
                 <br><br>
-                Conclua ou exclua os subprocessos que não são necessários.
+                Ative, conclua ou exclua os subprocessos que não são necessários.
                 """
             )
         )
@@ -2492,7 +2492,7 @@ def concluir_processo(request, pk):
     with transaction.atomic():
 
         # conclui subprocessos ativos
-        for sub in processo.subprocessos.all():
+        for sub in processo.subprocessos.filter(data_conclusao__isnull=True):
 
             if sub.status == "ativo":
 
