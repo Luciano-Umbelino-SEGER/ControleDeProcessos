@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, Estatisticas, CadastroUsuarios,  LogAcoes, CustomLoginView, alterar_senha,
+from .views import (ArquiteruraProcessos, CadastroUsuarios,  LogAcoes, CustomLoginView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
@@ -28,7 +28,10 @@ urlpatterns = [
     # Arquitetura de Processos
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     # Estatísticas
-    path('estatisticas/', Estatisticas.as_view(), name='estatisticas'),
+    path("estatisticas/", views.EstatisticasDashboard.as_view(), name="estatisticas_dashboard"),
+    path("estatisticas/processos/", views.EstatisticasProcessos.as_view(), name="estatisticas_processos"),
+    path("estatisticas/mapear/", views.EstatisticasProcessosMapear.as_view(), name="estatisticas_mapear"),
+    path("estatisticas/comparativos/", views.EstatisticasComparativos.as_view(), name="estatisticas_comparativos"),
     # BProcesso a Mapear
     path('processosmapear/', ProcessosMapear.as_view(), name='processosmapear'),
     path('processosmapear/novo/', CriarProcessoMapear.as_view(), name='criar_processomapear'),

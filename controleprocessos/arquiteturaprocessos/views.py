@@ -40,7 +40,6 @@ from .forms import (
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
-
 # ---------------------------------------------------
 # Utility to safely generate a username from names
 # ---------------------------------------------------
@@ -549,13 +548,29 @@ class ArquiteruraProcessos(ListView):
 
         return ctx
 
+# --------------------------------
+# Dashboard
+# --------------------------------
+class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
+    template_name = "estatisticas/dashboard.html"
 
-# --------------
-# Estatísticas
-# --------------
-class Estatisticas(LoginRequiredMixin, ListView):
-    template_name = 'estatisticas.html'
-    model = Processo
+# --------------------------------
+# Estatísticas de Processos
+# --------------------------------
+class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
+    template_name = "estatisticas/estatisticaprocessos.html"
+
+# --------------------------------
+# Processos a Mapear
+# --------------------------------
+class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
+    template_name = "estatisticas/estatisticaprocessosmapear.html"
+
+# --------------------------------
+# Comparativos
+# --------------------------------
+class EstatisticasComparativos(LoginRequiredMixin, TemplateView):
+    template_name = "estatisticas/comparativos.html"
 
 # ---------------------------
 #  Processo a Mapear
