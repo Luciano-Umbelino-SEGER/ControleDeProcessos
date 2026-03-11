@@ -11,7 +11,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios,  LogAcoes, CustomLog
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
-                    ExecutarIniciarProcessoMapear)
+                    ExecutarIniciarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear, EstatisticaComparativos)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 
@@ -28,10 +28,10 @@ urlpatterns = [
     # Arquitetura de Processos
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     # Estatísticas
-    path("estatisticas/", views.EstatisticasDashboard.as_view(), name="estatisticas_dashboard"),
+    path("estatisticas/", EstatisticasDashboard.as_view(), name="estatisticas_dashboard"),
+    path("estatisticas/processos-mapear/", EstatisticasProcessosMapear.as_view(), name="estatisticaprocessos_mapear" ),
     path("estatisticas/processos/", views.EstatisticasProcessos.as_view(), name="estatisticas_processos"),
-    path("estatisticas/mapear/", views.EstatisticasProcessosMapear.as_view(), name="estatisticas_mapear"),
-    path("estatisticas/comparativos/", views.EstatisticasComparativos.as_view(), name="estatisticas_comparativos"),
+    path("estatisticas/comparativos/", EstatisticaComparativos.as_view(), name="estatisticas_comparativos"),
     # BProcesso a Mapear
     path('processosmapear/', ProcessosMapear.as_view(), name='processosmapear'),
     path('processosmapear/novo/', CriarProcessoMapear.as_view(), name='criar_processomapear'),

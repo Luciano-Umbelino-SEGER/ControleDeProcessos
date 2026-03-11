@@ -1,5 +1,5 @@
 # views.py (revisado)
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import json
 import re
@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
+from collections import Counter
 from django.urls import reverse, reverse_lazy
 from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth import update_session_auth_hash
@@ -20,7 +21,9 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q, Max, Exists, OuterRef
+from django.db.models import Q, Max, Exists, OuterRef, Count
+from calendar import month_abbr
+from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -547,12 +550,112 @@ class ArquiteruraProcessos(ListView):
         ctx["documentos_por_processo"] = documentos_por_processo
 
         return ctx
-
+# Aqui 1
 # --------------------------------
 # Dashboard
 # --------------------------------
 class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
+
     template_name = "estatisticas/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        # ---------------------------------------
+        # Processos por Status (campo calculado)
+        # ---------------------------------------
+
+        processos = Processo.objects.prefetch_related("documentos")
+
+        contador_status = Counter(p.status for p in processos)
+
+        ordem_status = ["iniciado", "ativo", "concluido"]
+
+        status_labels = []
+        status_valores = []
+
+        for status in ordem_status:
+            if status in contador_status:
+                status_labels.append(status.capitalize())
+                status_valores.append(contador_status[status])
+
+        context["status_labels"] = status_labels
+        context["status_valores"] = status_valores
+
+        # ---------------------------
+        # Processos por Classificação
+        # ---------------------------
+        classificacao = (
+            Processo.objects
+            .values("classificacao__nome")
+            .annotate(total=Count("id"))
+        )
+
+        context["class_labels"] = [c["classificacao__nome"] for c in classificacao]
+        context["class_valores"] = [c["total"] for c in classificacao]
+
+        # ---------------------------
+        # Processos por Área
+        # ---------------------------
+        area = (
+            Processo.objects
+            .values("area_responsavel")
+            .annotate(total=Count("id"))
+        )
+
+        context["area_labels"] = [a["area_responsavel"] for a in area]
+        context["area_valores"] = [a["total"] for a in area]
+
+        # ---------------------------
+        # Processos por Mês
+        # ---------------------------
+        ano_atual = datetime.now().year
+        mes_atual = datetime.now().month
+
+        dados = (
+            Processo.objects
+            .filter(data_criacao__year=ano_atual)
+            .annotate(mes=TruncMonth("data_criacao"))
+            .values("mes")
+            .annotate(total=Count("id"))
+        )
+
+        dados_dict = {d["mes"].month: d["total"] for d in dados}
+
+        mes_labels = []
+        mes_valores = []
+
+        for m in range(1, mes_atual + 1):
+            mes_labels.append(datetime(ano_atual, m, 1).strftime("%b"))
+            mes_valores.append(dados_dict.get(m, 0))
+
+        context["mes_labels"] = mes_labels
+        context["mes_valores"] = mes_valores
+
+        return context
+
+# --------------------------------
+# Processos a Mapear
+# --------------------------------
+class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
+
+    template_name = "estatisticas/estatisticaprocessos_mapear.html"
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        processos_mapear = (
+            ProcessoMapear.objects
+            .values("area_responsavel")
+            .annotate(total=Count("id"))
+        )
+
+        context["labels"] = [p["area_responsavel"] for p in processos_mapear]
+        context["valores"] = [p["total"] for p in processos_mapear]
+
+        return context
 
 # --------------------------------
 # Estatísticas de Processos
@@ -561,16 +664,53 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
     template_name = "estatisticas/estatisticaprocessos.html"
 
 # --------------------------------
-# Processos a Mapear
-# --------------------------------
-class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
-    template_name = "estatisticas/estatisticaprocessosmapear.html"
-
-# --------------------------------
 # Comparativos
 # --------------------------------
-class EstatisticasComparativos(LoginRequiredMixin, TemplateView):
+class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
+
     template_name = "estatisticas/comparativos.html"
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        # -----------------------------
+        # Processos Criados por mês
+        # -----------------------------
+        criados = (
+            Processo.objects
+            .annotate(mes=TruncMonth("data_criacao"))
+            .values("mes")
+            .annotate(total=Count("id"))
+            .order_by("mes")
+        )
+
+        # -----------------------------
+        # Processos Concluídos por mês
+        # -----------------------------
+        concluidos = (
+            Processo.objects
+            .exclude(data_conclusao__isnull=True)
+            .annotate(mes=TruncMonth("data_conclusao"))
+            .values("mes")
+            .annotate(total=Count("id"))
+            .order_by("mes")
+        )
+
+        # converter para dicionário
+        dict_criados = {c["mes"].strftime("%b/%Y"): c["total"] for c in criados}
+        dict_concluidos = {c["mes"].strftime("%b/%Y"): c["total"] for c in concluidos}
+
+        meses = sorted(set(dict_criados.keys()) | set(dict_concluidos.keys()))
+
+        valores_criados = [dict_criados.get(m, 0) for m in meses]
+        valores_concluidos = [dict_concluidos.get(m, 0) for m in meses]
+
+        context["labels"] = meses
+        context["criados"] = valores_criados
+        context["concluidos"] = valores_concluidos
+
+        return context
 
 # ---------------------------
 #  Processo a Mapear
@@ -1794,7 +1934,6 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
-# Aqui 1
 # -------------------------------#
 # Listagem - Processos           #
 # -------------------------------#

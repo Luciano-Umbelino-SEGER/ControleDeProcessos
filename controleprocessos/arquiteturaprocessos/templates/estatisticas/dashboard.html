@@ -1,17 +1,407 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block titulo %}Estatísticas{% endblock %}
+{% block titulo %}
+Estatísticas
+{% endblock %}
 
 {% block body %}
 
-<div class="container mx-auto">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Plugin para valores nas fatias -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
-<h1 class="text-2xl font-semibold text-blue-800 mb-6">
-📊 Dashboard
-</h1>
+<style>
+  /* Garante que o Chart.js respeite a altura definida no canvas */
+  .canvas-compact { height: 310px !important; }
+  /* Se quiser um tiquinho mais alto, habilite a linha abaixo */
+  /* .canvas-compact { height: 330px !important; } */
 
-<p>Página de estatísticas do sistema.</p>
+  .dashboard-container { overflow-x: hidden; }
+  .bg-white{background: linear-gradient(180deg,#ffffff,#fbfbfb);}
+  .shadow{box-shadow: 0 6px 18px rgba(0,0,0,0.08);}
+  canvas{transition: transform 0.15s ease;}
+  canvas:hover{transform: scale(1.02);}
+</style>
 
+<!-- Ajuste a largura máxima conforme seu layout: -->
+<div class="container mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 dashboard-container">
+
+  <!-- Título -->
+  <h1 class="text-2xl font-semibold text-blue-800 mb-4">
+    📊 Dashboard - SIGEMP
+  </h1>
+
+  <!-- GRID 2×2 FIXO (1 coluna no mobile; 2 colunas >= sm) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+    <!-- STATUS -->
+    <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
+      <h3 class="text-blue-700 font-semibold text-sm mb-2">
+        Processos por Status
+      </h3>
+      <canvas id="graficoStatus" class="canvas-compact w-full"></canvas>
+    </div>
+
+    <!-- CLASSIFICAÇÃO -->
+    <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
+      <h3 class="text-blue-700 font-semibold text-sm mb-2">
+        Processos por Classificação
+      </h3>
+      <canvas id="graficoClassificacao" class="canvas-compact w-full"></canvas>
+    </div>
+
+    <!-- ÁREA -->
+    <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
+      <h3 class="text-blue-700 font-semibold text-sm mb-2">
+        Processos por Área
+      </h3>
+      <canvas id="graficoArea" class="canvas-compact w-full"></canvas>
+    </div>
+
+    <!-- MÊS -->
+    <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
+      <h3 class="text-blue-700 font-semibold text-sm mb-2">
+        Processos por Mês
+      </h3>
+      <canvas id="graficoMes" class="canvas-compact w-full"></canvas>
+    </div>
+
+    <!-- MODAL DE GRÁFICO -->
+    <div id="modalGrafico" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-50">
+      <div class="bg-white rounded-lg shadow-xl w-[900px] max-w-[95%] p-4 relative">
+        <button onclick="fecharModalGrafico()"
+                class="absolute top-2 right-3 text-gray-500 hover:text-gray-800 text-xl">
+            ✕
+        </button>
+        <canvas id="graficoExpandido" style="height:500px"></canvas>
+      </div>
+    </div>
+
+  </div>
 </div>
+
+<script>
+
+Chart.register(ChartDataLabels);
+
+/* ---------------------------------
+DADOS DO DJANGO
+--------------------------------- */
+
+const statusLabels  = {{ status_labels|default:"[]"|safe }};
+const statusValores = {{ status_valores|default:"[]"|safe }};
+
+const classLabels   = {{ class_labels|default:"[]"|safe }};
+const classValores  = {{ class_valores|default:"[]"|safe }};
+
+const areaLabels    = {{ area_labels|default:"[]"|safe }};
+const areaValores   = {{ area_valores|default:"[]"|safe }};
+
+const mesLabels     = {{ mes_labels|default:"[]"|safe }};
+const mesValores    = {{ mes_valores|default:"[]"|safe }};
+
+/* ---------------------------------
+OPÇÕES BASE
+--------------------------------- */
+
+function pieOptions(){
+
+    return {
+
+        responsive:true,
+        maintainAspectRatio:false,
+
+        plugins:{
+
+            legend:{
+                position:"top"
+            },
+
+            datalabels:{
+                color:"#fff",
+                font:{weight:"bold",size:12},
+
+                formatter:function(value,ctx){
+
+                    const data = ctx.chart.data.datasets[0].data;
+                    const total = data.reduce((a,b)=>a+b,0);
+
+                    if(!total) return "0";
+
+                    const pct = ((value/total)*100).toFixed(1);
+
+                    return value+" ("+pct+"%)";
+                }
+            }
+        }
+    }
+}
+
+function barOptions(){
+
+    return {
+
+        responsive:true,
+        maintainAspectRatio:false,
+
+        plugins:{
+            legend:{display:false}
+        },
+
+        scales:{
+            y:{
+                beginAtZero:true,
+                ticks:{stepSize:1}
+            }
+        }
+    }
+}
+
+/* ---------------------------------
+STATUS
+--------------------------------- */
+
+const chartStatus = new Chart(
+    document.getElementById("graficoStatus"),
+    {
+        type:"pie",
+
+        data:{
+            labels:statusLabels,
+            datasets:[{
+                data:statusValores,
+                backgroundColor:[
+                    "#f59e0b",
+                    "#10b981",
+                    "#ef4444"
+                ]
+            }]
+        },
+
+        options:{
+            ...pieOptions(),
+
+            onClick:function(evt,elements){
+
+                if(elements.length){
+
+                    const index = elements[0].index;
+                    const status = this.data.labels[index];
+
+                    window.location.href =
+                    "/processos/?status="+encodeURIComponent(status);
+                }
+            }
+        }
+    }
+);
+
+document
+.getElementById("graficoStatus")
+.addEventListener("dblclick",()=>abrirGrafico(chartStatus));
+
+/* ---------------------------------
+CLASSIFICAÇÃO
+--------------------------------- */
+
+const chartClassificacao = new Chart(
+    document.getElementById("graficoClassificacao"),
+    {
+        type:"pie",
+
+        data:{
+            labels:classLabels,
+            datasets:[{
+                data:classValores,
+                backgroundColor:[
+                    "#3b82f6",
+                    "#10b981",
+                    "#f59e0b",
+                    "#ef4444"
+                ]
+            }]
+        },
+
+        options:{
+            ...pieOptions(),
+
+            onClick:function(evt,elements){
+
+                if(elements.length){
+
+                    const index = elements[0].index;
+                    const classificacao = this.data.labels[index];
+
+                    window.location.href =
+                    "/processos/?classificacao="+encodeURIComponent(classificacao);
+                }
+            }
+        }
+    }
+);
+
+document
+.getElementById("graficoClassificacao")
+.addEventListener("dblclick",()=>abrirGrafico(chartClassificacao));
+
+/* ---------------------------------
+ÁREA
+--------------------------------- */
+
+const chartArea = new Chart(
+    document.getElementById("graficoArea"),
+    {
+        type:"bar",
+
+        data:{
+            labels:areaLabels,
+            datasets:[{
+                label:"Processos",
+                data:areaValores,
+                backgroundColor:[
+                    "#3b82f6",
+                    "#10b981",
+                    "#f59e0b",
+                    "#ef4444",
+                    "#8b5cf6",
+                    "#06b6d4",
+                    "#84cc16"
+                ],
+                hoverBackgroundColor:"#1d4ed8",
+                borderRadius:6,
+                maxBarThickness:40
+            }]
+        },
+
+        options:{
+            ...barOptions(),
+
+            onClick:function(evt,elements){
+
+                if(elements.length){
+
+                    const index = elements[0].index;
+                    const area = this.data.labels[index];
+
+                    window.location.href =
+                    "/processos/?area="+encodeURIComponent(area);
+                }
+            }
+        }
+    }
+);
+
+document
+.getElementById("graficoArea")
+.addEventListener("dblclick",()=>abrirGrafico(chartArea));
+
+/* ---------------------------------
+MÊS
+--------------------------------- */
+
+const chartMes = new Chart(
+    document.getElementById("graficoMes"),
+    {
+        type:"line",
+
+        data:{
+            labels:mesLabels,
+            datasets:[{
+                data:mesValores,
+                borderColor:"#3b82f6",
+                backgroundColor:"rgba(59,130,246,0.2)",
+                fill:true,
+                tension:0.3
+            }]
+        },
+
+        options:{
+            ...barOptions(),
+
+            onClick:function(evt,elements){
+
+                if(elements.length){
+
+                    const index = elements[0].index;
+                    const mes = this.data.labels[index];
+
+                    window.location.href =
+                    "/processos/?mes="+encodeURIComponent(mes);
+                }
+            }
+        }
+    }
+);
+
+document
+.getElementById("graficoMes")
+.addEventListener("dblclick",()=>abrirGrafico(chartMes));
+
+/* ---------------------------------
+MODAL EXPANDIDO
+--------------------------------- */
+
+let chartExpandido=null;
+
+function abrirGrafico(chart){
+
+    const modal = document.getElementById("modalGrafico");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+
+    const ctx = document.getElementById("graficoExpandido");
+
+    const card = chart.canvas.closest(".bg-white");
+    const titulo = card.querySelector("h3").innerText;
+
+    if(chartExpandido){
+        chartExpandido.destroy();
+    }
+
+    chartExpandido = new Chart(ctx,{
+        type: chart.config.type,
+        data:{
+            labels:[...chart.data.labels],
+            datasets: chart.data.datasets.map(ds => ({...ds}))
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+
+            layout:{
+                padding:{
+                    top:10
+                }
+            },
+
+            plugins:{
+                title:{
+                    display:true,
+                    text:titulo,
+                    align:"start",
+                    color:"#1d4ed8",
+                    font:{
+                        size:14,
+                        weight:"600"
+                    },
+                    padding:{
+                        bottom:10
+                    }
+                }
+            }
+        }
+    });
+}
+
+function fecharModalGrafico(){
+
+    document
+    .getElementById("modalGrafico")
+    .classList.add("hidden");
+}
+
+</script>
 
 {% endblock %}
