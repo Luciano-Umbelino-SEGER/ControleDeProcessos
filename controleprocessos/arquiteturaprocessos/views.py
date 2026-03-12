@@ -661,7 +661,80 @@ class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
 # Estatísticas de Processos
 # --------------------------------
 class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
+
     template_name = "estatisticas/estatisticaprocessos.html"
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        # ---------------------------------------
+        # Processos por Estado
+        # ---------------------------------------
+
+        processos = Processo.objects.prefetch_related("documentos")
+
+        contador_estado = Counter(p.status for p in processos)
+
+        ordem_estado = ["iniciado", "ativo", "concluido"]
+
+        estado_labels = []
+        estado_valores = []
+
+        for estado in ordem_estado:
+            if estado in contador_estado:
+                estado_labels.append(estado.capitalize())
+                estado_valores.append(contador_estado[estado])
+
+        context["estado_labels"] = estado_labels
+        context["estado_valores"] = estado_valores
+
+        # ---------------------------------------
+        # Processos por Classificação
+        # ---------------------------------------
+
+        classificacao = (
+            Processo.objects
+            .values("classificacao__nome")
+            .annotate(total=Count("id"))
+        )
+
+        context["class_labels"] = [c["classificacao__nome"] for c in classificacao]
+        context["class_valores"] = [c["total"] for c in classificacao]
+
+        # ---------------------------------------
+        # Processos por Área x Estado
+        # ---------------------------------------
+
+        processos = Processo.objects.prefetch_related("documentos")
+
+        areas = sorted(
+            {p.area_responsavel for p in processos if p.area_responsavel}
+        )
+
+        status_lista = ["iniciado", "ativo", "concluido"]
+
+        estrutura = {s: [0] * len(areas) for s in status_lista}
+
+        for p in processos:
+
+            area = p.area_responsavel
+            status = p.status
+
+            if area in areas and status in estrutura:
+                index = areas.index(area)
+                estrutura[status][index] += 1
+
+        context["area_labels"] = areas
+        context["area_iniciado"] = estrutura["iniciado"]
+        context["area_ativo"] = estrutura["ativo"]
+        context["area_concluido"] = estrutura["concluido"]
+        context["total_processos"] = sum(estado_valores)
+        context["total_iniciado"] = estado_valores[0] if len(estado_valores) > 0 else 0
+        context["total_ativo"] = estado_valores[1] if len(estado_valores) > 1 else 0
+        context["total_concluido"] = estado_valores[2] if len(estado_valores) > 2 else 0
+
+        return context
 
 # --------------------------------
 # Comparativos

@@ -1,11 +1,384 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block titulo %}Estatísticas de Processos{% endblock %}
+{% block titulo %}
+Estatísticas de Processos
+{% endblock %}
 
 {% block body %}
 
-<h1 class="text-2xl font-semibold text-blue-800">
-📈 Estatísticas de Processos
-</h1>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<style>
+
+.canvas-compact{
+    height:310px !important;
+}
+
+.dashboard-container{
+    overflow-x:hidden;
+}
+
+.bg-white{
+    background:linear-gradient(180deg,#ffffff,#fbfbfb);
+}
+
+.shadow{
+    box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+
+canvas{
+    transition:transform .15s ease;
+}
+
+canvas:hover{
+    transform:scale(1.02);
+}
+
+</style>
+
+<div class="container mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 dashboard-container">
+
+    <!-- Título -->
+    <h1 class="text-2xl font-semibold text-blue-800 mb-4">
+        📈 Estatísticas de Processos
+    </h1>
+
+    <!-- CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow text-center">
+            <div class="text-gray-500 text-sm">Total de Processos</div>
+            <div class="text-2xl font-bold text-blue-700">
+                {{ total_processos }}
+            </div>
+        </div>
+
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow text-center">
+            <div class="text-gray-600 text-sm">🟢 Ativos</div>
+            <div class="text-2xl font-bold text-green-600">{{ total_ativo }}</div>
+        </div>
+
+        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow text-center">
+            <div class="text-gray-500 text-sm">🟠 Iniciados</div>
+            <div class="text-2xl font-bold text-amber-500">
+                {{ total_iniciado }}
+            </div>
+        </div>
+
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow text-center">
+            <div class="text-gray-500 text-sm">🔴 Concluídos</div>
+            <div class="text-2xl font-bold text-red-500">
+                {{ total_concluido }}
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+        <!-- ESTADO -->
+        <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
+            <h3 class="text-blue-700 font-semibold text-sm mb-2">
+                Processos por Estado
+            </h3>
+
+            <canvas id="graficoEstado" class="canvas-compact w-full"></canvas>
+        </div>
+
+        <!-- CLASSIFICAÇÃO -->
+        <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
+            <h3 class="text-blue-700 font-semibold text-sm mb-2">
+                Processos por Classificação
+            </h3>
+
+            <canvas id="graficoClassificacao" class="canvas-compact w-full"></canvas>
+        </div>
+
+        <!-- ÁREA -->
+        <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition sm:col-span-2">
+            <h3 class="text-blue-700 font-semibold text-sm mb-2">
+                Processos por Área
+            </h3>
+
+            <canvas id="graficoArea" class="canvas-compact w-full"></canvas>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+Chart.register(ChartDataLabels);
+
+/* -----------------------------
+DADOS VINDOS DO DJANGO
+----------------------------- */
+
+const estadoLabels  = {{ estado_labels|default:"[]"|safe }};
+const estadoValores = {{ estado_valores|default:"[]"|safe }};
+
+const classLabels   = {{ class_labels|default:"[]"|safe }};
+const classValores  = {{ class_valores|default:"[]"|safe }};
+
+const areaLabels = {{ area_labels|default:"[]"|safe }};
+/*
+const areaIniciado = {{ area_iniciado|default:"[]"|safe }};
+const areaAtivo = {{ area_ativo|default:"[]"|safe }};
+const areaConcluido = {{ area_concluido|default:"[]"|safe }};
+*/
+const areaIniciado = [1,0,1,0,1];
+const areaAtivo = [2,1,1,2,1];
+const areaConcluido = [1,1,0,1,1];
+
+/* -----------------------------
+OPÇÕES BASE
+----------------------------- */
+
+function pieOptions(labelColors){
+
+    return {
+
+        responsive:true,
+        maintainAspectRatio:false,
+
+        plugins:{
+
+            legend:{
+                position:"top"
+            },
+
+            datalabels:{
+
+                color:function(context){
+                    return labelColors[context.dataIndex];
+                },
+
+                font:{
+                    weight:"bold",
+                    size:12
+                },
+
+                formatter:function(value,ctx){
+
+                    const data = ctx.chart.data.datasets[0].data;
+                    const total = data.reduce((a,b)=>a+b,0);
+
+                    if(!total) return "0";
+
+                    const pct = ((value/total)*100).toFixed(1);
+
+                    return value+" ("+pct+"%)";
+                }
+            }
+        }
+    }
+}
+
+/* -----------------------------
+ESTADO (PIZZA)
+----------------------------- */
+
+const chartEstado = new Chart(
+    document.getElementById("graficoEstado"),
+    {
+
+        type:"pie",
+
+        data:{
+            labels:estadoLabels,
+            datasets:[{
+                data:estadoValores,
+                backgroundColor:[
+                    "rgba(245,158,11,0.25)",
+                    "rgba(34,197,94,0.25)",
+                    "rgba(239,68,68,0.25)"
+                ],
+                borderColor:[
+                    "#f59e0b",
+                    "#22c55e",
+                    "#ef4444"
+                ],
+                spacing: 2,
+                hoverOffset: 8,
+            }]
+        },
+
+        options: pieOptions([
+            "#f59e0b",
+            "#22c55e",
+            "#ef4444"
+        ])
+    }
+);
+
+/* -----------------------------
+CLASSIFICAÇÃO (DONUT)
+----------------------------- */
+
+const chartClassificacao = new Chart(
+    document.getElementById("graficoClassificacao"),
+    {
+
+        type:"doughnut",
+
+        data:{
+            labels:classLabels,
+            datasets:[{
+                data:classValores,
+                backgroundColor:[
+                    "rgba(59,130,246,0.25)",   // azul
+                    "rgba(139,92,246,0.25)",   // roxo
+                    "rgba(249,115,22,0.25)"    // laranja
+                ],
+                borderColor:[
+                    "#3b82f6",
+                    "#8b5cf6",
+                    "#f97316"
+                ],
+                spacing: 2,
+                hoverOffset: 8,
+            }]
+        },
+
+        options: pieOptions([
+            "#3b82f6", // estratégico
+            "#8b5cf6", // suporte
+            "#f97316"  // finalístico
+        ])
+    }
+);
+
+/* -----------------------------
+ÁREA (BARRAS)
+----------------------------- */
+
+// calcular total por área (stack)
+const totaisArea = areaLabels.map((_, i) =>
+    areaIniciado[i] + areaAtivo[i] + areaConcluido[i]
+);
+
+// criar estrutura combinada
+let areasOrdenadas = areaLabels.map((area, i) => ({
+    area: area,
+    iniciado: areaIniciado[i],
+    ativo: areaAtivo[i],
+    concluido: areaConcluido[i],
+    total: totaisArea[i]
+}));
+
+// ordenar por total (maior → menor)
+areasOrdenadas.sort((a, b) => b.total - a.total);
+
+// reconstruir arrays ordenados
+const areaLabelsSorted = areasOrdenadas.map(a => a.area);
+const areaIniciadoSorted = areasOrdenadas.map(a => a.iniciado);
+const areaAtivoSorted = areasOrdenadas.map(a => a.ativo);
+const areaConcluidoSorted = areasOrdenadas.map(a => a.concluido);
+
+// descobrir valor máximo
+const maxAreaValores = Math.max(0, ...totaisArea);
+
+const chartArea = new Chart(
+    document.getElementById("graficoArea"),
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels: areaLabels,
+
+            datasets: [
+
+                {
+                    label: "Iniciado",
+                    data: areaIniciadoSorted,
+                    backgroundColor: "rgba(245,158,11,0.25)",
+                    borderColor: "#f59e0b",
+                    borderWidth: 2
+                },
+
+                {
+                    label: "Ativo",
+                    data: areaAtivoSorted,
+                    backgroundColor: "rgba(34,197,94,0.25)",
+                    borderColor: "#22c55e",
+                    borderWidth: 2
+                },
+
+                {
+                    label: "Concluído",
+                    data: areaConcluidoSorted,
+                    backgroundColor: "rgba(239,68,68,0.25)",
+                    borderColor: "#ef4444",
+                    borderWidth: 2
+                }
+
+            ]
+        },
+
+        options: {
+
+            indexAxis: 'y',   // 👈 torna o gráfico horizontal
+
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    position: "top"
+                },
+
+                datalabels: {
+
+                    anchor: "end",
+                    align: "right",
+
+                    font: {
+                        weight: "bold"
+                    },
+
+                    formatter: function(value, context) {
+
+                        const datasetIndex = context.datasetIndex;
+                        const dataIndex = context.dataIndex;
+
+                        const total = totaisArea[dataIndex];
+
+                        // mostrar apenas no último dataset (Concluído)
+                        if (datasetIndex === 2) {
+                            return total;
+                        }
+
+                        return "";
+                    }
+                }
+            },
+
+            scales: {
+
+                x: {
+                    stacked: true,
+                    beginAtZero: true,
+                    max: maxAreaValores + 1,
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+
+                y: {
+                    stacked: true
+                }
+            }
+        }
+    }
+);
+
+</script>
 
 {% endblock %}

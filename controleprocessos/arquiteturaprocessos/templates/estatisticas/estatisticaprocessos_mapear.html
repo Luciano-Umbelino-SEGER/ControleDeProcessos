@@ -7,12 +7,15 @@ Processos a Mapear
 
 {% block body %}
 
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Plugin para datalabels -->
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <style>
 
-.canvas-grafico{
+.canvas-grafico {
     height: 400px !important;
 }
 
@@ -27,7 +30,7 @@ Processos a Mapear
     <div class="bg-white p-4 rounded-lg shadow">
 
         <h3 class="text-blue-700 font-semibold text-sm mb-3">
-            Processos a Mapear por Área
+            Processos a Mapear por Área (Ranking)
         </h3>
 
         <canvas id="graficoMapear" class="canvas-grafico"></canvas>
@@ -36,73 +39,139 @@ Processos a Mapear
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
 <script>
 
 Chart.register(ChartDataLabels);
 
+/* -----------------------------
+DADOS VINDOS DO DJANGO
+----------------------------- */
+
 const labels  = {{ labels|safe }};
 const valores = {{ valores|safe }};
 
-// descobrir valor máximo
-const maxValor = Math.max(...valores);
+/* -----------------------------
+ORDENAR POR QUANTIDADE (ranking)
+----------------------------- */
+
+const dadosOrdenados = labels
+    .map((label, i) => ({
+        label: label,
+        valor: valores[i]
+    }))
+    .sort((a, b) => b.valor - a.valor);
+
+const labelsOrdenados  = dadosOrdenados.map(d => d.label);
+const valoresOrdenados = dadosOrdenados.map(d => d.valor);
+
+
+/* -----------------------------
+CORES PADRÃO DO SIGEMP
+linha forte + preenchimento suave
+----------------------------- */
+
+const coresBorda = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#06b6d4",
+    "#84cc16"
+];
+
+const coresFundo = [
+    "rgba(59,130,246,0.25)",
+    "rgba(16,185,129,0.25)",
+    "rgba(245,158,11,0.25)",
+    "rgba(239,68,68,0.25)",
+    "rgba(139,92,246,0.25)",
+    "rgba(6,182,212,0.25)",
+    "rgba(132,204,22,0.25)"
+];
+
+
+/* -----------------------------
+VALOR MÁXIMO DO EIXO
+----------------------------- */
+
+const maxValor = Math.max(...valoresOrdenados);
+
+
+/* -----------------------------
+GRÁFICO
+----------------------------- */
 
 new Chart(
     document.getElementById("graficoMapear"),
     {
-        type:"bar",
 
-        data:{
-            labels:labels,
-            datasets:[{
-                label:"Processos a Mapear",
-                data:valores,
+        type: "bar",
 
-                backgroundColor:[
-                    "#3b82f6",
-                    "#10b981",
-                    "#f59e0b",
-                    "#ef4444",
-                    "#8b5cf6",
-                    "#06b6d4",
-                    "#84cc16"
-                ],
+        data: {
 
-                borderRadius:6,
-                maxBarThickness:50
+            labels: labelsOrdenados,
+
+            datasets: [{
+                label: "Processos a Mapear",
+                data: valoresOrdenados,
+
+                backgroundColor: coresFundo,
+                borderColor: coresBorda,
+                borderWidth: 2,
+
+                borderRadius: 6,
+                maxBarThickness: 50
             }]
         },
 
-        options:{
-            responsive:true,
-            maintainAspectRatio:false,
+        options: {
 
-            plugins:{
-                legend:{display:false},
+            responsive: true,
+            maintainAspectRatio: false,
 
-                datalabels:{
-                    anchor:"end",
-                    align:"top",
-                    offset:4,
-                    color:"#334155",
-                    font:{
-                        weight:"bold",
-                        size:12
+            plugins: {
+
+                legend: {
+                    display: false
+                },
+
+                datalabels: {
+
+                    anchor: "end",
+                    align: "top",
+                    offset: 4,
+
+                    color: function(context) {
+                        return coresBorda[context.dataIndex];
+                    },
+
+                    font: {
+                        weight: "bold",
+                        size: 12
                     }
                 }
             },
 
             scales:{
+
+                x:{
+                    grid:{
+                        display:false
+                    }
+                },
+
                 y:{
                     beginAtZero:true,
-
-                    // 🔵 aqui resolvemos o problema
                     max:maxValor + 1,
 
                     ticks:{
                         stepSize:1
+                    },
+
+                    grid:{
+                        color:"rgba(148,163,184,0.15)",
+                        drawBorder:false
                     }
                 }
             }
