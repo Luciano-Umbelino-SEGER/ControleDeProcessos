@@ -24,7 +24,7 @@ def verificar_similaridade(request):
         tabela = data.get("tabela")
         campo = data.get("campo")
         valor = data.get("valor")
-        registro_id = data.get("id")
+        registro_id = int(data.get("id")) if data.get("id") else None
 
         if not tabela or not campo or not valor:
             return JsonResponse(

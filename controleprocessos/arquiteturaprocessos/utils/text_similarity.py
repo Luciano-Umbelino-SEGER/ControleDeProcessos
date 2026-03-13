@@ -47,7 +47,7 @@ def buscar_similares(
 
     for registro in queryset:
 
-        if ignorar_id and registro["id"] == ignorar_id:
+        if ignorar_id and registro["id"] == int(ignorar_id):
             continue
 
         valor_banco = registro.get(campo)
