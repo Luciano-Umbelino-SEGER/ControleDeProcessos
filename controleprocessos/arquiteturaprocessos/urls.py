@@ -14,6 +14,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios,  LogAcoes, CustomLog
                     ExecutarIniciarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear, EstatisticaComparativos)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
+from .views_utils import verificar_similaridade
 
 from django.contrib.auth import views as auth_views
 from django.conf import settings
@@ -112,4 +113,6 @@ urlpatterns = [
     path('api/macro2_todos/', macro2_todos, name='macro2_todos'),
     # --> Todos Processos Pai
     path('api/processos_pai/', processos_pai, name='processos_pai'),
+    # --> Utilitários
+    path("utils/verificar-similaridade/", verificar_similaridade, name="verificar_similaridade",),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -207,14 +207,13 @@ class ModelagemProcesso(models.Model):
     codigo = models.CharField(
         max_length=10,
         db_index=True,
-        validators=[RegexValidator(r"^[A-Za-z0-9.\-_/]+$")],
-        default="SRH",
+        validators=[RegexValidator(r"^[A-Z0-9.\-_/]+$")],
     )
     sequencial = models.CharField(
-        max_length=3,
-        validators=[RegexValidator(r"^\d{1,3}$")],
+        max_length=4,
+        validators=[RegexValidator(r"^\d{1,4}$")],
     )
-    versao = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(99)])
+    versao = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(9999)])
     tema = models.CharField(max_length=150, db_index=True)
     emitente = models.CharField(max_length=150, db_index=True)
     sistema = models.CharField(max_length=100, db_index=True)
@@ -455,9 +454,9 @@ class Processo(models.Model):
         related_name="processos_atualizados"
     )
 
-    versao_processo = models.CharField(
+    versao_processo = models.PositiveSmallIntegerField(
         "Versão do Processo",
-        max_length=10,
+        validators=[MinValueValidator(1), MaxValueValidator(9999)],
         blank=True,
         null=True
     )

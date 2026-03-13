@@ -604,8 +604,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
         # Ajustes específicos
         self.fields["codigo"].widget.attrs["class"] += " uppercase"
-        self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,3}"})
-        self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,2}"})
+        self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,4}", "maxlength": "4"})
+        self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,4}", "maxlength": "4"})
 
         # PDF widget
         if "documento_modelagem_processo" in self.fields:
@@ -628,7 +628,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         # 🔹 ZEROS À ESQUERDA — edição / visualização
         if self.instance and self.instance.pk:
             if self.instance.sequencial is not None:
-                self.initial["sequencial"] = f"{int(self.instance.sequencial):03d}"
+                self.initial["sequencial"] = f"{int(self.instance.sequencial):04d}"
             if self.instance.versao is not None:
                 self.initial["versao"] = f"{int(self.instance.versao):02d}"
 
@@ -668,13 +668,13 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     def clean_sequencial(self):
         seq = self.cleaned_data.get("sequencial")
         if not seq:
-            raise ValidationError("Informe o número sequencial da norma.")
+            raise ValidationError("Informe o número sequencial da modelagem de processos.")
         seq = str(seq).strip()
         if not seq.isdigit():
             raise ValidationError("O número sequencial deve conter apenas dígitos.")
         num = int(seq)
-        if not (1 <= num <= 999):
-            raise ValidationError("O número sequencial deve estar entre 1 e 999.")
+        if not (1 <= num <= 9999):
+            raise ValidationError("O número sequencial deve estar entre 1 e 9999.")
         return num
 
     def clean_versao(self):
@@ -683,8 +683,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             raise ValidationError("Informe a versão.")
         if not isinstance(ver, int):
             raise ValidationError("Versão deve ser um número inteiro.")
-        if not (1 <= ver <= 99):
-            raise ValidationError("A versão deve estar entre 1 e 99.")
+        if not (1 <= ver <= 9999):
+            raise ValidationError("A versão deve estar entre 1 e 9999.")
         if self._versao_original is not None and ver < self._versao_original:
             raise ValidationError(
                 f"A versão não pode ser menor que {self._versao_original}."
@@ -818,6 +818,20 @@ class Form_ProcessoForm(forms.ModelForm):
             field.widget.attrs["class"] = f"{base} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
+
+        # ------------------------------------------------
+        # Ajuste específico – versão do processo
+        # ------------------------------------------------
+        if "versao_processo" in self.fields:
+            self.fields["versao_processo"].widget.attrs.update({
+                "inputmode": "numeric",
+                "pattern": r"\d{1,4}",
+                "maxlength": "4"
+            })
+
+            # padding quando estiver editando
+            if self.instance and self.instance.pk and self.instance.versao_processo:
+                self.initial["versao_processo"] = f"{int(self.instance.versao_processo):02d}"
 
         # --------------------------------------------------------------------
         # Modo VISUALIZAÇÃO / EXCLUSÃO — trava tudo
