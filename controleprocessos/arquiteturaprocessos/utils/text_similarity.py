@@ -1,32 +1,71 @@
 from difflib import SequenceMatcher
 from django.apps import apps
 
-
-def calcular_similaridade(a, b):
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+from .text_normalizer import normalizar_texto
 
 
-def buscar_similaridade(model_name, field_name, valor, limite=0.9):
+def calcular_similaridade(texto1: str, texto2: str) -> float:
+    """
+    Calcula similaridade entre dois textos normalizados.
+    Retorna valor entre 0 e 1.
+    """
+    if not texto1 or not texto2:
+        return 0.0
 
-    Model = apps.get_model(model_name)
+    return SequenceMatcher(None, texto1, texto2).ratio()
 
-    registros = Model.objects.values_list(field_name, flat=True)
 
-    melhor_match = None
-    maior_percentual = 0
+def buscar_similares(
+    tabela: str,
+    campo: str,
+    valor: str,
+    ignorar_id: int | None = None,
+    app_label: str = "arquiteturaprocessos",
+    limite: float = 0.8,
+    max_resultados: int = 5,
+):
+    """
+    Busca registros similares em qualquer tabela do Django.
 
-    for registro in registros:
-        similaridade = calcular_similaridade(valor, registro)
+    Parâmetros:
+    tabela : nome do Model
+    campo  : campo textual a ser comparado
+    valor  : texto digitado pelo usuário
+    limite : percentual mínimo de similaridade
+    """
 
-        if similaridade > maior_percentual:
-            maior_percentual = similaridade
-            melhor_match = registro
+    Model = apps.get_model(app_label, tabela)
 
-    if maior_percentual >= limite:
-        return {
-            "encontrado": True,
-            "percentual": round(maior_percentual * 100, 2),
-            "valor": melhor_match
-        }
+    if not Model:
+        return []
 
-    return {"encontrado": False}
+    texto_base = normalizar_texto(valor)
+
+    resultados = []
+
+    queryset = Model.objects.filter(**{f"{campo}__icontains": valor}).values("id", campo)
+
+    for registro in queryset:
+
+        if ignorar_id and registro["id"] == ignorar_id:
+            continue
+
+        valor_banco = registro.get(campo)
+
+        if not valor_banco:
+            continue
+
+        texto_banco = normalizar_texto(valor_banco)
+
+        score = calcular_similaridade(texto_base, texto_banco)
+
+        if score >= limite:
+            resultados.append({
+                "id": registro["id"],
+                "texto": valor_banco,
+                "score": round(score, 3),
+            })
+
+    resultados.sort(key=lambda x: x["score"], reverse=True)
+
+    return resultados[:max_resultados]

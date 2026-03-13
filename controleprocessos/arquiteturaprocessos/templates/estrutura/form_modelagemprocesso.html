@@ -47,6 +47,9 @@
             type="text"
             name="titulo"
             id="id_titulo"
+            data-similarity-table="ModelagemProcesso"
+            data-similarity-field="titulo"
+            data-similarity-id="{{ form.instance.id }}"
             value="{{ form.titulo.value|default_if_none:'' }}"
             placeholder="DIGITE O TÍTULO"
             class="w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase
@@ -464,6 +467,8 @@
     // O comportamento está 100% encapsulado no componente Alpine pdfField.
   });
 </script>
+
+<script src="{% static 'js/utils.js' %}"></script>
 
 {% include 'components/modal_documento_processo.html' %}
 {% endblock %}
