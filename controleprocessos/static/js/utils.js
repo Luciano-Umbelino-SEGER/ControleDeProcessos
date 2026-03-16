@@ -1,8 +1,20 @@
 // ============================================================
+// MAPA GLOBAL DE NOMES AMIGÁVEIS DE TABELAS
+// ============================================================
+
+const MAPA_TABELAS = {
+
+    ProcessoMapear: "Processos a Mapear",
+    Processo: "Processos",
+    ModelagemProcesso: "Modelagem de Processos"
+
+}
+
+// ============================================================
 // UTILITÁRIO GLOBAL — Verificação de Similaridade de Texto
 // ============================================================
 
-async function verificarSimilaridadeTexto({ tabela, campo, valor, id }) {
+async function verificarSimilaridadeTexto({ tabelas, tabela, campo, valor, id }) {
 
     if (!valor || valor.trim().length < 3) {
         return null
@@ -17,7 +29,7 @@ async function verificarSimilaridadeTexto({ tabela, campo, valor, id }) {
                 "X-CSRFToken": getCSRFToken()
             },
             body: JSON.stringify({
-                tabela: tabela,
+                tabelas: tabelas || [tabela],
                 campo: campo,
                 valor: valor,
                 id: id || null
@@ -100,14 +112,13 @@ function removerAvisoSimilaridade(inputElement) {
 // ============================================================
 // FUNÇÃO GLOBAL PARA CAMPOS DE TEXTO
 // ============================================================
-
 function ativarValidacaoSimilaridade(inputElement, config) {
 
     if (!inputElement) return
 
     let timeout = null
 
-    inputElement.addEventListener("keyup", function () {
+    inputElement.addEventListener("input", function () {
 
         removerAvisoSimilaridade(inputElement)
 
@@ -124,7 +135,7 @@ function ativarValidacaoSimilaridade(inputElement, config) {
             if (valor.length < 3) return
 
             const resultado = await verificarSimilaridadeTexto({
-                tabela: config.tabela,
+                tabelas: config.tabelas,
                 campo: config.campo,
                 valor: valor,
                 id: inputElement.dataset.similarityId || null
@@ -132,22 +143,45 @@ function ativarValidacaoSimilaridade(inputElement, config) {
 
             if (!resultado || !resultado.similar_encontrado) return
 
-            const lista = resultado.resultados.slice(0, 3)
-
             let html = `<strong>⚠ Encontramos registros parecidos:</strong><br>`
 
-            lista.forEach(item => {
-                html += `• ${item.texto} (${Math.round(item.score * 100)}%)<br>`
-            })
+            // Caso 1 — resposta antiga (array)
+            if (Array.isArray(resultado.resultados)) {
+
+                const lista = resultado.resultados.slice(0, 3)
+
+                lista.forEach(item => {
+                    html += `• ${item.texto} (${Math.round(item.score * 100)}%)<br>`
+                })
+
+            }
+
+            // Caso 2 — resposta multi-tabela
+            else {
+
+                Object.entries(resultado.resultados).forEach(([tabela, itens]) => {
+
+                    if (!itens.length) return
+
+                    const titulo = MAPA_TABELAS[tabela] || tabela
+
+                    html += `<br><strong>${titulo}</strong><br>`
+
+                    itens.slice(0,3).forEach(item => {
+                        html += `• ${item.texto} (${Math.round(item.score * 100)}%)<br>`
+                    })
+
+                })
+
+            }
 
             mostrarAvisoSimilaridade(inputElement, html)
 
-        }, 600)
+        }, 350) // ← tempo do debounce
 
     })
 
 }
-
 
 // ============================================================
 // AUTO-INICIALIZAÇÃO GLOBAL
@@ -156,15 +190,24 @@ function ativarValidacaoSimilaridade(inputElement, config) {
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    const campos = document.querySelectorAll("[data-similarity-table]")
+    const campos = document.querySelectorAll("[data-similarity-table], [data-similarity-tables]")
 
     campos.forEach(campo => {
 
         const tabela = campo.dataset.similarityTable
+        const tabelas = campo.dataset.similarityTables
         const campoNome = campo.dataset.similarityField
 
+        let listaTabelas = []
+
+        if (tabelas) {
+            listaTabelas = tabelas.split(",").map(t => t.trim())
+        } else if (tabela) {
+            listaTabelas = [tabela]
+        }
+
         ativarValidacaoSimilaridade(campo, {
-            tabela: tabela,
+            tabelas: listaTabelas,
             campo: campoNome
         })
 

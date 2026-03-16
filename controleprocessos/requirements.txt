@@ -50,6 +50,7 @@ pyicloud==2.0.1
 pytest==8.4.1
 python-dateutil==2.9.0.post0
 python-decouple==3.8
+python-dotenv==1.2.1
 pytz==2025.2
 pywin32-ctypes==0.2.3
 referencing==0.36.2
@@ -72,5 +73,6 @@ tzdata==2025.2
 tzlocal==5.3.1
 urllib3==2.5.0
 webencodings==0.5.1
+whitenoise==6.11.0
 win32_setctime==1.2.0
 xmlschema==4.1.0

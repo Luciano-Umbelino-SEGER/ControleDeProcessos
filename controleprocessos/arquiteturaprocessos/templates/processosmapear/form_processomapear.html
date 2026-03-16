@@ -114,6 +114,9 @@
             <!-- INPUT PROCESSO -->
             <input id="processo_input_visible"
                    type="text"
+                   data-similarity-tables="ProcessoMapear,Processo"
+                   data-similarity-field="nome"
+                   data-similarity-id="{{ form.instance.id }}"
                    class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo == 'subprocesso' %}hidden{% endif %}"
                    placeholder="Nome do Processo">
 
@@ -137,6 +140,9 @@
 
             <input id="subprocesso_input_visible"
                    type="text"
+                   data-similarity-tables="ProcessoMapear,Processo"
+                   data-similarity-field="nome"
+                   data-similarity-id="{{ form.instance.id }}"
                    class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' %}bg-gray-100{% endif %}"
                    placeholder="Nome do Subprocesso"
                    {% if form.instance.tipo != "subprocesso" %}disabled{% endif %}>
@@ -396,5 +402,93 @@ fieldset[disabled] input[type="radio"] {
     accent-color: #9ca3af; /* radio cinza */
 }
 </style>
+
+<script src="{% static 'js/utils.js' %}"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const processoInput = document.getElementById("processo_input_visible")
+    const subprocessoInput = document.getElementById("subprocesso_input_visible")
+
+    const rbProcesso = document.getElementById("rb_processo")
+    const rbSubprocesso = document.getElementById("rb_subprocesso")
+
+    const lblProcesso = document.getElementById("lbl_processo")
+    const lblSubprocesso = document.getElementById("lbl_subprocesso")
+
+    const lblCampoProcesso = document.getElementById("lbl_campo_processo")
+    const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso")
+
+    // ativa validação
+    if (processoInput) {
+        ativarValidacaoSimilaridade(processoInput, {
+            tabelas: ["ProcessoMapear","Processo"],
+            campo: "nome"
+        })
+    }
+
+    if (subprocessoInput) {
+        ativarValidacaoSimilaridade(subprocessoInput, {
+            tabelas: ["ProcessoMapear","Processo"],
+            campo: "nome"
+        })
+    }
+
+    function limparAvisos() {
+        if (processoInput) removerAvisoSimilaridade(processoInput)
+        if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput)
+    }
+
+    function limparCampos() {
+        if (processoInput) processoInput.value = ""
+        if (subprocessoInput) subprocessoInput.value = ""
+    }
+
+    function atualizarLabels() {
+
+        if (rbProcesso.checked) {
+
+            lblProcesso.classList.remove("text-gray-400")
+            lblProcesso.classList.add("text-blue-700")
+
+            lblSubprocesso.classList.remove("text-blue-700")
+            lblSubprocesso.classList.add("text-gray-400")
+
+            lblCampoSubprocesso.classList.remove("text-blue-700")
+            lblCampoSubprocesso.classList.add("text-gray-400")
+
+        }
+
+        if (rbSubprocesso.checked) {
+
+            lblSubprocesso.classList.remove("text-gray-400")
+            lblSubprocesso.classList.add("text-blue-700")
+
+            lblProcesso.classList.remove("text-blue-700")
+            lblProcesso.classList.add("text-gray-400")
+
+            lblCampoSubprocesso.classList.remove("text-gray-400")
+            lblCampoSubprocesso.classList.add("text-blue-700")
+
+        }
+
+    }
+
+    function trocarTipo() {
+
+        limparAvisos()
+        limparCampos()
+        atualizarLabels()
+
+    }
+
+    if (rbProcesso) rbProcesso.addEventListener("change", trocarTipo)
+    if (rbSubprocesso) rbSubprocesso.addEventListener("change", trocarTipo)
+
+})
+
+</script>
 
 {% endblock %}

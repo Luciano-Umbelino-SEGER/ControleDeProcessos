@@ -9,10 +9,25 @@ def calcular_similaridade(texto1: str, texto2: str) -> float:
     Calcula similaridade entre dois textos normalizados.
     Retorna valor entre 0 e 1.
     """
+
     if not texto1 or not texto2:
         return 0.0
 
-    return SequenceMatcher(None, texto1, texto2).ratio()
+        # Detecta substring forte
+    if texto1 in texto2 or texto2 in texto1:
+        return 1.0
+
+    score_frase = SequenceMatcher(None, texto1, texto2).ratio()
+
+    tokens1 = set(texto1.split())
+    tokens2 = set(texto2.split())
+
+    if not tokens1 or not tokens2:
+        score_tokens = 0.0
+    else:
+        score_tokens = len(tokens1 & tokens2) / max(len(tokens1), len(tokens2))
+
+    return max(score_frase, score_tokens)
 
 
 def buscar_similares(
@@ -43,7 +58,13 @@ def buscar_similares(
 
     resultados = []
 
-    queryset = Model.objects.filter(**{f"{campo}__icontains": valor}).values("id", campo)
+    primeira_palavra = valor.split()[0]
+
+    queryset = (
+        Model.objects
+        .filter(**{f"{campo}__icontains": primeira_palavra})
+        .values("id", campo)
+    )
 
     for registro in queryset:
 
