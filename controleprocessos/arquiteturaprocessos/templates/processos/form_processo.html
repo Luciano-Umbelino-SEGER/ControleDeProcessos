@@ -109,7 +109,7 @@
                                {% if not form.instance.parent_id %}checked{% endif %}
                                {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                        <span class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                        <span id="lbl_processo" class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
                             Processo
                         </span>
                     </label>
@@ -124,7 +124,7 @@
                                {% if form.instance.parent_id %}checked{% endif %}
                                {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                        <span class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                        <span id="lbl_subprocesso" class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
                             Subprocesso
                         </span>
 
@@ -141,7 +141,7 @@
                     Versão do Processo
                 </label>
 
-                {{ form.versao_processo|add_class:"w-48 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black text-center font-medium tracking-wide focus:ring-2 focus:ring-blue-500" }}
+                {{ form.versao_processo|add_class:"w-48 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-gray-700 placeholder-gray-400 text-center tracking-wide focus:ring-2 focus:ring-blue-500" }}
 
             </div>
 
@@ -169,11 +169,15 @@
             <!-- CAMPO PROCESSO -->
             <div>
                 <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">
-                    Processo
+                    Nome do Processo
                 </label>
 
                 <!-- Campo visível para Processo -->
-                <input id="processo_input_visible" type="text"
+                <input id="processo_input_visible"
+                       type="text"
+                       data-similarity-tables="Processo, ProcessoMapear"
+                       data-similarity-field="nome"
+                       data-similarity-id="{{ form.instance.id }}"
                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
                               focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white
                               {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}"
@@ -197,11 +201,14 @@
             <div>
                 <label id="lbl_campo_subprocesso"
                        class="block text-sm font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
-                    Subprocesso
+                    Nome do Subprocesso
                 </label>
 
                 <input id="subprocesso_input_visible"
                        type="text"
+                       data-similarity-tables="Processo, ProcessoMapear"
+                       data-similarity-field="nome"
+                       data-similarity-id="{{ form.instance.id }}"
                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
                               focus:ring-2 focus:ring-blue-500 bg-gray-100"
                        placeholder="Nome do Subprocesso"
@@ -1595,8 +1602,128 @@ console.log("NORMAS_HIDRATADAS:", NORMAS_HIDRATADAS);
 </script>
 
 <!-- JS CENTRALIZADO -->
+<script src="{% static 'js/utils.js' %}"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const processoInput = document.getElementById("processo_input_visible")
+    const subprocessoInput = document.getElementById("subprocesso_input_visible")
+
+    if (processoInput) {
+        ativarValidacaoSimilaridade(processoInput, {
+            tabelas: ["Processo", "ProcessoMapear"],
+            campo: "nome"
+        })
+    }
+
+    if (subprocessoInput) {
+        ativarValidacaoSimilaridade(subprocessoInput, {
+            tabelas: ["Processo", "ProcessoMapear"],
+            campo: "nome"
+        })
+    }
+
+})
+
+</script>
+
 <script src="{% static 'js/processos.js' %}"></script>
 {% include 'components/modal_documento_processo.html' %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const rbProcesso = document.getElementById("rb_processo")
+    const rbSubprocesso = document.getElementById("rb_subprocesso")
+
+    const lblCampoProcesso = document.getElementById("lbl_campo_processo")
+    const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso")
+
+    const lblProcesso = document.getElementById("lbl_processo")
+    const lblSubprocesso = document.getElementById("lbl_subprocesso")
+
+    const processoInput = document.getElementById("processo_input_visible")
+    const subprocessoInput = document.getElementById("subprocesso_input_visible")
+    const hiddenNome = document.getElementById("id_nome")
+
+    function atualizarVisualTipo() {
+
+        /* limpa avisos de similaridade */
+        if (processoInput) removerAvisoSimilaridade(processoInput)
+        if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput)
+
+        if (processoInput) processoInput.value = ""
+        if (subprocessoInput) subprocessoInput.value = ""
+
+        if (hiddenNome) hiddenNome.value = ""
+
+        if (rbSubprocesso && rbSubprocesso.checked) {
+
+            lblCampoProcesso.textContent = "Selecionar Processo para associar"
+
+            if (lblCampoProcesso) lblCampoProcesso.classList.add("text-blue-700")
+
+            if (lblCampoSubprocesso) {
+                lblCampoSubprocesso.classList.remove("text-gray-400")
+                lblCampoSubprocesso.classList.add("text-blue-700")
+            }
+
+            if (lblProcesso) {
+                lblProcesso.classList.remove("text-blue-700")
+                lblProcesso.classList.add("text-gray-400")
+            }
+
+            if (lblSubprocesso) {
+                lblSubprocesso.classList.remove("text-gray-400")
+                lblSubprocesso.classList.add("text-blue-700")
+            }
+
+        } else {
+
+            if (lblCampoProcesso) lblCampoProcesso.textContent = "Nome do Processo"
+
+            if (lblCampoSubprocesso) {
+                lblCampoSubprocesso.classList.remove("text-blue-700")
+                lblCampoSubprocesso.classList.add("text-gray-400")
+            }
+
+            if (lblProcesso) {
+                lblProcesso.classList.remove("text-gray-400")
+                lblProcesso.classList.add("text-blue-700")
+            }
+
+            if (lblSubprocesso) {
+                lblSubprocesso.classList.remove("text-blue-700")
+                lblSubprocesso.classList.add("text-gray-400")
+            }
+
+        }
+
+    }
+
+    if (rbProcesso) rbProcesso.addEventListener("change", atualizarVisualTipo)
+    if (rbSubprocesso) rbSubprocesso.addEventListener("change", atualizarVisualTipo)
+
+    /* sincroniza nome do processo */
+    if (processoInput) {
+        processoInput.addEventListener("input", function () {
+            if (hiddenNome) hiddenNome.value = this.value
+        })
+    }
+
+    /* sincroniza nome do subprocesso */
+    if (subprocessoInput) {
+        subprocessoInput.addEventListener("input", function () {
+            if (hiddenNome) hiddenNome.value = this.value
+        })
+    }
+
+})
+
+</script>
 
 {% endblock %}
 

@@ -826,7 +826,8 @@ class Form_ProcessoForm(forms.ModelForm):
             self.fields["versao_processo"].widget.attrs.update({
                 "inputmode": "numeric",
                 "pattern": r"\d{1,4}",
-                "maxlength": "4"
+                "maxlength": "4",
+                "placeholder": "Versão do Processo"
             })
 
             # padding quando estiver editando
