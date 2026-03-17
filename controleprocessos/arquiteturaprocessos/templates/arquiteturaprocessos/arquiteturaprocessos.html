@@ -188,17 +188,15 @@
         <thead class="bg-blue-100 text-blue-800">
           <tr>
             <th class="py-3 px-3 text-left w-[15%]">Processo / Subprocesso</th>
-            <th class="py-3 px-2 text-left w-[12%]">Objetivo</th>
+            <th class="py-3 px-2 text-left w-[14%]">Objetivo</th>
             <th class="py-3 px-2 text-left w-[8%]">Classificação</th>
             <th class="py-3 px-2 text-left w-[10%]">Macro N1</th>
             <th class="py-3 px-2 text-left w-[10%]">Macro N2</th>
             <th class="py-3 px-2 text-left w-[8%]">Área Responsável</th>
             <th class="py-3 px-2 text-left w-[8%]">Gestor</th>
-            <th class="py-3 px-2 text-left w-[6%]">E-mail</th>
-            <th class="py-3 px-2 text-left w-[6%]">Telefone</th>
-            <th class="py-3 px-2 text-left w-[6%]">Criação</th>
-            <th class="py-3 px-2 text-left w-[6%]">Atualização</th>
-            <th class="py-3 px-2 text-left w-[10%]">Observação</th>
+            <th class="py-3 px-2 text-left w-[7%]">Telefone</th>
+            <th class="py-3 px-2 text-center w-[5%]">Versão</th>
+            <th class="py-3 px-2 text-center w-[6%]">Criado em</th>
             <th class="py-3 px-2 text-center w-[6%]">Documentos</th>
           </tr>
         </thead>
@@ -237,24 +235,19 @@
                 <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.macroprocesso_nivel2 }}</td>
                 <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.area_responsavel }}</td>
                 <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.gestor }}</td>
-                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.email }}</td>
-                <td class="py-3 px-2 text-blue-600text-[0.8rem] leading-snug">{{ processo.telefone }}</td>
-
-                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">
-                  {% if processo.data_criacao %}{{ processo.data_criacao|date:"d/m/Y" }}{% endif %}
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">{{ processo.telefone }}</td>
+                <td class="py-3 px-2 text-center text-blue-600 font-medium text-[0.8rem]">
+                  {% if processo.versao_processo %}
+                    {{ processo.versao_processo }}
+                  {% else %}
+                    —
+                  {% endif %}
                 </td>
-
-                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">
-                  {% if processo.data_atualizacao %}{{ processo.data_atualizacao|date:"d/m/Y" }}{% endif %}
-                </td>
-
-                <td class="py-3 px-2 text-blue-600 text-sm text-blue-800 text-[0.8rem] leading-snug">
-                  {% if processo.observacao %}
-                    <span
-                      class="objetivo-truncate"
-                      title="{{ processo.observacao }}">
-                      {{ processo.observacao }}
-                    </span>
+                <td class="py-3 px-2 text-center text-blue-600 text-[0.8rem]">
+                  {% if processo.data_criacao %}
+                    {{ processo.data_criacao|date:"d/m/Y" }}
+                  {% else %}
+                    —
                   {% endif %}
                 </td>
 
@@ -264,7 +257,7 @@
                     {% if cnt > 0 %}
                         <button
                           type="button"
-                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar pasta-docs"
+                          class="flex justify-center items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar pasta-docs w-full"
                           data-qtd="{{ cnt }}"
                           onclick='
                             marcarPastaAberta(this);
@@ -292,7 +285,7 @@
                       </button>
 
                     {% else %}
-                      <div class="flex items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed">
+                      <div class="flex justify-center items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed w-full">
 
                         <img
                           src="{% static 'images/icones/pasta-fechada.png' %}"
@@ -343,24 +336,19 @@
                   <td class="py-3 px-2 text-blue-600">{{ sub.macroprocesso_nivel2 }}</td>
                   <td class="py-3 px-2 text-blue-600">{{ sub.area_responsavel }}</td>
                   <td class="py-3 px-2 text-blue-600">{{ sub.gestor }}</td>
-                  <td class="py-3 px-2 text-blue-600">{{ sub.email }}</td>
-                  <td class="py-3 px-2 text-blue-600">{{ sub.telefone }}</td>
-
-                  <td class="py-3 px-2 text-blue-600">
-                    {% if sub.data_criacao %}{{ sub.data_criacao|date:"d/m/Y" }}{% endif %}
+                  <td class="py-3 px-2 text-blue-600 text-[0.8rem]">{{ sub.telefone }}</td>
+                  <td class="py-3 px-2 text-center text-blue-600 font-medium text-[0.8rem]">
+                    {% if sub.versao_processo %}
+                      {{ sub.versao_processo }}
+                    {% else %}
+                      —
+                    {% endif %}
                   </td>
-
-                  <td class="py-3 px-2 text-blue-600">
-                    {% if sub.data_atualizacao %}{{ sub.data_atualizacao|date:"d/m/Y" }}{% endif %}
-                  </td>
-
-                  <td class="py-3 px-2 text-blue-600 text-sm">
-                    {% if sub.observacao %}
-                      <span
-                        class="objetivo-truncate"
-                        title="{{ sub.observacao }}">
-                        {{ sub.observacao }}
-                      </span>
+                  <td class="py-3 px-2 text-center text-blue-600 text-[0.8rem]">
+                    {% if sub.data_criacao %}
+                      {{ sub.data_criacao|date:"d/m/Y" }}
+                    {% else %}
+                      —
                     {% endif %}
                   </td>
 
@@ -370,7 +358,7 @@
 
                         <button
                           type="button"
-                          class="flex items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar pasta-docs"
+                          class="flex justify-center items-center gap-1 text-blue-600 hover:text-blue-800 icon-visualizar pasta-docs w-full"
                           data-qtd="{{ scnt }}"
                           onclick='
                             marcarPastaAberta(this);
@@ -398,7 +386,7 @@
                         </button>
 
                       {% else %}
-                        <div class="flex items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed">
+                        <div class="flex justify-center items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed w-full">
 
                           <img
                             src="{% static 'images/icones/pasta-fechada.png' %}"
