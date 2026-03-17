@@ -49,7 +49,7 @@
 
                 <div class="col-span-12 md:col-span-9">
                     <label for="id_nome" class="block text-sm font-semibold text-blue-800 mb-1">Nome</label>
-                    {{ form.nome }}
+                    {{ form.nome|add_attr:"data-similarity-tables:MacroprocessoNivel1,data-similarity-field:nome" }}
                     {% if form.nome.errors %}
                         <p class="text-red-500 text-sm mt-1">{{ form.nome.errors|striptags }}</p>
                     {% endif %}
@@ -119,4 +119,22 @@
         </div>
     </form>
 </div>
+
+<script src="{% static 'js/utils.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const nomeInput = document.getElementById("id_nome")
+
+    if (nomeInput) {
+        ativarValidacaoSimilaridade(nomeInput, {
+            tabelas: ["MacroprocessoNivel1"],
+            campo: "nome"
+        })
+    }
+
+})
+</script>
+
 {% endblock %}
