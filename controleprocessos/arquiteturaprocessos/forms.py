@@ -720,6 +720,39 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         return obj
 
 # ----------------------------
+# Widgets customizados
+# ----------------------------
+class MacroN1Select(forms.Select):
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+
+        if value:
+            try:
+                obj = MacroprocessoNivel1.objects.get(pk=value)
+                option['attrs']['data-classificacao'] = str(obj.classificacao_id)
+            except MacroprocessoNivel1.DoesNotExist:
+                pass
+
+        return option
+
+
+class MacroN2Select(forms.Select):
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+
+        if value:
+            try:
+                obj = MacroprocessoNivel2.objects.select_related('macroprocesso_nivel1').get(pk=value)
+
+                option['attrs']['data-classificacao'] = str(obj.macroprocesso_nivel1.classificacao_id)
+                option['attrs']['data-macro1'] = str(obj.macroprocesso_nivel1_id)
+
+            except MacroprocessoNivel2.DoesNotExist:
+                pass
+
+        return option
+
+# ----------------------------
 # Processos - Formulário
 # ----------------------------
 class Form_ProcessoForm(forms.ModelForm):
@@ -731,13 +764,15 @@ class Form_ProcessoForm(forms.ModelForm):
 
     macroprocesso_nivel1 = forms.ModelChoiceField(
         queryset=MacroprocessoNivel1.objects.all(),
-        label="Macroprocesso Nível 1"
+        label="Macroprocesso Nível 1",
+        widget=MacroSelect()
     )
 
     macroprocesso_nivel2 = forms.ModelChoiceField(
         queryset=MacroprocessoNivel2.objects.all(),
         label="Macroprocesso Nível 2",
-        required=False
+        required=False,
+        widget=MacroSelect()
     )
 
     modelagem_processo = forms.ModelChoiceField(

@@ -1725,6 +1725,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 
+<!-- Macro Classificação Engine -->
+<script src="{% static 'js/macro_classificacao.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    initMacroClassificacao({
+        classificacaoId: "id_classificacao",
+        macro1Id: "id_macroprocesso_nivel1",
+        macro2Id: "id_macroprocesso_nivel2",
+        modoBloqueado: false
+    });
+});
+</script>
+
 {% endblock %}
 
 
