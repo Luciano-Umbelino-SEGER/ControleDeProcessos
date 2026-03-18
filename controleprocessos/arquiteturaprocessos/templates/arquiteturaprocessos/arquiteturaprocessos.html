@@ -7,7 +7,12 @@
 <div class="py-10 px-2 flex justify-center">
   <div class="w-full max-w-[98%]">
 
-    <h2 class="text-2xl font-bold text-blue-800 mb-6">Arquitetura de Processos</h2>
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">
+      Arquitetura de Processos
+      <span class="text-base font-normal text-gray-600">
+        ({{ total_registros }} processo{{ total_registros|pluralize:"s" }})
+      </span>
+    </h2>
 
     {{ documentos_por_processo|json_script:"docs-por-processo" }}
 
@@ -17,14 +22,14 @@
       <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
 
         <!-- LINHA COM TODOS OS FILTROS + BOTÕES -->
-        <div class="flex items-end justify-between gap-4 flex-nowrap">
+        <div class="flex items-end justify-between gap-4 flex-nowrap w-full">
 
           <!-- COLUNA ESQUERDA – CAMPOS -->
           <div class="flex items-end gap-3 flex-nowrap">
 
             <!-- Processo -->
             <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo / Subprocesso</label>
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Processo</label>
               <input name="nome" type="text" placeholder="Digite..."
                      class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500 text-black"
@@ -119,53 +124,10 @@
                      value="{{ request.GET.criacao_ate }}">
             </div>
 
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Atualização De</label>
-              <input name="atualizacao_de"
-                     type="text"
-                     placeholder="dd/mm/aaaa"
-                     onfocus="
-                       this.type='date';
-                       this.classList.remove('text-gray-400');
-                       this.classList.add('text-black');
-                     "
-                     onblur="
-                       if(!this.value){
-                         this.type='text';
-                         this.classList.remove('text-black');
-                         this.classList.add('text-gray-400');
-                       }
-                     "
-                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-gray-400"
-                     value="{{ request.GET.atualizacao_de }}">
-            </div>
-
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Atualização Até</label>
-              <input name="atualizacao_ate"
-                     type="text"
-                     placeholder="dd/mm/aaaa"
-                     onfocus="
-                       this.type='date';
-                       this.classList.remove('text-gray-400');
-                       this.classList.add('text-black');
-                     "
-                     onblur="
-                       if(!this.value){
-                         this.type='text';
-                         this.classList.remove('text-black');
-                         this.classList.add('text-gray-400');
-                       }
-                     "
-                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-gray-400"
-                     value="{{ request.GET.atualizacao_ate }}">
-            </div>
           </div>
 
           <!-- BOTÕES -->
-          <div class="flex items-center gap-3 shrink-0">
+          <div class="flex items-center gap-3 shrink-0 ml-auto">
             <button type="submit"
                     class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
               Filtrar

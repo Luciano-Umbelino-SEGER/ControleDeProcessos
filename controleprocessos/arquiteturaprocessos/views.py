@@ -1,5 +1,5 @@
 # views.py (revisado)
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 import os
 import json
 import re
@@ -437,10 +437,12 @@ class ArquiteruraProcessos(ListView):
             "modelos": modelos,
             "normas": normas,
         }
-
+#aqyui 1
     # -----------------------------------------
     # Query principal
     # -----------------------------------------
+    from datetime import datetime, time
+
     def get_queryset(self):
         req = self.request.GET
 
@@ -452,8 +454,11 @@ class ArquiteruraProcessos(ListView):
 
         cri_de = parse_date(req.get("criacao_de"))
         cri_ate = parse_date(req.get("criacao_ate"))
-        atu_de = parse_date(req.get("atualizacao_de"))
-        atu_ate = parse_date(req.get("atualizacao_ate"))
+
+        # 🔥 Validação antes
+        if cri_de and cri_ate and cri_ate < cri_de:
+            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
+            return Processo.objects.none()
 
         qs = (
             Processo.objects
@@ -494,21 +499,8 @@ class ArquiteruraProcessos(ListView):
             qs = qs.filter(data_criacao__gte=cri_de)
 
         if cri_ate:
-            qs = qs.filter(data_criacao__lte=cri_ate)
-
-        if cri_de and cri_ate and cri_ate < cri_de:
-            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
-            return qs.none()
-
-        if atu_de:
-            qs = qs.filter(data_atualizacao__gte=atu_de)
-
-        if atu_ate:
-            qs = qs.filter(data_atualizacao__lte=atu_ate)
-
-        if atu_de and atu_ate and atu_ate < atu_de:
-            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
-            return qs.none()
+            fim_do_dia = datetime.combine(cri_ate, time.max)
+            qs = qs.filter(data_criacao__lte=fim_do_dia)
 
         return qs
 
@@ -548,9 +540,10 @@ class ArquiteruraProcessos(ListView):
 
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
         ctx["documentos_por_processo"] = documentos_por_processo
+        ctx["total_registros"] = self.object_list.count()
 
         return ctx
-# Aqui 1
+
 # --------------------------------
 # Dashboard
 # --------------------------------
