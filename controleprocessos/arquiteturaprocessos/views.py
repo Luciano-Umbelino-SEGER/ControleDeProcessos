@@ -438,7 +438,7 @@ class ArquiteruraProcessos(ListView):
             "modelos": modelos,
             "normas": normas,
         }
-#aqyui 1
+
     # -----------------------------------------
     # Query principal
     # -----------------------------------------
@@ -778,7 +778,7 @@ class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
         context["concluidos"] = valores_concluidos
 
         return context
-# Aqui 1
+
 # ---------------------------
 #  Processo a Mapear
 # ---------------------------
@@ -2023,97 +2023,33 @@ class ProcessoView(LoginRequiredMixin, ListView):
     ordering = ['id']
 
     def get_queryset(self):
+        req = self.request.GET
 
-        # === 1) Recuperar parâmetros GET ===
-        nome = self.request.GET.get("nome", "").strip()
-        classificacao = self.request.GET.get("classificacao", "").strip()
-        macro1 = self.request.GET.get("macro1", "").strip()
-        macro2 = self.request.GET.get("macro2", "").strip()
-        area = self.request.GET.get("area", "").strip()
+        nome = req.get("nome", "").strip()
+        classificacao = req.get("classificacao", "").strip()
+        macro1 = req.get("macro1", "").strip()
+        macro2 = req.get("macro2", "").strip()
+        area = req.get("area", "").strip()
+        estado = req.get("estado", "").strip().lower()
 
-        estado = self.request.GET.get("estado", "").strip().lower()
-        criacao_de = self.request.GET.get("criacao_de", "").strip()
-        criacao_ate = self.request.GET.get("criacao_ate", "").strip()
-        conclusao_de = self.request.GET.get("conclusao_de", "").strip()
-        conclusao_ate = self.request.GET.get("conclusao_ate", "").strip()
+        cri_de = parse_date(req.get("criacao_de"))
+        cri_ate = parse_date(req.get("criacao_ate"))
+        con_de = parse_date(req.get("conclusao_de"))
+        con_ate = parse_date(req.get("conclusao_ate"))
 
-        # === 2) Base inicial: TUDO (PAI + SUB) para aplicar filtros ===
+        # 🔥 validação datas
+        if cri_de and cri_ate and cri_ate < cri_de:
+            messages.error(self.request, "A data final deve ser maior ou igual à inicial.")
+            return Processo.objects.none()
+
+        if con_de and con_ate and con_ate < con_de:
+            messages.error(self.request, "A data final deve ser maior ou igual à inicial.")
+            return Processo.objects.none()
+
+        # 🔥 BASE: SOMENTE PROCESSOS (PAI)
         qs = (
-            Processo.objects.all()
-            .select_related(
-                "classificacao",
-                "macroprocesso_nivel1",
-                "macroprocesso_nivel2",
-            )
-            .order_by("id")
-        )
-
-        # === 3) Aplicação dos filtros acumulativos ===
-        if nome:
-            qs = qs.filter(nome__icontains=nome)
-
-        if classificacao:
-            qs = qs.filter(classificacao_id=classificacao)
-
-        if macro1:
-            qs = qs.filter(
-                macroprocesso_nivel1__nome__icontains=macro1
-            )
-
-        if macro2:
-            qs = qs.filter(
-                macroprocesso_nivel2__nome__icontains=macro2
-            )
-
-        if area:
-            qs = qs.filter(
-                area_responsavel__icontains=area
-            )
-
-        # === Estado do processo (calculado) ===
-        if estado == "concluido":
-            qs = qs.filter(data_conclusao__isnull=False)
-
-        elif estado == "ativo":
-            qs = qs.filter(
-                data_conclusao__isnull=True,
-                documentos__isnull=False
-            ).distinct()
-
-        elif estado == "iniciado":
-            qs = qs.filter(
-                data_conclusao__isnull=True,
-                documentos__isnull=True
-            )
-
-        # === Data de criação ===
-        data = parse_date(criacao_de)
-        if data:
-            qs = qs.filter(data_criacao__gte=data)
-
-        data = parse_date(criacao_ate)
-        if data:
-            qs = qs.filter(data_criacao__lte=data)
-
-        # === Data de conclusão ===
-        data = parse_date(conclusao_de)
-        if data:
-            qs = qs.filter(data_conclusao__date__gte=data)
-
-        data = parse_date(conclusao_ate)
-        if data:
-            qs = qs.filter(data_conclusao__date__lte=data)
-
-        # === 4) Resolver PAI + SUBPROCESSOS ===
-        pai_ids = qs.values_list("parent_id", flat=True)
-        diretos = qs.filter(parent__isnull=True).values_list("id", flat=True)
-
-        ids_finais = set(diretos) | set(pai_ids)
-        ids_finais = {i for i in ids_finais if i is not None}
-
-        # === 5) Retornar apenas PROCESSOS PAI ===
-        queryset_final = (
-            Processo.objects.filter(id__in=ids_finais)
+            Processo.objects
+            .filter(parent__isnull=True)
             .select_related(
                 "classificacao",
                 "macroprocesso_nivel1",
@@ -2129,17 +2065,66 @@ class ProcessoView(LoginRequiredMixin, ListView):
             .order_by("id")
         )
 
-        return queryset_final
+        # --------------------
+        # FILTROS
+        # --------------------
+        if nome:
+            qs = qs.filter(nome__icontains=nome)
+
+        if classificacao:
+            qs = qs.filter(classificacao_id=classificacao)
+
+        if macro1:
+            qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
+
+        if macro2:
+            qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
+
+        if area:
+            qs = qs.filter(area_responsavel__icontains=area)
+
+        # --------------------
+        # ESTADO
+        # --------------------
+        if estado == "concluido":
+            qs = qs.filter(data_conclusao__isnull=False)
+
+        elif estado == "ativo":
+            qs = qs.filter(
+                data_conclusao__isnull=True,
+                documentos__isnull=False
+            ).distinct()
+
+        elif estado == "iniciado":
+            qs = qs.filter(
+                data_conclusao__isnull=True,
+                documentos__isnull=True
+            )
+
+        # --------------------
+        # DATAS
+        # --------------------
+        if cri_de:
+            qs = qs.filter(data_criacao__gte=cri_de)
+
+        if cri_ate:
+            fim = datetime.combine(cri_ate, time.max)
+            qs = qs.filter(data_criacao__lte=fim)
+
+        if con_de:
+            qs = qs.filter(data_conclusao__date__gte=con_de)
+
+        if con_ate:
+            qs = qs.filter(data_conclusao__date__lte=con_ate)
+
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        total_processos = Processo.objects.filter(parent__isnull=True).count()
-        total_subprocessos = Processo.objects.filter(parent__isnull=False).count()
+        # 🔥 CONTADOR CORRETO (APENAS PROCESSOS)
+        context["total_registros"] = self.object_list.count()
 
-        context["total_registros"] = total_processos + total_subprocessos
-
-        # Necessário para preencher o select de classificação
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
 
         return context
