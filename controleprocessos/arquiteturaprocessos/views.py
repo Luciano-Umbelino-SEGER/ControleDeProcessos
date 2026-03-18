@@ -43,6 +43,7 @@ from .forms import (
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
+
 # ---------------------------------------------------
 # Utility to safely generate a username from names
 # ---------------------------------------------------
@@ -777,7 +778,7 @@ class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
         context["concluidos"] = valores_concluidos
 
         return context
-
+# Aqui 1
 # ---------------------------
 #  Processo a Mapear
 # ---------------------------
@@ -794,12 +795,10 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['classificacoes'] = Classificacao.objects.all()
-        return context
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context['classificacoes'] = Classificacao.objects.all().order_by("nome")
         context['total_registros'] = self.get_queryset().count()
+
         return context
 
     def get_queryset(self):
@@ -813,6 +812,12 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         macro1 = self.request.GET.get("macro1")
         macro2 = self.request.GET.get("macro2")
         area = self.request.GET.get("area")
+        cri_de = parse_date(self.request.GET.get("criacao_de"))
+        cri_ate = parse_date(self.request.GET.get("criacao_ate"))
+
+        if cri_de and cri_ate and cri_ate < cri_de:
+            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
+            return ProcessoMapear.objects.none()
 
         if nome:
             queryset = queryset.filter(nome__icontains=nome)
@@ -831,6 +836,13 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
 
         if area:
             queryset = queryset.filter(area_responsavel__icontains=area)
+
+        if cri_de:
+            queryset = queryset.filter(data_criacao__gte=cri_de)
+
+        if cri_ate:
+            fim_do_dia = datetime.combine(cri_ate, time.max)
+            queryset = queryset.filter(data_criacao__lte=fim_do_dia)
 
         return queryset.select_related(
             'classificacao',
