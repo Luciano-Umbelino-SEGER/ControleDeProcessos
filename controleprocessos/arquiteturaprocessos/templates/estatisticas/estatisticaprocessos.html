@@ -115,7 +115,7 @@ canvas:hover{
 Chart.register(ChartDataLabels);
 
 /* -----------------------------
-DADOS VINDOS DO DJANGO
+DADOS DO DJANGO
 ----------------------------- */
 
 const estadoLabels  = {{ estado_labels|default:"[]"|safe }};
@@ -125,259 +125,209 @@ const classLabels   = {{ class_labels|default:"[]"|safe }};
 const classValores  = {{ class_valores|default:"[]"|safe }};
 
 const areaLabels = {{ area_labels|default:"[]"|safe }};
-/*
 const areaIniciado = {{ area_iniciado|default:"[]"|safe }};
 const areaAtivo = {{ area_ativo|default:"[]"|safe }};
 const areaConcluido = {{ area_concluido|default:"[]"|safe }};
-*/
-const areaIniciado = [1,0,1,0,1];
-const areaAtivo = [2,1,1,2,1];
-const areaConcluido = [1,1,0,1,1];
+
 
 /* -----------------------------
-OPÇÕES BASE
+NORMALIZAÇÃO (ANTI BUG)
 ----------------------------- */
 
-function pieOptions(labelColors){
+function normalizar(label){
+    return label.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"");
+}
+
+
+/* -----------------------------
+CORES PADRÃO
+----------------------------- */
+
+const CORES_STATUS = {
+    iniciado: {bg:"rgba(245,158,11,0.25)", border:"#f59e0b"},
+    ativo: {bg:"rgba(34,197,94,0.25)", border:"#22c55e"},
+    concluido: {bg:"rgba(239,68,68,0.25)", border:"#ef4444"}
+};
+
+const CORES_CLASS = {
+    estrategico: {bg:"rgba(59,130,246,0.25)", border:"#3b82f6"},
+    suporte: {bg:"rgba(139,92,246,0.25)", border:"#8b5cf6"},
+    finalistico: {bg:"rgba(249,115,22,0.25)", border:"#f97316"}
+};
+
+
+/* -----------------------------
+GERADOR DE CORES
+----------------------------- */
+
+function gerarCores(labels, mapa){
+    return {
+        bg: labels.map(l => mapa[normalizar(l)]?.bg || "rgba(200,200,200,0.2)"),
+        border: labels.map(l => mapa[normalizar(l)]?.border || "#999")
+    };
+}
+
+
+/* -----------------------------
+PIE OPTIONS
+----------------------------- */
+
+function pieOptions(labels, mapa){
 
     return {
+        responsive:true,
+        maintainAspectRatio:false,
+
+        plugins:{
+            legend:{ position:"top" },
+
+            datalabels:{
+                color:(ctx)=>{
+                    const label = ctx.chart.data.labels[ctx.dataIndex];
+                    return mapa[normalizar(label)]?.border || "#333";
+                },
+
+                formatter:(value,ctx)=>{
+                    const data = ctx.chart.data.datasets[0].data;
+                    const total = data.reduce((a,b)=>a+b,0);
+                    if(!total) return "0";
+
+                    const pct = ((value/total)*100).toFixed(1);
+                    return `${value} (${pct}%)`;
+                }
+            }
+        }
+    };
+}
+
+
+/* -----------------------------
+GRÁFICO ESTADO
+----------------------------- */
+
+const coresEstado = gerarCores(estadoLabels, CORES_STATUS);
+
+new Chart(document.getElementById("graficoEstado"),{
+    type:"pie",
+    data:{
+        labels:estadoLabels,
+        datasets:[{
+            data:estadoValores,
+            backgroundColor:coresEstado.bg,
+            borderColor:coresEstado.border,
+            borderWidth:2,
+            spacing: 2,
+            hoverOffset: 8
+        }]
+    },
+    options: pieOptions(estadoLabels, CORES_STATUS)
+});
+
+
+/* -----------------------------
+CLASSIFICAÇÃO
+----------------------------- */
+
+const coresClass = gerarCores(classLabels, CORES_CLASS);
+
+new Chart(document.getElementById("graficoClassificacao"),{
+    type:"doughnut",
+    data:{
+        labels:classLabels,
+        datasets:[{
+            data:classValores,
+            backgroundColor:coresClass.bg,
+            borderColor:coresClass.border,
+            borderWidth:2,
+            spacing: 2,
+            hoverOffset: 8
+        }]
+    },
+    options: pieOptions(classLabels, CORES_CLASS)
+});
+
+
+/* -----------------------------
+ÁREA (CORRIGIDO)
+----------------------------- */
+
+// calcular total real
+const totaisArea = areaLabels.map((_,i)=>
+    areaIniciado[i] + areaAtivo[i] + areaConcluido[i]
+);
+
+const maxValor = Math.max(...totaisArea, 0);
+
+new Chart(document.getElementById("graficoArea"),{
+
+    type:"bar",
+
+    data:{
+        labels:areaLabels,
+        datasets:[
+
+            {
+                label:"Iniciado",
+                data:areaIniciado,
+                backgroundColor:"rgba(245,158,11,0.25)",
+                borderColor:"#f59e0b",
+                borderWidth:2
+            },
+
+            {
+                label:"Ativo",
+                data:areaAtivo,
+                backgroundColor:"rgba(34,197,94,0.25)",
+                borderColor:"#22c55e",
+                borderWidth:2
+            },
+
+            {
+                label:"Concluído",
+                data:areaConcluido,
+                backgroundColor:"rgba(239,68,68,0.25)",
+                borderColor:"#ef4444",
+                borderWidth:2
+            }
+
+        ]
+    },
+
+    options:{
+        indexAxis:'y',
 
         responsive:true,
         maintainAspectRatio:false,
 
         plugins:{
-
-            legend:{
-                position:"top"
-            },
+            legend:{ position:"top" },
 
             datalabels:{
+                anchor:"end",
+                align:"right",
 
-                color:function(context){
-                    return labelColors[context.dataIndex];
-                },
-
-                font:{
-                    weight:"bold",
-                    size:12
-                },
-
-                formatter:function(value,ctx){
-
-                    const data = ctx.chart.data.datasets[0].data;
-                    const total = data.reduce((a,b)=>a+b,0);
-
-                    if(!total) return "0";
-
-                    const pct = ((value/total)*100).toFixed(1);
-
-                    return value+" ("+pct+"%)";
+                formatter:(value,ctx)=>{
+                    if(ctx.datasetIndex === 2){
+                        return totaisArea[ctx.dataIndex];
+                    }
+                    return "";
                 }
             }
-        }
-    }
-}
-
-/* -----------------------------
-ESTADO (PIZZA)
------------------------------ */
-
-const chartEstado = new Chart(
-    document.getElementById("graficoEstado"),
-    {
-
-        type:"pie",
-
-        data:{
-            labels:estadoLabels,
-            datasets:[{
-                data:estadoValores,
-                backgroundColor:[
-                    "rgba(245,158,11,0.25)",
-                    "rgba(34,197,94,0.25)",
-                    "rgba(239,68,68,0.25)"
-                ],
-                borderColor:[
-                    "#f59e0b",
-                    "#22c55e",
-                    "#ef4444"
-                ],
-                spacing: 2,
-                hoverOffset: 8,
-            }]
         },
 
-        options: pieOptions([
-            "#f59e0b",
-            "#22c55e",
-            "#ef4444"
-        ])
-    }
-);
-
-/* -----------------------------
-CLASSIFICAÇÃO (DONUT)
------------------------------ */
-
-const chartClassificacao = new Chart(
-    document.getElementById("graficoClassificacao"),
-    {
-
-        type:"doughnut",
-
-        data:{
-            labels:classLabels,
-            datasets:[{
-                data:classValores,
-                backgroundColor:[
-                    "rgba(59,130,246,0.25)",   // azul
-                    "rgba(139,92,246,0.25)",   // roxo
-                    "rgba(249,115,22,0.25)"    // laranja
-                ],
-                borderColor:[
-                    "#3b82f6",
-                    "#8b5cf6",
-                    "#f97316"
-                ],
-                spacing: 2,
-                hoverOffset: 8,
-            }]
-        },
-
-        options: pieOptions([
-            "#3b82f6", // estratégico
-            "#8b5cf6", // suporte
-            "#f97316"  // finalístico
-        ])
-    }
-);
-
-/* -----------------------------
-ÁREA (BARRAS)
------------------------------ */
-
-// calcular total por área (stack)
-const totaisArea = areaLabels.map((_, i) =>
-    areaIniciado[i] + areaAtivo[i] + areaConcluido[i]
-);
-
-// criar estrutura combinada
-let areasOrdenadas = areaLabels.map((area, i) => ({
-    area: area,
-    iniciado: areaIniciado[i],
-    ativo: areaAtivo[i],
-    concluido: areaConcluido[i],
-    total: totaisArea[i]
-}));
-
-// ordenar por total (maior → menor)
-areasOrdenadas.sort((a, b) => b.total - a.total);
-
-// reconstruir arrays ordenados
-const areaLabelsSorted = areasOrdenadas.map(a => a.area);
-const areaIniciadoSorted = areasOrdenadas.map(a => a.iniciado);
-const areaAtivoSorted = areasOrdenadas.map(a => a.ativo);
-const areaConcluidoSorted = areasOrdenadas.map(a => a.concluido);
-
-// descobrir valor máximo
-const maxAreaValores = Math.max(0, ...totaisArea);
-
-const chartArea = new Chart(
-    document.getElementById("graficoArea"),
-    {
-
-        type: "bar",
-
-        data: {
-
-            labels: areaLabels,
-
-            datasets: [
-
-                {
-                    label: "Iniciado",
-                    data: areaIniciadoSorted,
-                    backgroundColor: "rgba(245,158,11,0.25)",
-                    borderColor: "#f59e0b",
-                    borderWidth: 2
-                },
-
-                {
-                    label: "Ativo",
-                    data: areaAtivoSorted,
-                    backgroundColor: "rgba(34,197,94,0.25)",
-                    borderColor: "#22c55e",
-                    borderWidth: 2
-                },
-
-                {
-                    label: "Concluído",
-                    data: areaConcluidoSorted,
-                    backgroundColor: "rgba(239,68,68,0.25)",
-                    borderColor: "#ef4444",
-                    borderWidth: 2
-                }
-
-            ]
-        },
-
-        options: {
-
-            indexAxis: 'y',   // 👈 torna o gráfico horizontal
-
-            responsive: true,
-            maintainAspectRatio: false,
-
-            plugins: {
-
-                legend: {
-                    position: "top"
-                },
-
-                datalabels: {
-
-                    anchor: "end",
-                    align: "right",
-
-                    font: {
-                        weight: "bold"
-                    },
-
-                    formatter: function(value, context) {
-
-                        const datasetIndex = context.datasetIndex;
-                        const dataIndex = context.dataIndex;
-
-                        const total = totaisArea[dataIndex];
-
-                        // mostrar apenas no último dataset (Concluído)
-                        if (datasetIndex === 2) {
-                            return total;
-                        }
-
-                        return "";
-                    }
-                }
+        scales:{
+            x:{
+                stacked:true,
+                beginAtZero:true,
+                max:maxValor + 1,
+                ticks:{ stepSize:1 }
             },
-
-            scales: {
-
-                x: {
-                    stacked: true,
-                    beginAtZero: true,
-                    max: maxAreaValores + 1,
-                    ticks: {
-                        stepSize: 1
-                    }
-                },
-
-                y: {
-                    stacked: true
-                }
-            }
+            y:{ stacked:true }
         }
     }
-);
+});
 
 </script>
 

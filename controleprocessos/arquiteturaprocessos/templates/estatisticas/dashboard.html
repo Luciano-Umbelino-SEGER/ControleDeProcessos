@@ -56,7 +56,7 @@ canvas:hover {
         <div class="bg-white p-3 rounded-lg shadow hover:shadow-md transition">
 
             <h3 class="text-blue-700 font-semibold text-sm mb-2">
-                Processos por Estados
+                Processos por Estado
             </h3>
 
             <canvas id="graficoStatus" class="canvas-compact w-full"></canvas>
@@ -127,10 +127,57 @@ const mesValores    = {{ mes_valores|default:"[]"|safe }};
 
 
 /* ---------------------------------
-FUNÇÃO PADRÃO PARA PIE
+NORMALIZADOR (🔥 resolve acento/case)
 --------------------------------- */
 
-function pieOptions(colors) {
+function normalizarLabel(label) {
+    return label
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+
+/* ---------------------------------
+MAPA DE CORES
+--------------------------------- */
+
+const CORES_STATUS = {
+    "iniciado": { bg: "rgba(245,158,11,0.25)", border: "#f59e0b" },
+    "ativo": { bg: "rgba(34,197,94,0.25)", border: "#22c55e" },
+    "concluido": { bg: "rgba(239,68,68,0.25)", border: "#ef4444" }
+};
+
+const CORES_CLASSIFICACAO = {
+    "estrategico": { bg: "rgba(59,130,246,0.25)", border: "#3b82f6" },
+    "suporte": { bg: "rgba(139,92,246,0.25)", border: "#8b5cf6" },
+    "finalistico": { bg: "rgba(249,115,22,0.25)", border: "#f97316" }
+};
+
+
+/* ---------------------------------
+GERAR CORES DINÂMICAS
+--------------------------------- */
+
+function gerarCores(labels, mapa) {
+    return {
+        background: labels.map(l => {
+            const key = normalizarLabel(l);
+            return mapa[key]?.bg || "rgba(200,200,200,0.2)";
+        }),
+        border: labels.map(l => {
+            const key = normalizarLabel(l);
+            return mapa[key]?.border || "#999";
+        })
+    };
+}
+
+
+/* ---------------------------------
+OPÇÕES PADRÃO PIE
+--------------------------------- */
+
+function pieOptions(labels, mapa) {
 
     return {
 
@@ -146,7 +193,9 @@ function pieOptions(colors) {
             datalabels: {
 
                 color: function(context) {
-                    return colors[context.dataIndex];
+                    const label = context.chart.data.labels[context.dataIndex];
+                    const key = normalizarLabel(label);
+                    return mapa[key]?.border || "#333";
                 },
 
                 font: {
@@ -175,6 +224,8 @@ function pieOptions(colors) {
 PROCESSOS POR ESTADO
 --------------------------------- */
 
+const coresStatus = gerarCores(statusLabels, CORES_STATUS);
+
 const chartStatus = new Chart(
     document.getElementById("graficoStatus"),
     {
@@ -185,19 +236,8 @@ const chartStatus = new Chart(
             labels: statusLabels,
             datasets: [{
                 data: statusValores,
-
-                backgroundColor: [
-                    "rgba(245,158,11,0.25)",
-                    "rgba(34,197,94,0.25)",
-                    "rgba(239,68,68,0.25)"
-                ],
-
-                borderColor: [
-                    "#f59e0b",
-                    "#22c55e",
-                    "#ef4444"
-                ],
-
+                backgroundColor: coresStatus.background,
+                borderColor: coresStatus.border,
                 borderWidth: 2,
                 spacing: 2,
                 hoverOffset: 8
@@ -205,16 +245,10 @@ const chartStatus = new Chart(
         },
 
         options: {
-            ...pieOptions([
-                "#f59e0b",
-                "#22c55e",
-                "#ef4444"
-            ]),
+            ...pieOptions(statusLabels, CORES_STATUS),
 
             onClick: function(evt, elements) {
-
                 if (elements.length) {
-
                     const index = elements[0].index;
                     const status = this.data.labels[index];
 
@@ -235,6 +269,8 @@ document
 PROCESSOS POR CLASSIFICAÇÃO
 --------------------------------- */
 
+const coresClass = gerarCores(classLabels, CORES_CLASSIFICACAO);
+
 const chartClassificacao = new Chart(
     document.getElementById("graficoClassificacao"),
     {
@@ -245,19 +281,8 @@ const chartClassificacao = new Chart(
             labels: classLabels,
             datasets: [{
                 data: classValores,
-
-                backgroundColor: [
-                    "rgba(59,130,246,0.25)",
-                    "rgba(139,92,246,0.25)",
-                    "rgba(249,115,22,0.25)"
-                ],
-
-                borderColor: [
-                    "#3b82f6",
-                    "#8b5cf6",
-                    "#f97316"
-                ],
-
+                backgroundColor: coresClass.background,
+                borderColor: coresClass.border,
                 borderWidth: 2,
                 spacing: 2,
                 hoverOffset: 8
@@ -265,16 +290,10 @@ const chartClassificacao = new Chart(
         },
 
         options: {
-            ...pieOptions([
-                "#3b82f6",
-                "#8b5cf6",
-                "#f97316"
-            ]),
+            ...pieOptions(classLabels, CORES_CLASSIFICACAO),
 
             onClick: function(evt, elements) {
-
                 if (elements.length) {
-
                     const index = elements[0].index;
                     const classificacao = this.data.labels[index];
 
@@ -323,21 +342,11 @@ const chartMes = new Chart(
             maintainAspectRatio: false,
 
             scales:{
-
-                x:{
-                    grid:{
-                        display:false
-                    }
-                },
-
+                x:{ grid:{ display:false } },
                 y:{
                     beginAtZero:true,
                     max:maxValorMes + 1,
-
-                    ticks:{
-                        stepSize:1
-                    },
-
+                    ticks:{ stepSize:1 },
                     grid:{
                         color:"rgba(148,163,184,0.15)",
                         drawBorder:false
@@ -350,16 +359,12 @@ const chartMes = new Chart(
                     align:"top",
                     anchor:"end",
                     color:"#1e3a8a",
-                    font:{
-                        weight:"bold"
-                    }
+                    font:{ weight:"bold" }
                 }
             },
 
             onClick: function(evt, elements) {
-
                 if (elements.length) {
-
                     const index = elements[0].index;
                     const mes = this.data.labels[index];
 
@@ -413,7 +418,6 @@ function abrirGrafico(chart) {
             maintainAspectRatio: false,
 
             plugins: {
-
                 title: {
                     display: true,
                     text: titulo,
@@ -430,10 +434,7 @@ function abrirGrafico(chart) {
 }
 
 function fecharModalGrafico() {
-
-    document
-        .getElementById("modalGrafico")
-        .classList.add("hidden");
+    document.getElementById("modalGrafico").classList.add("hidden");
 }
 
 </script>

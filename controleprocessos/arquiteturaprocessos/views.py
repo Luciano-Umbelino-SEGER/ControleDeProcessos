@@ -43,7 +43,6 @@ from .forms import (
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
-
 # ---------------------------------------------------
 # Utility to safely generate a username from names
 # ---------------------------------------------------
@@ -663,12 +662,24 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
 
         # ---------------------------------------
-        # Processos por Estado
+        # Processos por Estado (CORRETO PARA CAMPO CALCULADO)
         # ---------------------------------------
 
-        processos = Processo.objects.prefetch_related("documentos")
+        processos = Processo.objects.all()
 
-        contador_estado = Counter(p.status for p in processos)
+        def normalizar_status(status):
+            if not status:
+                return ""
+            return (
+                status.lower()
+                .replace("á", "a")
+                .replace("ã", "a")
+                .replace("ç", "c")
+            )
+
+        contador_estado = Counter(
+            normalizar_status(p.status) for p in processos
+        )
 
         ordem_estado = ["iniciado", "ativo", "concluido"]
 
@@ -676,12 +687,20 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         estado_valores = []
 
         for estado in ordem_estado:
-            if estado in contador_estado:
-                estado_labels.append(estado.capitalize())
-                estado_valores.append(contador_estado[estado])
+            estado_labels.append(estado.capitalize())
+            estado_valores.append(contador_estado.get(estado, 0))
 
         context["estado_labels"] = estado_labels
         context["estado_valores"] = estado_valores
+
+        # -----------------------------
+        # KPIs CORRETOS
+        # -----------------------------
+
+        context["total_processos"] = sum(contador_estado.values())
+        context["total_iniciado"] = contador_estado.get("iniciado", 0)
+        context["total_ativo"] = contador_estado.get("ativo", 0)
+        context["total_concluido"] = contador_estado.get("concluido", 0)
 
         # ---------------------------------------
         # Processos por Classificação
@@ -700,7 +719,7 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         # Processos por Área x Estado
         # ---------------------------------------
 
-        processos = Processo.objects.prefetch_related("documentos")
+        processos = Processo.objects.all()
 
         areas = sorted(
             {p.area_responsavel for p in processos if p.area_responsavel}
@@ -713,7 +732,7 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         for p in processos:
 
             area = p.area_responsavel
-            status = p.status
+            status = normalizar_status(p.status)  # 🔥 AQUI
 
             if area in areas and status in estrutura:
                 index = areas.index(area)
@@ -723,10 +742,12 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         context["area_iniciado"] = estrutura["iniciado"]
         context["area_ativo"] = estrutura["ativo"]
         context["area_concluido"] = estrutura["concluido"]
-        context["total_processos"] = sum(estado_valores)
-        context["total_iniciado"] = estado_valores[0] if len(estado_valores) > 0 else 0
-        context["total_ativo"] = estado_valores[1] if len(estado_valores) > 1 else 0
-        context["total_concluido"] = estado_valores[2] if len(estado_valores) > 2 else 0
+
+        context["total_processos"] = sum(contador_estado.values())
+
+        context["total_iniciado"] = contador_estado.get("iniciado", 0)
+        context["total_ativo"] = contador_estado.get("ativo", 0)
+        context["total_concluido"] = contador_estado.get("concluido", 0)
 
         return context
 
