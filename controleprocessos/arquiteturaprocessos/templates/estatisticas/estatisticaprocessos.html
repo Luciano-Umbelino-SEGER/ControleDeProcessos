@@ -110,8 +110,9 @@ canvas:hover{
 
 </div>
 
-<script>
+<script src="{% static 'js/charts-utils.js' %}"></script>
 
+<script>
 Chart.register(ChartDataLabels);
 
 /* -----------------------------
@@ -124,102 +125,27 @@ const estadoValores = {{ estado_valores|default:"[]"|safe }};
 const classLabels   = {{ class_labels|default:"[]"|safe }};
 const classValores  = {{ class_valores|default:"[]"|safe }};
 
-const areaLabels = {{ area_labels|default:"[]"|safe }};
-const areaIniciado = {{ area_iniciado|default:"[]"|safe }};
-const areaAtivo = {{ area_ativo|default:"[]"|safe }};
-const areaConcluido = {{ area_concluido|default:"[]"|safe }};
+const areaLabels     = {{ area_labels|default:"[]"|safe }};
+const areaIniciado   = {{ area_iniciado|default:"[]"|safe }};
+const areaAtivo      = {{ area_ativo|default:"[]"|safe }};
+const areaConcluido  = {{ area_concluido|default:"[]"|safe }};
 
 
 /* -----------------------------
-NORMALIZAÇÃO (ANTI BUG)
------------------------------ */
-
-function normalizar(label){
-    return label.toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g,"");
-}
-
-
-/* -----------------------------
-CORES PADRÃO
------------------------------ */
-
-const CORES_STATUS = {
-    iniciado: {bg:"rgba(245,158,11,0.25)", border:"#f59e0b"},
-    ativo: {bg:"rgba(34,197,94,0.25)", border:"#22c55e"},
-    concluido: {bg:"rgba(239,68,68,0.25)", border:"#ef4444"}
-};
-
-const CORES_CLASS = {
-    estrategico: {bg:"rgba(59,130,246,0.25)", border:"#3b82f6"},
-    suporte: {bg:"rgba(139,92,246,0.25)", border:"#8b5cf6"},
-    finalistico: {bg:"rgba(249,115,22,0.25)", border:"#f97316"}
-};
-
-
-/* -----------------------------
-GERADOR DE CORES
------------------------------ */
-
-function gerarCores(labels, mapa){
-    return {
-        bg: labels.map(l => mapa[normalizar(l)]?.bg || "rgba(200,200,200,0.2)"),
-        border: labels.map(l => mapa[normalizar(l)]?.border || "#999")
-    };
-}
-
-
-/* -----------------------------
-PIE OPTIONS
------------------------------ */
-
-function pieOptions(labels, mapa){
-
-    return {
-        responsive:true,
-        maintainAspectRatio:false,
-
-        plugins:{
-            legend:{ position:"top" },
-
-            datalabels:{
-                color:(ctx)=>{
-                    const label = ctx.chart.data.labels[ctx.dataIndex];
-                    return mapa[normalizar(label)]?.border || "#333";
-                },
-
-                formatter:(value,ctx)=>{
-                    const data = ctx.chart.data.datasets[0].data;
-                    const total = data.reduce((a,b)=>a+b,0);
-                    if(!total) return "0";
-
-                    const pct = ((value/total)*100).toFixed(1);
-                    return `${value} (${pct}%)`;
-                }
-            }
-        }
-    };
-}
-
-
-/* -----------------------------
-GRÁFICO ESTADO
+ESTADO (PADRONIZADO)
 ----------------------------- */
 
 const coresEstado = gerarCores(estadoLabels, CORES_STATUS);
 
-new Chart(document.getElementById("graficoEstado"),{
-    type:"pie",
-    data:{
-        labels:estadoLabels,
-        datasets:[{
-            data:estadoValores,
-            backgroundColor:coresEstado.bg,
-            borderColor:coresEstado.border,
-            borderWidth:2,
-            spacing: 2,
-            hoverOffset: 8
+new Chart(document.getElementById("graficoEstado"), {
+    type: "pie",
+    data: {
+        labels: estadoLabels,
+        datasets: [{
+            data: estadoValores,
+            backgroundColor: coresEstado.bg,
+            borderColor: coresEstado.border,
+            borderWidth: 2
         }]
     },
     options: pieOptions(estadoLabels, CORES_STATUS)
@@ -227,22 +153,20 @@ new Chart(document.getElementById("graficoEstado"),{
 
 
 /* -----------------------------
-CLASSIFICAÇÃO
+CLASSIFICAÇÃO (PADRONIZADO)
 ----------------------------- */
 
 const coresClass = gerarCores(classLabels, CORES_CLASS);
 
-new Chart(document.getElementById("graficoClassificacao"),{
-    type:"doughnut",
-    data:{
-        labels:classLabels,
-        datasets:[{
-            data:classValores,
-            backgroundColor:coresClass.bg,
-            borderColor:coresClass.border,
-            borderWidth:2,
-            spacing: 2,
-            hoverOffset: 8
+new Chart(document.getElementById("graficoClassificacao"), {
+    type: "doughnut",
+    data: {
+        labels: classLabels,
+        datasets: [{
+            data: classValores,
+            backgroundColor: coresClass.bg,
+            borderColor: coresClass.border,
+            borderWidth: 2
         }]
     },
     options: pieOptions(classLabels, CORES_CLASS)
@@ -250,85 +174,93 @@ new Chart(document.getElementById("graficoClassificacao"),{
 
 
 /* -----------------------------
-ÁREA (CORRIGIDO)
+ÁREA (STACKED CORRIGIDO)
 ----------------------------- */
 
-// calcular total real
-const totaisArea = areaLabels.map((_,i)=>
+// total por área
+const totaisArea = areaLabels.map((_, i) =>
     areaIniciado[i] + areaAtivo[i] + areaConcluido[i]
 );
 
 const maxValor = Math.max(...totaisArea, 0);
 
-new Chart(document.getElementById("graficoArea"),{
+new Chart(document.getElementById("graficoArea"), {
 
-    type:"bar",
+    type: "bar",
 
-    data:{
-        labels:areaLabels,
-        datasets:[
+    data: {
+        labels: areaLabels,
+
+        datasets: [
 
             {
-                label:"Iniciado",
-                data:areaIniciado,
-                backgroundColor:"rgba(245,158,11,0.25)",
-                borderColor:"#f59e0b",
-                borderWidth:2
+                label: "Iniciado",
+                data: areaIniciado,
+                backgroundColor: CORES_STATUS.iniciado.bg,
+                borderColor: CORES_STATUS.iniciado.border,
+                borderWidth: 2
             },
 
             {
-                label:"Ativo",
-                data:areaAtivo,
-                backgroundColor:"rgba(34,197,94,0.25)",
-                borderColor:"#22c55e",
-                borderWidth:2
+                label: "Ativo",
+                data: areaAtivo,
+                backgroundColor: CORES_STATUS.ativo.bg,
+                borderColor: CORES_STATUS.ativo.border,
+                borderWidth: 2
             },
 
             {
-                label:"Concluído",
-                data:areaConcluido,
-                backgroundColor:"rgba(239,68,68,0.25)",
-                borderColor:"#ef4444",
-                borderWidth:2
+                label: "Concluído",
+                data: areaConcluido,
+                backgroundColor: CORES_STATUS.concluido.bg,
+                borderColor: CORES_STATUS.concluido.border,
+                borderWidth: 2
             }
 
         ]
     },
 
-    options:{
-        indexAxis:'y',
+    options: {
 
-        responsive:true,
-        maintainAspectRatio:false,
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
 
-        plugins:{
-            legend:{ position:"top" },
+        plugins: {
 
-            datalabels:{
-                anchor:"end",
-                align:"right",
+            legend: { position: "top" },
 
-                formatter:(value,ctx)=>{
-                    if(ctx.datasetIndex === 2){
+            datalabels: {
+                anchor: "end",
+                align: "right",
+
+                formatter: (value, ctx) => {
+
+                    // mostra só o total no final da barra
+                    if (ctx.datasetIndex === 2) {
                         return totaisArea[ctx.dataIndex];
                     }
+
                     return "";
                 }
             }
         },
 
-        scales:{
-            x:{
-                stacked:true,
-                beginAtZero:true,
-                max:maxValor + 1,
-                ticks:{ stepSize:1 }
+        scales: {
+
+            x: {
+                stacked: true,
+                beginAtZero: true,
+                max: maxValor + 1,
+                ticks: { stepSize: 1 }
             },
-            y:{ stacked:true }
+
+            y: {
+                stacked: true
+            }
         }
     }
 });
-
 </script>
 
 {% endblock %}

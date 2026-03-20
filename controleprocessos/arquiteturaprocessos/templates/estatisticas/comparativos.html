@@ -34,87 +34,122 @@ Comparativos
 
 </div>
 
+<script src="{% static 'js/charts-utils.js' %}"></script>
+
 <script>
 Chart.register(ChartDataLabels);
+
+/* -----------------------------
+DADOS
+----------------------------- */
 
 const labels = {{ labels|safe }};
 const criados = {{ criados|safe }};
 const concluidos = {{ concluidos|safe }};
 
-// descobrir valor máximo
-const maxValor = Math.max(
-    ...criados,
-    ...concluidos
-);
+/* -----------------------------
+ESCALA
+----------------------------- */
+
+const maxValor = Math.max(...criados, ...concluidos, 0);
+
+/* -----------------------------
+GRÁFICO
+----------------------------- */
 
 new Chart(
     document.getElementById("graficoComparativo"),
     {
-        type:"line",
+        type: "line",
 
-        data:{
-            labels:labels,
+        data: {
+            labels: labels,
 
-            datasets:[
+            datasets: [
+
                 {
-                    label:"Processos Criados",
+                    label: "Processos Criados",
+                    data: criados,
+                    borderColor: CORES_STATUS.iniciado.border,
+                    backgroundColor: "rgba(245,158,11,0.12)",
 
-                    data:criados,
+                    fill: true,
+                    tension: 0.35,
+                
+                    borderWidth: 3,
 
-                    borderColor:"#f59e0b",
-                    backgroundColor:"rgba(245,158,11,0.15)",
-
-                    fill:true,
-                    tension:0.3,
-                    pointRadius:4
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: CORES_STATUS.iniciado.border,
+                    pointBorderColor: "#fff",
+                    pointBorderWidth: 2
                 },
-
                 {
-                    label:"Processos Concluídos",
+                    label: "Processos Concluídos",
+                    data: concluidos,
+                    borderColor: CORES_STATUS.concluido.border,
+                    backgroundColor: "rgba(239,68,68,0.09)",
 
-                    data:concluidos,
+                    fill: true,
+                    tension: 0.35,
 
-                    borderColor:"#ef4444",
-                    backgroundColor:"rgba(239,68,68,0.15)",
+                    borderWidth: 3,
 
-                    fill:true,
-                    tension:0.3,
-                    pointRadius:4
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: CORES_STATUS.concluido.border,
+                    pointBorderColor: "#fff",
+                    pointBorderWidth: 2
                 }
+
             ]
         },
 
-        options:{
-            responsive:true,
-            maintainAspectRatio:false,
+        options: {
 
-            plugins:{
-                legend:{
-                    position:"top"
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    position: "top"
                 },
 
-                datalabels:{
-                    align:"top",
-                    anchor:"end",
-                    font:{
-                        weight:"bold"
+                datalabels: {
+
+                    align: "top",
+                    anchor: "end",
+
+                    font: {
+                        weight: "bold"
                     }
                 }
             },
 
-            scales:{
-                y:{
-                    beginAtZero:true,
-                    max:maxValor + 1,
-                    ticks:{
-                        stepSize:1
+            scales: {
+
+                x: {
+                    grid: { display: false }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    max: maxValor + 1,
+
+                    ticks: {
+                        stepSize: 1
+                    },
+
+                    grid: {
+                        color: "rgba(148,163,184,0.15)",
+                        drawBorder: false
                     }
                 }
             }
         }
     }
 );
-
 </script>
 
 {% endblock %}

@@ -39,19 +39,20 @@ Processos a Mapear
 
 </div>
 
-<script>
+<script src="{% static 'js/charts-utils.js' %}"></script>
 
+<script>
 Chart.register(ChartDataLabels);
 
 /* -----------------------------
-DADOS VINDOS DO DJANGO
+DADOS
 ----------------------------- */
 
 const labels  = {{ labels|safe }};
 const valores = {{ valores|safe }};
 
 /* -----------------------------
-ORDENAR POR QUANTIDADE (ranking)
+ORDENAÇÃO (ranking)
 ----------------------------- */
 
 const dadosOrdenados = labels
@@ -64,39 +65,17 @@ const dadosOrdenados = labels
 const labelsOrdenados  = dadosOrdenados.map(d => d.label);
 const valoresOrdenados = dadosOrdenados.map(d => d.valor);
 
-
 /* -----------------------------
-CORES PADRÃO DO SIGEMP
-linha forte + preenchimento suave
+CORES PADRÃO (GLOBAL)
 ----------------------------- */
 
-const coresBorda = [
-    "#3b82f6",
-    "#10b981",
-    "#f59e0b",
-    "#ef4444",
-    "#8b5cf6",
-    "#06b6d4",
-    "#84cc16"
-];
-
-const coresFundo = [
-    "rgba(59,130,246,0.25)",
-    "rgba(16,185,129,0.25)",
-    "rgba(245,158,11,0.25)",
-    "rgba(239,68,68,0.25)",
-    "rgba(139,92,246,0.25)",
-    "rgba(6,182,212,0.25)",
-    "rgba(132,204,22,0.25)"
-];
-
+const cores = gerarCoresPadrao(labelsOrdenados.length);
 
 /* -----------------------------
-VALOR MÁXIMO DO EIXO
+ESCALA
 ----------------------------- */
 
-const maxValor = Math.max(...valoresOrdenados);
-
+const maxValor = Math.max(...valoresOrdenados, 0);
 
 /* -----------------------------
 GRÁFICO
@@ -105,19 +84,17 @@ GRÁFICO
 new Chart(
     document.getElementById("graficoMapear"),
     {
-
         type: "bar",
 
         data: {
-
             labels: labelsOrdenados,
 
             datasets: [{
                 label: "Processos a Mapear",
                 data: valoresOrdenados,
 
-                backgroundColor: coresFundo,
-                borderColor: coresBorda,
+                backgroundColor: cores.bg,
+                borderColor: cores.border,
                 borderWidth: 2,
 
                 borderRadius: 6,
@@ -132,9 +109,7 @@ new Chart(
 
             plugins: {
 
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
 
                 datalabels: {
 
@@ -142,9 +117,7 @@ new Chart(
                     align: "top",
                     offset: 4,
 
-                    color: function(context) {
-                        return coresBorda[context.dataIndex];
-                    },
+                    color: (ctx) => cores.border[ctx.dataIndex],
 
                     font: {
                         weight: "bold",
@@ -153,32 +126,27 @@ new Chart(
                 }
             },
 
-            scales:{
+            scales: {
 
-                x:{
-                    grid:{
-                        display:false
-                    }
+                x: {
+                    grid: { display: false }
                 },
 
-                y:{
-                    beginAtZero:true,
-                    max:maxValor + 1,
+                y: {
+                    beginAtZero: true,
+                    max: maxValor + 1,
 
-                    ticks:{
-                        stepSize:1
-                    },
+                    ticks: { stepSize: 1 },
 
-                    grid:{
-                        color:"rgba(148,163,184,0.15)",
-                        drawBorder:false
+                    grid: {
+                        color: "rgba(148,163,184,0.15)",
+                        drawBorder: false
                     }
                 }
             }
         }
     }
 );
-
 </script>
 
 {% endblock %}

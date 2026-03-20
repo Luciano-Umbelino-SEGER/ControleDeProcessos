@@ -33,6 +33,7 @@ from urllib.parse import unquote
 import mimetypes
 from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
+from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
@@ -555,29 +556,20 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
 
         context = super().get_context_data(**kwargs)
 
-        # ---------------------------------------
-        # Processos por Status (campo calculado)
-        # ---------------------------------------
+        processos = Processo.objects.all()
 
-        processos = Processo.objects.prefetch_related("documentos")
+        # 🔥 STATUS PADRONIZADO
+        status_data = contar_status(processos)
 
-        contador_status = Counter(p.status for p in processos)
-
-        ordem_status = ["iniciado", "ativo", "concluido"]
-
-        status_labels = []
-        status_valores = []
-
-        for status in ordem_status:
-            if status in contador_status:
-                status_labels.append(status.capitalize())
-                status_valores.append(contador_status[status])
-
-        context["status_labels"] = status_labels
-        context["status_valores"] = status_valores
+        context["status_labels"] = ["Iniciado", "Ativo", "Concluído"]
+        context["status_valores"] = [
+            status_data["iniciado"],
+            status_data["ativo"],
+            status_data["concluido"],
+        ]
 
         # ---------------------------
-        # Processos por Classificação
+        # Classificação
         # ---------------------------
         classificacao = (
             Processo.objects
@@ -589,7 +581,7 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
         context["class_valores"] = [c["total"] for c in classificacao]
 
         # ---------------------------
-        # Processos por Área
+        # Área
         # ---------------------------
         area = (
             Processo.objects
@@ -601,7 +593,7 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
         context["area_valores"] = [a["total"] for a in area]
 
         # ---------------------------
-        # Processos por Mês
+        # Mês
         # ---------------------------
         ano_atual = datetime.now().year
         mes_atual = datetime.now().month
@@ -649,7 +641,7 @@ class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
         context["valores"] = [p["total"] for p in processos_mapear]
 
         return context
-
+# Aqui 1
 # --------------------------------
 # Estatísticas de Processos
 # --------------------------------
@@ -661,51 +653,27 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
 
         context = super().get_context_data(**kwargs)
 
-        # ---------------------------------------
-        # Processos por Estado (CORRETO PARA CAMPO CALCULADO)
-        # ---------------------------------------
-
         processos = Processo.objects.all()
 
-        def normalizar_status(status):
-            if not status:
-                return ""
-            return (
-                status.lower()
-                .replace("á", "a")
-                .replace("ã", "a")
-                .replace("ç", "c")
-            )
+        # 🔥 STATUS CENTRALIZADO
+        status_data = contar_status(processos)
 
-        contador_estado = Counter(
-            normalizar_status(p.status) for p in processos
-        )
+        context["total_processos"] = status_data["total"]
+        context["total_iniciado"] = status_data["iniciado"]
+        context["total_ativo"] = status_data["ativo"]
+        context["total_concluido"] = status_data["concluido"]
 
-        ordem_estado = ["iniciado", "ativo", "concluido"]
+        # 🔥 GRÁFICO DE ESTADO (FALTAVA ISSO!)
+        context["estado_labels"] = ["Iniciado", "Ativo", "Concluído"]
+        context["estado_valores"] = [
+            status_data["iniciado"],
+            status_data["ativo"],
+            status_data["concluido"],
+        ]
 
-        estado_labels = []
-        estado_valores = []
-
-        for estado in ordem_estado:
-            estado_labels.append(estado.capitalize())
-            estado_valores.append(contador_estado.get(estado, 0))
-
-        context["estado_labels"] = estado_labels
-        context["estado_valores"] = estado_valores
-
-        # -----------------------------
-        # KPIs CORRETOS
-        # -----------------------------
-
-        context["total_processos"] = sum(contador_estado.values())
-        context["total_iniciado"] = contador_estado.get("iniciado", 0)
-        context["total_ativo"] = contador_estado.get("ativo", 0)
-        context["total_concluido"] = contador_estado.get("concluido", 0)
-
-        # ---------------------------------------
-        # Processos por Classificação
-        # ---------------------------------------
-
+        # ---------------------------
+        # Classificação
+        # ---------------------------
         classificacao = (
             Processo.objects
             .values("classificacao__nome")
@@ -715,11 +683,9 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         context["class_labels"] = [c["classificacao__nome"] for c in classificacao]
         context["class_valores"] = [c["total"] for c in classificacao]
 
-        # ---------------------------------------
-        # Processos por Área x Estado
-        # ---------------------------------------
-
-        processos = Processo.objects.all()
+        # ---------------------------
+        # Área x Status
+        # ---------------------------
 
         areas = sorted(
             {p.area_responsavel for p in processos if p.area_responsavel}
@@ -732,7 +698,7 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         for p in processos:
 
             area = p.area_responsavel
-            status = normalizar_status(p.status)  # 🔥 AQUI
+            status = normalizar_status(p.status)
 
             if area in areas and status in estrutura:
                 index = areas.index(area)
@@ -742,12 +708,6 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         context["area_iniciado"] = estrutura["iniciado"]
         context["area_ativo"] = estrutura["ativo"]
         context["area_concluido"] = estrutura["concluido"]
-
-        context["total_processos"] = sum(contador_estado.values())
-
-        context["total_iniciado"] = contador_estado.get("iniciado", 0)
-        context["total_ativo"] = contador_estado.get("ativo", 0)
-        context["total_concluido"] = contador_estado.get("concluido", 0)
 
         return context
 

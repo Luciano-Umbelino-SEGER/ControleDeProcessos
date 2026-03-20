@@ -108,8 +108,9 @@ canvas:hover {
 
 </div>
 
-<script>
+<script src="{% static 'js/charts-utils.js' %}"></script>
 
+<script>
 Chart.register(ChartDataLabels);
 
 /* ---------------------------------
@@ -127,100 +128,6 @@ const mesValores    = {{ mes_valores|default:"[]"|safe }};
 
 
 /* ---------------------------------
-NORMALIZADOR (🔥 resolve acento/case)
---------------------------------- */
-
-function normalizarLabel(label) {
-    return label
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-}
-
-
-/* ---------------------------------
-MAPA DE CORES
---------------------------------- */
-
-const CORES_STATUS = {
-    "iniciado": { bg: "rgba(245,158,11,0.25)", border: "#f59e0b" },
-    "ativo": { bg: "rgba(34,197,94,0.25)", border: "#22c55e" },
-    "concluido": { bg: "rgba(239,68,68,0.25)", border: "#ef4444" }
-};
-
-const CORES_CLASSIFICACAO = {
-    "estrategico": { bg: "rgba(59,130,246,0.25)", border: "#3b82f6" },
-    "suporte": { bg: "rgba(139,92,246,0.25)", border: "#8b5cf6" },
-    "finalistico": { bg: "rgba(249,115,22,0.25)", border: "#f97316" }
-};
-
-
-/* ---------------------------------
-GERAR CORES DINÂMICAS
---------------------------------- */
-
-function gerarCores(labels, mapa) {
-    return {
-        background: labels.map(l => {
-            const key = normalizarLabel(l);
-            return mapa[key]?.bg || "rgba(200,200,200,0.2)";
-        }),
-        border: labels.map(l => {
-            const key = normalizarLabel(l);
-            return mapa[key]?.border || "#999";
-        })
-    };
-}
-
-
-/* ---------------------------------
-OPÇÕES PADRÃO PIE
---------------------------------- */
-
-function pieOptions(labels, mapa) {
-
-    return {
-
-        responsive: true,
-        maintainAspectRatio: false,
-
-        plugins: {
-
-            legend: {
-                position: "top"
-            },
-
-            datalabels: {
-
-                color: function(context) {
-                    const label = context.chart.data.labels[context.dataIndex];
-                    const key = normalizarLabel(label);
-                    return mapa[key]?.border || "#333";
-                },
-
-                font: {
-                    weight: "bold",
-                    size: 12
-                },
-
-                formatter: function(value, ctx) {
-
-                    const data = ctx.chart.data.datasets[0].data;
-                    const total = data.reduce((a, b) => a + b, 0);
-
-                    if (!total) return "0";
-
-                    const pct = ((value / total) * 100).toFixed(1);
-
-                    return value + " (" + pct + "%)";
-                }
-            }
-        }
-    }
-}
-
-
-/* ---------------------------------
 PROCESSOS POR ESTADO
 --------------------------------- */
 
@@ -229,21 +136,16 @@ const coresStatus = gerarCores(statusLabels, CORES_STATUS);
 const chartStatus = new Chart(
     document.getElementById("graficoStatus"),
     {
-
         type: "pie",
-
         data: {
             labels: statusLabels,
             datasets: [{
                 data: statusValores,
-                backgroundColor: coresStatus.background,
+                backgroundColor: coresStatus.bg,
                 borderColor: coresStatus.border,
-                borderWidth: 2,
-                spacing: 2,
-                hoverOffset: 8
+                borderWidth: 2
             }]
         },
-
         options: {
             ...pieOptions(statusLabels, CORES_STATUS),
 
@@ -269,28 +171,23 @@ document
 PROCESSOS POR CLASSIFICAÇÃO
 --------------------------------- */
 
-const coresClass = gerarCores(classLabels, CORES_CLASSIFICACAO);
+const coresClass = gerarCores(classLabels, CORES_CLASS);
 
 const chartClassificacao = new Chart(
     document.getElementById("graficoClassificacao"),
     {
-
         type: "doughnut",
-
         data: {
             labels: classLabels,
             datasets: [{
                 data: classValores,
-                backgroundColor: coresClass.background,
+                backgroundColor: coresClass.bg,
                 borderColor: coresClass.border,
-                borderWidth: 2,
-                spacing: 2,
-                hoverOffset: 8
+                borderWidth: 2
             }]
         },
-
         options: {
-            ...pieOptions(classLabels, CORES_CLASSIFICACAO),
+            ...pieOptions(classLabels, CORES_CLASS),
 
             onClick: function(evt, elements) {
                 if (elements.length) {
@@ -319,9 +216,7 @@ const maxValorMes = Math.max(...mesValores);
 const chartMes = new Chart(
     document.getElementById("graficoMes"),
     {
-
         type: "line",
-
         data: {
             labels: mesLabels,
             datasets: [{
@@ -331,35 +226,33 @@ const chartMes = new Chart(
                 backgroundColor: "rgba(59,130,246,0.2)",
                 fill: true,
                 tension: 0.3,
-                pointRadius:4,
-                pointHoverRadius:6
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
-
         options: {
-
             responsive: true,
             maintainAspectRatio: false,
 
-            scales:{
-                x:{ grid:{ display:false } },
-                y:{
-                    beginAtZero:true,
-                    max:maxValorMes + 1,
-                    ticks:{ stepSize:1 },
-                    grid:{
-                        color:"rgba(148,163,184,0.15)",
-                        drawBorder:false
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    beginAtZero: true,
+                    max: maxValorMes + 1,
+                    ticks: { stepSize: 1 },
+                    grid: {
+                        color: "rgba(148,163,184,0.15)",
+                        drawBorder: false
                     }
                 }
             },
 
-            plugins:{
-                datalabels:{
-                    align:"top",
-                    anchor:"end",
-                    color:"#1e3a8a",
-                    font:{ weight:"bold" }
+            plugins: {
+                datalabels: {
+                    align: "top",
+                    anchor: "end",
+                    color: "#1e3a8a",
+                    font: { weight: "bold" }
                 }
             },
 
@@ -404,19 +297,14 @@ function abrirGrafico(chart) {
     }
 
     chartExpandido = new Chart(ctx, {
-
         type: chart.config.type,
-
         data: {
             labels: [...chart.data.labels],
             datasets: chart.data.datasets.map(ds => ({ ...ds }))
         },
-
         options: {
-
             responsive: true,
             maintainAspectRatio: false,
-
             plugins: {
                 title: {
                     display: true,
@@ -436,7 +324,6 @@ function abrirGrafico(chart) {
 function fecharModalGrafico() {
     document.getElementById("modalGrafico").classList.add("hidden");
 }
-
 </script>
 
 {% endblock %}
