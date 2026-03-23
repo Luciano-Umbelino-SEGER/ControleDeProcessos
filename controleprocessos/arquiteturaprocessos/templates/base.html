@@ -108,7 +108,7 @@
     <div class="flex flex-1">
         {% if request.user.is_authenticated %}
         <aside :class="sidebarOpen ? 'w-[16rem]' : 'w-[4rem]'"
-               class="bg-[#0097A7] text-white transition-all duration-300 flex flex-col" x-cloak>
+               class="bg-[#0097A7] text-white transition-all duration-300 flex flex-col fixed left-0 top-[64px] h-[calc(100vh-59px-48px)] -mt-px z-40 overflow-y-auto" x-cloak>
 
             <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
 
@@ -299,10 +299,8 @@
         </aside>
         {% endif %}
 
-        <main class="flex-1 transition-all duration-300 bg-[#F0FFFF] px-1 py-6
-           {% if request.user.is_authenticated %}
-               ml-1
-           {% endif %}">
+        <main :class="sidebarOpen ? 'ml-[16rem]' : 'ml-[4rem]'"
+              class="flex-1 transition-all duration-300 bg-[#F0FFFF] px-1 py-6">
           {% if messages %}
             <div class="container mt-3 space-y-2">
                 {% for message in messages %}
