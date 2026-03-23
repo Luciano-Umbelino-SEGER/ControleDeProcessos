@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import date
 from django.forms.widgets import Select
+from urllib.parse import urlparse
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
@@ -648,6 +649,15 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         # Guarda versão original
         self._versao_original = getattr(self.instance, "versao", None) if self.instance.pk else None
 
+        if "link_normaprocedimento" in self.fields:
+            self.fields["link_normaprocedimento"].widget.attrs.update({
+                "type": "url",
+                "placeholder": "https://exemplo.com/documento.pdf",
+            })
+
+            # 🔥 GARANTE QUE O CAMPO OCUPA TODA A LARGURA (NÃO QUEBRA LAYOUT)
+            self.fields["link_normaprocedimento"].widget.attrs["class"] += " w-full"
+
     # ============================================================
     # VALIDAÇÕES
     # ============================================================
@@ -693,13 +703,56 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
 
     def clean_documento_modelagem_processo(self):
         f = self.cleaned_data.get("documento_modelagem_processo")
+
+        # 🔹 1. Nenhum arquivo enviado → mantém o atual
         if not f:
             return f
-        is_pdf_type = f.content_type in ("application/pdf", "application/x-pdf")
-        is_pdf_name = f.name.lower().endswith(".pdf")
+
+        # 🔹 2. Se NÃO tem content_type → é FieldFile (edição sem novo upload)
+        if not hasattr(f, "content_type"):
+            return f
+
+        # 🔹 3. Novo upload → validar tipo básico
+        content_type = f.content_type
+        file_name = f.name.lower()
+
+        is_pdf_type = content_type in ("application/pdf", "application/x-pdf")
+        is_pdf_name = file_name.endswith(".pdf")
+
         if not (is_pdf_type or is_pdf_name):
             raise ValidationError("Envie um PDF válido (.pdf).")
+
+        # 💡 4. VALIDAÇÃO EXTRA (nível enterprise)
+        # Verifica assinatura real do arquivo (%PDF)
+        if hasattr(f, "read"):
+            header = f.read(4)
+            f.seek(0)  # ⚠️ MUITO IMPORTANTE: voltar o ponteiro
+
+            if header != b"%PDF":
+                raise ValidationError("Arquivo não é um PDF válido.")
+
         return f
+
+    # ============================================================
+    # 🔹 VALIDAÇÃO: LINK NORMA DE PROCEDIMENTO
+    # ============================================================
+    def clean_link_normaprocedimento(self):
+        link = self.cleaned_data.get("link_normaprocedimento")
+
+        if not link:
+            return link
+
+        link = link.strip()
+
+        parsed = urlparse(link)
+
+        if not parsed.scheme or not parsed.netloc:
+            raise ValidationError("Informe uma URL válida.")
+
+        if parsed.scheme not in ("http", "https"):
+            raise ValidationError("A URL deve começar com http:// ou https://.")
+
+        return link
 
     # ============================================================
     # SAVE
