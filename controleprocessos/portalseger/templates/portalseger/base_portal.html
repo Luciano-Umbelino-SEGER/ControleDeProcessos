@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>{% block titulo %}Portal SEGER{% endblock %}</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-cyan-100 min-h-screen flex flex-col">
+
+    <!-- HEADER PORTAL -->
+    <header class="bg-white shadow-md px-6 py-4 flex items-center justify-between">
+
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                <i class="fas fa-th-large"></i>
+            </div>
+
+            <div>
+                <h1 class="text-lg font-bold text-blue-800">Portal SEGER</h1>
+                <p class="text-xs text-gray-500">Acesso aos sistemas</p>
+            </div>
+        </div>
+
+        <div class="text-sm text-gray-600">
+            {{ request.user.get_full_name }}
+        </div>
+
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main class="flex-1">
+        {% block body %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#0097A7] text-white text-sm text-center py-3">
+        SEGER - GPP | elpi@seger.es.gov.br
+    </footer>
+
+</body>
+</html>

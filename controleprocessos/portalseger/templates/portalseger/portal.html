@@ -1,0 +1,63 @@
+{% extends "portalseger/base_portal.html" %}
+
+{% block titulo %}Portal SEGER{% endblock %}
+
+{% block body %}
+
+<div class="max-w-7xl mx-auto px-6 py-10">
+
+    <!-- Título -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-bold text-blue-800">
+            Portal de Sistemas
+        </h1>
+        <p class="text-gray-600 mt-2">
+            Acesse os sistemas disponíveis da SEGER
+        </p>
+    </div>
+
+    <!-- Grid de Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        {% for sistema in sistemas %}
+        <div class="group">
+
+            <a href="{% if sistema.rota %}{{ sistema.rota }}{% else %}{{ sistema.url }}{% endif %}"
+               class="block bg-white rounded-xl shadow-md p-6 transition-all duration-300
+                      hover:shadow-xl hover:-translate-y-1 border border-gray-100">
+
+                <!-- Ícone -->
+                <div class="mb-4">
+                    <div class="w-12 h-12 flex items-center justify-center rounded-lg text-white text-xl"
+                         style="background-color: {{ sistema.cor }}">
+                        <i class="fas {{ sistema.icone }}"></i>
+                    </div>
+                </div>
+
+                <!-- Nome -->
+                <h2 class="text-lg font-semibold text-gray-800 group-hover:text-blue-700">
+                    {{ sistema.nome }}
+                </h2>
+
+                <!-- Descrição -->
+                <p class="text-sm text-gray-500 mt-2">
+                    {{ sistema.descricao }}
+                </p>
+
+                <!-- Badge -->
+                {% if sistema.url == "#" %}
+                <span class="inline-block mt-3 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                    Em desenvolvimento
+                </span>
+                {% endif %}
+
+            </a>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -17,6 +17,7 @@ from arquiteturaprocessos.utils.media_serve_safe import media_serve_allow_iframe
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(('arquiteturaprocessos.urls', 'arquiteturaprocessos'), namespace='arquiteturaprocessos')),
+    path("portal/", include(("portalseger.urls", "portalseger"), namespace="portalseger")),
 ]
 
 
