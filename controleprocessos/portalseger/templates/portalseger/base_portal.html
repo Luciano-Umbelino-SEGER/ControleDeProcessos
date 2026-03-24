@@ -3,7 +3,7 @@
 <head>
     {% load static %}
     <meta charset="UTF-8">
-    <title>{% block titulo %}Portal SEGER{% endblock %}</title>
+    <title>{% block titulo %}Portal GPP{% endblock %}</title>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,6 +11,18 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
+    <style>
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+    </style>
 </head>
 
 <body class="bg-gradient-to-br from-blue-50 to-cyan-100 min-h-screen flex flex-col">
@@ -18,19 +30,16 @@
     <!-- HEADER PORTAL -->
     <header class="bg-white shadow-md px-6 py-4 flex items-center justify-between">
 
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                <i class="fas fa-th-large"></i>
-            </div>
+        <div class="flex items-center gap-3">
+            <!-- Logo menor -->
+            <img src="{% static 'images/Logo_GPP_Azul_Hor.png' %}"
+                 alt="GPP"
+                 class="h-10 object-contain">
 
-            <div>
-                <h1 class="text-lg font-bold text-blue-800">Portal SEGER</h1>
-                <p class="text-xs text-gray-500">Acesso aos sistemas</p>
-            </div>
-        </div>
-
-        <div class="text-sm text-gray-600">
-            {{ request.user.get_full_name }}
+            <!-- Título -->
+            <h3 class="text-2xl font-bold tracking-tight  text-[#1870BA]">
+                Portal de Sistemas
+            </h3>
         </div>
 
     </header>
@@ -41,8 +50,25 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="bg-[#0097A7] text-white text-sm text-center py-3">
-        SEGER - GPP | elpi@seger.es.gov.br
+   <footer class="bg-[#0097A7] text-white py-3">
+        <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+
+            <!-- Logo SEGER (alinhada com header) -->
+            <div class="flex items-center h-full">
+                <img src="{% static 'images/Logo Seger - branca - v1.png' %}"
+                     alt="SEGER"
+                     class="h-10 object-contain">
+            </div>
+
+            <!-- Texto central -->
+            <div class="text-sm text-center flex-1">
+                SEGER - GPP | elpi@seger.es.gov.br
+            </div>
+
+            <!-- Espaço para balancear -->
+            <div class="w-[140px]"></div>
+
+        </div>
     </footer>
 
 </body>

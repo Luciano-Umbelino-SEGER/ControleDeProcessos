@@ -1,30 +1,34 @@
 {% extends "portalseger/base_portal.html" %}
 
-{% block titulo %}Portal SEGER{% endblock %}
+{% block titulo %}Portal GPP{% endblock %}
 
 {% block body %}
+{% load static %}
 
 <div class="max-w-7xl mx-auto px-6 py-10">
 
     <!-- Título -->
-    <div class="mb-10">
-        <h1 class="text-3xl font-bold text-blue-800">
-            Portal de Sistemas
-        </h1>
-        <p class="text-gray-600 mt-2">
-            Acesse os sistemas disponíveis da SEGER
-        </p>
+    <div class="flex items-center gap-6 mb-8">
+    <!-- Textos -->
+    <div>
+        <h2 class="text-lg font-medium text-[#1870BA]">
+            Acesso aos Sistemas
+        </h2>
     </div>
+</div>
 
     <!-- Grid de Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
         {% for sistema in sistemas %}
-        <div class="group">
+        <div class="group opacity-0 translate-y-4 animate-fadeInUp">
 
             <a href="{% if sistema.rota %}{{ sistema.rota }}{% else %}{{ sistema.url }}{% endif %}"
-               class="block bg-white rounded-xl shadow-md p-6 transition-all duration-300
-                      hover:shadow-xl hover:-translate-y-1 border border-gray-100">
+               class="block bg-white rounded-xl shadow-md p-6 transition-all duration-300 ease-out
+                      hover:shadow-2xl hover:-translate-y-1 hover:scale-[1.02]
+                      active:scale-[0.98]
+                      border border-gray-100 hover:border-[#1870BA]/30
+                      h-full flex flex-col justify-between">
 
                 <!-- Ícone -->
                 <div class="mb-4">
@@ -35,12 +39,15 @@
                 </div>
 
                 <!-- Nome -->
-                <h2 class="text-lg font-semibold text-gray-800 group-hover:text-blue-700">
+                <h2 class="text-lg font-semibold text-gray-800
+                           group-hover:text-blue-700
+                           group-hover:scale-[1.02]
+                           transition-all duration-200">
                     {{ sistema.nome }}
                 </h2>
 
                 <!-- Descrição -->
-                <p class="text-sm text-gray-500 mt-2">
+                <p class="text-sm text-gray-500 mt-2 min-h-[40px]">
                     {{ sistema.descricao }}
                 </p>
 
