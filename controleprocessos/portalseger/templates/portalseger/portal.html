@@ -53,9 +53,13 @@
 
                 <!-- Badge -->
                 {% if sistema.url == "#" %}
-                <span class="inline-block mt-3 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                    Em desenvolvimento
-                </span>
+                    <span class="inline-block mt-3 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                        Em desenvolvimento
+                    </span>
+                {% elif sistema.url == "*" %}
+                    <span class="inline-block mt-3 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                        Em homologação
+                    </span>
                 {% endif %}
 
             </a>
@@ -63,6 +67,12 @@
         </div>
         {% endfor %}
 
+    </div>
+    <!-- Brasão SEGER (fixo acima do rodapé) -->
+    <div class="fixed bottom-14 left-6 z-10 opacity-90 hover:opacity-100 transition-opacity">
+        <img src="{% static 'images/logo_seger_colorida.png' %}"
+             alt="Governo do Estado"
+             class="h-16 object-contain drop-shadow-lg">
     </div>
 
 </div>
