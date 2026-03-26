@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, CadastroUsuarios,  LogAcoes, CustomLoginView, alterar_senha,
+from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
@@ -55,8 +55,6 @@ urlpatterns = [
           name="password_reset_complete",),
     # --> Alterar senha (usuário logado)
     path("senha/alterar/", alterar_senha, name="alterar_senha",),
-    # Log de Ações
-    path('logacoes/', LogAcoes.as_view(), name='logacoes'),
     # Login
     path('fazer_login/', CustomLoginView.as_view(), name='fazer_login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

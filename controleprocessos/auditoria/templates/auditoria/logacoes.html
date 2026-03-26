@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+<div class="py-10 px-2 flex justify-center">
+  <div class="w-full max-w-[98%]">
+
+    <!-- TÍTULO -->
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">
+      Log de Ações
+      <span class="text-base font-normal text-gray-600">
+          ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }})
+      </span>
+    </h2>
+
+    <!-- TABELA -->
+    <div class="overflow-x-auto">
+      <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
+
+        <!-- HEADER -->
+        <thead class="bg-blue-100 text-blue-800">
+          <tr>
+            <th class="py-3 px-2 text-left w-[12%]">Data/Hora</th>
+            <th class="py-3 px-2 text-left w-[12%]">Usuário</th>
+            <th class="py-3 px-2 text-left w-[10%]">Perfil</th>
+            <th class="py-3 px-2 text-left w-[8%]">Ação</th>
+            <th class="py-3 px-2 text-left w-[12%]">Modelo</th>
+            <th class="py-3 px-2 text-left w-[46%]">Descrição</th>
+            <th class="py-3 px-2 text-center w-[10%]">Ações</th>
+          </tr>
+        </thead>
+
+        <!-- BODY -->
+        <tbody>
+
+        {% for log in logs %}
+
+          <tr class="text-blue-500 hover:bg-blue-100 transition-colors
+                     {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+
+            <!-- DATA -->
+            <td class="py-3 px-2">
+              {{ log.data_registro|date:"d/m/Y H:i:s" }}
+            </td>
+
+            <!-- USUÁRIO -->
+            <td class="py-3 px-2">
+              {{ log.usuario.get_full_name|default:log.usuario.username }}
+            </td>
+
+            <td class="py-3 px-2">
+              <span class="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                {{ log.usuario.perfil.nome|default:"—" }}
+              </span>
+            </td>
+
+            <!-- AÇÃO -->
+            <td class="py-3 px-2">
+              {% if log.acao == "CREATE" %}
+                <span class="px-2 py-0.5 text-xs font-semibold bg-green-200 text-green-800 rounded">
+                  {{ log.acao }}
+                </span>
+
+              {% elif log.acao == "UPDATE" %}
+                <span class="px-2 py-0.5 text-xs font-semibold bg-blue-200 text-blue-800 rounded">
+                  {{ log.acao }}
+                </span>
+
+              {% elif log.acao == "DELETE" %}
+                <span class="px-2 py-0.5 text-xs font-semibold bg-red-200 text-red-800 rounded">
+                  {{ log.acao }}
+                </span>
+
+              {% else %}
+                <span class="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-800 rounded">
+                  {{ log.acao }}
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- MODELO -->
+            <td class="py-3 px-2">
+              {{ log.modelo_afetado }}
+            </td>
+
+            <!-- DESCRIÇÃO -->
+            <td class="py-3 px-2">
+              {{ log.descricao }}
+            </td>
+
+            <!-- AÇÕES -->
+            <td class="py-3 px-2 text-center whitespace-nowrap">
+              <div class="flex justify-center items-center space-x-1.5">
+
+                <!-- VISUALIZAR -->
+                <a href="{% url 'auditoria:log_detail' log.pk %}"
+                   class="text-blue-600 hover:text-blue-800" title="Visualizar">
+
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+
+                </a>
+
+              </div>
+            </td>
+
+          </tr>
+
+        {% empty %}
+
+          <tr>
+            <td colspan="6" class="py-4 px-4 text-center text-gray-500">
+              Nenhum log encontrado.
+            </td>
+          </tr>
+
+        {% endfor %}
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    {% if is_paginated %}
+    <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
+      <div>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+
+      <div class="flex space-x-2">
+        {% if page_obj.has_previous %}
+          <a href="?page=1" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

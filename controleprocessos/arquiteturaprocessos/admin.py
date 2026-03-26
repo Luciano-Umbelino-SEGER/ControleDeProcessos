@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
 from .models import (Perfil, Telefone, Usuario, MacroprocessoNivel1, MacroprocessoNivel2,
-                     ModelagemProcesso, LogAcoes,)
+                     ModelagemProcesso)
 
 # -------------------- Inline de Telefones --------------------
 class TelefoneInline(admin.TabularInline):
@@ -116,4 +116,3 @@ admin.site.register(Telefone)
 admin.site.register(Usuario, UsuarioAdmin)
 admin.site.register(MacroprocessoNivel1)
 admin.site.register(MacroprocessoNivel2)
-admin.site.register(LogAcoes)

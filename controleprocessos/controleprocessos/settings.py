@@ -149,6 +149,7 @@ INSTALLED_APPS = [
 
     "arquiteturaprocessos",
     "portalseger",
+    "auditoria",
 
     "crispy_forms",
     "crispy_bootstrap5",

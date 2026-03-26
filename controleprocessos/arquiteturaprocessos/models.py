@@ -560,15 +560,3 @@ class ProcessoDocumento(models.Model):
         mp = self.modelagem_processo
         return f"{mp.tipo_documento.nome if mp else 'Documento'} – {mp.titulo if mp else ''}"
 
-# ============================================================
-# LOG
-# ============================================================
-
-class LogAcoes(models.Model):
-    data_registro = models.DateTimeField(default=timezone.now)
-    usuario = models.ForeignKey("Usuario", on_delete=models.CASCADE)
-    area = models.CharField(max_length=100)
-    acao = models.CharField(max_length=100)
-    descricao_acao = models.TextField(max_length=500)
-    modelo_afetado = models.CharField(max_length=100, null=True, blank=True)
-    id_referencia = models.IntegerField(null=True, blank=True)

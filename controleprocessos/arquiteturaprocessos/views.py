@@ -36,9 +36,12 @@ from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
 
 from .models import (
-    Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2, LogAcoes,
+    Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,
 )
+from auditoria.models import LogAcaoSistema
+from auditoria.services import registrar_log
+
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
@@ -1364,24 +1367,6 @@ class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
         })
         return context
 
-
-# ---------------------------------
-# LogAcoes — lista de logs (admin)
-# ---------------------------------
-class LogAcoes(LoginRequiredMixin, ListView):
-    template_name = 'usuario/logacoes.html'
-    model = LogAcoes
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-
-        if not request.user.perfil or request.user.perfil.nome.casefold() != 'administrador':
-            messages.warning(request, "Você não tem permissão para acessar esta página.")
-            return redirect('arquiteturaprocessos:arquiteturaprocessos')
-
-        return super().dispatch(request, *args, **kwargs)
-
 # ---------------------------
 # Macroprocessos N1 / N2
 # ---------------------------
@@ -2461,14 +2446,95 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     # -------------------------------------------------
     def form_valid(self, form):
         with transaction.atomic():
+
+            # 🔥 ESTADO ANTES (PROCESSO)
+            processo_original = self.get_object()
+
+            processo_antigo = Processo.objects.get(pk=processo_original.pk)
+
+            dados_antes = {
+                "nome": processo_antigo.nome,
+                "status": processo_antigo.status,
+                "classificacao": processo_antigo.classificacao_id,
+                "macro_nivel1": processo_antigo.macroprocesso_nivel1_id,
+                "macro_nivel2": processo_antigo.macroprocesso_nivel2_id,
+            }
+
+            # 🔥 ESTADO ANTES (DOCUMENTOS)
+            docs_antes = set(
+                ProcessoDocumento.objects
+                .filter(processo=processo_original)
+                .values_list("modelagem_processo__titulo", flat=True)
+            )
+
+            # -----------------------------------------
+            # SALVANDO PROCESSO
+            # -----------------------------------------
             processo = form.save(commit=False)
 
             processo.usuario_atualizacao = self.request.user
             processo.data_atualizacao = timezone.now()
             processo.save()
 
-            # 🔥 DOCUMENTOS (1 → N)
+            # -----------------------------------------
+            # SALVANDO DOCUMENTOS
+            # -----------------------------------------
             salvar_documentos_processo(self.request, processo)
+
+            # 🔥 ESTADO DEPOIS (PROCESSO)
+            dados_depois = {
+                "nome": processo.nome,
+                "status": processo.status,
+                "classificacao": processo.classificacao_id,
+                "macro_nivel1": processo.macroprocesso_nivel1_id,
+                "macro_nivel2": processo.macroprocesso_nivel2_id,
+            }
+
+            # 🔥 ESTADO DEPOIS (DOCUMENTOS)
+            docs_depois = set(
+                ProcessoDocumento.objects
+                .filter(processo=processo)
+                .values_list("modelagem_processo__titulo", flat=True)
+            )
+
+            adicionados = docs_depois - docs_antes
+            removidos = docs_antes - docs_depois
+
+            # -----------------------------------------
+            # 🔥 LOG DO PROCESSO
+            # -----------------------------------------
+            registrar_log(
+                request=self.request,
+                acao="UPDATE",
+                modelo="Processo",
+                objeto_id=str(processo.id),
+                descricao=f"Processo '{processo.nome}' atualizado",
+                dados_antes=dados_antes,
+                dados_depois=dados_depois,
+            )
+
+            # -----------------------------------------
+            # 🔥 LOG DOS DOCUMENTOS (SE HOUVER ALTERAÇÃO)
+            # -----------------------------------------
+            if adicionados or removidos:
+
+                descricao_docs = []
+
+                if adicionados:
+                    descricao_docs.append(f"Adicionados: {', '.join(adicionados)}")
+
+                if removidos:
+                    descricao_docs.append(f"Removidos: {', '.join(removidos)}")
+
+                registrar_log(
+                    request=self.request,
+                    acao="UPDATE",
+                    modelo="ProcessoDocumento",
+                    objeto_id=str(processo.id),
+                    descricao=" | ".join(descricao_docs),
+                    dados_antes={"documentos": list(docs_antes)},
+                    dados_depois={"documentos": list(docs_depois)},
+                )
 
         messages.success(
             self.request,

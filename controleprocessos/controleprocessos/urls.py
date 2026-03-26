@@ -18,6 +18,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(('arquiteturaprocessos.urls', 'arquiteturaprocessos'), namespace='arquiteturaprocessos')),
     path("portal/", include(("portalseger.urls", "portalseger"), namespace="portalseger")),
+    path("", include("auditoria.urls")),
 ]
 
 
