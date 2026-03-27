@@ -56,26 +56,28 @@
 
             <!-- AÇÃO -->
             <td class="py-3 px-2">
-              {% if log.acao == "CREATE" %}
-                <span class="px-2 py-0.5 text-xs font-semibold bg-green-200 text-green-800 rounded">
-                  {{ log.acao }}
-                </span>
+                <span class="w-[90px] inline-block text-center px-2 py-1 text-xs font-semibold rounded
 
-              {% elif log.acao == "UPDATE" %}
-                <span class="px-2 py-0.5 text-xs font-semibold bg-blue-200 text-blue-800 rounded">
-                  {{ log.acao }}
+                    {% if log.acao == "CREATE" %}
+                        bg-cyan-200 text-cyan-800
+                    {% elif log.acao == "UPDATE" %}
+                        bg-blue-200 text-blue-800
+                    {% elif log.acao == "DELETE" %}
+                        bg-red-200 text-red-800
+                    {% elif log.acao == "LOGIN" %}
+                        bg-green-200 text-green-800
+                    {% elif log.acao == "LOGOUT" %}
+                        bg-yellow-200 text-yellow-800
+                    {% elif log.acao == "VIEW" %}
+                        bg-purple-200 text-purple-800
+                    {% elif log.acao == "ERROR" %}
+                        bg-gray-400 text-white
+                    {% else %}
+                        bg-gray-200 text-gray-800
+                    {% endif %}
+                ">
+                    {{ log.acao }}
                 </span>
-
-              {% elif log.acao == "DELETE" %}
-                <span class="px-2 py-0.5 text-xs font-semibold bg-red-200 text-red-800 rounded">
-                  {{ log.acao }}
-                </span>
-
-              {% else %}
-                <span class="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-800 rounded">
-                  {{ log.acao }}
-                </span>
-              {% endif %}
             </td>
 
             <!-- MODELO -->

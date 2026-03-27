@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}
+Visualização de Log de Ação
+{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-lg">
+
+    <h2 class="text-2xl font-bold text-center mb-8 text-blue-800">
+        Detalhes do Log de Ação
+    </h2>
+
+    <!-- 🔹 INFORMAÇÕES DO LOG -->
+    <div class="grid grid-cols-12 gap-6 mb-6">
+
+        <!-- Data -->
+        <div class="col-span-3">
+            <label class="block text-sm font-medium text-blue-700">Data/Hora</label>
+            <input type="text" value="{{ log.data_registro|date:'d/m/Y H:i:s' }}" readonly
+                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-black pointer-events-none">
+        </div>
+
+        <!-- Usuário -->
+        <div class="col-span-3">
+            <label class="block text-sm font-medium text-blue-700">Usuário</label>
+            <input type="text"
+                   value="{% if log.usuario %}{{ log.usuario.get_full_name|default:log.usuario.username }}{% else %}Sistema{% endif %}"
+                   readonly
+                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-black pointer-events-none">
+        </div>
+
+        <!-- 🔥 PERFIL MAIOR -->
+        <div class="col-span-5">
+            <label class="block text-sm font-medium text-blue-700">Perfil</label>
+            <input type="text"
+                   value="{% if log.usuario and log.usuario.perfil %}{{ log.usuario.perfil.nome }}{% else %}—{% endif %}"
+                   readonly
+                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-black pointer-events-none">
+        </div>
+
+        <!-- 🔥 AÇÃO PERFEITAMENTE ALINHADA -->
+        <div class="col-span-1 flex flex-col items-end justify-start">
+
+            <!-- label alinhado com o badge -->
+            <div class="w-[90px] text-center">
+                <label class="text-sm font-medium text-blue-700">
+                    Ação
+                </label>
+            </div>
+
+            {% with acao=log.acao %}
+            <span class="mt-1 w-[90px] text-center px-2 py-1 text-xs font-semibold rounded
+                {% if acao == "CREATE" %}
+                    bg-cyan-200 text-cyan-800
+                {% elif acao == "UPDATE" %}
+                    bg-blue-200 text-blue-800
+                {% elif acao == "DELETE" %}
+                    bg-red-200 text-red-800
+                {% elif acao == "LOGIN" %}
+                    bg-green-200 text-green-800
+                {% elif acao == "LOGOUT" %}
+                    bg-yellow-200 text-yellow-800
+                {% elif acao == "VIEW" %}
+                    bg-purple-200 text-purple-800
+                {% elif acao == "ERROR" %}
+                    bg-gray-400 text-white
+                {% else %}
+                    bg-gray-200 text-gray-800
+                {% endif %}
+            ">
+                {{ acao }}
+            </span>
+            {% endwith %}
+
+        </div>
+
+    </div>
+
+    <!-- 🔹 MODELO / DESCRIÇÃO -->
+    <div class="grid grid-cols-2 gap-6 mb-6">
+
+        <div>
+            <label class="block text-sm font-medium text-blue-700">Modelo</label>
+            <input type="text"
+                   value="{{ log.modelo_afetado|default:'—' }}"
+                   readonly
+                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black pointer-events-none">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-blue-700">Descrição</label>
+            <input type="text"
+                   value="{{ log.descricao|default:'—' }}"
+                   readonly
+                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black pointer-events-none">
+        </div>
+
+    </div>
+
+    <!-- 🔹 ALTERAÇÕES -->
+    {% if diff %}
+    <div class="mb-6">
+        <label class="block text-sm font-bold text-blue-800 mb-2">
+            Alterações Realizadas
+        </label>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+
+            {% for item in diff %}
+            <div class="mb-3">
+
+                <div class="font-semibold text-gray-800">
+                    {{ item.campo|title }}
+                </div>
+
+                <div class="text-sm">
+                    <span class="text-red-600 font-medium">
+                        {{ item.antes }}
+                    </span>
+
+                    →
+
+                    <span class="text-green-600 font-medium">
+                        {{ item.depois }}
+                    </span>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+    {% else %}
+    <div class="mb-6 text-sm text-gray-500 italic">
+        Nenhuma alteração nos campos monitorados.
+    </div>
+    {% endif %}
+
+    <!-- 🔴 DADOS ANTES -->
+    <div class="mb-6">
+        <label class="block text-sm font-bold text-red-700 mb-2">
+            Dados Antes
+        </label>
+
+        <pre class="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-gray-800 overflow-x-auto">
+            {{ dados_antes_formatado }}
+        </pre>
+    </div>
+
+    <!-- 🟢 DADOS DEPOIS -->
+    <div class="mb-6">
+        <label class="block text-sm font-bold text-green-700 mb-2">
+            Dados Depois
+        </label>
+
+        <pre class="bg-green-50 border border-green-200 rounded-md p-4 text-sm text-gray-800 overflow-x-auto">
+            {{ dados_depois_formatado }}
+        </pre>
+    </div>
+
+    <!-- 🔙 BOTÃO -->
+    <div class="flex justify-end mt-8">
+        <a href="{% url 'auditoria:log_list' %}"
+           class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition">
+            Voltar
+        </a>
+    </div>
+
+</div>
+{% endblock %}
