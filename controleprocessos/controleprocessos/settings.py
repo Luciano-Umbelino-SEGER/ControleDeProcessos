@@ -149,7 +149,7 @@ INSTALLED_APPS = [
 
     "arquiteturaprocessos",
     "portalseger",
-    "auditoria",
+    "auditoria.apps.AuditoriaConfig",
 
     "crispy_forms",
     "crispy_bootstrap5",
@@ -164,6 +164,7 @@ MIDDLEWARE = [
     "arquiteturaprocessos.middleware.ForceLogoutOnPasswordResetMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "auditoria.middleware.AuditoriaMiddleware",
 ]
 
 ROOT_URLCONF = "controleprocessos.urls"

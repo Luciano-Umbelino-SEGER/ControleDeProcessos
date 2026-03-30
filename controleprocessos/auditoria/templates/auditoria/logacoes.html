@@ -45,37 +45,47 @@
 
             <!-- USUÁRIO -->
             <td class="py-3 px-2">
-              {{ log.usuario.get_full_name|default:log.usuario.username }}
+              {% if log.usuario %}
+                  {{ log.usuario.get_full_name|default:log.usuario.username }}
+              {% else %}
+                  <span class="text-blue-600 font-medium italic">Sistema</span>
+              {% endif %}
             </td>
 
+            <!-- PERFIL -->
             <td class="py-3 px-2">
-              <span class="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
-                {{ log.usuario.perfil.nome|default:"—" }}
-              </span>
+              {% if log.usuario and log.usuario.perfil %}
+                  <span class="px-2 py-0.5 text-xs font-semibold bg-gray-200 text-gray-700 rounded">
+                      {{ log.usuario.perfil.nome }}
+                  </span>
+              {% else %}
+                  <span class="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-400 rounded">
+                      —
+                  </span>
+              {% endif %}
             </td>
 
             <!-- AÇÃO -->
             <td class="py-3 px-2">
                 <span class="w-[90px] inline-block text-center px-2 py-1 text-xs font-semibold rounded
 
-                    {% if log.acao == "CREATE" %}
+                    {% if log.acao == 'CREATE' %}
                         bg-cyan-200 text-cyan-800
-                    {% elif log.acao == "UPDATE" %}
+                    {% elif log.acao == 'UPDATE' %}
                         bg-blue-200 text-blue-800
-                    {% elif log.acao == "DELETE" %}
+                    {% elif log.acao == 'DELETE' %}
                         bg-red-200 text-red-800
-                    {% elif log.acao == "LOGIN" %}
+                    {% elif log.acao == 'LOGIN' %}
                         bg-green-200 text-green-800
-                    {% elif log.acao == "LOGOUT" %}
+                    {% elif log.acao == 'LOGOUT' %}
                         bg-yellow-200 text-yellow-800
-                    {% elif log.acao == "VIEW" %}
+                    {% elif log.acao == 'VIEW' %}
                         bg-purple-200 text-purple-800
-                    {% elif log.acao == "ERROR" %}
+                    {% elif log.acao == 'ERROR' %}
                         bg-gray-400 text-white
                     {% else %}
                         bg-gray-200 text-gray-800
-                    {% endif %}
-                ">
+                    {% endif %}">
                     {{ log.acao }}
                 </span>
             </td>
@@ -116,7 +126,7 @@
         {% empty %}
 
           <tr>
-            <td colspan="6" class="py-4 px-4 text-center text-gray-500">
+            <td colspan="7" class="py-4 px-4 text-center text-gray-500">
               Nenhum log encontrado.
             </td>
           </tr>

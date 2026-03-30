@@ -1,21 +1,30 @@
 import json
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView
+from django.contrib import messages
+from django.shortcuts import redirect
+
 from .models import LogAcaoSistema
+from .utils import gerar_diff
 
 
 # --------------------------------------------------------#
 # 🔐 Restrição de acesso — apenas administradores          #
 # --------------------------------------------------------#
 class AdminOnlyMixin(UserPassesTestMixin):
+
     def test_func(self):
         return self.request.user.is_superuser
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Acesso restrito a administradores.")
+        return redirect("home")  # ajuste se necessário
 
 
 # --------------------------------#
 # 📋 Listagem de Logs             #
 # --------------------------------#
-class LogAcaoListView(LoginRequiredMixin, AdminOnlyMixin, ListView):
+class LogAcaoListView(AdminOnlyMixin, LoginRequiredMixin, ListView):
     model = LogAcaoSistema
     template_name = "auditoria/logacoes.html"
     context_object_name = "logs"
@@ -30,33 +39,9 @@ class LogAcaoListView(LoginRequiredMixin, AdminOnlyMixin, ListView):
 
 
 # --------------------------------#
-# 🔍 Função para gerar diferenças #
-# --------------------------------#
-def gerar_diff(antes, depois):
-    if not antes or not depois:
-        return []
-
-    diff = []
-    chaves = set(antes.keys()) | set(depois.keys())
-
-    for chave in chaves:
-        valor_antes = antes.get(chave)
-        valor_depois = depois.get(chave)
-
-        if valor_antes != valor_depois:
-            diff.append({
-                "campo": chave,
-                "antes": valor_antes,
-                "depois": valor_depois,
-            })
-
-    return diff
-
-
-# --------------------------------#
 # 📄 Detalhe do Log              #
 # --------------------------------#
-class LogAcaoDetailView(LoginRequiredMixin, AdminOnlyMixin, DetailView):
+class LogAcaoDetailView(AdminOnlyMixin, LoginRequiredMixin, DetailView):
     model = LogAcaoSistema
     template_name = "auditoria/form_logacoes.html"
     context_object_name = "log"
@@ -66,22 +51,24 @@ class LogAcaoDetailView(LoginRequiredMixin, AdminOnlyMixin, DetailView):
             "usuario", "usuario__perfil"
         )
 
+    def formatar_json(self, dados):
+        try:
+            return json.dumps(dados or {}, indent=2, ensure_ascii=False)
+        except Exception:
+            return "{}"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         log = self.object
 
-        # 🔹 JSON formatado (para exibição bonita)
-        context["dados_antes_formatado"] = (
-            json.dumps(log.dados_antes, indent=2, ensure_ascii=False)
-            if log.dados_antes else "{}"
-        )
+        # 🔹 JSON formatado
+        context["dados_antes_formatado"] = self.formatar_json(log.dados_antes)
+        context["dados_depois_formatado"] = self.formatar_json(log.dados_depois)
 
-        context["dados_depois_formatado"] = (
-            json.dumps(log.dados_depois, indent=2, ensure_ascii=False)
-            if log.dados_depois else "{}"
-        )
-
-        # 🔹 Diff amigável
-        context["diff"] = gerar_diff(log.dados_antes, log.dados_depois)
+        # 🔹 Diff só para UPDATE
+        if log.acao == "UPDATE":
+            context["diff"] = gerar_diff(log.dados_antes, log.dados_depois)
+        else:
+            context["diff"] = []
 
         return context
