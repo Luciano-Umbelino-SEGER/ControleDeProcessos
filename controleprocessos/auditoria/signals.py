@@ -7,7 +7,8 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out
 
 from .models import LogAcaoSistema
 from auditoria.middleware import get_current_user
-from .utils import gerar_diff
+from .utils import gerar_diff, obter_usuario_log
+from django.contrib.auth.models import AnonymousUser
 
 # 🔥 MODELOS QUE NÃO DEVEM SER LOGADOS
 MODELOS_IGNORADOS = [
@@ -15,6 +16,16 @@ MODELOS_IGNORADOS = [
     "Session",
 ]
 
+# -----------------------------------------
+# Obtém o usuário logado
+# -----------------------------------------
+def get_usuario_logado_seguro():
+    user = get_current_user()
+
+    if isinstance(user, AnonymousUser):
+        return None
+
+    return user
 
 # -----------------------------------------
 # SERIALIZAÇÃO
@@ -55,19 +66,33 @@ def log_create_update(sender, instance, created, **kwargs):
     if sender.__name__ in MODELOS_IGNORADOS:
         return
 
+    # 🚫 IGNORAR alteração de senha (tratada manualmente)
+    if sender.__name__ == "Usuario" and not created:
+        campos_ignorados = ["password", "last_login"]
+
+        dados_antes = getattr(instance, "_dados_antes", {})
+        dados_depois = serializar(instance)
+
+        alteracoes = [
+            k for k in dados_depois.keys()
+            if dados_antes.get(k) != dados_depois.get(k)
+        ]
+
+        if all(campo in campos_ignorados for campo in alteracoes):
+            return
+
     dados_depois = serializar(instance)
     dados_antes = getattr(instance, "_dados_antes", {})
 
     diff = gerar_diff(dados_antes, dados_depois)
 
-    # 🔥 NÃO LOGA ALTERAÇÃO IRRELEVANTE
     if not diff:
         return
 
     acao = "CREATE" if created else "UPDATE"
 
     LogAcaoSistema.objects.create(
-        usuario=get_current_user(),  # 🔥 CORRETO
+        usuario=get_usuario_logado_seguro(),  # 🔥 AQUI
         acao=acao,
         modelo_afetado=sender.__name__,
         descricao=f"{sender.__name__} {'criado' if created else 'atualizado'}",
@@ -86,7 +111,7 @@ def log_delete(sender, instance, **kwargs):
         return
 
     LogAcaoSistema.objects.create(
-        usuario=get_current_user(),  # 🔥 CORRETO
+        usuario=get_usuario_logado_seguro(),  # 🔥 CORRETO
         acao="DELETE",
         modelo_afetado=sender.__name__,
         descricao=f"{sender.__name__} excluído",

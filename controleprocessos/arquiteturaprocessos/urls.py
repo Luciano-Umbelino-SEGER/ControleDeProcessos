@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, alterar_senha,
+from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, CustomPasswordResetConfirmView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
@@ -48,7 +48,7 @@ urlpatterns = [
     path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
     # --> Reset de Senha (fluxo por link)
     path("usuario/<int:pk>/resetar-senha/", views.resetar_senha_usuario, name="resetar_senha_usuario",),
-    path("senha/reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(
+    path("senha/reset/<uidb64>/<token>/", CustomPasswordResetConfirmView.as_view(
           template_name="usuario/password_reset_confirm.html", success_url=reverse_lazy("arquiteturaprocessos:password_reset_complete"),),
           name="password_reset_confirm",),
     path("senha/reset/concluido/", auth_views.PasswordResetCompleteView.as_view(template_name="usuario/password_reset_complete.html"),

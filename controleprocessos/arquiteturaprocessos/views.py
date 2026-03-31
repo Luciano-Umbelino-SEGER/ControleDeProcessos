@@ -13,7 +13,7 @@ from django.urls import reverse, reverse_lazy
 from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetConfirmView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
@@ -47,6 +47,8 @@ from .forms import (
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
+from auditoria.utils import registrar_log
+
 # ---------------------------------------------------
 # Utility to safely generate a username from names
 # ---------------------------------------------------
@@ -218,16 +220,29 @@ class CustomLoginView(LoginView):
 def alterar_senha(request):
     if request.method == "POST":
         form = PasswordChangeForm(user=request.user, data=request.POST)
+
         if form.is_valid():
             user = form.save()
 
             update_session_auth_hash(request, user)
+
+            # 🔥 LOG DA ALTERAÇÃO DE SENHA
+            registrar_log(
+                usuario=user,  # 🎯 próprio usuário
+                acao="UPDATE",
+                modelo="Autenticação",
+                descricao="Usuário alterou sua senha",
+                dados_depois={
+                    "username": user.username
+                }
+            )
 
             messages.success(
                 request,
                 "Senha alterada com sucesso."
             )
             return redirect("arquiteturaprocessos:arquiteturaprocessos")
+
     else:
         form = PasswordChangeForm(user=request.user)
 
@@ -255,7 +270,26 @@ def resetar_senha_usuario(request, pk):
         is_master=False
     )
 
-    definir_senha_e_enviar_email(usuario, reset=True)
+    try:
+        # 🔥 ENVIA EMAIL CORRETO
+        definir_senha_e_enviar_email(usuario, reset=True)
+
+        # 🔥 LOG CORRETO
+        registrar_log(
+            usuario=request.user,  # 👤 ADMIN (executor)
+            acao="UPDATE",
+            modelo="Autenticação",
+            descricao=f"Administrador solicitou redefinição de senha para {usuario.get_full_name()}",
+            dados_depois={
+                "usuario_afetado": usuario.username
+            }
+        )
+
+    except Exception as e:
+        messages.warning(
+            request,
+            "Houve falha ao enviar o e-mail de redefinição de senha."
+        )
 
     messages.success(
         request,
@@ -1296,6 +1330,42 @@ class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
             'modo_exclusao': False,
         })
         return context
+
+    # 🔥 AQUI ESTAVA FALTANDO
+    def form_valid(self, form):
+        context = self.get_context_data()
+        telefones = context['telefones']
+
+        if not telefones.is_valid():
+            messages.error(self.request, "Corrija os erros abaixo nos telefones.")
+            return self.render_to_response(self.get_context_data(form=form))
+
+        usuario = form.save(commit=False)
+
+        # 🔥 Marca usuário para auditoria (IMPORTANTE pro seu log!)
+        usuario.usuario_atualizacao = self.request.user
+
+        usuario.save()
+
+        telefones.instance = usuario
+        telefones.save()
+
+        messages.success(
+            self.request,
+            f"Usuário {usuario.get_full_name()} atualizado com sucesso!"
+        )
+
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            "Não foi possível atualizar o usuário. Corrija os erros abaixo."
+        )
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:cadastrousuarios')
 
 # -------------------------------
 # Usuário — Excluir (desativar)
@@ -2776,5 +2846,29 @@ def concluir_processo(request, pk):
 
     return redirect("arquiteturaprocessos:processos")
 
+# -------------------------------------
+# View customizada para Reset de Senha
+# -------------------------------------
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
 
+        user = self.user if self.user else None  # 🔥 usuário alvo (quem está redefinindo)
+
+        try:
+            registrar_log(
+                usuario=user,
+                acao="UPDATE",
+                modelo="Autenticação",
+                descricao="Usuário definiu/redefiniu sua senha via link de recuperação",
+                dados_depois={
+                    "username": user.username,
+                    "nome": user.get_full_name()
+                }
+            )
+        except Exception:
+            # 🔒 Segurança: nunca quebrar fluxo de senha
+            pass
+
+        return response

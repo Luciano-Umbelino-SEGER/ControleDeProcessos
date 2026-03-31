@@ -96,7 +96,6 @@ no navegador da máquina virtual.
         fail_silently=False,
     )
 
-
 # -----------------------------------------------------------
 # Função utilitária para conversão segura de datas (filtros)
 # -----------------------------------------------------------
