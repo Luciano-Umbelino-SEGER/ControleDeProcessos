@@ -3,6 +3,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.db.models import Q, Value
+from django.db.models.functions import Concat
 
 from .models import LogAcaoSistema
 from .utils import gerar_diff
@@ -28,14 +30,66 @@ class LogAcaoListView(AdminOnlyMixin, LoginRequiredMixin, ListView):
     model = LogAcaoSistema
     template_name = "auditoria/logacoes.html"
     context_object_name = "logs"
-    paginate_by = 20
+    paginate_by = 10
 
     def get_queryset(self):
-        return (
+        queryset = (
             LogAcaoSistema.objects
             .select_related("usuario", "usuario__perfil")
             .order_by("-data_registro")
         )
+
+        # 🔍 FILTROS
+        usuario = self.request.GET.get("usuario")
+        perfil = self.request.GET.get("perfil")
+        acao = self.request.GET.get("acao")
+        modelo = self.request.GET.get("modelo")
+        data_inicio = self.request.GET.get("data_inicio")
+        data_fim = self.request.GET.get("data_fim")
+
+        if usuario:
+            queryset = queryset.annotate(
+                nome_completo=Concat("usuario__first_name", Value(" "), "usuario__last_name")
+            ).filter(
+                Q(usuario__username__icontains=usuario) |
+                Q(nome_completo__icontains=usuario)
+            )
+
+        if perfil:
+            queryset = queryset.filter(usuario__perfil__nome__icontains=perfil)
+
+        if acao:
+            queryset = queryset.filter(acao=acao)
+
+        if modelo:
+            queryset = queryset.filter(modelo_afetado__icontains=modelo)
+
+        if data_inicio:
+            queryset = queryset.filter(data_registro__date__gte=data_inicio)
+
+        if data_fim:
+            queryset = queryset.filter(data_registro__date__lte=data_fim)
+
+        return queryset  # 🔥 ESSENCIAL
+
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        query_params = self.request.GET.copy()
+        if "page" in query_params:
+            query_params.pop("page")
+
+        context["query_string"] = query_params.urlencode()
+
+        return context  # 🔥 posição correta
 
 
 # --------------------------------#

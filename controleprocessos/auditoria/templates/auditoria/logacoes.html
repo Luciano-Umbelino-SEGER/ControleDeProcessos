@@ -13,6 +13,102 @@
       </span>
     </h2>
 
+    <!-- FILTROS -->
+    <form method="GET" class="mb-4">
+
+      <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
+
+        <div class="flex items-end justify-between gap-4 flex-nowrap w-full">
+
+          <!-- CAMPOS -->
+          <div class="flex items-end gap-3 flex-nowrap">
+
+            <!-- Usuário -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Usuário</label>
+              <input name="usuario" type="text"
+                     class="w-52 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.usuario }}">
+            </div>
+
+            <!-- Perfil 🔥 NOVO -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Perfil</label>
+              <input name="perfil" type="text"
+                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.perfil }}">
+            </div>
+
+            <!-- Ação -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Ação</label>
+              <select name="acao"
+                      class="w-36 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 text-black">
+                <option value="">Todas</option>
+                <option value="CREATE" {% if request.GET.acao == "CREATE" %}selected{% endif %}>CREATE</option>
+                <option value="UPDATE" {% if request.GET.acao == "UPDATE" %}selected{% endif %}>UPDATE</option>
+                <option value="DELETE" {% if request.GET.acao == "DELETE" %}selected{% endif %}>DELETE</option>
+                <option value="LOGIN" {% if request.GET.acao == "LOGIN" %}selected{% endif %}>LOGIN</option>
+                <option value="LOGOUT" {% if request.GET.acao == "LOGOUT" %}selected{% endif %}>LOGOUT</option>
+              </select>
+            </div>
+
+            <!-- Modelo -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Modelo</label>
+              <input name="modelo" type="text"
+                     class="w-52 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.modelo }}">
+            </div>
+
+            <!-- Datas -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">De</label>
+              <input name="data_inicio" type="date"
+                     class="w-36 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.data_inicio }}">
+            </div>
+
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Até</label>
+              <input name="data_fim" type="date"
+                     class="w-36 px-2 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-black"
+                     value="{{ request.GET.data_fim }}">
+            </div>
+
+            <!-- REGISTROS/PÁGINA 🔥 -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Registros/Página</label>
+              <select name="page_size"
+                      class="w-28 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 text-black">
+                <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
+                <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
+                <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
+                <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
+              </select>
+            </div>
+
+          </div>
+
+          <!-- BOTÕES -->
+          <div class="flex items-center gap-3 ml-auto">
+
+            <button type="submit"
+                    class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+              Filtrar
+            </button>
+
+            <a href="{% url 'auditoria:log_list' %}"
+               class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+              Limpar
+            </a>
+
+          </div>
+
+        </div>
+      </div>
+    </form>
+
     <!-- TABELA -->
     <div class="overflow-x-auto">
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
@@ -140,18 +236,25 @@
     <!-- PAGINAÇÃO -->
     {% if is_paginated %}
     <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
-      <div>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+
+      <div>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </div>
 
       <div class="flex space-x-2">
+
         {% if page_obj.has_previous %}
-          <a href="?page=1" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
-          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+          <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+
+          <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
         {% endif %}
 
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
-          <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+          <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+
+          <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
         {% endif %}
+
       </div>
     </div>
     {% endif %}
