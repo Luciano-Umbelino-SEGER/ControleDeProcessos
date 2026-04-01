@@ -251,3 +251,13 @@ LOGGING = {
     },
     "root": {"handlers": ["console"], "level": LOG_LEVEL},
 }
+
+# ----------------------------------------
+# 🔥 CACHE (controle de tentativas de login)
+# ----------------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "sigemp-cache",
+    }
+}

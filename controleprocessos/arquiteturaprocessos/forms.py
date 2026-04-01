@@ -80,7 +80,7 @@ class CustomAuthenticationForm(AuthenticationForm):
 
                 if not user.check_password(password):
                     raise forms.ValidationError(
-                        "Usuário ou senha incorretos. Verifique os dados e tente novamente.",
+                        "LOGIN INVÁLIDO",
                         code='invalid_login',
                     )
 
@@ -90,12 +90,11 @@ class CustomAuthenticationForm(AuthenticationForm):
                         code='inactive',
                     )
 
-                # define o usuário autenticado
                 self.user_cache = user
 
             except UserModel.DoesNotExist:
                 raise forms.ValidationError(
-                    "Usuário ou senha incorretos. Verifique os dados e tente novamente.",
+                    "LOGIN INVÁLIDO",
                     code='invalid_login',
                 )
 

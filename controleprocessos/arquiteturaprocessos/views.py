@@ -17,6 +17,7 @@ from django.contrib.auth.views import LoginView, PasswordResetConfirmView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
+from django import forms
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
 from django.db import IntegrityError, transaction
@@ -47,7 +48,8 @@ from .forms import (
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
-from auditoria.utils import registrar_log
+
+from auditoria.utils import (registrar_log, registrar_tentativa, esta_bloqueado, resetar_tentativas)
 
 # ---------------------------------------------------
 # Utility to safely generate a username from names
@@ -204,6 +206,13 @@ def salvar_documentos_processo(request, processo):
 # ---------------------------
 # Login view
 # ---------------------------
+def get_client_ip(request):
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0]
+    return request.META.get("REMOTE_ADDR")
+
+
 class CustomLoginView(LoginView):
     template_name = 'usuario/fazer_login.html'
     authentication_form = CustomAuthenticationForm
@@ -212,6 +221,94 @@ class CustomLoginView(LoginView):
         if request.user.is_authenticated:
             return redirect('arquiteturaprocessos:arquiteturaprocessos')
         return super().dispatch(request, *args, **kwargs)
+
+    # 🔥 👇 INSERIR AQUI
+    def form_valid(self, form):
+        username = self.request.POST.get("username", "").strip()
+        ip = get_client_ip(self.request)
+
+        # 🚫 BLOQUEIO ANTES DE AUTENTICAR
+        if esta_bloqueado(username, ip):
+            messages.error(
+                self.request,
+                "Muitas tentativas inválidas. Tente novamente em alguns minutos."
+            )
+            return self.form_invalid(form)
+
+        # ✔ LOGIN OK → RESETA TENTATIVAS
+        resetar_tentativas(username, ip)
+
+        return super().form_valid(form)
+
+    # 🔽 já existe
+    def form_invalid(self, form):
+        username = self.request.POST.get("username", "").strip()
+        ip = get_client_ip(self.request)
+
+        # 📊 REGISTRA TENTATIVA
+        tentativas = registrar_tentativa(username, ip)
+
+        # 🔒 VERIFICA BLOQUEIO
+        bloqueado = esta_bloqueado(username, ip)
+
+        # 🎨 DEFINE COR DINÂMICA
+        if tentativas >= 5:
+            cor = "text-red-700"
+        elif tentativas >= 4:
+            cor = "text-orange-600"
+        else:
+            cor = "text-gray-700"
+
+        # 🧠 MENSAGEM FINAL
+        if bloqueado:
+            mensagem = "Usuário temporariamente bloqueado por excesso de tentativas."
+        else:
+            mensagem = f"Tentativas: {tentativas}/5"
+
+        # 🎯 CONTADOR COM CORES
+        if bloqueado:
+            mensagem = "🔴 Usuário temporariamente bloqueado por excesso de tentativas."
+
+        elif tentativas == 1:
+            mensagem = f"🟢  Tentativas: {tentativas}/5"
+
+        elif tentativas in [2, 3]:
+            mensagem = f"🟠 Tentativas: {tentativas}/5"
+
+        elif tentativas >= 4:
+            mensagem = f"🔴 Tentativas: {tentativas}/5"
+
+        form.add_error(
+            None,
+            f"Usuário ou senha incorretos. {mensagem}"
+        )
+
+        # 🔥 LOG (mantém como está)
+        if bloqueado:
+            registrar_log(
+                usuario=None,
+                acao="LOGIN_BLOQUEADO",
+                modelo="Autenticação",
+                descricao="Usuário bloqueado por excesso de tentativas de login",
+                dados_depois={
+                    "username": username,
+                    "ip": ip,
+                    "tentativas": tentativas,
+                }
+            )
+        else:
+            registrar_log(
+                usuario=None,
+                acao="LOGIN_ERRO",
+                modelo="Autenticação",
+                descricao=f"Tentativa inválida ({tentativas}/5)",
+                dados_depois={
+                    "username": username,
+                    "ip": ip,
+                }
+            )
+
+        return super().form_invalid(form)
 
 # ---------------------------
 # Alterar Senha

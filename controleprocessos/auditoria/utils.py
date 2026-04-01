@@ -1,6 +1,10 @@
 from django.contrib.auth.models import AnonymousUser
 from auditoria.middleware import get_current_user
 from auditoria.models import LogAcaoSistema
+from django.core.cache import cache
+
+MAX_TENTATIVAS = 5
+TEMPO_BLOQUEIO = 600  # 10 minutos
 
 # --------------------------------#
 # 🔍 Função para gerar diferenças #
@@ -64,13 +68,13 @@ def obter_usuario_log(instance=None, user_override=None):
     Retorna o usuário correto para log:
 
     Prioridade:
-    1. user_override (usado em casos especiais, ex: reset de senha)
+    1. user_override (reset de senha, ações manuais)
     2. instance.usuario_atualizacao
     3. usuário do middleware
-    4. None (se for Anonymous)
+    4. None (Sistema)
     """
 
-    # 🔥 1. CASO EXPLÍCITO (RESET DE SENHA, ETC)
+    # 🔥 1. CASO EXPLÍCITO
     if user_override:
         return user_override
 
@@ -82,19 +86,28 @@ def obter_usuario_log(instance=None, user_override=None):
     # 🔥 3. MIDDLEWARE
     user = get_current_user()
 
-    if isinstance(user, AnonymousUser) or not user:
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+
+    if isinstance(user, AnonymousUser):
         return None
 
     return user
 
+
 # -----------------------------------#
 # Função para Registro Manual de Log #
 # -----------------------------------#
-def registrar_log(usuario=None, acao=None, modelo=None, descricao=None,
-                  dados_antes=None, dados_depois=None):
+def registrar_log(
+    usuario=None,
+    acao=None,
+    modelo=None,
+    descricao=None,
+    dados_antes=None,
+    dados_depois=None
+):
 
-    if isinstance(usuario, AnonymousUser):
-        usuario = None
+    usuario = obter_usuario_log(user_override=usuario)
 
     LogAcaoSistema.objects.create(
         usuario=usuario,
@@ -104,3 +117,58 @@ def registrar_log(usuario=None, acao=None, modelo=None, descricao=None,
         dados_antes=dados_antes or {},
         dados_depois=dados_depois or {},
     )
+
+# ------------------------------------------------------#
+# 🔐 Geração de chave única para controle de tentativas #
+# ------------------------------------------------------#
+def get_cache_key(username, ip):
+    """
+    Cria uma chave única baseada no username e IP.
+    Isso permite controlar tentativas por usuário + origem.
+    """
+    return f"login_tentativas:{username}:{ip}"
+
+
+# ------------------------------------------------------#
+# 📊 Registro de tentativa de login inválida            #
+# ------------------------------------------------------#
+def registrar_tentativa(username, ip):
+    """
+    Incrementa o número de tentativas inválidas de login
+    para um determinado usuário/IP e armazena no cache.
+
+    Retorna o total atual de tentativas.
+    """
+    key = get_cache_key(username, ip)
+
+    tentativas = cache.get(key, 0) + 1
+    cache.set(key, tentativas, timeout=TEMPO_BLOQUEIO)
+
+    return tentativas
+
+
+# ------------------------------------------------------#
+# 🚫 Verifica se usuário/IP está bloqueado              #
+# ------------------------------------------------------#
+def esta_bloqueado(username, ip):
+    """
+    Verifica se o número de tentativas excedeu o limite permitido.
+
+    Retorna True se estiver bloqueado, False caso contrário.
+    """
+    key = get_cache_key(username, ip)
+    tentativas = cache.get(key, 0)
+
+    return tentativas >= MAX_TENTATIVAS
+
+
+# ------------------------------------------------------#
+# 🔄 Reset de tentativas após login bem-sucedido        #
+# ------------------------------------------------------#
+def resetar_tentativas(username, ip):
+    """
+    Remove o registro de tentativas do cache após login válido,
+    liberando o usuário para novas tentativas futuras.
+    """
+    key = get_cache_key(username, ip)
+    cache.delete(key)
