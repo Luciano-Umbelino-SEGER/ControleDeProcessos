@@ -85,12 +85,17 @@ class LogAcaoListView(AdminOnlyMixin, LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
 
         query_params = self.request.GET.copy()
-        if "page" in query_params:
-            query_params.pop("page")
 
-        context["query_string"] = query_params.urlencode()
+        # 🔹 SEM PAGE (para paginação)
+        query_params_no_page = query_params.copy()
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
 
-        return context  # 🔥 posição correta
+        # 🔹 COM PAGE (para detalhe)
+        context["query_string"] = query_params_no_page.urlencode()
+        context["query_string_full"] = query_params.urlencode()
+
+        return context
 
 
 # --------------------------------#
@@ -115,6 +120,8 @@ class LogAcaoDetailView(AdminOnlyMixin, LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         log = self.object
+
+        context["query_string"] = self.request.GET.urlencode()
 
         # 🔹 JSON formatado
         context["dados_antes_formatado"] = self.formatar_json(log.dados_antes)

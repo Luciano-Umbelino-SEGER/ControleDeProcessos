@@ -289,7 +289,7 @@ class CustomLoginView(LoginView):
                 usuario=None,
                 acao="LOGIN_BLOQUEADO",
                 modelo="Autenticação",
-                descricao="Usuário bloqueado por excesso de tentativas de login",
+                descricao=f"Usuário {username} bloqueado por excesso de tentativas de login",
                 dados_depois={
                     "username": username,
                     "ip": ip,
@@ -301,7 +301,7 @@ class CustomLoginView(LoginView):
                 usuario=None,
                 acao="LOGIN_ERRO",
                 modelo="Autenticação",
-                descricao=f"Tentativa inválida ({tentativas}/5)",
+                descricao=f"Tentativa inválida ({tentativas}/5) - Usuário: {username}",
                 dados_depois={
                     "username": username,
                     "ip": ip,
