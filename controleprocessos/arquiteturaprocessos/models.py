@@ -267,7 +267,7 @@ class ModelagemProcesso(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.codigo}-{self.sequencial} - V{self.versao}"
-#Aqui 1
+
 # ============================================================
 # Processos a Mapear
 # ============================================================
@@ -281,7 +281,7 @@ class ProcessoMapear(models.Model):
         (TIPO_SUBPROCESSO, "Subprocesso"),
     )
 
-    nome = models.CharField(max_length=100)
+    nome = models.CharField(max_length=500)
 
     gestor = models.CharField(max_length=150, blank=True)
     email = models.EmailField(max_length=200, blank=True)
@@ -401,7 +401,7 @@ class ProcessoMapear(models.Model):
 # PROCESSO / SUBPROCESSO
 # ============================================================
 class Processo(models.Model):
-    nome = models.CharField(max_length=200)
+    nome = models.CharField(max_length=500)
     gestor = models.CharField(max_length=150)
     email = models.EmailField(max_length=200, null=True, blank=True)
     telefone = models.CharField(max_length=20, null=True, blank=True)
