@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
 from .models import (Perfil, Telefone, Usuario, MacroprocessoNivel1, MacroprocessoNivel2,
-                     ModelagemProcesso)
+                     ModelagemProcesso, ContatoAreaSeger)
 
 # -------------------- Inline de Telefones --------------------
 class TelefoneInline(admin.TabularInline):
@@ -109,6 +109,13 @@ class ModelagemProcessoAdmin(admin.ModelAdmin):
             obj.usuario = request.user
         obj.usuario_atualizacao = request.user
         super().save_model(request, obj, form, change)
+
+@admin.register(ContatoAreaSeger)
+class ContatoAreaSegerAdmin(admin.ModelAdmin):
+    list_display = ("nome_area", "titular", "telefone", "email", "atualizado_em")
+    search_fields = ("nome_area", "titular", "email")
+    list_filter = ("atualizado_em",)
+    ordering = ("nome_area",)
 
 # -------------------- Registro de Outros Modelos --------------------
 admin.site.register(Perfil)

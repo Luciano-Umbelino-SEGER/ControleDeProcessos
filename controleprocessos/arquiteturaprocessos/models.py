@@ -560,3 +560,28 @@ class ProcessoDocumento(models.Model):
         mp = self.modelagem_processo
         return f"{mp.tipo_documento.nome if mp else 'Documento'} – {mp.titulo if mp else ''}"
 
+# ============================================================
+# Contatos Seger - Area Responsável
+# ============================================================
+class ContatoAreaSeger(models.Model):
+    nome_area = models.CharField("Nome da Área", max_length=255, unique=True)
+    titular = models.CharField("Titular", max_length=255, blank=True, null=True)
+    telefone = models.CharField("Telefone(s)", max_length=255, blank=True, null=True)
+    email = models.EmailField("E-mail", blank=True, null=True)
+
+    ativo = models.BooleanField(default=True)
+    origem = models.CharField("Origem dos dados", max_length=100, default="SEGER_SITE")
+
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Contato Área SEGER"
+        verbose_name_plural = "Contatos Área SEGER"
+        ordering = ["nome_area"]
+
+    def __str__(self):
+        return self.nome_area
+
+    def __repr__(self):
+        return f"<ContatoAreaSeger nome_area={self.nome_area}>"
