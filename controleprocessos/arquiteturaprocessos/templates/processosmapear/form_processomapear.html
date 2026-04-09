@@ -89,7 +89,9 @@
                            id="rb_subprocesso"
                            name="tipo"
                            value="subprocesso"
-                           {% if form.instance.tipo == 'subprocesso' %}checked{% endif %}>
+                           {% if form.instance.tipo == "subprocesso" %}
+                               checked
+                           {% endif %}>
                     <span id="lbl_subprocesso"
                           class="font-medium {% if form.instance.tipo == 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
                         Subprocesso
@@ -181,12 +183,12 @@
             <div class="grid grid-cols-2 gap-6 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
-                    {{ form.area_responsavel }}
+                    {{ form.area_responsavel|add_attr:"id:id_area_responsavel" }}
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-blue-700">Gestor</label>
-                    {{ form.gestor }}
+                    {{ form.gestor|add_attr:"id:id_gestor" }}
                 </div>
             </div>
 
@@ -194,12 +196,12 @@
             <div class="grid grid-cols-2 gap-6 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
-                    {{ form.telefone }}
+                    {{ form.telefone|add_attr:"id:id_telefone" }}
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-blue-700">E-mail</label>
-                    {{ form.email }}
+                    {{ form.email|add_attr:"id:id_email" }}
                 </div>
             </div>
 
@@ -277,12 +279,9 @@
     </form>  <!-- ✅ fecha form primeiro -->
 </div>      <!-- ✅ depois fecha container externo -->
 
-<script src="{% static 'js/utils.js' %}"></script>
-<script src="{% static 'js/auto_preenchimento_area.js' %}"></script>
-
 <script>
 /* =========================================================
-   MODO GLOBAL — FONTE ÚNICA DE VERDADE
+   MODO GLOBAL — FONTE ÚNICA DE VERDADE (TEMPLATE)
    ========================================================= */
 window.MODO = {
     inclusao: "{{ modo_inclusao|yesno:'true,false' }}" === "true",
@@ -291,157 +290,99 @@ window.MODO = {
     exclusao: "{{ modo_exclusao|yesno:'true,false' }}" === "true",
     parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
 };
+</script>
 
-/* =========================================================
-   FUNÇÕES UTILITÁRIAS
-   ========================================================= */
-
-// Contador colorido
-function contadorColorido(idCampo, idSpan, avisoFaltando = 200) {
+<script>
+  // Atualiza contador e cores (cinza < max-200; amarelo [max-200..max-1]; vermelho >= max)
+  function contadorColorido(idCampo, idSpan, avisoFaltando = 200) {
     const campo = document.getElementById(idCampo);
     const span  = document.getElementById(idSpan);
     if (!campo || !span) return;
 
-    const wrapper = span.parentElement;
+    const wrapper = span.parentElement; // <div class="text-sm mt-1 text-right">
     const max = parseInt(campo.getAttribute('maxlength')) || 0;
 
     function aplicarCor(len) {
-        wrapper.classList.remove('text-gray-500','text-yellow-600','text-red-600');
-
-        if (!max || len < (max - avisoFaltando)) {
-            wrapper.classList.add('text-gray-500');
-        } else if (len < max) {
-            wrapper.classList.add('text-yellow-600');
-        } else {
-            wrapper.classList.add('text-red-600');
-        }
+      wrapper.classList.remove('text-gray-500','text-yellow-600','text-red-600');
+      if (!max || len < (max - avisoFaltando)) {
+        wrapper.classList.add('text-gray-500');
+      } else if (len < max) {
+        wrapper.classList.add('text-yellow-600');
+      } else {
+        wrapper.classList.add('text-red-600');
+      }
     }
 
     function atualizar() {
-        const len = (campo.value || '').length;
-        span.textContent = len;
-        aplicarCor(len);
+      const len = (campo.value || '').length;
+      span.textContent = len;
+      aplicarCor(len);
     }
 
     campo.addEventListener('input', atualizar);
-    atualizar();
-}
+    atualizar(); // inicial
+  }
 
-// Tipo processo + similaridade
-function initTipoProcessoCustom() {
-
-    const processoInput = document.getElementById("processo_input_visible");
-    const subprocessoInput = document.getElementById("subprocesso_input_visible");
-
-    const rbProcesso = document.getElementById("rb_processo");
-    const rbSubprocesso = document.getElementById("rb_subprocesso");
-
-    const lblProcesso = document.getElementById("lbl_processo");
-    const lblSubprocesso = document.getElementById("lbl_subprocesso");
-    const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso");
-
-    if (processoInput && typeof ativarValidacaoSimilaridade === "function") {
-        ativarValidacaoSimilaridade(processoInput, {
-            tabelas: ["ProcessoMapear","Processo"],
-            campo: "nome"
-        });
-    }
-
-    if (subprocessoInput && typeof ativarValidacaoSimilaridade === "function") {
-        ativarValidacaoSimilaridade(subprocessoInput, {
-            tabelas: ["ProcessoMapear","Processo"],
-            campo: "nome"
-        });
-    }
-
-    function limparAvisos() {
-        if (processoInput && typeof removerAvisoSimilaridade === "function") {
-            removerAvisoSimilaridade(processoInput);
-        }
-        if (subprocessoInput && typeof removerAvisoSimilaridade === "function") {
-            removerAvisoSimilaridade(subprocessoInput);
-        }
-    }
-
-    function limparCampos() {
-        if (processoInput) processoInput.value = "";
-        if (subprocessoInput) subprocessoInput.value = "";
-    }
-
-    function atualizarLabels() {
-
-        if (rbProcesso.checked) {
-            lblProcesso.classList.add("text-blue-700");
-            lblProcesso.classList.remove("text-gray-400");
-
-            lblSubprocesso.classList.add("text-gray-400");
-            lblSubprocesso.classList.remove("text-blue-700");
-
-            lblCampoSubprocesso.classList.add("text-gray-400");
-            lblCampoSubprocesso.classList.remove("text-blue-700");
-        }
-
-        if (rbSubprocesso.checked) {
-            lblSubprocesso.classList.add("text-blue-700");
-            lblSubprocesso.classList.remove("text-gray-400");
-
-            lblProcesso.classList.add("text-gray-400");
-            lblProcesso.classList.remove("text-blue-700");
-
-            lblCampoSubprocesso.classList.add("text-blue-700");
-            lblCampoSubprocesso.classList.remove("text-gray-400");
-        }
-    }
-
-    function trocarTipo() {
-        limparAvisos();
-        limparCampos();
-        atualizarLabels();
-    }
-
-    if (rbProcesso) rbProcesso.addEventListener("change", trocarTipo);
-    if (rbSubprocesso) rbSubprocesso.addEventListener("change", trocarTipo);
-}
-
-/* =========================================================
-   INIT PRINCIPAL
-   ========================================================= */
-document.addEventListener("DOMContentLoaded", function () {
-
-    // Contadores
+  document.addEventListener('DOMContentLoaded', function () {
     contadorColorido('id_objetivo', 'contador_objetivo');
     contadorColorido('id_observacao', 'contador_observacao');
+  });
+</script>
 
-    // Macro classificação
-    if (typeof initMacroClassificacao === "function") {
-        initMacroClassificacao({
-            classificacaoId: "id_classificacao",
-            macro1Id: "id_macroprocesso_nivel1",
-            macro2Id: "id_macroprocesso_nivel2",
-            modoBloqueado: false
-        });
-    }
+<!-- Macro Classificação Engine -->
+<script src="{% static 'js/macro_classificacao.js' %}"></script>
 
-    // Tipo processo base
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    initMacroClassificacao({
+        classificacaoId: "id_classificacao",
+        macro1Id: "id_macroprocesso_nivel1",
+        macro2Id: "id_macroprocesso_nivel2",
+        modoBloqueado: false
+    });
+});
+</script>
+
+<!-- TIPO PROCESSO/SUBPROCESSO -->
+<script src="{% static 'js/tipo_processo_engine.js' %}"></script>
+
+{% comment %}
+{# =========================================================
+   MODAL AUTOMÁTICO – CONFIRMAÇÃO DE INICIALIZAÇÃO
+   ---------------------------------------------------------
+   Este bloco escuta a mensagem especial "CONFIRMAR_INICIAR"
+   enviada pela UpdateView após salvar o formulário quando
+   o usuário clica em "Iniciar Processo".
+
+   Fluxo:
+   1) Usuário salva (acao=iniciar)
+   2) View salva o Processo a Mapear e adiciona message CONFIRMAR_INICIAR
+   3) Página recarrega
+   4) Este script detecta a flag e dispara o modal global
+   5) Modal chama a URL executar_iniciar_processomapear
+
+   ⚠ Importante:
+   - Não remover sem revisar o fluxo de transformação
+   - Depende do modal global 'abrir-modal-confirmacao'
+   ========================================================= #}
+{% endcomment %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // 🔥 mantém isso!
     if (typeof initTipoProcesso === "function") {
         initTipoProcesso();
     }
 
-    // Custom tipo processo
-    initTipoProcessoCustom();
+    const confirmarIniciar = "{{ confirmar_iniciar|yesno:'true,false' }}" === "true";
+    const urlIniciar = "{% if form.instance.pk %}{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}{% endif %}";
 
-    // Auto-preenchimento área
-    if (typeof initAutoPreenchimentoArea === "function") {
-        initAutoPreenchimentoArea("{% url 'arquiteturaprocessos:buscar_contato_area' %}");
-    }
-
-    // Modal confirmação
-    const CONFIRMAR_INICIAR = "{{ confirmar_iniciar|yesno:'true,false' }}" === "true";
-
-    if (CONFIRMAR_INICIAR) {
+    if (confirmarIniciar && urlIniciar) {
         window.dispatchEvent(new CustomEvent("abrir-modal-confirmacao", {
             detail: {
-                url: "{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}",
+                url: urlIniciar,
                 mensagem: `
                     Você está prestes a transformar o Processo a Mapear -
                     <strong>{{ form.instance.nome }}</strong>, em um {{ form.instance.tipo }}.<br><br>
@@ -450,6 +391,124 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }));
     }
+
+});
+</script>
+
+<style>
+fieldset[disabled] input,
+fieldset[disabled] select,
+fieldset[disabled] textarea {
+    background-color: #f3f4f6 !important; /* bg-gray-100 real */
+    opacity: 1 !important;               /* remove fade do navegador */
+    color: #374151;                      /* text-gray-700 */
+    cursor: not-allowed;
+}
+
+fieldset[disabled] input[type="radio"] {
+    accent-color: #9ca3af; /* radio cinza */
+}
+</style>
+
+<script src="{% static 'js/utils.js' %}"></script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const processoInput = document.getElementById("processo_input_visible")
+    const subprocessoInput = document.getElementById("subprocesso_input_visible")
+
+    const rbProcesso = document.getElementById("rb_processo")
+    const rbSubprocesso = document.getElementById("rb_subprocesso")
+
+    const lblProcesso = document.getElementById("lbl_processo")
+    const lblSubprocesso = document.getElementById("lbl_subprocesso")
+
+    const lblCampoProcesso = document.getElementById("lbl_campo_processo")
+    const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso")
+
+    // ativa validação
+    if (processoInput) {
+        ativarValidacaoSimilaridade(processoInput, {
+            tabelas: ["ProcessoMapear","Processo"],
+            campo: "nome"
+        })
+    }
+
+    if (subprocessoInput) {
+        ativarValidacaoSimilaridade(subprocessoInput, {
+            tabelas: ["ProcessoMapear","Processo"],
+            campo: "nome"
+        })
+    }
+
+    function limparAvisos() {
+        if (processoInput) removerAvisoSimilaridade(processoInput)
+        if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput)
+    }
+
+    function limparCampos() {
+        if (processoInput) processoInput.value = ""
+        if (subprocessoInput) subprocessoInput.value = ""
+    }
+
+    function atualizarLabels() {
+
+        if (rbProcesso.checked) {
+
+            lblProcesso.classList.remove("text-gray-400")
+            lblProcesso.classList.add("text-blue-700")
+
+            lblSubprocesso.classList.remove("text-blue-700")
+            lblSubprocesso.classList.add("text-gray-400")
+
+            lblCampoSubprocesso.classList.remove("text-blue-700")
+            lblCampoSubprocesso.classList.add("text-gray-400")
+
+        }
+
+        if (rbSubprocesso.checked) {
+
+            lblSubprocesso.classList.remove("text-gray-400")
+            lblSubprocesso.classList.add("text-blue-700")
+
+            lblProcesso.classList.remove("text-blue-700")
+            lblProcesso.classList.add("text-gray-400")
+
+            lblCampoSubprocesso.classList.remove("text-gray-400")
+            lblCampoSubprocesso.classList.add("text-blue-700")
+
+        }
+
+    }
+
+    function trocarTipo() {
+
+        limparAvisos()
+        limparCampos()
+        atualizarLabels()
+
+    }
+
+    if (rbProcesso) rbProcesso.addEventListener("change", trocarTipo)
+    if (rbSubprocesso) rbSubprocesso.addEventListener("change", trocarTipo)
+
+})
+
+</script>
+
+<script src="{% static 'js/auto_preenchimento_area.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (typeof initAutoPreenchimentoArea === "function") {
+        initAutoPreenchimentoArea(
+            "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
+        );
+    }
+
 });
 </script>
 
