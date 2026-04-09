@@ -33,7 +33,9 @@ urlpatterns = [
     path("estatisticas/processos-mapear/", EstatisticasProcessosMapear.as_view(), name="estatisticaprocessos_mapear" ),
     path("estatisticas/processos/", views.EstatisticasProcessos.as_view(), name="estatisticas_processos"),
     path("estatisticas/comparativos/", EstatisticaComparativos.as_view(), name="estatisticas_comparativos"),
-    # BProcesso a Mapear
+    # Obter dados do Contato Área Responsável
+    path("buscar-contato-area/", views.buscar_contato_area, name="buscar_contato_area"),
+    # Processo a Mapear
     path('processosmapear/', ProcessosMapear.as_view(), name='processosmapear'),
     path('processosmapear/novo/', CriarProcessoMapear.as_view(), name='criar_processomapear'),
     path('processosmapear/<int:pk>/visualizar/', VisualizarProcessoMapear.as_view(), name='visualizar_processomapear'),

@@ -13,34 +13,29 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.SeparateDatabaseAndState(
-            state_operations=[
-                migrations.CreateModel(
-                    name='LogAcaoSistema',
-                    fields=[
-                        ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                        ('acao', models.CharField(max_length=20)),
-                        ('modelo_afetado', models.CharField(max_length=100)),
-                        ('objeto_id', models.CharField(max_length=50, null=True, blank=True)),
-                        ('descricao', models.TextField()),
-                        ('dados_antes', models.JSONField(null=True, blank=True)),
-                        ('dados_depois', models.JSONField(null=True, blank=True)),
-                        ('ip', models.GenericIPAddressField(null=True, blank=True)),
-                        ('user_agent', models.TextField(null=True, blank=True)),
-                        ('sucesso', models.BooleanField(default=True)),
-                        ('data_registro', models.DateTimeField(auto_now_add=True)),
-                        ('usuario', models.ForeignKey(
-                            to=django.conf.settings.AUTH_USER_MODEL,
-                            on_delete=models.SET_NULL,
-                            null=True
-                        )),
-                    ],
-                    options={
-                        'db_table': 'log_acao_sistema',
-                        'ordering': ['-data_registro'],
-                    },
-                ),
-            ],
-            database_operations=[],
-        ),
+       migrations.CreateModel(
+           name='LogAcaoSistema',
+           fields=[
+               ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+               ('acao', models.CharField(max_length=20)),
+               ('modelo_afetado', models.CharField(max_length=100)),
+               ('objeto_id', models.CharField(max_length=50, null=True, blank=True)),
+               ('descricao', models.TextField()),
+               ('dados_antes', models.JSONField(null=True, blank=True)),
+               ('dados_depois', models.JSONField(null=True, blank=True)),
+               ('ip', models.GenericIPAddressField(null=True, blank=True)),
+               ('user_agent', models.TextField(null=True, blank=True)),
+               ('sucesso', models.BooleanField(default=True)),
+               ('data_registro', models.DateTimeField(auto_now_add=True)),
+               ('usuario', models.ForeignKey(
+                   to=django.conf.settings.AUTH_USER_MODEL,
+                   on_delete=models.SET_NULL,
+                   null=True
+               )),
+           ],
+           options={
+               'db_table': 'log_acao_sistema',
+               'ordering': ['-data_registro'],
+           },
+       ),
     ]

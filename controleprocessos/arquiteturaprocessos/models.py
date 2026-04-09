@@ -285,7 +285,7 @@ class ProcessoMapear(models.Model):
 
     gestor = models.CharField(max_length=150, blank=True)
     email = models.EmailField(max_length=200, blank=True)
-    telefone = models.CharField(max_length=20, blank=True)
+    telefone = models.CharField(max_length=100, blank=True)
 
     objetivo = models.TextField()
     observacao = models.TextField(blank=True)
@@ -404,7 +404,7 @@ class Processo(models.Model):
     nome = models.CharField(max_length=500)
     gestor = models.CharField(max_length=150)
     email = models.EmailField(max_length=200, null=True, blank=True)
-    telefone = models.CharField(max_length=20, null=True, blank=True)
+    telefone = models.CharField(max_length=100, blank=True)
     objetivo = models.TextField()
     observacao = models.TextField(null=True, blank=True)
 

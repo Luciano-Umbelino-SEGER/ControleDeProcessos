@@ -38,10 +38,11 @@ from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_st
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
-    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,
+    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
 )
 from auditoria.models import LogAcaoSistema
 from auditoria.services import registrar_log
+from auditoria.utils import registrar_tentativa, esta_bloqueado, resetar_tentativas
 
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
@@ -49,7 +50,6 @@ from .forms import (
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
 )
 
-from auditoria.utils import (registrar_log, registrar_tentativa, esta_bloqueado, resetar_tentativas)
 
 # ---------------------------------------------------
 # Utility to safely generate a username from names
@@ -202,6 +202,29 @@ def salvar_documentos_processo(request, processo):
         )
         for doc_id in documentos_ids
     ])
+# Aqui 2
+# --------------------------------------
+# Obter Responsável Contatos Area SEGER
+# --------------------------------------
+def buscar_contato_area(request):
+    nome_area = request.GET.get("nome_area")
+
+    if not nome_area:
+        return JsonResponse({}, status=400)
+
+    try:
+        contato = ContatoAreaSeger.objects.get(nome_area=nome_area, ativo=True)
+
+        data = {
+            "titular": contato.titular or "",
+            "telefone": contato.telefone or "",
+            "email": contato.email or "",
+        }
+
+        return JsonResponse(data)
+
+    except ContatoAreaSeger.DoesNotExist:
+        return JsonResponse({}, status=404)
 
 # ---------------------------
 # Login view
@@ -286,7 +309,7 @@ class CustomLoginView(LoginView):
         # 🔥 LOG (mantém como está)
         if bloqueado:
             registrar_log(
-                usuario=None,
+                request=self.request,
                 acao="LOGIN_BLOQUEADO",
                 modelo="Autenticação",
                 descricao=f"Usuário {username} bloqueado por excesso de tentativas de login",
@@ -298,7 +321,7 @@ class CustomLoginView(LoginView):
             )
         else:
             registrar_log(
-                usuario=None,
+                request=self.request,
                 acao="LOGIN_ERRO",
                 modelo="Autenticação",
                 descricao=f"Tentativa inválida ({tentativas}/5) - Usuário: {username}",
@@ -325,7 +348,7 @@ def alterar_senha(request):
 
             # 🔥 LOG DA ALTERAÇÃO DE SENHA
             registrar_log(
-                usuario=user,  # 🎯 próprio usuário
+                request=request,  # 🎯 próprio usuário
                 acao="UPDATE",
                 modelo="Autenticação",
                 descricao="Usuário alterou sua senha",
@@ -373,7 +396,7 @@ def resetar_senha_usuario(request, pk):
 
         # 🔥 LOG CORRETO
         registrar_log(
-            usuario=request.user,  # 👤 ADMIN (executor)
+            request=request,  # 👤 ADMIN (executor)
             acao="UPDATE",
             modelo="Autenticação",
             descricao=f"Administrador solicitou redefinição de senha para {usuario.get_full_name()}",
@@ -2955,7 +2978,7 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
         try:
             registrar_log(
-                usuario=user,
+                request=self.request,
                 acao="UPDATE",
                 modelo="Autenticação",
                 descricao="Usuário definiu/redefiniu sua senha via link de recuperação",

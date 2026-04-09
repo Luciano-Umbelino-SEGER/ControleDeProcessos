@@ -524,7 +524,7 @@
 
                 </div>
             </div> <!-- fim modelo-block base -->
-            <!-- Aqui 1 -->
+
             <!-- ======================================================= -->
             <!-- TEMPLATE para blocos de Modelo adicionais (invisível) -->
             <!-- ======================================================= -->
@@ -705,7 +705,7 @@
             </template>
             <!-- fim template -->
         </div> <!-- fim modelos_container -->
-        <!-- Aqui 3.5 -->
+
         <!-- ============================================ -->
         <!-- LINHA 8 – Norma de Procedimento (Bloco Base) -->
         <!-- ============================================ -->
@@ -1257,10 +1257,10 @@
    MODO GLOBAL — FONTE ÚNICA DE VERDADE (TEMPLATE)
    ========================================================= */
 window.MODO = {
-    inclusao: {{ modo_inclusao|yesno:"true,false" }},
-    edicao: {{ modo_edicao|yesno:"true,false" }},
-    visualizacao: {{ modo_visualizacao|yesno:"true,false" }},
-    exclusao: {{ modo_exclusao|yesno:"true,false" }},
+    inclusao: "{{ modo_inclusao|yesno:'true,false' }}" === "true",
+    edicao: "{{ modo_edicao|yesno:'true,false' }}" === "true",
+    visualizacao: "{{ modo_visualizacao|yesno:'true,false' }}" === "true",
+    exclusao: "{{ modo_exclusao|yesno:'true,false' }}" === "true",
     parentId: "{{ form.instance.parent_id|default_if_none:'' }}"
 };
 
@@ -1271,6 +1271,8 @@ const modoBloqueado = window.MODO.visualizacao || window.MODO.exclusao;
 window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
 
 </script>
+
+<script src="{% static 'js/auto_preenchimento_area.js' %}"></script>
 
 <script>
   // Atualiza contador e cores (cinza < max-200; amarelo [max-200..max-1]; vermelho >= max)
@@ -1385,7 +1387,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 
-<!-- Aqui 3 -->
 <script>
 /* =========================================================
    x-data — Modelo de Processo (BLOCO BASE)
@@ -1395,7 +1396,7 @@ function modeloProcessoData() {
         /* =========================
            Estado de controle
            ========================= */
-        selected: {{ form.instance.modelagem_processo_id|yesno:'true,false' }},
+        selected: "{{ form.instance.modelagem_processo_id|yesno:'true,false' }}" === "true",
 
         /* =========================
            Artefatos (fontes reais)
@@ -1416,9 +1417,7 @@ function modeloProcessoData() {
         versao: "{{ form.instance.modelagem_processo.versao|default_if_none:''|escapejs }}",
         emitente: "{{ form.instance.modelagem_processo.emitente|default_if_none:''|escapejs }}",
         sistema: "{{ form.instance.modelagem_processo.sistema|default_if_none:''|escapejs }}",
-        vigencia: {% if form.instance.modelagem_processo.vigencia_inicio %}
-                    "{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d' }}"
-                  {% else %}""{% endif %},
+        vigencia: "{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d'|default:'' }}",
 
         /* =========================
            Controle de seleção
@@ -1462,7 +1461,6 @@ function modeloProcessoData() {
                 this.vigencia = "";
             }
 
-
             /* ==================================
                Campos derivados (escopo do bloco)
             ===================================== */
@@ -1501,10 +1499,10 @@ function modeloProcessoData() {
    ========================================================= */
 function normaProcedimentoData() {
     return {
-        /* =========================
+         /* =========================
            Estado de controle
            ========================= */
-        selected: {{ form.instance.norma_procedimento_id|yesno:'true,false' }},
+        selected: "{{ form.instance.norma_procedimento_id|yesno:'true,false' }}" === "true",
 
         /* =========================
            Artefatos (fontes reais)
@@ -1593,8 +1591,8 @@ function normaProcedimentoData() {
 /* =========================================================
    DADOS HIDRATADOS (DEBUG / USO FUTURO)
    ========================================================= */
-const MODELOS_HIDRATADOS = {{ modelos_hidratados|default:"[]"|safe }};
-const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
+const MODELOS_HIDRATADOS = JSON.parse('{{ modelos_hidratados|default:"[]"|escapejs }}');
+const NORMAS_HIDRATADAS  = JSON.parse('{{ normas_hidratadas|default:"[]"|escapejs }}');
 
 console.log("MODO:", window.MODO);
 console.log("MODELOS_HIDRATADOS:", MODELOS_HIDRATADOS);
@@ -1623,6 +1621,10 @@ document.addEventListener("DOMContentLoaded", function () {
             tabelas: ["Processo", "ProcessoMapear"],
             campo: "nome"
         })
+    }
+
+    if (typeof initAutoPreenchimentoArea === "function") {
+        initAutoPreenchimentoArea("{% url 'arquiteturaprocessos:buscar_contato_area' %}");
     }
 
 })

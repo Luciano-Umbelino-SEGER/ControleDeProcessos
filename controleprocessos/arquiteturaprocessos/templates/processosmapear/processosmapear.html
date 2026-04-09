@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block body %}
 <div class="py-10 px-2 flex justify-center">
@@ -173,10 +174,10 @@
             <th class="py-3 px-2 text-left w-[10%]">Macro N2</th>
             <th class="py-3 px-2 text-left w-[9%]">Área</th>
             <th class="py-3 px-2 text-left w-[8%]">Gestor</th>
-            <th class="py-3 px-2 text-left w-[10%]">E-mail</th>
-            <th class="py-3 px-2 text-left w-[6%]">Telefone</th>
-            <th class="py-3 px-2 text-left w-[6%]">Criação</th>
-            <th class="py-3 px-2 text-center w-[8%]">Ações</th>
+            <th class="py-3 px-2 text-left w-[14%]">E-mail</th>
+            <th class="py-3 px-2 text-left w-[7%]">Telefone</th>
+            <th class="py-3 px-2 text-left w-[4%]">Criação</th>
+            <th class="py-3 px-2 text-center w-[7%]">Ações</th>
           </tr>
         </thead>
 
@@ -225,12 +226,18 @@
               {{ processomapear.gestor|default:"—" }}
             </td>
 
-            <td class="py-3 px-2">
+            <td class="py-3 px-2 break-words whitespace-normal">
               {{ processomapear.email|default:"—" }}
             </td>
 
-            <td class="py-3 px-2">
-              {{ processomapear.telefone|default:"—" }}
+            <td class="py-3 px-2 whitespace-normal">
+              {% if processomapear.telefone %}
+                  {% for tel in processomapear.telefone|split:"|" %}
+                      <div>{{ tel }}</div>
+                  {% endfor %}
+              {% else %}
+                  —
+              {% endif %}
             </td>
 
             <td class="py-3 px-2">

@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-    ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear
+    ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger
 )
 
 UserModel = get_user_model()
@@ -827,6 +827,14 @@ class Form_ProcessoForm(forms.ModelForm):
         widget=MacroSelect()
     )
 
+    area_responsavel = forms.ModelChoiceField(
+        queryset=ContatoAreaSeger.objects.filter(ativo=True).order_by("nome_area"),
+        to_field_name="nome_area",
+        required=False,
+        label="Área Responsável",
+        empty_label="Selecione uma área"
+    )
+
     modelagem_processo = forms.ModelChoiceField(
         queryset=ModelagemProcesso.objects.all(),
         required=False,
@@ -965,6 +973,11 @@ class Form_ProcessoForm(forms.ModelForm):
 
         return cleaned
 
+    def clean_area_responsavel(self):
+        area = self.cleaned_data.get("area_responsavel")
+        return area.nome_area if area else ""
+    
+# Aqui 1
 # ----------------------------------
 # Processo a Mapear - Formulário
 # ----------------------------------
@@ -994,6 +1007,14 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         queryset=Processo.objects.none(),
         required=False,
         label="Processo Pai"
+    )
+
+    area_responsavel = forms.ModelChoiceField(
+        queryset=ContatoAreaSeger.objects.filter(ativo=True).order_by("nome_area"),
+        to_field_name="nome_area",  # 🔥 ESSENCIAL
+        required=False,
+        label="Área Responsável",
+        empty_label="Selecione uma área"
     )
 
     class Meta:
@@ -1084,4 +1105,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
 
         return cleaned
 
+    def clean_area_responsavel(self):
+        area = self.cleaned_data.get("area_responsavel")
+        return area.nome_area if area else ""
 

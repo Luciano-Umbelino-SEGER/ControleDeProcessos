@@ -9,12 +9,19 @@ from .models import LogAcaoSistema
 from auditoria.middleware import get_current_user
 from .utils import gerar_diff, obter_usuario_log
 from django.contrib.auth.models import AnonymousUser
+from django.db import connection
 
 # 🔥 MODELOS QUE NÃO DEVEM SER LOGADOS
 MODELOS_IGNORADOS = [
     "LogAcaoSistema",
     "Session",
 ]
+
+# -----------------------------------------
+# Verifica existencia da tabela
+# -----------------------------------------
+def tabela_existe(nome_tabela):
+    return nome_tabela in connection.introspection.table_names()
 
 # -----------------------------------------
 # Obtém o usuário logado
@@ -91,14 +98,15 @@ def log_create_update(sender, instance, created, **kwargs):
 
     acao = "CREATE" if created else "UPDATE"
 
-    LogAcaoSistema.objects.create(
-        usuario=get_usuario_logado_seguro(),  # 🔥 AQUI
-        acao=acao,
-        modelo_afetado=sender.__name__,
-        descricao=f"{sender.__name__} {'criado' if created else 'atualizado'}",
-        dados_antes=dados_antes,
-        dados_depois=dados_depois,
-    )
+    if tabela_existe("log_acao_sistema"):
+        LogAcaoSistema.objects.create(
+            usuario=get_usuario_logado_seguro(),  # 🔥 AQUI
+            acao=acao,
+            modelo_afetado=sender.__name__,
+            descricao=f"{sender.__name__} {'criado' if created else 'atualizado'}",
+            dados_antes=dados_antes,
+            dados_depois=dados_depois,
+        )
 
 
 # -----------------------------------------
@@ -110,14 +118,15 @@ def log_delete(sender, instance, **kwargs):
     if sender.__name__ in MODELOS_IGNORADOS:
         return
 
-    LogAcaoSistema.objects.create(
-        usuario=get_usuario_logado_seguro(),  # 🔥 CORRETO
-        acao="DELETE",
-        modelo_afetado=sender.__name__,
-        descricao=f"{sender.__name__} excluído",
-        dados_antes=serializar(instance),
-        dados_depois={},
-    )
+    if tabela_existe("log_acao_sistema"):
+        LogAcaoSistema.objects.create(
+            usuario=get_usuario_logado_seguro(),  # 🔥 CORRETO
+            acao="DELETE",
+            modelo_afetado=sender.__name__,
+            descricao=f"{sender.__name__} excluído",
+            dados_antes=serializar(instance),
+            dados_depois={},
+        )
 
 
 # -----------------------------------------
@@ -125,6 +134,9 @@ def log_delete(sender, instance, **kwargs):
 # -----------------------------------------
 @receiver(user_logged_in)
 def log_login(sender, request, user, **kwargs):
+    if not tabela_existe("log_acao_sistema"):
+        return
+
     LogAcaoSistema.objects.create(
         usuario=user,
         acao="LOGIN",
@@ -137,12 +149,14 @@ def log_login(sender, request, user, **kwargs):
         }
     )
 
-
 # -----------------------------------------
 # LOGOUT
 # -----------------------------------------
 @receiver(user_logged_out)
 def log_logout(sender, request, user, **kwargs):
+    if not tabela_existe("log_acao_sistema"):
+        return
+
     LogAcaoSistema.objects.create(
         usuario=user,
         acao="LOGOUT",
