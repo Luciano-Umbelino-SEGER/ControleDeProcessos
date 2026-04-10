@@ -269,7 +269,133 @@ class ModelagemProcesso(models.Model):
         return f"{self.titulo} - {self.codigo}-{self.sequencial} - V{self.versao}"
 
 # ============================================================
+# Contatos Seger - Area Responsável
+# ============================================================
+class ContatoAreaSeger(models.Model):
+    nome_area = models.CharField("Nome da Área", max_length=255, unique=True)
+    titular = models.CharField("Titular", max_length=255, blank=True, null=True)
+    telefone = models.CharField("Telefone(s)", max_length=255, blank=True, null=True)
+    email = models.EmailField("E-mail", blank=True, null=True)
+
+    ativo = models.BooleanField(default=True)
+    origem = models.CharField("Origem dos dados", max_length=100, default="SEGER_SITE")
+
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Contato Área SEGER"
+        verbose_name_plural = "Contatos Área SEGER"
+        ordering = ["nome_area"]
+
+    def __str__(self):
+        return self.nome_area or "Área sem nome"
+
+    def __repr__(self):
+        return f"<ContatoAreaSeger nome_area={self.nome_area}>"
+
+# ============================================================
 # Processos a Mapear
+# ============================================================
+class Processo(models.Model):
+
+    nome = models.CharField(max_length=500)
+    gestor = models.CharField(max_length=150)
+    email = models.EmailField(max_length=200, null=True, blank=True)
+    telefone = models.CharField(max_length=100, blank=True)
+    objetivo = models.TextField()
+    observacao = models.TextField(null=True, blank=True)
+
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(null=True, blank=True)
+
+    classificacao = models.ForeignKey(
+        "Classificacao",
+        on_delete=models.PROTECT,
+        related_name="processos"
+    )
+
+    macroprocesso_nivel1 = models.ForeignKey(
+        "MacroprocessoNivel1",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="macro_nivel1"
+    )
+
+    macroprocesso_nivel2 = models.ForeignKey(
+        "MacroprocessoNivel2",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="macro_nivel2"
+    )
+
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name="subprocessos"
+    )
+
+    # 🔥 FK USANDO COLUNA EXISTENTE
+    area_responsavel = models.ForeignKey(
+        ContatoAreaSeger,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processos"
+    )
+
+    usuario_cadastro = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="processos_cadastrados"
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="processos_atualizados"
+    )
+
+    versao_processo = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(9999)],
+        blank=True,
+        null=True
+    )
+
+    data_conclusao = models.DateTimeField(blank=True, null=True)
+
+    usuario_conclusao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processos_concluidos"
+    )
+
+    @property
+    def status(self):
+        if self.data_conclusao:
+            return "concluido"
+
+        if self.documentos.exists():
+            return "ativo"
+
+        return "iniciado"
+
+    def __str__(self):
+        return self.nome
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.area_responsavel and not self.area_responsavel.ativo:
+            raise ValidationError("Área Responsável inválida ou inativa.")
+
+# ============================================================
+# PROCESSO / SUBPROCESSO
 # ============================================================
 class ProcessoMapear(models.Model):
 
@@ -293,7 +419,14 @@ class ProcessoMapear(models.Model):
     data_criacao = models.DateTimeField(auto_now_add=True)
     data_atualizacao = models.DateTimeField(null=True, blank=True)
 
-    area_responsavel = models.CharField(max_length=100)
+    # 🔥 FK USANDO COLUNA EXISTENTE (NÃO PERDE DADOS)
+    area_responsavel = models.ForeignKey(
+        ContatoAreaSeger,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processos_mapear"
+    )
 
     classificacao = models.ForeignKey(
         'Classificacao',
@@ -346,13 +479,6 @@ class ProcessoMapear(models.Model):
 
     class Meta:
         ordering = ['-data_criacao']
-        indexes = [
-            models.Index(fields=['nome']),
-            models.Index(fields=['data_criacao']),
-            models.Index(fields=['tipo']),
-            models.Index(fields=['tipo', 'macroprocesso_nivel1']),
-            models.Index(fields=['tipo', 'macroprocesso_nivel2']),
-        ]
 
     def validar_para_iniciar(self):
         erros = []
@@ -375,7 +501,8 @@ class ProcessoMapear(models.Model):
         if not self.objetivo or not self.objetivo.strip():
             erros.append("Objetivo é obrigatório.")
 
-        if not self.area_responsavel or not self.area_responsavel.strip():
+        # ✅ CORRETO (FK)
+        if not self.area_responsavel:
             erros.append("Área Responsável é obrigatória.")
 
         if not self.gestor or not self.gestor.strip():
@@ -393,135 +520,6 @@ class ProcessoMapear(models.Model):
                 erros.append("E-mail inválido.")
 
         return erros
-
-    def __str__(self):
-        return self.nome
-
-# ============================================================
-# PROCESSO / SUBPROCESSO
-# ============================================================
-class Processo(models.Model):
-    nome = models.CharField(max_length=500)
-    gestor = models.CharField(max_length=150)
-    email = models.EmailField(max_length=200, null=True, blank=True)
-    telefone = models.CharField(max_length=100, blank=True)
-    objetivo = models.TextField()
-    observacao = models.TextField(null=True, blank=True)
-
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    data_atualizacao = models.DateTimeField(null=True, blank=True)
-
-    classificacao = models.ForeignKey(
-        "Classificacao",
-        on_delete=models.PROTECT,
-        related_name="processos"
-    )
-
-    macroprocesso_nivel1 = models.ForeignKey(
-        "MacroprocessoNivel1",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="macro_nivel1"
-    )
-
-    macroprocesso_nivel2 = models.ForeignKey(
-        "MacroprocessoNivel2",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="macro_nivel2"
-    )
-
-    parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True, blank=True,
-        related_name="subprocessos"
-    )
-
-    area_responsavel = models.CharField(max_length=100, null=True, blank=True)
-
-    usuario_cadastro = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        null=True, blank=True,
-        related_name="processos_cadastrados"
-    )
-
-    usuario_atualizacao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="processos_atualizados"
-    )
-
-    versao_processo = models.PositiveSmallIntegerField(
-        "Versão do Processo",
-        validators=[MinValueValidator(1), MaxValueValidator(9999)],
-        blank=True,
-        null=True
-    )
-
-    data_conclusao = models.DateTimeField(
-        "Data de Conclusão do Processo",
-        blank=True,
-        null=True
-    )
-
-    usuario_conclusao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="processos_concluidos",
-        verbose_name="Usuário Conclusão"
-    )
-
-    @property
-    def status(self):
-
-        # 1️⃣ Processo concluído tem prioridade
-        if self.data_conclusao:
-            return "concluido"
-
-        # 2️⃣ Processo ativo se tiver pelo menos um documento associado
-        if self.documentos.exists():
-            return "ativo"
-
-        # 3️⃣ Caso contrário permanece iniciado
-        return "iniciado"
-
-    @property
-    def status_label(self):
-
-        return {
-            "iniciado": "Iniciado",
-            "ativo": "Ativo",
-            "concluido": "Concluído"
-        }.get(self.status)
-
-    @property
-    def status_css(self):
-
-        return {
-            "iniciado": "bg-orange-200 text-orange-900",
-            "ativo": "bg-green-200 text-green-900",
-            "concluido": "bg-red-200 text-red-900"
-        }.get(self.status, "")
-
-    @property
-    def pode_concluir(self):
-
-        for sub in self.subprocessos.all():
-            if sub.status == "iniciado":
-                return False
-
-        return True
-
-    class Meta:
-        db_table = "arquiteturaprocessos_processo"
-        ordering = ["nome"]
-        verbose_name = "Processo"
-        verbose_name_plural = "Processos"
 
     def __str__(self):
         return self.nome
@@ -560,28 +558,3 @@ class ProcessoDocumento(models.Model):
         mp = self.modelagem_processo
         return f"{mp.tipo_documento.nome if mp else 'Documento'} – {mp.titulo if mp else ''}"
 
-# ============================================================
-# Contatos Seger - Area Responsável
-# ============================================================
-class ContatoAreaSeger(models.Model):
-    nome_area = models.CharField("Nome da Área", max_length=255, unique=True)
-    titular = models.CharField("Titular", max_length=255, blank=True, null=True)
-    telefone = models.CharField("Telefone(s)", max_length=255, blank=True, null=True)
-    email = models.EmailField("E-mail", blank=True, null=True)
-
-    ativo = models.BooleanField(default=True)
-    origem = models.CharField("Origem dos dados", max_length=100, default="SEGER_SITE")
-
-    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
-    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Contato Área SEGER"
-        verbose_name_plural = "Contatos Área SEGER"
-        ordering = ["nome_area"]
-
-    def __str__(self):
-        return self.nome_area
-
-    def __repr__(self):
-        return f"<ContatoAreaSeger nome_area={self.nome_area}>"

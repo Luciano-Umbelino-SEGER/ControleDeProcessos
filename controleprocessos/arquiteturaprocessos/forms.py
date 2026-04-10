@@ -16,6 +16,7 @@ from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
     ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger
 )
+from django.db.models import Q
 
 UserModel = get_user_model()
 
@@ -977,7 +978,7 @@ class Form_ProcessoForm(forms.ModelForm):
         area = self.cleaned_data.get("area_responsavel")
         return area.nome_area if area else ""
     
-# Aqui 1
+#
 # ----------------------------------
 # Processo a Mapear - Formulário
 # ----------------------------------
@@ -1011,7 +1012,6 @@ class Form_ProcessoMapearForm(forms.ModelForm):
 
     area_responsavel = forms.ModelChoiceField(
         queryset=ContatoAreaSeger.objects.filter(ativo=True).order_by("nome_area"),
-        to_field_name="nome_area",  # 🔥 ESSENCIAL
         required=False,
         label="Área Responsável",
         empty_label="Selecione uma área"
@@ -1032,7 +1032,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         }
 
     # ------------------------------------------------
-    # INIT – Estilização padrão SIGEMP
+    # INIT – Estilização + ajuste Select2 (CRÍTICO)
     # ------------------------------------------------
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop("modo_visualizacao", False)
@@ -1040,6 +1040,8 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
+
+        # 🔥 LIMITES TEXTO
         if "objetivo" in self.fields:
             self.fields["objetivo"].max_length = 3000
             self.fields["objetivo"].widget.attrs["maxlength"] = 3000
@@ -1050,24 +1052,33 @@ class Form_ProcessoMapearForm(forms.ModelForm):
             self.fields["observacao"].widget.attrs["maxlength"] = 3000
             self.fields["observacao"].widget.attrs["rows"] = 4
 
+        # 🔥 SELECT2 + EDIÇÃO (CORREÇÃO PRINCIPAL)
+        if self.instance and self.instance.pk:
+            area = self.instance.area_responsavel
+
+            if area:
+                self.fields["area_responsavel"].queryset = (
+                    ContatoAreaSeger.objects.filter(
+                        Q(ativo=True) | Q(pk=area.pk)
+                    ).order_by("nome_area")
+                )
+
         self.label_suffix = ""
 
-        # 🔵 AJUSTE AQUI — logo após super()
+        # 🔵 PROCESSO PAI
         self.fields["parent"].queryset = (
             Processo.objects.filter(parent__isnull=True)
             .order_by("nome")
         )
         self.fields["parent"].empty_label = "--------"
 
+        # 🎨 ESTILO PADRÃO
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # -------------------------------------------------------
-        # ESTILIZAÇÃO PADRÃO
-        # -------------------------------------------------------
         for name, field in self.fields.items():
             bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
             existing = field.widget.attrs.get("class", "")
@@ -1075,12 +1086,13 @@ class Form_ProcessoMapearForm(forms.ModelForm):
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
+        # 🔒 BLOQUEIO
         if modo_visualizacao or modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
 
     # ------------------------------------------------
-    # CLEAN – Regras leves para Processos a Mapear
+    # CLEAN – Regras leves
     # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
@@ -1096,7 +1108,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         if not objetivo or objetivo.strip() == "":
             self.add_error("objetivo", "Informe o objetivo do Processo.")
 
-        # 🔥 Regra de domínio
+        # 🔥 REGRA DE DOMÍNIO
         if tipo == ProcessoMapear.TIPO_PROCESSO:
             cleaned["parent"] = None
 
@@ -1105,7 +1117,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
 
         return cleaned
 
+    # 🔥 IMPORTANTE: NÃO converter para string
     def clean_area_responsavel(self):
-        area = self.cleaned_data.get("area_responsavel")
-        return area.nome_area if area else ""
+        return self.cleaned_data.get("area_responsavel")
 

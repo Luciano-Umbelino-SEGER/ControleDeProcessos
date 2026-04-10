@@ -503,13 +503,23 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    if (typeof initAutoPreenchimentoArea === "function") {
-        initAutoPreenchimentoArea(
-            "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
-        );
+    const el = $('#id_area_responsavel');
+
+    if (el.length) {
+        el.select2({
+            placeholder: "Selecione ou digite a área...",
+            allowClear: true,
+            width: '100%'
+        });
     }
 
+    // 🔥 DEPOIS do select2
+    initAutoPreenchimentoArea(
+        "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
+    );
+
 });
+</script>
 </script>
 
 {% endblock %}

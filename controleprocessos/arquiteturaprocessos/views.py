@@ -207,21 +207,19 @@ def salvar_documentos_processo(request, processo):
 # Obter Responsável Contatos Area SEGER
 # --------------------------------------
 def buscar_contato_area(request):
-    nome_area = request.GET.get("nome_area")
+    area_id = request.GET.get("area_id")
 
-    if not nome_area:
+    if not area_id:
         return JsonResponse({}, status=400)
 
     try:
-        contato = ContatoAreaSeger.objects.get(nome_area=nome_area, ativo=True)
+        contato = ContatoAreaSeger.objects.get(id=area_id, ativo=True)
 
-        data = {
+        return JsonResponse({
             "titular": contato.titular or "",
             "telefone": contato.telefone or "",
             "email": contato.email or "",
-        }
-
-        return JsonResponse(data)
+        })
 
     except ContatoAreaSeger.DoesNotExist:
         return JsonResponse({}, status=404)
