@@ -386,8 +386,8 @@
     </div>
 
     <!-- Modal Meu Perfil -->
-    <div x-data="{ showProfile: false }" @open-profile.window="showProfile = true">
-        <div x-show="showProfile" x-transition.opacity class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div x-data="{ showProfile: false }" x-init="showProfile = false" x-cloak @open-profile.window="showProfile = true">
+        <div x-show="showProfile" x-transition.opacity x-cloak class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
             <div @click.away="showProfile = false" class="w-[500px] bg-blue-50 border-blue-800 border-2 rounded-lg shadow-lg p-8 text-blue-800">
                 <h2 class="text-lg font-semibold mb-6 border-b pb-2">
                     👤 Meus Dados
