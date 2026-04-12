@@ -45,7 +45,7 @@
 
                   {% for c in classificacoes %}
                       <option value="{{ c.id }}"
-                          {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
+                          {% if classificacao_selecionada == c.id %}selected{% endif %}>
                           {{ c.nome }}
                       </option>
                   {% endfor %}
@@ -91,17 +91,19 @@
               <select name="estado" class="w-24 px-2 py-[3px] border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none
                       {% if request.GET.estado %}text-black{% else %}text-gray-400{% endif %}">
                 <option value="">Todos</option>
-                <option value="ativo"
-                  {% if request.GET.estado == "ativo" %}selected{% endif %}>
-                  Ativo
+                <option value='ativo'
+                    {% if estado_selecionado == 'ativo' %}selected{% endif %}>
+                    Ativo
                 </option>
-                <option value="iniciado"
-                  {% if request.GET.estado == "iniciado" %}selected{% endif %}>
-                  Iniciado
+
+                <option value='iniciado'
+                    {% if estado_selecionado == 'iniciado' %}selected{% endif %}>
+                    Iniciado
                 </option>
-                <option value="concluido"
-                  {% if request.GET.estado == "concluido" %}selected{% endif %}>
-                  Concluído
+
+                <option value='concluido'
+                    {% if estado_selecionado == 'concluido' %}selected{% endif %}>
+                    Concluído
                 </option>
               </select>
             </div>

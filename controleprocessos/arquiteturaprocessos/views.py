@@ -202,7 +202,7 @@ def salvar_documentos_processo(request, processo):
         )
         for doc_id in documentos_ids
     ])
-# Aqui 2
+
 # --------------------------------------
 # Obter Responsável Contatos Area SEGER
 # --------------------------------------
@@ -539,7 +539,7 @@ class ArquiteruraProcessos(ListView):
     paginate_by = 30
     ordering = ["id"]
 
-        # -----------------------------------------
+    # -----------------------------------------
     # Montagem de documentos (reutilizável)
     # -----------------------------------------
     def montar_docs(self, documentos_qs):
@@ -796,7 +796,7 @@ class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
         context["valores"] = [p["total"] for p in processos_mapear]
 
         return context
-# Aqui 1
+
 # --------------------------------
 # Estatísticas de Processos
 # --------------------------------
@@ -1449,7 +1449,7 @@ class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
         })
         return context
 
-    # 🔥 AQUI ESTAVA FALTANDO
+    # 🔥
     def form_valid(self, form):
         context = self.get_context_data()
         telefones = context['telefones']
@@ -2276,10 +2276,22 @@ class ProcessoView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 🔥 CONTADOR CORRETO (APENAS PROCESSOS)
+        # 🔥 CONTADOR
         context["total_registros"] = self.object_list.count()
 
+        # 🔥 LISTA
         context["classificacoes"] = Classificacao.objects.all().order_by("nome")
+
+        # 🧠 NOVO — VALORES SELECIONADOS (ESSENCIAL)
+        req = self.request.GET
+
+        context["classificacao_selecionada"] = str(req.get("classificacao", ""))
+        context["classificacoes_ids_str"] = {str(c.id): c.id for c in Classificacao.objects.all()}
+        context["estado_selecionado"] = str(req.get("estado", ""))
+        context["nome_busca"] = req.get("nome", "")
+        context["macro1_busca"] = req.get("macro1", "")
+        context["macro2_busca"] = req.get("macro2", "")
+        context["area_busca"] = req.get("area", "")
 
         return context
 

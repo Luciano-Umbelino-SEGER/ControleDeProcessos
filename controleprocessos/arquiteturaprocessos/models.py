@@ -297,106 +297,6 @@ class ContatoAreaSeger(models.Model):
 # ============================================================
 # Processos a Mapear
 # ============================================================
-class Processo(models.Model):
-
-    nome = models.CharField(max_length=500)
-    gestor = models.CharField(max_length=150)
-    email = models.EmailField(max_length=200, null=True, blank=True)
-    telefone = models.CharField(max_length=100, blank=True)
-    objetivo = models.TextField()
-    observacao = models.TextField(null=True, blank=True)
-
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    data_atualizacao = models.DateTimeField(null=True, blank=True)
-
-    classificacao = models.ForeignKey(
-        "Classificacao",
-        on_delete=models.PROTECT,
-        related_name="processos"
-    )
-
-    macroprocesso_nivel1 = models.ForeignKey(
-        "MacroprocessoNivel1",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="macro_nivel1"
-    )
-
-    macroprocesso_nivel2 = models.ForeignKey(
-        "MacroprocessoNivel2",
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="macro_nivel2"
-    )
-
-    parent = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        null=True, blank=True,
-        related_name="subprocessos"
-    )
-
-    # 🔥 FK USANDO COLUNA EXISTENTE
-    area_responsavel = models.ForeignKey(
-        ContatoAreaSeger,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="processos"
-    )
-
-    usuario_cadastro = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        null=True, blank=True,
-        related_name="processos_cadastrados"
-    )
-
-    usuario_atualizacao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="processos_atualizados"
-    )
-
-    versao_processo = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(9999)],
-        blank=True,
-        null=True
-    )
-
-    data_conclusao = models.DateTimeField(blank=True, null=True)
-
-    usuario_conclusao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="processos_concluidos"
-    )
-
-    @property
-    def status(self):
-        if self.data_conclusao:
-            return "concluido"
-
-        if self.documentos.exists():
-            return "ativo"
-
-        return "iniciado"
-
-    def __str__(self):
-        return self.nome
-
-    def clean(self):
-        from django.core.exceptions import ValidationError
-
-        if self.area_responsavel and not self.area_responsavel.ativo:
-            raise ValidationError("Área Responsável inválida ou inativa.")
-
-# ============================================================
-# PROCESSO / SUBPROCESSO
-# ============================================================
 class ProcessoMapear(models.Model):
 
     TIPO_PROCESSO = "processo"
@@ -523,6 +423,122 @@ class ProcessoMapear(models.Model):
 
     def __str__(self):
         return self.nome
+
+# ============================================================
+# PROCESSO / SUBPROCESSO
+# ============================================================
+class Processo(models.Model):
+
+    nome = models.CharField(max_length=500)
+    gestor = models.CharField(max_length=150)
+    email = models.EmailField(max_length=200, null=True, blank=True)
+    telefone = models.CharField(max_length=100, blank=True)
+    objetivo = models.TextField()
+    observacao = models.TextField(null=True, blank=True)
+
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(null=True, blank=True)
+
+    classificacao = models.ForeignKey(
+        "Classificacao",
+        on_delete=models.PROTECT,
+        related_name="processos"
+    )
+
+    macroprocesso_nivel1 = models.ForeignKey(
+        "MacroprocessoNivel1",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="macro_nivel1"
+    )
+
+    macroprocesso_nivel2 = models.ForeignKey(
+        "MacroprocessoNivel2",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="macro_nivel2"
+    )
+
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name="subprocessos"
+    )
+
+    # 🔥 FK USANDO COLUNA EXISTENTE
+    area_responsavel = models.ForeignKey(
+        ContatoAreaSeger,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processos"
+    )
+
+    usuario_cadastro = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="processos_cadastrados"
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="processos_atualizados"
+    )
+
+    versao_processo = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(9999)],
+        blank=True,
+        null=True
+    )
+
+    data_conclusao = models.DateTimeField(blank=True, null=True)
+
+    usuario_conclusao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processos_concluidos"
+    )
+
+    @property
+    def status(self):
+        if self.data_conclusao:
+            return "concluido"
+
+        if self.documentos.exists():
+            return "ativo"
+
+        return "iniciado"
+
+    @property
+    def status_label(self):
+        return {
+            "iniciado": "Iniciado",
+            "ativo": "Ativo",
+            "concluido": "Concluído"
+        }.get(self.status)
+
+    @property
+    def status_css(self):
+        return {
+            "iniciado": "bg-orange-200 text-orange-900",
+            "ativo": "bg-green-200 text-green-900",
+            "concluido": "bg-red-200 text-red-900"
+        }.get(self.status, "")
+
+    def __str__(self):
+        return self.nome
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.area_responsavel and not self.area_responsavel.ativo:
+            raise ValidationError("Área Responsável inválida ou inativa.")
 
 # ============================================================
 # PROCESSO – DOCUMENTO (1 Processo → N Modelagens)
