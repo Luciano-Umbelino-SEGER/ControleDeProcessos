@@ -89,7 +89,7 @@
                            id="rb_subprocesso"
                            name="tipo"
                            value="subprocesso"
-                           {% if form.instance.tipo == "subprocesso" %}
+                           {% if form.instance.tipo == 'subprocesso' %}
                                checked
                            {% endif %}>
                     <span id="lbl_subprocesso"
@@ -511,15 +511,24 @@ document.addEventListener("DOMContentLoaded", function () {
             allowClear: true,
             width: '100%'
         });
+
+        // 🔥 FOCO AUTOMÁTICO NA BUSCA (IGUAL PROCESSOS)
+        $(document).on('select2:open', () => {
+            setTimeout(() => {
+                const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                if (searchField) {
+                    searchField.focus();
+                }
+            }, 0);
+        });
     }
 
-    // 🔥 DEPOIS do select2
+    // 🔥 AUTO PREENCHIMENTO
     initAutoPreenchimentoArea(
         "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
     );
 
 });
-</script>
 </script>
 
 {% endblock %}

@@ -252,7 +252,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
-                {{ form.area_responsavel|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
+                {{ form.area_responsavel|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500"|add_attr:"id:id_area_responsavel" }}
             </div>
 
             <div>
@@ -1741,6 +1741,40 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script>
+
+<script src="{% static 'js/auto_preenchimento_area.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const el = $('#id_area_responsavel');
+
+    if (el.length) {
+        el.select2({
+            placeholder: "Selecione ou digite a área...",
+            allowClear: true,
+            width: '100%'
+        });
+
+        // 🔥 CORREÇÃO DO FOCO
+        $(document).on('select2:open', () => {
+            setTimeout(() => {
+                const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                if (searchField) {
+                    searchField.focus();
+                }
+            }, 0);
+        });
+    }
+
+    // 🔥 Auto preenchimento
+    initAutoPreenchimentoArea(
+        "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
+    );
+
+});
+</script>
+
 
 {% endblock %}
 

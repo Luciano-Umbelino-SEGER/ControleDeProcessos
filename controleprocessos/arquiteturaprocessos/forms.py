@@ -892,14 +892,16 @@ class Form_ProcessoForm(forms.ModelForm):
             self.fields["observacao"].widget.attrs["maxlength"] = 3000
             self.fields["observacao"].widget.attrs["rows"] = 4
 
-        # 🔥 GARANTIR QUE O VALOR ATUAL ESTÁ NO QUERYSET
-        if self.instance and self.instance.area_responsavel:
-            self.fields["area_responsavel"].queryset = (
-                    ContatoAreaSeger.objects.filter(ativo=True) |
-                    ContatoAreaSeger.objects.filter(id=self.instance.area_responsavel_id)
-            ).distinct()
-        else:
-            self.fields["area_responsavel"].queryset = ContatoAreaSeger.objects.filter(ativo=True)
+        # 🔥 SELECT2 + EDIÇÃO (CORREÇÃO PRINCIPAL)
+        if self.instance and self.instance.pk:
+            area = self.instance.area_responsavel
+
+            if area:
+                self.fields["area_responsavel"].queryset = (
+                    ContatoAreaSeger.objects.filter(
+                        Q(ativo=True) | Q(pk=area.pk)
+                    ).order_by("nome_area")
+                )
 
         self.label_suffix = ""
 
@@ -982,7 +984,6 @@ class Form_ProcessoForm(forms.ModelForm):
 
         return cleaned
 
-#
 # ----------------------------------
 # Processo a Mapear - Formulário
 # ----------------------------------
