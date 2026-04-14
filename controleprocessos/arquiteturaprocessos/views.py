@@ -31,6 +31,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from pathlib import Path
 from urllib.parse import unquote
+from django.http import HttpResponseRedirect
 import mimetypes
 from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
@@ -986,6 +987,16 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
             'macroprocesso_nivel2',
             'parent'
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        req = self.request.GET
+
+        # 🔥 CONVERTER PARA STRING (PADRÃO)
+        context["classificacao_selecionada"] = req.get("classificacao", "")
+
+        return context
 
 # --------------------------------#
 # Criar Processo a Mapear         #
@@ -2208,6 +2219,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
                 "classificacao",
                 "macroprocesso_nivel1",
                 "macroprocesso_nivel2",
+                "area_responsavel",
             )
             .prefetch_related(
                 "documentos",
@@ -2215,6 +2227,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
                 "subprocessos__classificacao",
                 "subprocessos__macroprocesso_nivel1",
                 "subprocessos__macroprocesso_nivel2",
+                "subprocessos__area_responsavel",
             )
             .order_by("id")
         )
@@ -2235,7 +2248,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
             qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
 
         if area:
-            qs = qs.filter(area_responsavel__icontains=area)
+            qs = qs.filter(area_responsavel__nome_area__icontains=area)
 
         # --------------------
         # ESTADO
@@ -2286,7 +2299,6 @@ class ProcessoView(LoginRequiredMixin, ListView):
         req = self.request.GET
 
         context["classificacao_selecionada"] = str(req.get("classificacao", ""))
-        context["classificacoes_ids_str"] = {str(c.id): c.id for c in Classificacao.objects.all()}
         context["estado_selecionado"] = str(req.get("estado", ""))
         context["nome_busca"] = req.get("nome", "")
         context["macro1_busca"] = req.get("macro1", "")
@@ -2310,7 +2322,7 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        agora_local = timezone.localtime(timezone.now())
+        agora_local = timezone.localtime()
         modelos, normas = get_modelagem_filtrada()
 
         context.update({
@@ -2351,7 +2363,6 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             processo.data_atualizacao = None
             processo.save()
 
-            # 🔥 DOCUMENTOS (1 → N)
             salvar_documentos_processo(self.request, processo)
 
         messages.success(
@@ -2359,7 +2370,8 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             f"Processo '{processo.nome}' criado com sucesso!"
         )
 
-        return super().form_valid(form)
+        self.object = processo
+        return HttpResponseRedirect(self.get_success_url())
 
     # -------------------------------------------------
     # Erro de validação
@@ -2379,9 +2391,23 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
     template_name = "processos/form_processo.html"
     context_object_name = "processo"
 
+    def get_queryset(self):  # 👈 AQUI
+        return (
+            Processo.objects
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "area_responsavel",
+                "usuario_cadastro",
+                "usuario_atualizacao",
+                "usuario_conclusao",
+            )
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        processo = self.get_object()
+        processo = self.object
 
         # -------------------------------------------------
         # Listas para os selects
@@ -2472,7 +2498,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                 if processo.data_criacao else ""
             ),
             "cadastro_user": (
-                processo.usuario_cadastro.get_full_name()
+                processo.usuario_cadastro.get_full_name() or processo.usuario_cadastro.username
                 if processo.usuario_cadastro else ""
             ),
             "atualizacao_data": (
@@ -2480,7 +2506,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                 if processo.data_atualizacao else ""
             ),
             "atualizacao_user": (
-                processo.usuario_atualizacao.get_full_name()
+                processo.usuario_atualizacao.get_full_name() or processo.usuario_atualizacao.username
                 if processo.usuario_atualizacao else ""
             ),
             # auditoria — conclusao
@@ -2496,6 +2522,8 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 
         return context
 
+from django.http import HttpResponseRedirect
+
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
@@ -2505,33 +2533,50 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
 
+    # -------------------------------------------------
+    # 🔥 OTIMIZAÇÃO (IMPORTANTE)
+    # -------------------------------------------------
+    def get_queryset(self):
+        return (
+            Processo.objects
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "area_responsavel",
+                "usuario_cadastro",
+                "usuario_atualizacao",
+                "usuario_conclusao",
+            )
+        )
+
+    # -------------------------------------------------
+    # 🔥 CONTROLE DE EDIÇÃO
+    # -------------------------------------------------
     def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()  # 🔥 evita dupla query
 
-        processo = self.get_object()
-
-        if processo.status == "concluido":
+        if self.object.status == "concluido":
             messages.error(
                 request,
-                f"O processo '{processo.nome}' já está concluído e não pode ser editado."
+                f"O processo '{self.object.nome}' já está concluído e não pode ser editado."
             )
             return redirect("arquiteturaprocessos:processos")
 
         return super().dispatch(request, *args, **kwargs)
 
+    # -------------------------------------------------
+    # CONTEXTO
+    # -------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.object
 
-        # -------------------------------------------------
-        # Listas para os selects
-        # -------------------------------------------------
         modelos, normas = get_modelagem_filtrada()
         context["modelos_processo"] = modelos
         context["normas_procedimento"] = normas
 
-        # -------------------------------------------------
-        # SELECTS DEPENDENTES (macroprocessos)
-        # -------------------------------------------------
+        # SELECTS DEPENDENTES
         context["macroprocesso_nivel1_list"] = (
             MacroprocessoNivel1.objects.filter(classificacao=processo.classificacao)
             if processo.classificacao_id else MacroprocessoNivel1.objects.none()
@@ -2544,9 +2589,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
         )
 
-        # -------------------------------------------------
-        # 🔥 Documentos associados (1 → N) — IGUAL AO VISUALIZAR
-        # -------------------------------------------------
+        # DOCUMENTOS
         documentos_qs = (
             ProcessoDocumento.objects
             .select_related(
@@ -2574,38 +2617,21 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                     mp.vigencia_inicio.strftime("%Y-%m-%d")
                     if mp.vigencia_inicio else ""
                 ),
+                "pdf": mp.documento_modelagem_processo.url if mp.documento_modelagem_processo else "",
+                "link": mp.link_normaprocedimento or "",
             }
 
-            # -------------------------------------------------
-            # PDF e LINK (sempre presentes, mesmo que vazios)
-            # -------------------------------------------------
-            dados["pdf"] = (
-                mp.documento_modelagem_processo.url
-                if mp.documento_modelagem_processo
-                else ""
-            )
-
-            dados["link"] = mp.link_normaprocedimento or ""
-
-            # -------------------------------------------------
-            # Separação por tipo de documento
-            # -------------------------------------------------
             if "modelo" in tipo_nome:
                 modelos_hidratados.append(dados)
             else:
                 normas_hidratadas.append(dados)
 
-        # -------------------------------------------------
-        # Envio para hidratação via JS
-        # -------------------------------------------------
         context.update({
             "modelos_hidratados": modelos_hidratados,
             "normas_hidratadas": normas_hidratadas,
         })
 
-        # -------------------------------------------------
-        # Controle de modo + auditoria
-        # -------------------------------------------------
+        # AUDITORIA
         context.update({
             "modo_edicao": True,
             "modo_inclusao": False,
@@ -2617,24 +2643,21 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 if processo.data_criacao else ""
             ),
             "cadastro_user": (
-                processo.usuario_cadastro.get_full_name()
+                processo.usuario_cadastro.get_full_name() or processo.usuario_cadastro.username
                 if processo.usuario_cadastro else ""
             ),
 
-            "atualizacao_data": timezone.localtime(
-                timezone.now()
-            ).strftime("%d/%m/%Y %H:%M:%S"),
+            "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
             "atualizacao_user": (
-                self.request.user.get_full_name()
-                or self.request.user.username
+                self.request.user.get_full_name() or self.request.user.username
             ),
+
             "conclusao_data": (
                 timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
                 if processo.data_conclusao else ""
             ),
             "conclusao_user": (
-                processo.usuario_conclusao.get_full_name()
-                or processo.usuario_conclusao.username
+                processo.usuario_conclusao.get_full_name() or processo.usuario_conclusao.username
                 if processo.usuario_conclusao else ""
             ),
         })
@@ -2647,10 +2670,8 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         with transaction.atomic():
 
-            # 🔥 ESTADO ANTES (PROCESSO)
-            processo_original = self.get_object()
-
-            processo_antigo = Processo.objects.get(pk=processo_original.pk)
+            processo_original = self.object  # 🔥 evita nova query
+            processo_antigo = processo_original
 
             dados_antes = {
                 "nome": processo_antigo.nome,
@@ -2660,28 +2681,21 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 "macro_nivel2": processo_antigo.macroprocesso_nivel2_id,
             }
 
-            # 🔥 ESTADO ANTES (DOCUMENTOS)
             docs_antes = set(
                 ProcessoDocumento.objects
                 .filter(processo=processo_original)
                 .values_list("modelagem_processo__titulo", flat=True)
             )
 
-            # -----------------------------------------
-            # SALVANDO PROCESSO
-            # -----------------------------------------
+            # SALVAR PROCESSO
             processo = form.save(commit=False)
-
             processo.usuario_atualizacao = self.request.user
             processo.data_atualizacao = timezone.now()
             processo.save()
 
-            # -----------------------------------------
-            # SALVANDO DOCUMENTOS
-            # -----------------------------------------
+            # SALVAR DOCUMENTOS
             salvar_documentos_processo(self.request, processo)
 
-            # 🔥 ESTADO DEPOIS (PROCESSO)
             dados_depois = {
                 "nome": processo.nome,
                 "status": processo.status,
@@ -2690,7 +2704,6 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 "macro_nivel2": processo.macroprocesso_nivel2_id,
             }
 
-            # 🔥 ESTADO DEPOIS (DOCUMENTOS)
             docs_depois = set(
                 ProcessoDocumento.objects
                 .filter(processo=processo)
@@ -2700,9 +2713,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             adicionados = docs_depois - docs_antes
             removidos = docs_antes - docs_depois
 
-            # -----------------------------------------
-            # 🔥 LOG DO PROCESSO
-            # -----------------------------------------
+            # LOG PROCESSO
             registrar_log(
                 request=self.request,
                 acao="UPDATE",
@@ -2713,11 +2724,8 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 dados_depois=dados_depois,
             )
 
-            # -----------------------------------------
-            # 🔥 LOG DOS DOCUMENTOS (SE HOUVER ALTERAÇÃO)
-            # -----------------------------------------
+            # LOG DOCUMENTOS
             if adicionados or removidos:
-
                 descricao_docs = []
 
                 if adicionados:
@@ -2741,7 +2749,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             f"Processo '{processo.nome}' atualizado com sucesso!"
         )
 
-        return redirect(self.success_url)
+        return HttpResponseRedirect(self.get_success_url())
 
 # --------------------------------#
 # Excluir Processo                #
@@ -2751,9 +2759,24 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
     template_name = 'processos/form_processo.html'
     context_object_name = 'processo'
 
+    def get_queryset(self):
+        return (
+            Processo.objects
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "area_responsavel",
+                "usuario_cadastro",
+                "usuario_atualizacao",
+                "usuario_conclusao",
+            )
+            .prefetch_related("subprocessos")  # 🔥 importante aqui
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        processo = self.get_object()
+        processo = self.object
 
         # -------------------------------------------------
         # Listas para os selects
@@ -2806,7 +2829,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             # MODELO DE PROCESSO (arquivo local)
             # ------------------------------
             if "modelo" in tipo_nome:
-                dados["arquivo"] = (
+                dados["pdf"] = (
                     mp.documento_modelagem_processo.url
                     if mp.documento_modelagem_processo
                     else ""
@@ -2817,7 +2840,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             # NORMA DE PROCEDIMENTO (URL externa)
             # ------------------------------
             else:
-                dados["arquivo"] = mp.link_normaprocedimento or ""
+                dados["link"] = mp.link_normaprocedimento or ""
                 normas_hidratadas.append(dados)
 
         # -------------------------------------------------
@@ -2850,7 +2873,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                 if processo.data_criacao else ""
             ),
             "cadastro_user": (
-                processo.usuario_cadastro.get_full_name()
+                processo.usuario_cadastro.get_full_name() or processo.usuario_cadastro.username
                 if processo.usuario_cadastro else ""
             ),
             "atualizacao_data": (

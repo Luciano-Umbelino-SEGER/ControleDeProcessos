@@ -830,7 +830,6 @@ class Form_ProcessoForm(forms.ModelForm):
 
     area_responsavel = forms.ModelChoiceField(
         queryset=ContatoAreaSeger.objects.filter(ativo=True).order_by("nome_area"),
-        to_field_name="nome_area",
         required=False,
         label="Área Responsável",
         empty_label="Selecione uma área"
@@ -892,6 +891,15 @@ class Form_ProcessoForm(forms.ModelForm):
             self.fields["observacao"].max_length = 3000
             self.fields["observacao"].widget.attrs["maxlength"] = 3000
             self.fields["observacao"].widget.attrs["rows"] = 4
+
+        # 🔥 GARANTIR QUE O VALOR ATUAL ESTÁ NO QUERYSET
+        if self.instance and self.instance.area_responsavel:
+            self.fields["area_responsavel"].queryset = (
+                    ContatoAreaSeger.objects.filter(ativo=True) |
+                    ContatoAreaSeger.objects.filter(id=self.instance.area_responsavel_id)
+            ).distinct()
+        else:
+            self.fields["area_responsavel"].queryset = ContatoAreaSeger.objects.filter(ativo=True)
 
         self.label_suffix = ""
 
@@ -974,10 +982,6 @@ class Form_ProcessoForm(forms.ModelForm):
 
         return cleaned
 
-    def clean_area_responsavel(self):
-        area = self.cleaned_data.get("area_responsavel")
-        return area.nome_area if area else ""
-    
 #
 # ----------------------------------
 # Processo a Mapear - Formulário

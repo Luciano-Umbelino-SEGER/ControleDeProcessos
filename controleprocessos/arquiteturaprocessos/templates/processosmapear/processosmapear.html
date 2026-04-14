@@ -44,8 +44,8 @@
                          focus:ring-2 focus:ring-blue-500
                          {% if request.GET.tipo %}text-black{% else %}text-gray-400{% endif %}">
                   <option value="">Todos</option>
-                  <option value="processo" {% if request.GET.tipo == "processo" %}selected{% endif %}>Processo</option>
-                  <option value="subprocesso" {% if request.GET.tipo == "subprocesso" %}selected{% endif %}>Subprocesso</option>
+                  <option value="processo" {% if request.GET.tipo == 'processo' %}selected{% endif %}>Processo</option>
+                  <option value="subprocesso" {% if request.GET.tipo == 'subprocesso' %}selected{% endif %}>Subprocesso</option>
                 </select>
               </div>
 
@@ -58,10 +58,10 @@
                          {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
                   <option value="">Todas</option>
                   {% for c in classificacoes %}
-                    <option value="{{ c.id }}"
-                      {% if request.GET.classificacao == c.id|stringformat:"s" %}selected{% endif %}>
-                      {{ c.nome }}
-                    </option>
+                     <option value="{{ c.id }}"
+                          {% if classificacao_selecionada == c.id %}selected{% endif %}>
+                          {{ c.nome }}
+                      </option>
                   {% endfor %}
                 </select>
               </div>
