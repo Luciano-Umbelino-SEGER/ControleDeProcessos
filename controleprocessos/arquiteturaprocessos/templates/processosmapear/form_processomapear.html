@@ -512,18 +512,27 @@ document.addEventListener("DOMContentLoaded", function () {
             width: '100%'
         });
 
-        // 🔥 FOCO AUTOMÁTICO NA BUSCA (IGUAL PROCESSOS)
-        $(document).on('select2:open', () => {
-            setTimeout(() => {
-                const searchField = document.querySelector('.select2-container--open .select2-search__field');
-                if (searchField) {
-                    searchField.focus();
-                }
-            }, 0);
-        });
+        // 🔥 BLOQUEAR NO MODO VISUALIZAÇÃO/EXCLUSÃO
+        const modoVisualizacao = {{ modo_visualizacao|yesno:"true,false" }};
+        const modoExclusao = {{ modo_exclusao|yesno:"true,false" }};
+
+        if (modoVisualizacao || modoExclusao) {
+            el.prop('disabled', true);
+        }
+
+        // 🔥 FOCO AUTOMÁTICO (só se não estiver bloqueado)
+        if (!(modoVisualizacao || modoExclusao)) {
+            $(document).on('select2:open', () => {
+                setTimeout(() => {
+                    const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                    if (searchField) {
+                        searchField.focus();
+                    }
+                }, 0);
+            });
+        }
     }
 
-    // 🔥 AUTO PREENCHIMENTO
     initAutoPreenchimentoArea(
         "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
     );
