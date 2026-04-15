@@ -1185,7 +1185,9 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 for erro in erros:
                     form.add_error(None, erro)
 
-                return self.form_invalid(form)
+                context = self.get_context_data()
+                context["form"] = form
+                return self.render_to_response(context)
 
         # 🔥 Persistência
         processomapear.usuario_atualizacao = self.request.user

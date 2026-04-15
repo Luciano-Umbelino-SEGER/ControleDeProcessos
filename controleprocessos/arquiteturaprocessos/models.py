@@ -389,19 +389,28 @@ class ProcessoMapear(models.Model):
         if not self.classificacao:
             erros.append("Classificação é obrigatória.")
 
-        if self.macroprocesso_nivel2 and not self.macroprocesso_nivel1:
-            erros.append("Macroprocesso Nível 1 é obrigatório quando Macroprocesso Nível 2 for informado.")
+        # 🔥 MACROPROCESSO
+        if self.macroprocesso_nivel2:
+            if not self.macroprocesso_nivel1:
+                erros.append("Macroprocesso Nível 1 é obrigatório quando Macroprocesso Nível 2 for informado.")
+            elif self.macroprocesso_nivel2.macroprocesso_nivel1_id != self.macroprocesso_nivel1_id:
+                erros.append("Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 informado.")
 
-        if self.tipo not in dict(self.TIPO_CHOICES):
+        # 🔥 TIPO
+        if self.tipo not in [c[0] for c in self.TIPO_CHOICES]:
             erros.append("Tipo de processo inválido.")
 
-        if self.tipo == self.TIPO_SUBPROCESSO and not self.parent:
-            erros.append("Subprocesso deve estar vinculado a um Processo.")
+        # 🔥 SUBPROCESSO
+        if self.tipo == self.TIPO_SUBPROCESSO:
+            if not self.parent:
+                erros.append("Subprocesso deve estar vinculado a um Processo.")
+            elif not Processo.objects.filter(pk=self.parent_id).exists():
+                erros.append("O processo pai não existe mais.")
 
         if not self.objetivo or not self.objetivo.strip():
             erros.append("Objetivo é obrigatório.")
 
-        # ✅ CORRETO (FK)
+        # 🔥 FK
         if not self.area_responsavel:
             erros.append("Área Responsável é obrigatória.")
 
@@ -411,11 +420,14 @@ class ProcessoMapear(models.Model):
         if not self.telefone or not self.telefone.strip():
             erros.append("Telefone é obrigatório.")
 
-        if not self.email or not self.email.strip():
+        # 🔥 EMAIL
+        email = (self.email or "").strip()
+
+        if not email:
             erros.append("E-mail é obrigatório.")
         else:
             try:
-                validate_email(self.email)
+                validate_email(email)
             except ValidationError:
                 erros.append("E-mail inválido.")
 
@@ -535,10 +547,26 @@ class Processo(models.Model):
         return self.nome
 
     def clean(self):
-        from django.core.exceptions import ValidationError
-
+        # 🔥 ÁREA
         if self.area_responsavel and not self.area_responsavel.ativo:
             raise ValidationError("Área Responsável inválida ou inativa.")
+
+        # 🔥 HIERARQUIA
+        if self.parent:
+            if self.parent == self:
+                raise ValidationError("Processo não pode ser pai de si mesmo.")
+
+            if self.parent.parent_id:
+                raise ValidationError("Subprocesso não pode ter outro subprocesso como pai.")
+
+        # 🔥 MACROPROCESSO
+        if self.macroprocesso_nivel2 and self.macroprocesso_nivel1:
+            if self.macroprocesso_nivel2.macroprocesso_nivel1_id != self.macroprocesso_nivel1_id:
+                raise ValidationError("Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 # ============================================================
 # PROCESSO – DOCUMENTO (1 Processo → N Modelagens)

@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from datetime import date
 from django.forms.widgets import Select
 from urllib.parse import urlparse
@@ -955,32 +956,59 @@ class Form_ProcessoForm(forms.ModelForm):
 
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
+        macro1 = cleaned.get("macroprocesso_nivel1")
+        macro2 = cleaned.get("macroprocesso_nivel2")
+        area = cleaned.get("area_responsavel")
 
-        # 1️⃣ Nome é obrigatório SEMPRE
+        # 1️⃣ Nome obrigatório
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
 
-        # 2️⃣ PROCESSO → parent deve ser None
+        # 2️⃣ Regra principal (SUA REGRA)
         if not parent:
             cleaned["parent"] = None  # Processo
 
-        # 3️⃣ SUBPROCESSO → parent deve ser um Processo (não outro subprocesso)
-        if parent and parent.parent_id:
-            self.add_error(
-                "parent",
-                "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso."
-            )
+        # 3️⃣ Hierarquia
+        if parent:
+            if parent.parent_id:
+                self.add_error(
+                    "parent",
+                    "Um Subprocesso só pode ter como pai um PROCESSO, nunca outro Subprocesso."
+                )
 
-        # 4️⃣ Validação macroprocesso n1/n2
-        macro1 = cleaned.get("macroprocesso_nivel1")
-        macro2 = cleaned.get("macroprocesso_nivel2")
+            if self.instance and parent == self.instance:
+                self.add_error("parent", "Processo não pode ser pai de si mesmo.")
 
+        # 4️⃣ Macroprocesso
         if macro2 and macro1:
             if macro2.macroprocesso_nivel1_id != macro1.id:
                 self.add_error(
                     "macroprocesso_nivel2",
                     "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
                 )
+
+        # 🔥 5️⃣ Área obrigatória
+        if not area:
+            self.add_error("area_responsavel", "Área Responsável é obrigatória.")
+
+        # 🔥 6️⃣ Gestor obrigatório
+        if not (cleaned.get("gestor") or "").strip():
+            self.add_error("gestor", "Gestor é obrigatório.")
+
+        # 🔥 7️⃣ Telefone obrigatório
+        if not (cleaned.get("telefone") or "").strip():
+            self.add_error("telefone", "Telefone é obrigatório.")
+
+        # 🔥 8️⃣ Email obrigatório + válido
+        email = (cleaned.get("email") or "").strip()
+
+        if not email:
+            self.add_error("email", "E-mail é obrigatório.")
+        else:
+            try:
+                validate_email(email)
+            except ValidationError:
+                self.add_error("email", "E-mail inválido.")
 
         return cleaned
 
@@ -1058,7 +1086,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
             self.fields["observacao"].widget.attrs["rows"] = 4
 
         # 🔥 SELECT2 + EDIÇÃO (CORREÇÃO PRINCIPAL)
-        if self.instance and self.instance.pk:
+        if self.instance and self.instance.area_responsavel:
             area = self.instance.area_responsavel
 
             if area:
@@ -1105,7 +1133,6 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         nome = cleaned.get("nome")
         objetivo = cleaned.get("objetivo")
         tipo = cleaned.get("tipo")
-        parent = cleaned.get("parent")
 
         if not nome or nome.strip() == "":
             self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
@@ -1113,12 +1140,10 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         if not objetivo or objetivo.strip() == "":
             self.add_error("objetivo", "Informe o objetivo do Processo.")
 
-        # 🔥 REGRA DE DOMÍNIO
+        # 🔥 REGRA LEVE (OK manter)
         if tipo == ProcessoMapear.TIPO_PROCESSO:
             cleaned["parent"] = None
 
-        if tipo == ProcessoMapear.TIPO_SUBPROCESSO and not parent:
-            self.add_error("parent", "Subprocesso deve estar vinculado a um Processo.")
 
         return cleaned
 
