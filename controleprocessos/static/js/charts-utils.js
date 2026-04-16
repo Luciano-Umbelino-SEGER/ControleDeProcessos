@@ -5,8 +5,8 @@ function normalizarLabel(label) {
         .toString()
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/^processos\s+/g, "")
+        .replace(/[\u0300-\u036f]/g, "") // remove acentos
+        .replace(/^processos?\s+/g, "") // remove "processo" ou "processos"
         .trim();
 }
 
@@ -19,14 +19,15 @@ const CORES_STATUS = {
 const CORES_CLASS = {
     estrategico: { bg:"rgba(59,130,246,0.25)", border:"#3b82f6" },
     suporte: { bg:"rgba(139,92,246,0.25)", border:"#8b5cf6" },
-    finalisticos: { bg:"rgba(249,115,22,0.25)", border:"#f97316" },
     finalistico: { bg:"rgba(249,115,22,0.25)", border:"#f97316" }
 };
 
 function gerarCores(labels, mapa) {
+    const normalizados = labels.map(l => normalizarLabel(l));
+
     return {
-        bg: labels.map(l => mapa[normalizarLabel(l)]?.bg || "rgba(200,200,200,0.2)"),
-        border: labels.map(l => mapa[normalizarLabel(l)]?.border || "#999")
+        bg: normalizados.map(l => mapa[l]?.bg || "rgba(200,200,200,0.2)"),
+        border: normalizados.map(l => mapa[l]?.border || "#999")
     };
 }
 
