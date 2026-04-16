@@ -777,6 +777,23 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
         return context
 
 # --------------------------------
+# Selecionar Processos Pai
+# --------------------------------
+def buscar_processos(request):
+    termo = request.GET.get('q', '')
+
+    processos = Processo.objects.filter(
+        Q(nome__icontains=termo)
+    ).order_by('nome')[:20]
+
+    data = [
+        {"id": p.id, "text": p.nome}
+        for p in processos
+    ]
+
+    return JsonResponse(data, safe=False)
+
+# --------------------------------
 # Processos a Mapear
 # --------------------------------
 class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):

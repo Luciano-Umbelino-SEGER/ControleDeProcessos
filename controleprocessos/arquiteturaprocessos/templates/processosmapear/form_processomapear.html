@@ -127,8 +127,8 @@
                    name="parent"
                    value="{{ form.instance.parent_id|default_if_none:'' }}">
 
-            <div id="processo_select_container" class="hidden">
-                {{ form.parent }}
+            <div id="processo_select_container" class="{% if form.instance.tipo != 'subprocesso' %}hidden{% endif %}">
+                {{ form.parent|add_attr:"id:id_parent_select" }}
             </div>
         </div>
 
@@ -488,6 +488,23 @@ document.addEventListener("DOMContentLoaded", function () {
         limparCampos()
         atualizarLabels()
 
+        const containerSelect = document.getElementById("processo_select_container")
+
+        if (rbSubprocesso.checked) {
+            containerSelect.classList.remove("hidden")
+
+            // 🔥 REINICIALIZA / AJUSTA SELECT2
+            setTimeout(() => {
+                $('#id_parent_select').select2({
+                    placeholder: "Selecione um processo...",
+                    allowClear: false,
+                    width: '100%'
+                });
+            }, 0)
+
+        } else {
+            containerSelect.classList.add("hidden")
+        }
     }
 
     if (rbProcesso) rbProcesso.addEventListener("change", trocarTipo)
@@ -507,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (el.length) {
         el.select2({
             placeholder: "Selecione ou digite a área...",
-            allowClear: true,
+            allowClear: false,
             width: '100%'
         });
 
@@ -535,6 +552,61 @@ document.addEventListener("DOMContentLoaded", function () {
     initAutoPreenchimentoArea(
         "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
     );
+
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const el = $('#id_parent_select');
+
+    if (el.length) {
+
+        el.select2({
+            placeholder: "Selecione ou digite para buscar...",
+            allowClear: false,
+            width: '100%',
+
+            ajax: {
+                url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
+                dataType: 'json',
+                delay: 250,
+
+                data: function (params) {
+                    return {
+                        q: params.term || '' // 🔥 importante
+                    };
+                },
+
+                processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                },
+
+                cache: true
+            },
+
+            minimumInputLength: 0, // 🔥 chave da solução
+
+            language: {
+                inputTooShort: () => "Digite pelo menos 2 caracteres",
+                noResults: () => "Nenhum resultado encontrado",
+                searching: () => "Buscando..."
+            }
+        });
+
+        // 🔥 mantém isso (edição)
+        const valorInicial = el.val();
+        const textoInicial = el.find("option:selected").text();
+
+        if (valorInicial && textoInicial) {
+            const option = new Option(textoInicial, valorInicial, true, true);
+            el.append(option).trigger('change');
+        }
+
+    }
 
 });
 </script>
