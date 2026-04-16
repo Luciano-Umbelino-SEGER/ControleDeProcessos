@@ -741,11 +741,11 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
         # ---------------------------
         area = (
             Processo.objects
-            .values("area_responsavel")
+            .values("area_responsavel__nome_area")
             .annotate(total=Count("id"))
         )
 
-        context["area_labels"] = [a["area_responsavel"] for a in area]
+        context["area_labels"] = [a["area_responsavel__nome_area"] for a in area]
         context["area_valores"] = [a["total"] for a in area]
 
         # ---------------------------
@@ -806,11 +806,11 @@ class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
 
         processos_mapear = (
             ProcessoMapear.objects
-            .values("area_responsavel")
+            .values("area_responsavel__nome_area")
             .annotate(total=Count("id"))
         )
 
-        context["labels"] = [p["area_responsavel"] for p in processos_mapear]
+        context["labels"] = [p["area_responsavel__nome_area"] or "Sem área" for p in processos_mapear]
         context["valores"] = [p["total"] for p in processos_mapear]
 
         return context
@@ -861,23 +861,25 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
         # ---------------------------
 
         areas = sorted(
-            {p.area_responsavel for p in processos if p.area_responsavel}
+            {p.area_responsavel for p in processos if p.area_responsavel},
+            key=lambda x: x.nome_area
         )
 
         status_lista = ["iniciado", "ativo", "concluido"]
 
         estrutura = {s: [0] * len(areas) for s in status_lista}
 
+        area_index = {a: i for i, a in enumerate(areas)}
+
         for p in processos:
 
             area = p.area_responsavel
             status = normalizar_status(p.status)
 
-            if area in areas and status in estrutura:
-                index = areas.index(area)
-                estrutura[status][index] += 1
+            if area in area_index and status in estrutura:
+                estrutura[status][area_index[area]] += 1
 
-        context["area_labels"] = areas
+        context["area_labels"] = [a.nome_area for a in areas]
         context["area_iniciado"] = estrutura["iniciado"]
         context["area_ativo"] = estrutura["ativo"]
         context["area_concluido"] = estrutura["concluido"]

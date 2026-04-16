@@ -1775,6 +1775,45 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    initSelect2('#processo_select_visible', {
+        placeholder: "Selecione ou digite para buscar...",
+
+        ajax: {
+            url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
+            dataType: 'json',
+            delay: 250,
+
+            data: function (params) {
+                return {
+                    q: params.term || ''
+                };
+            },
+
+            processResults: function (data) {
+                return {
+                    results: data
+                };
+            },
+
+            cache: true
+        }
+    });
+
+});
+
+$('#processo_select_visible').on('select2:select', function (e) {
+    const selectedId = e.params.data.id;
+    $('#id_parent').val(selectedId);
+});
+
+$('#processo_select_visible').on('select2:clear', function () {
+    $('#id_parent').val('');
+});
+</script>
+
 
 {% endblock %}
 

@@ -559,10 +559,12 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const el = $('#id_parent_select');
+    const el = $('#processo_select_visible');
+    const hidden = $('#id_parent');
 
     if (el.length) {
 
+        // 🚀 Select2 com AJAX
         el.select2({
             placeholder: "Selecione ou digite para buscar...",
             allowClear: false,
@@ -575,7 +577,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 data: function (params) {
                     return {
-                        q: params.term || '' // 🔥 importante
+                        q: params.term || ''
                     };
                 },
 
@@ -588,7 +590,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 cache: true
             },
 
-            minimumInputLength: 0, // 🔥 chave da solução
+            minimumInputLength: 0,
 
             language: {
                 inputTooShort: () => "Digite pelo menos 2 caracteres",
@@ -597,13 +599,33 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // 🔥 mantém isso (edição)
-        const valorInicial = el.val();
-        const textoInicial = el.find("option:selected").text();
+        // 🔥 Atualiza hidden ao selecionar
+        el.on('select2:select', function (e) {
+            hidden.val(e.params.data.id);
+        });
 
-        if (valorInicial && textoInicial) {
-            const option = new Option(textoInicial, valorInicial, true, true);
-            el.append(option).trigger('change');
+        // 🔥 Limpa hidden
+        el.on('select2:clear', function () {
+            hidden.val('');
+        });
+
+        // 🔥 MODO EDIÇÃO (carregar valor inicial)
+        const parentId = hidden.val();
+
+        if (parentId) {
+            $.ajax({
+                url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
+                data: { q: '' },
+                success: function (data) {
+
+                    const item = data.find(p => p.id == parentId);
+
+                    if (item) {
+                        const option = new Option(item.text, item.id, true, true);
+                        el.append(option).trigger('change');
+                    }
+                }
+            });
         }
 
     }

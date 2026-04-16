@@ -51,6 +51,27 @@ DADOS
 const labels  = {{ labels|safe }};
 const valores = {{ valores|safe }};
 
+function quebrarLabel(texto, limite = 20) {
+    if (!texto) return "Sem área";
+
+    const palavras = texto.split(" ");
+    let linhas = [];
+    let linhaAtual = "";
+
+    palavras.forEach(palavra => {
+        if ((linhaAtual + " " + palavra).length > limite) {
+            linhas.push(linhaAtual.trim());
+            linhaAtual = palavra;
+        } else {
+            linhaAtual += " " + palavra;
+        }
+    });
+
+    if (linhaAtual) linhas.push(linhaAtual.trim());
+
+    return linhas;
+}
+
 /* -----------------------------
 ORDENAÇÃO (ranking)
 ----------------------------- */
@@ -87,7 +108,7 @@ new Chart(
         type: "bar",
 
         data: {
-            labels: labelsOrdenados,
+            labels: labelsOrdenados.map(l => quebrarLabel(l)),
 
             datasets: [{
                 label: "Processos a Mapear",
@@ -109,6 +130,14 @@ new Chart(
 
             plugins: {
 
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label.join(" ");
+                        }
+                    }
+                },
+
                 legend: { display: false },
 
                 datalabels: {
@@ -129,8 +158,14 @@ new Chart(
             scales: {
 
                 x: {
-                    grid: { display: false }
-                },
+                    grid: { display: false },
+
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 30,
+                        autoSkip: false
+                    }
+                }, // 🔥 FECHAMENTO DO X
 
                 y: {
                     beginAtZero: true,
