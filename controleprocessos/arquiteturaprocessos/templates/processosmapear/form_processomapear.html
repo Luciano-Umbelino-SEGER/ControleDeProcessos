@@ -47,8 +47,113 @@
         {% csrf_token %}
         <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
-        <!-- LINHA 1 -->
+        <label class="block text-sm font-medium text-blue-700">
+            Selecione o Tipo
+        </label>
+        <!-- LINHA – PROCESSO / SUBPROCESSO / OUTRO -->
+        <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm mb-4">
+
+            <!-- PROCESSO -->
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio"
+                       id="rb_processo"
+                       name="tipo"
+                       value="processo"
+                       {% if form.instance.tipo != "subprocesso" and form.instance.tipo != "outro" %}checked{% endif %}>
+                <span id="lbl_processo"
+                      class="font-medium {% if form.instance.tipo != 'subprocesso' and form.instance.tipo != 'outro' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                    Processo
+                </span>
+            </label>
+
+            <!-- SUBPROCESSO -->
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio"
+                       id="rb_subprocesso"
+                       name="tipo"
+                       value="subprocesso"
+                       {% if form.instance.tipo == 'subprocesso' %}checked{% endif %}>
+                <span id="lbl_subprocesso"
+                      class="font-medium {% if form.instance.tipo == 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                    Subprocesso
+                </span>
+            </label>
+
+            <!-- OUTRO -->
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio"
+                       id="rb_outro"
+                       name="tipo"
+                       value="outro"
+                       {% if form.instance.tipo == 'outro' %}checked{% endif %}>
+                <span id="lbl_outro"
+                      class="font-medium {% if form.instance.tipo == 'outro' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                    Outro
+                </span>
+            </label>
+        </div>
+
+        <!-- LINHA 1 – PROCESSO / SUBPROCESSO -->
+        <div class="grid grid-cols-2 gap-6 mb-8">
+
+            <!-- CAMPO PROCESSO -->
+            <div>
+                <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">
+                    {% if form.instance.tipo == "subprocesso" or form.instance.tipo == "outro" %}
+                        Selecionar Processo
+                    {% else %}
+                        Nome do Processo
+                    {% endif %}
+                </label>
+
+                <!-- INPUT PROCESSO -->
+                <input id="processo_input_visible"
+                       type="text"
+                       data-similarity-tables="ProcessoMapear,Processo"
+                       data-similarity-field="nome"
+                       data-similarity-id="{{ form.instance.id }}"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo == 'subprocesso' or form.instance.tipo == 'outro' %}hidden{% endif %}"
+                       placeholder="Nome do Processo">
+
+                <!-- SELECT PROCESSO -->
+                <input type="hidden"
+                       id="id_parent"
+                       name="parent"
+                       value="{{ form.instance.parent_id|default_if_none:'' }}">
+
+                <div id="processo_select_container" class="{% if form.instance.tipo != 'subprocesso' and form.instance.tipo != 'outro' %}hidden{% endif %}">
+                    {{ form.parent|add_attr:"id:id_parent_select" }}
+                </div>
+            </div>
+
+            <!-- CAMPO SUBPROCESSO / ELEMENTO -->
+            <div>
+                <label id="lbl_campo_subprocesso"
+                       class="block text-sm font-medium {% if form.instance.tipo == 'subprocesso' or form.instance.tipo == 'outro' %}text-blue-700{% else %}text-gray-400{% endif %}">
+                    {% if form.instance.tipo == "outro" %}
+                        Nome do Elemento
+                    {% else %}
+                        Nome do Subprocesso
+                    {% endif %}
+                </label>
+
+                <input id="subprocesso_input_visible"
+                       type="text"
+                       data-similarity-tables="ProcessoMapear,Processo"
+                       data-similarity-field="nome"
+                       data-similarity-id="{{ form.instance.id }}"
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' and form.instance.tipo != 'outro' %}bg-gray-100{% endif %}"
+                       placeholder="{% if form.instance.tipo == 'outro' %}Nome do Elemento{% else %}Nome do Subprocesso{% endif %}"
+                       {% if form.instance.tipo != "subprocesso" and form.instance.tipo != "outro" %}disabled{% endif %}>
+
+                <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
+            </div>
+
+        </div>
+
+        <!-- LINHA 2 – CLASSIFICAÇÃO -->
         <div class="grid grid-cols-3 gap-6 mb-6">
+
             <div>
                 <label class="block text-sm font-medium text-blue-700">Classificação</label>
                 {{ form.classificacao }}
@@ -63,98 +168,12 @@
                 <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
                 {{ form.macroprocesso_nivel2 }}
             </div>
-        </div>
-
-        <!-- LINHA – PROCESSO / SUBPROCESSO -->
-        <div class="mb-0 -mt-1">
-            <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
-
-                <!-- PROCESSO -->
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio"
-                           id="rb_processo"
-                           name="tipo"
-                           value="processo"
-                           {% if form.instance.tipo != "subprocesso" %}checked{% endif %}>
-                    <span id="lbl_processo"
-                          class="font-medium {% if form.instance.tipo != 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
-                        Processo
-                    </span>
-                </label>
-
-                <!-- SUBPROCESSO -->
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio"
-                           id="rb_subprocesso"
-                           name="tipo"
-                           value="subprocesso"
-                           {% if form.instance.tipo == 'subprocesso' %}
-                               checked
-                           {% endif %}>
-                    <span id="lbl_subprocesso"
-                          class="font-medium {% if form.instance.tipo == 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
-                        Subprocesso
-                    </span>
-                </label>
-
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-6 mb-6">
-
-        <!-- CAMPO PROCESSO -->
-        <div>
-            <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">
-                {% if form.instance.tipo == "subprocesso" %}
-                    Selecionar Processo
-                {% else %}
-                    Nome do Processo
-                {% endif %}
-            </label>
-
-            <!-- INPUT PROCESSO -->
-            <input id="processo_input_visible"
-                   type="text"
-                   data-similarity-tables="ProcessoMapear,Processo"
-                   data-similarity-field="nome"
-                   data-similarity-id="{{ form.instance.id }}"
-                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo == 'subprocesso' %}hidden{% endif %}"
-                   placeholder="Nome do Processo">
-
-            <!-- SELECT PROCESSO -->
-            <input type="hidden"
-                   id="id_parent"
-                   name="parent"
-                   value="{{ form.instance.parent_id|default_if_none:'' }}">
-
-            <div id="processo_select_container" class="{% if form.instance.tipo != 'subprocesso' %}hidden{% endif %}">
-                {{ form.parent|add_attr:"id:id_parent_select" }}
-            </div>
-        </div>
-
-        <!-- CAMPO SUBPROCESSO -->
-        <div>
-            <label id="lbl_campo_subprocesso"
-                   class="block text-sm font-medium {% if form.instance.tipo == 'subprocesso' %}text-blue-700{% else %}text-gray-400{% endif %}">
-                Nome do Subprocesso
-            </label>
-
-            <input id="subprocesso_input_visible"
-                   type="text"
-                   data-similarity-tables="ProcessoMapear,Processo"
-                   data-similarity-field="nome"
-                   data-similarity-id="{{ form.instance.id }}"
-                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' %}bg-gray-100{% endif %}"
-                   placeholder="Nome do Subprocesso"
-                   {% if form.instance.tipo != "subprocesso" %}disabled{% endif %}>
-
-            <!-- Hidden nome -->
-            <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
-        </div>
 
         </div>
+
+
             <!-- OBJETIVO / OBSERVAÇÃO -->
-            <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-2 gap-6 mb-8">
 
                 <div>
                     <label class="block text-sm font-medium text-blue-700">Objetivo</label>
@@ -192,7 +211,7 @@
             </div>
 
             <!-- TELEFONE / EMAIL -->
-            <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-2 gap-6 mb-8">
                 <div>
                     <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
                     {{ form.telefone|add_attr:"id:id_telefone" }}
@@ -250,12 +269,23 @@
 
           {% elif modo_edicao %}
 
-           <button type="submit"
-                   name="acao"
-                   value="iniciar"
-                   class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
-              Iniciar Processo
-           </button>
+            <!-- INICIAR PROCESSO -->
+            <button type="submit"
+                    id="btn_iniciar"
+                    name="acao"
+                    value="iniciar"
+                    class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition
+                    {% if form.instance.tipo == 'outro' %}hidden{% endif %}">
+                Iniciar Processo
+            </button>
+
+            <!-- FINALIZAR TAREFA -->
+            <button type="button"
+                    id="btn_finalizar"
+                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition
+                    {% if form.instance.tipo != 'outro' %}hidden{% endif %}">
+                Finalizar Tarefa
+            </button>
 
             <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="submit">
@@ -263,7 +293,7 @@
             </button>
 
           {% elif modo_inclusao %}
-            <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+            <button id="btn_adicionar" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="submit">
               Adicionar Processo a Mapear
             </button>
@@ -420,6 +450,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const rbProcesso = document.getElementById("rb_processo")
     const rbSubprocesso = document.getElementById("rb_subprocesso")
+    const rbOutro = document.getElementById("rb_outro")
+
+    const btnAdicionar = document.getElementById("btn_adicionar")
+    const btnIniciar = document.getElementById("btn_iniciar")
+    const btnFinalizar = document.getElementById("btn_finalizar")
 
     const lblProcesso = document.getElementById("lbl_processo")
     const lblSubprocesso = document.getElementById("lbl_subprocesso")
@@ -427,7 +462,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const lblCampoProcesso = document.getElementById("lbl_campo_processo")
     const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso")
 
-    // ativa validação
+    // 🔥 validação
     if (processoInput) {
         ativarValidacaoSimilaridade(processoInput, {
             tabelas: ["ProcessoMapear","Processo"],
@@ -454,33 +489,90 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function atualizarLabels() {
 
-        if (rbProcesso.checked) {
+        const inputSubprocesso = document.getElementById("subprocesso_input_visible")
 
-            lblProcesso.classList.remove("text-gray-400")
+        // 🔥 RESET GERAL (evita herança de estado)
+        if (lblProcesso) {
+            lblProcesso.classList.remove("text-blue-700", "text-gray-400")
+        }
+
+        if (lblSubprocesso) {
+            lblSubprocesso.classList.remove("text-blue-700", "text-gray-400")
+        }
+
+        if (lblCampoSubprocesso) {
+            lblCampoSubprocesso.classList.remove("text-blue-700", "text-gray-400")
+        }
+
+        // ============================
+        // PROCESSO
+        // ============================
+        if (rbProcesso && rbProcesso.checked) {
+
             lblProcesso.classList.add("text-blue-700")
-
-            lblSubprocesso.classList.remove("text-blue-700")
             lblSubprocesso.classList.add("text-gray-400")
 
-            lblCampoSubprocesso.classList.remove("text-blue-700")
+            lblCampoSubprocesso.textContent = "Nome do Subprocesso"
             lblCampoSubprocesso.classList.add("text-gray-400")
 
+            if (inputSubprocesso) {
+                inputSubprocesso.placeholder = "Nome do Subprocesso"
+            }
         }
 
-        if (rbSubprocesso.checked) {
+        // ============================
+        // SUBPROCESSO
+        // ============================
+        else if (rbSubprocesso && rbSubprocesso.checked) {
 
-            lblSubprocesso.classList.remove("text-gray-400")
             lblSubprocesso.classList.add("text-blue-700")
-
-            lblProcesso.classList.remove("text-blue-700")
             lblProcesso.classList.add("text-gray-400")
 
-            lblCampoSubprocesso.classList.remove("text-gray-400")
+            lblCampoSubprocesso.textContent = "Nome do Subprocesso"
             lblCampoSubprocesso.classList.add("text-blue-700")
 
+            if (inputSubprocesso) {
+                inputSubprocesso.placeholder = "Nome do Subprocesso"
+            }
         }
 
+        // ============================
+        // OUTRO
+        // ============================
+        else if (rbOutro && rbOutro.checked) {
+
+            lblProcesso.classList.add("text-gray-400")
+            lblSubprocesso.classList.add("text-gray-400")
+
+            lblCampoSubprocesso.textContent = "Nome do Elemento"
+            lblCampoSubprocesso.classList.add("text-blue-700")
+
+            if (inputSubprocesso) {
+                inputSubprocesso.placeholder = "Nome do Elemento"
+            }
+        }
     }
+
+    function atualizarBotoes() {
+
+    if (btnIniciar) btnIniciar.classList.remove("hidden")
+    if (btnFinalizar) btnFinalizar.classList.add("hidden")
+
+    if (rbOutro && rbOutro.checked) {
+
+        if (btnIniciar) btnIniciar.classList.add("hidden")
+        if (btnFinalizar) btnFinalizar.classList.remove("hidden")
+    }
+
+    // 🔥 texto do botão salvar
+    if (btnAdicionar) {
+        if (rbOutro && rbOutro.checked) {
+            btnAdicionar.textContent = "Adicionar Elemento"
+        } else {
+            btnAdicionar.textContent = "Adicionar Processo a Mapear"
+        }
+    }
+}
 
     function trocarTipo() {
 
@@ -490,27 +582,76 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const containerSelect = document.getElementById("processo_select_container")
 
-        if (rbSubprocesso.checked) {
-            containerSelect.classList.remove("hidden")
+        const modoAssociacao =
+            (rbSubprocesso && rbSubprocesso.checked) ||
+            (rbOutro && rbOutro.checked)
 
-            // 🔥 REINICIALIZA / AJUSTA SELECT2
-            setTimeout(() => {
+        // 🔥 CONTROLE DO CAMPO NOME (AQUI ESTAVA FALTANDO)
+        if (subprocessoInput) {
+
+            if (modoAssociacao) {
+                subprocessoInput.disabled = false
+                subprocessoInput.classList.remove("bg-gray-100")
+            } else {
+                subprocessoInput.disabled = true
+                subprocessoInput.classList.add("bg-gray-100")
+            }
+        }
+
+        if (modoAssociacao) {
+
+            // 🔥 ESCONDE input de processo
+            if (processoInput) {
+                processoInput.classList.add("hidden")
+            }
+
+            // 🔥 MOSTRA select
+            if (containerSelect) {
+                containerSelect.classList.remove("hidden")
+            }
+
+            // 🔥 ALTERA LABEL
+            if (lblCampoProcesso) {
+                lblCampoProcesso.textContent = "Selecionar Processo para associar"
+            }
+
+            // 🔥 Inicializa select2 (somente se ainda não estiver inicializado)
+            if ($('#id_parent_select').hasClass("select2-hidden-accessible") === false) {
                 $('#id_parent_select').select2({
                     placeholder: "Selecione um processo...",
                     allowClear: false,
                     width: '100%'
                 });
-            }, 0)
+            }
 
         } else {
-            containerSelect.classList.add("hidden")
+
+            // 🔥 VOLTA AO MODO PROCESSO
+            if (processoInput) {
+                processoInput.classList.remove("hidden")
+            }
+
+            if (containerSelect) {
+                containerSelect.classList.add("hidden")
+            }
+
+            if (lblCampoProcesso) {
+                lblCampoProcesso.textContent = "Nome do Processo"
+            }
         }
+
+        atualizarBotoes()
     }
 
+    // 🔥 eventos
     if (rbProcesso) rbProcesso.addEventListener("change", trocarTipo)
     if (rbSubprocesso) rbSubprocesso.addEventListener("change", trocarTipo)
+    if (rbOutro) rbOutro.addEventListener("change", trocarTipo)
 
-})
+    // 🔥 estado inicial (ESSENCIAL)
+    trocarTipo()
+
+}); // ✅ fechamento correto
 
 </script>
 

@@ -301,10 +301,13 @@ class ProcessoMapear(models.Model):
 
     TIPO_PROCESSO = "processo"
     TIPO_SUBPROCESSO = "subprocesso"
+    TIPO_OUTRO = "outro"
+
 
     TIPO_CHOICES = (
         (TIPO_PROCESSO, "Processo"),
         (TIPO_SUBPROCESSO, "Subprocesso"),
+        (TIPO_OUTRO, "Outro"),
     )
 
     nome = models.CharField(max_length=500)
@@ -374,7 +377,7 @@ class ProcessoMapear(models.Model):
     tipo = models.CharField(
         max_length=20,
         choices=TIPO_CHOICES,
-        default=TIPO_PROCESSO
+        default=TIPO_PROCESSO,
     )
 
     class Meta:
@@ -384,7 +387,7 @@ class ProcessoMapear(models.Model):
         erros = []
 
         if not self.nome or not self.nome.strip():
-            erros.append("Nome do Processo/Subprocesso é obrigatório.")
+            erros.append("Nome do Processo/Subprocesso/Outro é obrigatório.")
 
         if not self.classificacao:
             erros.append("Classificação é obrigatória.")
@@ -398,7 +401,7 @@ class ProcessoMapear(models.Model):
 
         # 🔥 TIPO
         if self.tipo not in [c[0] for c in self.TIPO_CHOICES]:
-            erros.append("Tipo de processo inválido.")
+            erros.append("Tipo inválido.")
 
         # 🔥 SUBPROCESSO
         if self.tipo == self.TIPO_SUBPROCESSO:

@@ -1135,7 +1135,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         tipo = cleaned.get("tipo")
 
         if not nome or nome.strip() == "":
-            self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
+            self.add_error("nome", "Informe o nome do Processo, ou Subprocesso, ou Outro.")
 
         if not objetivo or objetivo.strip() == "":
             self.add_error("objetivo", "Informe o objetivo do Processo.")
