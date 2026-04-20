@@ -137,18 +137,18 @@
                     {% endif %}
                 </label>
 
-                <input id="subprocesso_input_visible"
-                       type="text"
-                       data-similarity-tables="ProcessoMapear,Processo"
-                       data-similarity-field="nome"
-                       data-similarity-id="{{ form.instance.id }}"
-                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' and form.instance.tipo != 'outro' %}bg-gray-100{% endif %}"
-                       placeholder="{% if form.instance.tipo == 'outro' %}Nome do Elemento{% else %}Nome do Subprocesso{% endif %}"
-                       {% if form.instance.tipo != "subprocesso" and form.instance.tipo != "outro" %}disabled{% endif %}>
+               <input id="subprocesso_input_visible"
+                      type="text"
+                      value="{{ form.instance.nome }}"
+                      data-similarity-tables="ProcessoMapear,Processo"
+                      data-similarity-field="nome"
+                      data-similarity-id="{{ form.instance.id }}"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' and form.instance.tipo != 'outro' %}bg-gray-100{% endif %}"
+                      placeholder="{% if form.instance.tipo == 'outro' %}Nome do Elemento{% else %}Nome do Subprocesso{% endif %}"
+                      {% if form.instance.tipo != "subprocesso" and form.instance.tipo != "outro" %}disabled{% endif %}>
 
                 <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
             </div>
-
         </div>
 
         <!-- LINHA 2 – CLASSIFICAÇÃO -->
@@ -442,7 +442,6 @@ fieldset[disabled] input[type="radio"] {
 <script src="{% static 'js/utils.js' %}"></script>
 
 <script>
-
 document.addEventListener("DOMContentLoaded", function () {
 
     const processoInput = document.getElementById("processo_input_visible")
@@ -461,8 +460,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const lblCampoProcesso = document.getElementById("lbl_campo_processo")
     const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso")
+    const lblOutro = document.getElementById("lbl_outro")
 
-    // 🔥 validação
+    const containerSelect = document.getElementById("processo_select_container")
+
+    // 🔥 CONTROLE DE ESTADO
+    let tipoAtual = "processo"
+
+    let cacheValores = {
+        processo: "",
+        subprocesso: "",
+        outro: ""
+    }
+
+    // =========================
+    // 🔥 VALIDAÇÃO
+    // =========================
     if (processoInput) {
         ativarValidacaoSimilaridade(processoInput, {
             tabelas: ["ProcessoMapear","Processo"],
@@ -477,6 +490,46 @@ document.addEventListener("DOMContentLoaded", function () {
         })
     }
 
+    // =========================
+    // 🔥 CACHE
+    // =========================
+    function salvarValorAtual() {
+
+        if (tipoAtual === "processo") {
+            cacheValores.processo = processoInput?.value || ""
+        }
+
+        else if (tipoAtual === "subprocesso") {
+            cacheValores.subprocesso = subprocessoInput?.value || ""
+        }
+
+        else if (tipoAtual === "outro") {
+            const valor = subprocessoInput?.value
+
+            if (valor !== undefined && valor !== null && valor !== "") {
+                cacheValores.outro = valor
+            }
+        }
+    }
+
+    function restaurarValor() {
+
+        if (rbProcesso?.checked && processoInput) {
+            processoInput.value = cacheValores.processo
+        }
+
+        if (rbSubprocesso?.checked && subprocessoInput) {
+            subprocessoInput.value = cacheValores.subprocesso
+        }
+
+        if (rbOutro?.checked && subprocessoInput) {
+            subprocessoInput.value = cacheValores.outro
+        }
+    }
+
+    // =========================
+    // 🔥 UTIL
+    // =========================
     function limparAvisos() {
         if (processoInput) removerAvisoSimilaridade(processoInput)
         if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput)
@@ -487,108 +540,107 @@ document.addEventListener("DOMContentLoaded", function () {
         if (subprocessoInput) subprocessoInput.value = ""
     }
 
+    // =========================
+    // 🔥 LABELS + PLACEHOLDER
+    // =========================
     function atualizarLabels() {
 
-        const inputSubprocesso = document.getElementById("subprocesso_input_visible")
+        // reset
+        lblProcesso?.classList.remove("text-blue-700", "text-gray-400")
+        lblSubprocesso?.classList.remove("text-blue-700", "text-gray-400")
+        lblCampoSubprocesso?.classList.remove("text-blue-700", "text-gray-400")
+        lblOutro?.classList.remove("text-blue-700", "text-gray-400")
 
-        // 🔥 RESET GERAL (evita herança de estado)
-        if (lblProcesso) {
-            lblProcesso.classList.remove("text-blue-700", "text-gray-400")
-        }
+        if (rbProcesso?.checked) {
 
-        if (lblSubprocesso) {
-            lblSubprocesso.classList.remove("text-blue-700", "text-gray-400")
-        }
-
-        if (lblCampoSubprocesso) {
-            lblCampoSubprocesso.classList.remove("text-blue-700", "text-gray-400")
-        }
-
-        // ============================
-        // PROCESSO
-        // ============================
-        if (rbProcesso && rbProcesso.checked) {
-
-            lblProcesso.classList.add("text-blue-700")
-            lblSubprocesso.classList.add("text-gray-400")
+            lblProcesso?.classList.add("text-blue-700")
+            lblSubprocesso?.classList.add("text-gray-400")
+            lblOutro?.classList.add("text-gray-400")
 
             lblCampoSubprocesso.textContent = "Nome do Subprocesso"
             lblCampoSubprocesso.classList.add("text-gray-400")
 
-            if (inputSubprocesso) {
-                inputSubprocesso.placeholder = "Nome do Subprocesso"
+            if (subprocessoInput) {
+                subprocessoInput.placeholder = "Nome do Subprocesso"
             }
         }
 
-        // ============================
-        // SUBPROCESSO
-        // ============================
-        else if (rbSubprocesso && rbSubprocesso.checked) {
+        else if (rbSubprocesso?.checked) {
 
-            lblSubprocesso.classList.add("text-blue-700")
-            lblProcesso.classList.add("text-gray-400")
+            lblSubprocesso?.classList.add("text-blue-700")
+            lblProcesso?.classList.add("text-gray-400")
+            lblOutro?.classList.add("text-gray-400")
 
             lblCampoSubprocesso.textContent = "Nome do Subprocesso"
             lblCampoSubprocesso.classList.add("text-blue-700")
 
-            if (inputSubprocesso) {
-                inputSubprocesso.placeholder = "Nome do Subprocesso"
+            if (subprocessoInput) {
+                subprocessoInput.placeholder = "Nome do Subprocesso"
             }
         }
 
-        // ============================
-        // OUTRO
-        // ============================
-        else if (rbOutro && rbOutro.checked) {
+        else if (rbOutro?.checked) {
 
-            lblProcesso.classList.add("text-gray-400")
-            lblSubprocesso.classList.add("text-gray-400")
+            lblOutro?.classList.add("text-blue-700")
+            lblProcesso?.classList.add("text-gray-400")
+            lblSubprocesso?.classList.add("text-gray-400")
 
             lblCampoSubprocesso.textContent = "Nome do Elemento"
             lblCampoSubprocesso.classList.add("text-blue-700")
 
-            if (inputSubprocesso) {
-                inputSubprocesso.placeholder = "Nome do Elemento"
+            if (subprocessoInput) {
+                subprocessoInput.placeholder = "Nome do Elemento"
             }
         }
     }
 
+    // =========================
+    // 🔥 BOTÕES
+    // =========================
     function atualizarBotoes() {
 
-    if (btnIniciar) btnIniciar.classList.remove("hidden")
-    if (btnFinalizar) btnFinalizar.classList.add("hidden")
+        if (btnIniciar) btnIniciar.classList.remove("hidden")
+        if (btnFinalizar) btnFinalizar.classList.add("hidden")
 
-    if (rbOutro && rbOutro.checked) {
+        if (rbOutro?.checked) {
+            if (btnIniciar) btnIniciar.classList.add("hidden")
+            if (btnFinalizar) btnFinalizar.classList.remove("hidden")
+        }
 
-        if (btnIniciar) btnIniciar.classList.add("hidden")
-        if (btnFinalizar) btnFinalizar.classList.remove("hidden")
-    }
-
-    // 🔥 texto do botão salvar
-    if (btnAdicionar) {
-        if (rbOutro && rbOutro.checked) {
-            btnAdicionar.textContent = "Adicionar Elemento"
-        } else {
-            btnAdicionar.textContent = "Adicionar Processo a Mapear"
+        if (btnAdicionar) {
+            btnAdicionar.textContent =
+                rbOutro?.checked
+                ? "Adicionar Elemento"
+                : "Adicionar Processo a Mapear"
         }
     }
-}
 
-    function trocarTipo() {
+    // =========================
+    // 🔥 CORE
+    // =========================
+    function trocarTipo(limpar = true) {
 
+        salvarValorAtual()        // 🔥 1. salva estado anterior
         limparAvisos()
-        limparCampos()
+
+        if (limpar) {
+
+            if (tipoAtual === "processo") {
+                processoInput && (processoInput.value = "")
+            }
+
+            if (tipoAtual === "subprocesso" || tipoAtual === "outro") {
+                subprocessoInput && (subprocessoInput.value = "")
+            }
+        }
+
         atualizarLabels()
 
-        const containerSelect = document.getElementById("processo_select_container")
-
         const modoAssociacao =
-            (rbSubprocesso && rbSubprocesso.checked) ||
-            (rbOutro && rbOutro.checked)
+            rbSubprocesso?.checked || rbOutro?.checked
 
-        // 🔥 CONTROLE DO CAMPO NOME (AQUI ESTAVA FALTANDO)
+        // habilitação (mantém igual)
         if (subprocessoInput) {
-
             if (modoAssociacao) {
                 subprocessoInput.disabled = false
                 subprocessoInput.classList.remove("bg-gray-100")
@@ -598,60 +650,54 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        // processo/select (mantém igual)
         if (modoAssociacao) {
-
-            // 🔥 ESCONDE input de processo
-            if (processoInput) {
-                processoInput.classList.add("hidden")
-            }
-
-            // 🔥 MOSTRA select
-            if (containerSelect) {
-                containerSelect.classList.remove("hidden")
-            }
-
-            // 🔥 ALTERA LABEL
-            if (lblCampoProcesso) {
-                lblCampoProcesso.textContent = "Selecionar Processo para associar"
-            }
-
-            // 🔥 Inicializa select2 (somente se ainda não estiver inicializado)
-            if ($('#id_parent_select').hasClass("select2-hidden-accessible") === false) {
-                $('#id_parent_select').select2({
-                    placeholder: "Selecione um processo...",
-                    allowClear: false,
-                    width: '100%'
-                });
-            }
-
+            processoInput?.classList.add("hidden")
+            containerSelect?.classList.remove("hidden")
+            lblCampoProcesso.textContent = "Selecionar Processo para associar"
         } else {
-
-            // 🔥 VOLTA AO MODO PROCESSO
-            if (processoInput) {
-                processoInput.classList.remove("hidden")
-            }
-
-            if (containerSelect) {
-                containerSelect.classList.add("hidden")
-            }
-
-            if (lblCampoProcesso) {
-                lblCampoProcesso.textContent = "Nome do Processo"
-            }
+            processoInput?.classList.remove("hidden")
+            containerSelect?.classList.add("hidden")
+            lblCampoProcesso.textContent = "Nome do Processo"
         }
 
+        restaurarValor()          // 🔥 sem setTimeout (não precisa aqui)
         atualizarBotoes()
+
+        // 🔥 atualiza estado POR ÚLTIMO
+        if (rbProcesso?.checked) tipoAtual = "processo"
+        if (rbSubprocesso?.checked) tipoAtual = "subprocesso"
+        if (rbOutro?.checked) tipoAtual = "outro"
     }
 
-    // 🔥 eventos
-    if (rbProcesso) rbProcesso.addEventListener("change", trocarTipo)
-    if (rbSubprocesso) rbSubprocesso.addEventListener("change", trocarTipo)
-    if (rbOutro) rbOutro.addEventListener("change", trocarTipo)
+    // =========================
+    // 🔥 EVENTOS
+    // =========================
+    rbProcesso?.addEventListener("change", () => trocarTipo(true))
+    rbSubprocesso?.addEventListener("change", () => trocarTipo(true))
+    rbOutro?.addEventListener("change", () => trocarTipo(true))
 
-    // 🔥 estado inicial (ESSENCIAL)
-    trocarTipo()
+    // =========================
+    // 🔥 ESTADO INICIAL
+    // =========================
+    if (rbProcesso?.checked) {
+        tipoAtual = "processo"
+        cacheValores.processo = processoInput?.value || ""
+    }
 
-}); // ✅ fechamento correto
+    if (rbSubprocesso?.checked) {
+        tipoAtual = "subprocesso"
+        cacheValores.subprocesso = subprocessoInput?.value || ""
+    }
+
+    if (rbOutro?.checked) {
+        tipoAtual = "outro"
+        cacheValores.outro = subprocessoInput?.value || ""
+    }
+
+    trocarTipo(false)
+
+});
 
 </script>
 
