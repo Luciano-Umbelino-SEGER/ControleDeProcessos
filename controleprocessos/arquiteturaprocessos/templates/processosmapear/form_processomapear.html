@@ -616,7 +616,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =========================
-    // 🔥 CORE
+    // 🔥 Troca o Tipo
     // =========================
     function trocarTipo(limpar = true) {
 
@@ -661,13 +661,95 @@ document.addEventListener("DOMContentLoaded", function () {
             lblCampoProcesso.textContent = "Nome do Processo"
         }
 
-        restaurarValor()          // 🔥 sem setTimeout (não precisa aqui)
-        atualizarBotoes()
+        // 🔥 HERANÇA tem prioridade sobre cache
+        if (rbSubprocesso?.checked) {
 
-        // 🔥 atualiza estado POR ÚLTIMO
-        if (rbProcesso?.checked) tipoAtual = "processo"
-        if (rbSubprocesso?.checked) tipoAtual = "subprocesso"
-        if (rbOutro?.checked) tipoAtual = "outro"
+            const processoId = $('#id_parent_select').val();
+
+            if (processoId) {
+                aplicarHeranca(processoId);
+            } else {
+                restaurarValor();
+            }
+
+        } else {
+            restaurarValor();
+        }
+
+        atualizarBotoes()
+        aplicarBloqueioHeranca()
+
+    }
+
+    // ===========================================
+    // 🔥 Hidrata campos com herança de Processo
+    // ===========================================
+    window.aplicarHeranca = function(processoId) {
+
+        if (!processoId) return
+
+        fetch(`/processo/${processoId}/dados/`)
+            .then(response => response.json())
+            .then(data => {
+
+                // 🔥 SELECTS (com trigger)
+                $('#id_classificacao').val(data.classificacao).trigger('change.select2')
+                $('#id_macroprocesso_nivel1').val(data.macro1).trigger('change')
+                $('#id_macroprocesso_nivel2').val(data.macro2).trigger('change')
+
+                $('#id_area_responsavel').val(data.area).trigger('change')
+
+                // 🔥 INPUTS
+                $('#id_gestor').val(data.gestor)
+                $('#id_telefone').val(data.telefone)
+                $('#id_email').val(data.email)
+
+                aplicarBloqueioHeranca();
+
+            })
+    }
+
+    // ===========================================================
+    // 🔥 Bloqueia os campos que recebem a herança de processo
+    // Mas somente para Subprocesso, tipo Outro pemanece editável
+    // ===========================================================
+    function aplicarBloqueioHeranca() {
+
+        const bloquear = rbSubprocesso?.checked;
+
+        const campos = [
+            '#id_classificacao',
+            '#id_macroprocesso_nivel1',
+            '#id_macroprocesso_nivel2',
+            '#id_area_responsavel',
+            '#id_gestor',
+            '#id_telefone',
+            '#id_email'
+        ];
+
+        campos.forEach(id => {
+
+            const el = $(id);
+            if (!el.length) return;
+
+            if (bloquear) {
+                el.prop('disabled', true);
+                el.addClass('campo-herdado');
+
+                // 🔥 select2 precisa disso
+                if (el.hasClass("select2-hidden-accessible")) {
+                    el.next('.select2-container').addClass('campo-herdado');
+                }
+
+            } else {
+                el.prop('disabled', false);
+                el.removeClass('campo-herdado');
+
+                if (el.hasClass("select2-hidden-accessible")) {
+                    el.next('.select2-container').removeClass('campo-herdado');
+                }
+            }
+        });
     }
 
     // =========================
@@ -746,75 +828,24 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const el = $('#processo_select_visible');
+    const el = $('#id_parent_select');
     const hidden = $('#id_parent');
 
     if (el.length) {
 
-        // 🚀 Select2 com AJAX
         el.select2({
-            placeholder: "Selecione ou digite para buscar...",
-            allowClear: false,
-            width: '100%',
+            placeholder: "Selecione um processo...",
+            width: '100%'
+        });
 
-            ajax: {
-                url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
-                dataType: 'json',
-                delay: 250,
+        el.on('change', function () {
 
-                data: function (params) {
-                    return {
-                        q: params.term || ''
-                    };
-                },
+            const processoId = $(this).val();
 
-                processResults: function (data) {
-                    return {
-                        results: data
-                    };
-                },
-
-                cache: true
-            },
-
-            minimumInputLength: 0,
-
-            language: {
-                inputTooShort: () => "Digite pelo menos 2 caracteres",
-                noResults: () => "Nenhum resultado encontrado",
-                searching: () => "Buscando..."
+            if (processoId && typeof aplicarHeranca === "function") {
+                aplicarHeranca(processoId);
             }
         });
-
-        // 🔥 Atualiza hidden ao selecionar
-        el.on('select2:select', function (e) {
-            hidden.val(e.params.data.id);
-        });
-
-        // 🔥 Limpa hidden
-        el.on('select2:clear', function () {
-            hidden.val('');
-        });
-
-        // 🔥 MODO EDIÇÃO (carregar valor inicial)
-        const parentId = hidden.val();
-
-        if (parentId) {
-            $.ajax({
-                url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
-                data: { q: '' },
-                success: function (data) {
-
-                    const item = data.find(p => p.id == parentId);
-
-                    if (item) {
-                        const option = new Option(item.text, item.id, true, true);
-                        el.append(option).trigger('change');
-                    }
-                }
-            });
-        }
-
     }
 
 });

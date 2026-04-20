@@ -35,6 +35,8 @@ urlpatterns = [
     path("estatisticas/comparativos/", EstatisticaComparativos.as_view(), name="estatisticas_comparativos"),
     # Selecionar Processos Pai
     path('api/processos/', views.buscar_processos, name='buscar_processos'),
+    # Obter dados do Processos Pai para Herança de Subprocesso
+    path("processo/<int:pk>/dados/", views.obter_dados_processo, name="obter_dados_processo"),
     # Obter dados do Contato Área Responsável
     path("buscar-contato-area/", views.buscar_contato_area, name="buscar_contato_area"),
     # Processo a Mapear

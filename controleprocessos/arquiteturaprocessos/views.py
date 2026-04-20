@@ -793,6 +793,33 @@ def buscar_processos(request):
 
     return JsonResponse(data, safe=False)
 
+# ------------------------------------------------------------
+# Recuperar Dados do Processo Pai para Herança de Subprocesso
+# ------------------------------------------------------------
+def obter_dados_processo(request, pk):
+    try:
+        processo = Processo.objects.select_related(
+            "classificacao",
+            "macroprocesso_nivel1",
+            "macroprocesso_nivel2",
+            "area_responsavel"
+        ).get(pk=pk)
+
+        data = {
+            "classificacao": processo.classificacao_id,
+            "macro1": processo.macroprocesso_nivel1_id,
+            "macro2": processo.macroprocesso_nivel2_id,
+            "area": processo.area_responsavel_id,
+            "gestor": processo.gestor,
+            "telefone": processo.telefone,
+            "email": processo.email,
+        }
+
+        return JsonResponse(data)
+
+    except Processo.DoesNotExist:
+        return JsonResponse({"erro": "Processo não encontrado"}, status=404)
+
 # --------------------------------
 # Processos a Mapear
 # --------------------------------
