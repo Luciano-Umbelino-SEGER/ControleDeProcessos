@@ -72,32 +72,17 @@
     <form method="post" id="form-processo">
         {% csrf_token %}
 
-        <!-- LINHA 1 -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Classificação</label>
-                {{ form.classificacao }}
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
-                {{ form.macroprocesso_nivel1 }}
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
-                {{ form.macroprocesso_nivel2 }}
-            </div>
-
-        </div>
-
         <!-- LINHA 2 – PROCESSO / SUBPROCESSO + VERSÃO + ESTADO -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
-
+        <div class="grid grid-cols-3 gap-6 mb-6 items-end">
             <!-- COLUNA 1 – PROCESSO / SUBPROCESSO -->
-            <div class="flex items-end">
+            <div class="flex flex-col">
 
+                <!-- LABEL -->
+                <label class="text-sm font-medium text-blue-700">
+                    Selecione o Tipo
+                </label>
+
+                <!-- RADIO GROUP -->
                 <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
 
                     <!-- PROCESSO -->
@@ -109,14 +94,14 @@
                                {% if not form.instance.parent_id %}checked{% endif %}
                                {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                        <span id="lbl_processo" class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                        <span id="lbl_processo"
+                              class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
                             Processo
                         </span>
                     </label>
 
                     <!-- SUBPROCESSO -->
                     <label class="flex items-center gap-2 cursor-pointer">
-
                         <input type="radio"
                                id="rb_subprocesso"
                                name="tipo_processo_fake"
@@ -124,10 +109,10 @@
                                {% if form.instance.parent_id %}checked{% endif %}
                                {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                        <span id="lbl_subprocesso" class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                        <span id="lbl_subprocesso"
+                              class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
                             Subprocesso
                         </span>
-
                     </label>
 
                 </div>
@@ -161,7 +146,6 @@
             </div>
 
         </div>
-
 
         <!-- CAMPOS DE PROCESSO / SUBPROCESSO -->
         <div class="grid grid-cols-2 gap-6 mb-6">
@@ -216,6 +200,26 @@
 
                 <!-- Hidden Django (nome) -->
                 <input type="hidden" id="id_nome" name="nome" value="{{ form.instance.nome }}">
+            </div>
+
+        </div>
+
+        <!-- LINHA 1 -->
+        <div class="grid grid-cols-3 gap-6 mb-6">
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Classificação</label>
+                {{ form.classificacao }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
+                {{ form.macroprocesso_nivel1 }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
+                {{ form.macroprocesso_nivel2 }}
             </div>
 
         </div>
@@ -1344,7 +1348,7 @@ function atualizarStatus() {
 
         status.textContent = "Iniciado"
         status.className =
-            "bg-orange-200 text-orange-900 px-3 py-2 rounded text-sm font-semibold text-center w-full"
+            "bg-orange-100 text-orange-800 px-3 py-2 rounded text-sm font-semibold text-center w-full"
 
     }
 
