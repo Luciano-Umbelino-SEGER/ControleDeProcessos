@@ -1655,63 +1655,77 @@ document.addEventListener("DOMContentLoaded", function () {
     const subprocessoInput = document.getElementById("subprocesso_input_visible")
     const hiddenNome = document.getElementById("id_nome")
 
-    function atualizarVisualTipo() {
+    window.atualizarVisualTipo = function(limparAoLiberar = true) {
 
-        /* limpa avisos de similaridade */
-        if (processoInput) removerAvisoSimilaridade(processoInput)
-        if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput)
+        const CAMPOS_HERANCA = [
+            "id_classificacao",
+            "id_macroprocesso_nivel1",
+            "id_macroprocesso_nivel2",
+            "id_area_responsavel",
+            "id_gestor",
+            "id_telefone",
+            "id_email"
+        ];
 
-        if (processoInput) processoInput.value = ""
-        if (subprocessoInput) subprocessoInput.value = ""
+        if (processoInput) removerAvisoSimilaridade(processoInput);
+        if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput);
 
-        if (hiddenNome) hiddenNome.value = ""
+        if (processoInput) processoInput.value = "";
+        if (subprocessoInput) subprocessoInput.value = "";
+        if (hiddenNome) hiddenNome.value = "";
 
         if (rbSubprocesso && rbSubprocesso.checked) {
 
-            lblCampoProcesso.textContent = "Selecionar Processo para associar"
+            if (lblCampoProcesso) lblCampoProcesso.textContent = "Selecionar Processo para associar";
 
-            if (lblCampoProcesso) lblCampoProcesso.classList.add("text-blue-700")
+            if (lblCampoProcesso) lblCampoProcesso.classList.add("text-blue-700");
 
             if (lblCampoSubprocesso) {
-                lblCampoSubprocesso.classList.remove("text-gray-400")
-                lblCampoSubprocesso.classList.add("text-blue-700")
+                lblCampoSubprocesso.classList.remove("text-gray-400");
+                lblCampoSubprocesso.classList.add("text-blue-700");
             }
 
             if (lblProcesso) {
-                lblProcesso.classList.remove("text-blue-700")
-                lblProcesso.classList.add("text-gray-400")
+                lblProcesso.classList.remove("text-blue-700");
+                lblProcesso.classList.add("text-gray-400");
             }
 
             if (lblSubprocesso) {
-                lblSubprocesso.classList.remove("text-gray-400")
-                lblSubprocesso.classList.add("text-blue-700")
+                lblSubprocesso.classList.remove("text-gray-400");
+                lblSubprocesso.classList.add("text-blue-700");
             }
+
+            CAMPOS_HERANCA.forEach(id => HerancaProcesso.bloquearCampo(id));
 
         } else {
 
-            if (lblCampoProcesso) lblCampoProcesso.textContent = "Nome do Processo"
+            if (lblCampoProcesso) lblCampoProcesso.textContent = "Nome do Processo";
 
             if (lblCampoSubprocesso) {
-                lblCampoSubprocesso.classList.remove("text-blue-700")
-                lblCampoSubprocesso.classList.add("text-gray-400")
+                lblCampoSubprocesso.classList.remove("text-blue-700");
+                lblCampoSubprocesso.classList.add("text-gray-400");
             }
 
             if (lblProcesso) {
-                lblProcesso.classList.remove("text-gray-400")
-                lblProcesso.classList.add("text-blue-700")
+                lblProcesso.classList.remove("text-gray-400");
+                lblProcesso.classList.add("text-blue-700");
             }
 
             if (lblSubprocesso) {
-                lblSubprocesso.classList.remove("text-blue-700")
-                lblSubprocesso.classList.add("text-gray-400")
+                lblSubprocesso.classList.remove("text-blue-700");
+                lblSubprocesso.classList.add("text-gray-400");
             }
 
+            if (limparAoLiberar) {
+                HerancaProcesso.limpar();
+            } else {
+                CAMPOS_HERANCA.forEach(id => HerancaProcesso.desbloquearCampo(id));
+            }
         }
-
     }
 
-    if (rbProcesso) rbProcesso.addEventListener("change", atualizarVisualTipo)
-    if (rbSubprocesso) rbSubprocesso.addEventListener("change", atualizarVisualTipo)
+    if (rbProcesso) rbProcesso.addEventListener("change", () => atualizarVisualTipo(true))
+    if (rbSubprocesso) rbSubprocesso.addEventListener("change", () => atualizarVisualTipo(true))
 
     /* sincroniza nome do processo */
     if (processoInput) {
@@ -1746,8 +1760,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<script src="{% static 'js/auto_preenchimento_area.js' %}"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -1771,53 +1783,68 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 🔥 Auto preenchimento
-    initAutoPreenchimentoArea(
-        "{% url 'arquiteturaprocessos:buscar_contato_area' %}"
-    );
-
 });
 </script>
 
+<script src="{% static 'js/heranca_processo.js' %}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    initSelect2('#processo_select_visible', {
-        placeholder: "Selecione ou digite para buscar...",
+    const $select = $('#processo_select_visible');
 
-        ajax: {
-            url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
-            dataType: 'json',
-            delay: 250,
+    if ($select.length) {
 
-            data: function (params) {
-                return {
-                    q: params.term || ''
-                };
-            },
+        initSelect2('#processo_select_visible', {
+            placeholder: "Selecione ou digite para buscar...",
 
-            processResults: function (data) {
-                return {
-                    results: data
-                };
-            },
+            ajax: {
+                url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
+                dataType: 'json',
+                delay: 250,
 
-            cache: true
-        }
-    });
+                data: function (params) {
+                    return {
+                        q: params.term || ''
+                    };
+                },
 
-});
+                processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                },
 
-$('#processo_select_visible').on('select2:select', function (e) {
-    const selectedId = e.params.data.id;
-    $('#id_parent').val(selectedId);
-});
+                cache: true
+            }
+        });
 
-$('#processo_select_visible').on('select2:clear', function () {
-    $('#id_parent').val('');
+        // ✅ AQUI entra a correção
+        $select.on('select2:select', function (e) {
+
+            const selectedId = e.params.data.id;
+            $('#id_parent').val(selectedId);
+
+            HerancaProcesso.aplicar(selectedId, {
+                url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"
+            });
+
+        });
+
+        $select.on('select2:clear', function () {
+
+            $('#id_parent').val('');
+            HerancaProcesso.limpar();
+
+        });
+
+    }
+
+    if (typeof atualizarVisualTipo === "function") {
+        atualizarVisualTipo(false);
+    }
+
 });
 </script>
-
 
 {% endblock %}
 
