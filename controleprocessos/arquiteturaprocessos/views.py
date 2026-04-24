@@ -969,12 +969,20 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
     model = ProcessoMapear
     template_name = 'processosmapear/processosmapear.html'
     context_object_name = 'processosmapear'
-    paginate_by = 10
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.perfil.nome.lower() != 'administrador':
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
+
+    # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO DO LOG)
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -984,10 +992,7 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         # 🔥 LISTAS
         context['classificacoes'] = Classificacao.objects.all().order_by("nome")
 
-        # 🔥 CONTADOR
-        context['total_registros'] = context['page_obj'].paginator.count
-
-        # 🔥 FILTROS (AQUI 👇)
+        # 🔥 FILTROS (mantém valores no form)
         context["classificacao_selecionada"] = req.get("classificacao", "")
         context["nome_busca"] = req.get("nome", "")
         context["macro1_busca"] = req.get("macro1", "")
@@ -995,13 +1000,31 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         context["area_busca"] = req.get("area", "")
         context["tipo_selecionado"] = req.get("tipo", "")
 
+        # 🔥 QUERY STRING (PADRÃO DO LOG)
+        query_params = self.request.GET.copy()
+
+        # 🔹 SEM PAGE (para paginação)
+        query_params_no_page = query_params.copy()
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        # 🔹 CONTEXT
+        context["query_string"] = query_params_no_page.urlencode()
+        context["query_string_full"] = query_params.urlencode()
+
         return context
 
     def get_queryset(self):
 
         req = self.request.GET
 
-        queryset = ProcessoMapear.objects.all().order_by('-data_criacao')
+        queryset = ProcessoMapear.objects.select_related(
+            'classificacao',
+            'macroprocesso_nivel1',
+            'macroprocesso_nivel2',
+            'parent',
+            'area_responsavel',
+        ).order_by('-data_criacao')
 
         # ===== FILTROS =====
         nome = req.get("nome", "").strip()
@@ -1010,17 +1033,23 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
-        cri_de = parse_date(req.get("criacao_de"))
-        cri_ate = parse_date(req.get("criacao_ate"))
 
+        cri_de_raw = req.get("criacao_de")
+        cri_ate_raw = req.get("criacao_ate")
+
+        cri_de = parse_date(cri_de_raw) if cri_de_raw else None
+        cri_ate = parse_date(cri_ate_raw) if cri_ate_raw else None
+
+        # 🔥 VALIDAÇÃO DE DATA
         if cri_de and cri_ate and cri_ate < cri_de:
             messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
             return ProcessoMapear.objects.none()
 
+        # 🔍 FILTROS
         if nome:
             queryset = queryset.filter(nome__icontains=nome)
 
-        if tipo:
+        if tipo in ["processo", "subprocesso", "outro"]:
             queryset = queryset.filter(tipo=tipo)
 
         if classificacao:
@@ -1032,8 +1061,9 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         if macro2:
             queryset = queryset.filter(macroprocesso_nivel2__nome__icontains=macro2)
 
+        # 🔥 CORREÇÃO IMPORTANTE (Área)
         if area:
-            queryset = queryset.filter(area_responsavel=area)
+            queryset = queryset.filter(area_responsavel__nome_area__icontains=area)
 
         if cri_de:
             queryset = queryset.filter(data_criacao__gte=cri_de)
@@ -1042,13 +1072,7 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
             fim_do_dia = datetime.combine(cri_ate, time.max)
             queryset = queryset.filter(data_criacao__lte=fim_do_dia)
 
-        return queryset.select_related(
-            'classificacao',
-            'macroprocesso_nivel1',
-            'macroprocesso_nivel2',
-            'parent',
-            'area_responsavel',
-        )
+        return queryset
 
 # --------------------------------#
 # Criar Processo a Mapear         #
@@ -2397,7 +2421,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
             qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
 
         if area:
-            qs = qs.filter(area_responsavel__nome_area__icontains=area)
+            queryset = qs.filter(area_responsavel__nome_area__icontains=area)
 
         # --------------------
         # ESTADO

@@ -9,7 +9,7 @@
     <h2 class="text-2xl font-bold text-blue-800 mb-6">
       Processos a Mapear
       <span class="text-base font-normal text-gray-600">
-          ({{ total_registros }} registro{{ total_registros|pluralize:"s" }})
+          ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }})
       </span>
     </h2>
 
@@ -18,7 +18,7 @@
 
         <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
 
-          <div class="flex items-end gap-4 flex-nowrap">
+          <div class="flex items-end gap-4 flex-wrap w-full">
 
             <!-- ESQUERDA (Filtros) -->
             <div class="flex flex-wrap items-end gap-3">
@@ -26,7 +26,7 @@
               <!-- Processo -->
               <div class="flex flex-col">
                 <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                  Processo / Subprocesso
+                  Nome
                 </label>
                 <input type="text" name="nome"
                        value="{{ request.GET.nome }}"
@@ -135,24 +135,35 @@
                        value="{{ request.GET.criacao_ate }}">
               </div>
 
+              <!-- REGISTROS/PÁGINA -->
+              <div class="flex flex-col">
+                <label class="text-sm font-semibold text-blue-800 mb-0.5">Registros/Página</label>
+                <select name="page_size"
+                        class="w-24 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 text-black">
+                  <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
+                  <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
+                  <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
+                  <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
+                </select>
+              </div>
             </div>
 
-            <!-- DIREITA (Botões) -->
-            <div class="flex items-center gap-3 ml-auto shrink-0">
-
+            <!-- DIREITA -->
+            <div class="flex items-end gap-3 ml-auto">
+              <!-- BOTÕES -->
               <button type="submit"
-                      class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                      class="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
                 Filtrar
               </button>
 
               <a href="{% url 'arquiteturaprocessos:processosmapear' %}"
-                 class="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+                 class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
                 Limpar
               </a>
 
               <a href="{% url 'arquiteturaprocessos:criar_processomapear' %}"
-                 class="inline-flex items-center px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition whitespace-nowrap">
-                + Novo Processo
+                 class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition whitespace-nowrap">
+                + Novo
               </a>
 
             </div>
@@ -167,7 +178,7 @@
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 px-3 text-left w-[18%]">Processo / Subprocesso</th>
+            <th class="py-3 px-3 text-left w-[18%]">Nome</th>
             <th class="py-3 px-2 text-left w-[7%]">Tipo</th>
             <th class="py-3 px-2 text-left w-[8%]">Classificação</th>
             <th class="py-3 px-2 text-left w-[10%]">Macro N1</th>
@@ -183,7 +194,7 @@
 
         <tbody>
 
-        {% for processomapear in processosmapear %}
+        {% for processomapear in page_obj %}
 
           <tr class="text-blue-500 hover:bg-blue-100 transition-colors
                      {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
@@ -314,20 +325,27 @@
       </table>
     </div>
 
-    {% if is_paginated %}
+    {% if page_obj %}
     <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
-      <div>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+
+      <div>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </div>
 
       <div class="flex space-x-2">
+
         {% if page_obj.has_previous %}
-          <a href="?page=1" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
-          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+          <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+
+          <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
         {% endif %}
 
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
-          <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+          <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+
+          <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
         {% endif %}
+
       </div>
     </div>
     {% endif %}
