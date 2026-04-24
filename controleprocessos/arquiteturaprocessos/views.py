@@ -2357,8 +2357,16 @@ class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
     template_name = 'processos/processos.html'
     context_object_name = 'processos'
-    paginate_by = 20
     ordering = ['id']
+
+    # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO NOVO)
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10  # default original mantido
 
     def get_queryset(self):
         req = self.request.GET
@@ -2375,7 +2383,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
         con_de = parse_date(req.get("conclusao_de"))
         con_ate = parse_date(req.get("conclusao_ate"))
 
-        # 🔥 validação datas
+        # 🔥 VALIDAÇÃO
         if cri_de and cri_ate and cri_ate < cri_de:
             messages.error(self.request, "A data final deve ser maior ou igual à inicial.")
             return Processo.objects.none()
@@ -2384,7 +2392,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
             messages.error(self.request, "A data final deve ser maior ou igual à inicial.")
             return Processo.objects.none()
 
-        # 🔥 BASE: SOMENTE PROCESSOS (PAI)
+        # 🔥 BASE
         qs = (
             Processo.objects
             .filter(parent__isnull=True)
@@ -2421,7 +2429,7 @@ class ProcessoView(LoginRequiredMixin, ListView):
             qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
 
         if area:
-            queryset = qs.filter(area_responsavel__nome_area__icontains=area)
+            qs = qs.filter(area_responsavel__nome_area__icontains=area)
 
         # --------------------
         # ESTADO
@@ -2462,21 +2470,31 @@ class ProcessoView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 🔥 CONTADOR
-        context["total_registros"] = self.object_list.count()
-
-        # 🔥 LISTA
-        context["classificacoes"] = Classificacao.objects.all().order_by("nome")
-
-        # 🧠 NOVO — VALORES SELECIONADOS (ESSENCIAL)
         req = self.request.GET
 
+        # 🔥 LISTAS
+        context["classificacoes"] = Classificacao.objects.all().order_by("nome")
+
+        # 🔥 CONTADOR CORRETO (PADRÃO NOVO)
+        context["total_registros"] = context["page_obj"].paginator.count
+
+        # 🔥 FILTROS (persistência)
         context["classificacao_selecionada"] = str(req.get("classificacao", ""))
         context["estado_selecionado"] = str(req.get("estado", ""))
         context["nome_busca"] = req.get("nome", "")
         context["macro1_busca"] = req.get("macro1", "")
         context["macro2_busca"] = req.get("macro2", "")
         context["area_busca"] = req.get("area", "")
+
+        # 🔥 QUERY STRING (ESSENCIAL PRA PAGINAÇÃO)
+        query_params = self.request.GET.copy()
+
+        query_params_no_page = query_params.copy()
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = query_params_no_page.urlencode()
+        context["query_string_full"] = query_params.urlencode()
 
         return context
 
