@@ -2107,31 +2107,78 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
         return ctx
 
 # ---------------------------------------------------
-# LISTAGEM
+# LISTAGEM MODELAGEM DE PROCESSOS
 # ---------------------------------------------------
 class ModelagemProcessoView(LoginRequiredMixin, ListView):
     model = ModelagemProcesso
     template_name = 'estrutura/modelagemprocessos.html'
     context_object_name = 'modelagemprocessos'
-    paginate_by = 20
+
+    # 🔥 PAGINAÇÃO DINÂMICA
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
 
     def get_queryset(self):
-        termo = self.request.GET.get('q', '').strip()
+        req = self.request.GET
 
         queryset = (
             ModelagemProcesso.objects
             .select_related('usuario', 'usuario_atualizacao', 'tipo_documento')
         )
 
-        if termo:
-            queryset = queryset.filter(
-                Q(titulo__icontains=termo) |
-                Q(tipo_documento__nome__icontains=termo) |
-                Q(emitente__icontains=termo) |
-                Q(sistema__icontains=termo) |
-                Q(codigo__icontains=termo)
-            )
+        # ===== FILTROS =====
+        tipo = req.get("tipo", "").strip()
+        titulo = req.get("titulo", "").strip()
+        tema = req.get("tema", "").strip()
+        emitente = req.get("emitente", "").strip()
+        sistema = req.get("sistema", "").strip()
 
+        vig_de_raw = req.get("vigencia_de")
+        vig_ate_raw = req.get("vigencia_ate")
+
+        vig_de = None
+        vig_ate = None
+
+        try:
+            if vig_de_raw:
+                vig_de = datetime.strptime(vig_de_raw, "%Y-%m-%d").date()
+            if vig_ate_raw:
+                vig_ate = datetime.strptime(vig_ate_raw, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(self.request, "Formato de data inválido.")
+            return ModelagemProcesso.objects.none()
+
+        # 🔍 FILTROS
+
+        tipo = req.get("tipo", "").strip()
+
+        if tipo:
+            queryset = queryset.filter(tipo_documento__slug=tipo)
+
+        if titulo:
+            queryset = queryset.filter(titulo__icontains=titulo)
+
+        if tema:
+            queryset = queryset.filter(tema__icontains=tema)
+
+        if emitente:
+            queryset = queryset.filter(emitente__icontains=emitente)
+
+        if sistema:
+            queryset = queryset.filter(sistema__icontains=sistema)
+
+        if vig_de:
+            queryset = queryset.filter(vigencia_inicio__gte=vig_de)
+
+        if vig_ate:
+            queryset = queryset.filter(vigencia_fim__lte=vig_ate)
+
+        # 🔽 ORDENAÇÃO ORIGINAL
         queryset = queryset.order_by(
             'tipo_documento__nome',
             'titulo',
@@ -2139,19 +2186,46 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
             'sequencial'
         )
 
-        # Formatação visual do sequencial
-        for obj in queryset:
-            if obj.sequencial is not None:
-                try:
-                    obj.sequencial = f"{int(obj.sequencial):03d}"
-                except (TypeError, ValueError):
-                    pass
-
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['termo_busca'] = self.request.GET.get('q', '')
+
+        req = self.request.GET
+
+        tipos = TiposDocumento.objects.all().order_by('nome')
+
+        for t in tipos:
+            if t.nome == "MODELO DE PROCESSO":
+                t.label = f"MP - {t.nome}"
+            elif t.nome == "NORMA DE PROCEDIMENTO":
+                t.label = f"NP - {t.nome}"
+            else:
+                t.label = t.nome
+
+        context['tipos_documento'] = tipos
+
+        # 🔥 MANTER VALORES NO FORM
+        context["tipo_selecionado"] = req.get("tipo", "")
+        context["titulo_busca"] = req.get("titulo", "")
+        context["tema_busca"] = req.get("tema", "")
+        context["emitente_busca"] = req.get("emitente", "")
+        context["sistema_busca"] = req.get("sistema", "")
+        context["vigencia_de"] = req.get("vigencia_de", "")
+        context["vigencia_ate"] = req.get("vigencia_ate", "")
+
+        # 🔥 QUERY STRING (PAGINAÇÃO)
+        query_params = self.request.GET.copy()
+
+        query_params_no_page = query_params.copy()
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = query_params_no_page.urlencode()
+        context["query_string_full"] = query_params.urlencode()
+
+        context["total_registros"] = context["page_obj"].paginator.count
+
         return context
 
 # ---------------------------------------------------
