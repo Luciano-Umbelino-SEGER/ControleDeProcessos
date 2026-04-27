@@ -1057,6 +1057,7 @@ class Form_ProcessoMapearForm(forms.ModelForm):
             "usuario_atualizacao",
             "data_criacao",
             "data_atualizacao",
+            "status",
         )
 
         widgets = {
@@ -1131,19 +1132,58 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         cleaned = super().clean()
 
         nome = cleaned.get("nome")
-        objetivo = cleaned.get("objetivo")
         tipo = cleaned.get("tipo")
 
-        if not nome or nome.strip() == "":
-            self.add_error("nome", "Informe o nome do Processo, ou Subprocesso, ou Outro.")
+        # 🔥 fallback para inputs visuais
+        if not nome:
+            nome_post = self.data.get("nome") or self.data.get("id_nome")
+
+            # tenta pegar dos inputs visíveis
+            if not nome_post:
+                nome_post = self.data.get("subprocesso_input_visible") or \
+                            self.data.get("processo_input_visible")
+
+            if nome_post:
+                cleaned["nome"] = nome_post.strip()
+            else:
+                self.add_error("nome", "Informe o nome do Processo, Subprocesso ou Outro.")
+
+        # restante continua igual
+        objetivo = cleaned.get("objetivo")
 
         if not objetivo or objetivo.strip() == "":
             self.add_error("objetivo", "Informe o objetivo do Processo.")
 
-        # 🔥 REGRA LEVE (OK manter)
         if tipo == ProcessoMapear.TIPO_PROCESSO:
             cleaned["parent"] = None
 
+        parent = cleaned.get("parent")
+
+        if parent:
+            if cleaned.get("classificacao") is None:
+                cleaned["classificacao"] = parent.classificacao
+
+            if cleaned.get("macroprocesso_nivel1") is None:
+                cleaned["macroprocesso_nivel1"] = parent.macroprocesso_nivel1
+
+            if cleaned.get("macroprocesso_nivel2") is None:
+                cleaned["macroprocesso_nivel2"] = parent.macroprocesso_nivel2
+
+        macro1 = cleaned.get("macroprocesso_nivel1")
+        macro2 = cleaned.get("macroprocesso_nivel2")
+
+        if macro2 and macro1:
+            if macro2.macroprocesso_nivel1_id != macro1.id:
+                self.add_error(
+                    "macroprocesso_nivel2",
+                    "Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 informado."
+                )
+
+        if macro2 and not macro1:
+            self.add_error(
+                "macroprocesso_nivel1",
+                "Macroprocesso Nível 1 é obrigatório quando Macroprocesso Nível 2 for informado."
+            )
 
         return cleaned
 

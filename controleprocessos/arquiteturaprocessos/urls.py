@@ -11,7 +11,8 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
-                    ExecutarIniciarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear, EstatisticaComparativos)
+                    ExecutarIniciarProcessoMapear, FinalizarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear,
+                    EstatisticaComparativos)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 from .utils_views import verificar_similaridade
@@ -46,6 +47,7 @@ urlpatterns = [
     path('processosmapear/<int:pk>/editar/', EditarProcessoMapear.as_view(), name='editar_processomapear'),
     path('processosmapear/<int:pk>/excluir/', ExcluirProcessoMapear.as_view(), name='excluir_processomapear'),
     path("processosmapear/<int:pk>/executar-iniciar/", ExecutarIniciarProcessoMapear.as_view(), name="executar_iniciar_processomapear"),
+    path('processosmapear/<int:pk>/finalizar/', FinalizarProcessoMapear.as_view(), name='finalizar_processomapear'),
     # Usuários
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('usuario/novo/', CriarUsuario.as_view(), name='criar_usuario'),

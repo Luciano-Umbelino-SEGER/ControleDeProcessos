@@ -135,6 +135,30 @@
                        value="{{ request.GET.criacao_ate }}">
               </div>
 
+              <!-- ESTADO -->
+              <div class="flex flex-col">
+                <label class="text-sm font-semibold text-blue-800 mb-0.5">Estado</label>
+                <select name="status"
+                        class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                               focus:ring-2 focus:ring-blue-500 text-black">
+
+                  <option value=""
+                    {% if not request.GET.status %}selected{% endif %}>
+                    Ativos
+                  </option>
+
+                  <option value="finalizado"
+                    {% if request.GET.status == "finalizado" %}selected{% endif %}>
+                    Finalizados
+                  </option>
+
+                  <option value="todos"
+                    {% if request.GET.status == "todos" %}selected{% endif %}>
+                    Todos
+                  </option>
+                </select>
+              </div>
+
               <!-- REGISTROS/PÁGINA -->
               <div class="flex flex-col">
                 <label class="text-sm font-semibold text-blue-800 mb-0.5">Registros/Página</label>
@@ -215,10 +239,15 @@
                   </span>
 
               {% elif processomapear.tipo == "outro" %}
-                  <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-semibold">
-                      Outro
-                  </span>
-
+                  {% if processomapear.status == "finalizado" %}
+                      <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                          Finalizado
+                      </span>
+                  {% else %}
+                      <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-semibold">
+                          Outro
+                      </span>
+                  {% endif %}
               {% endif %}
             </td>
 
@@ -280,17 +309,32 @@
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
 
+
                 <!-- EDITAR -->
-                <a href="{% url 'arquiteturaprocessos:editar_processomapear' processomapear.pk %}"
-                   class="text-yellow-600 hover:text-yellow-800" title="Editar">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                       viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                    <path fill-rule="evenodd"
-                          d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </a>
+                {% if processomapear.status == "ativo" %}
+                    <a href="{% url 'arquiteturaprocessos:editar_processomapear' processomapear.pk %}"
+                       class="text-yellow-600 hover:text-yellow-800"
+                       title="Editar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                            <path fill-rule="evenodd"
+                                  d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                {% else %}
+                    <span class="text-gray-300 cursor-not-allowed"
+                          title="Registro finalizado">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                            <path fill-rule="evenodd"
+                                  d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                    </span>
+                {% endif %}
 
                 <!-- EXCLUIR -->
                 <a href="{% url 'arquiteturaprocessos:excluir_processomapear' processomapear.pk %}"

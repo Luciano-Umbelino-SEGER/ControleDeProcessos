@@ -49,8 +49,6 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
-)
-
 
 # ---------------------------------------------------
 # Utility to safely generate a username from names
@@ -1026,6 +1024,7 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         context["macro2_busca"] = req.get("macro2", "")
         context["area_busca"] = req.get("area", "")
         context["tipo_selecionado"] = req.get("tipo", "")
+        context["status_selecionado"] = req.get("status", "")
 
         # 🔥 QUERY STRING (PADRÃO DO LOG)
         query_params = self.request.GET.copy()
@@ -1067,6 +1066,8 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         cri_de = parse_date(cri_de_raw) if cri_de_raw else None
         cri_ate = parse_date(cri_ate_raw) if cri_ate_raw else None
 
+        status = req.get("status", "ativo").strip()
+
         # 🔥 VALIDAÇÃO DE DATA
         if cri_de and cri_ate and cri_ate < cri_de:
             messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
@@ -1098,6 +1099,19 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         if cri_ate:
             fim_do_dia = datetime.combine(cri_ate, time.max)
             queryset = queryset.filter(data_criacao__lte=fim_do_dia)
+
+        # --------------------
+        # STATUS (Estado)
+        # --------------------
+        if status == "finalizado":
+            queryset = queryset.filter(status="finalizado")
+
+        elif status == "todos":
+            pass
+
+        else:  # ativo
+            queryset = queryset.filter(status="ativo")
+
 
         return queryset
 
@@ -1145,6 +1159,17 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
 
         processomapear.usuario_cadastro = self.request.user
         processomapear.usuario_atualizacao = None
+
+        # 🔥 GARANTE HERANÇA PERSISTIDA
+        if processomapear.parent:
+            if not processomapear.classificacao:
+                processomapear.classificacao = processomapear.parent.classificacao
+
+            if not processomapear.macroprocesso_nivel1:
+                processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
+
+            if not processomapear.macroprocesso_nivel2:
+                processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
 
         processomapear.save()
 
@@ -1226,14 +1251,10 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
 
-        # 🔥 GARANTE MODO EDIÇÃO NO FORM
-        context["form"] = Form_ProcessoMapearForm(
-            instance=processomapear,
-            modo_edicao=True
-        )
-
         if self.request.session.pop("confirmar_iniciar", None):
             context["confirmar_iniciar"] = True
+
+        context["form"].modo_edicao = True
 
         context.update({
             "modo_edicao": True,
@@ -1272,6 +1293,16 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             processomapear.parent = None
 
         acao = self.request.POST.get("acao", "").strip()
+
+        if processomapear.parent:
+            if not processomapear.classificacao:
+                processomapear.classificacao = processomapear.parent.classificacao
+
+            if not processomapear.macroprocesso_nivel1:
+                processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
+
+            if not processomapear.macroprocesso_nivel2:
+                processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
 
         # 🔥 Validação antes do iniciar
         if acao == "iniciar":
@@ -1369,6 +1400,12 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
                 usuario_cadastro=processomapear.usuario_cadastro,
                 usuario_atualizacao=request.user,
                 data_atualizacao=timezone.now(),
+
+                logger.info(
+                    f"[INICIAR] Processo criado id={processo.pk} nome='{processo.nome}' "
+                    f"a partir de ProcessoMapear id={processomapear.pk} "
+                    f"por usuario={request.user}"
+                )
             )
 
             processomapear.delete()
@@ -1379,6 +1416,32 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
         )
 
         return redirect("arquiteturaprocessos:processos")
+
+# ---------------------------------------#
+# Finalizar Tarefa -  Processo a Mapear  #
+# ---------------------------------------#
+class FinalizarProcessoMapear(LoginRequiredMixin, View):
+
+    def post(self, request, pk):
+        obj = get_object_or_404(ProcessoMapear, pk=pk)
+
+        if request.user.perfil.nome.lower() != 'administrador':
+            messages.error(request, "Você não tem permissão para finalizar esta tarefa.")
+            return redirect('arquiteturaprocessos:processosmapear')
+
+        # 🔥 evita reprocessar
+        if obj.status == "finalizado":
+            messages.warning(request, "Esta tarefa já está finalizada.")
+            return redirect('arquiteturaprocessos:processosmapear')
+
+        obj.status = "finalizado"
+        obj.usuario_atualizacao = request.user
+        obj.data_atualizacao = timezone.now()  # 👈 importante
+        obj.save()
+
+        messages.success(request, f"Tarefa '{obj.nome}' finalizada com sucesso.")
+
+        return redirect('arquiteturaprocessos:processosmapear')
 
 # --------------------------------#
 # Excluir Processo a Mapear       #

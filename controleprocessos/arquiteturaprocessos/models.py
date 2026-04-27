@@ -303,12 +303,19 @@ class ProcessoMapear(models.Model):
     TIPO_SUBPROCESSO = "subprocesso"
     TIPO_OUTRO = "outro"
 
-
     TIPO_CHOICES = (
         (TIPO_PROCESSO, "Processo"),
         (TIPO_SUBPROCESSO, "Subprocesso"),
         (TIPO_OUTRO, "Outro"),
     )
+
+    STATUS_ATIVO = "ativo"
+    STATUS_FINALIZADO = "finalizado"
+
+    STATUS_CHOICES = [
+        (STATUS_ATIVO, "Ativo"),
+        (STATUS_FINALIZADO, "Finalizado"),
+    ]
 
     nome = models.CharField(max_length=500)
 
@@ -378,6 +385,12 @@ class ProcessoMapear(models.Model):
         max_length=20,
         choices=TIPO_CHOICES,
         default=TIPO_PROCESSO,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_ATIVO
     )
 
     class Meta:

@@ -42,17 +42,17 @@ fieldset[disabled] input[type="radio"] {
         </strong>
 
         <ul class="list-disc list-inside space-y-1">
-
             {% for error in form.non_field_errors %}
                 <li>{{ error }}</li>
             {% endfor %}
 
             {% for field in form %}
                 {% for error in field.errors %}
-                    <li>{{ error }}</li>
+                    <li>
+                        <strong>{{ field.label }}:</strong> {{ error }}
+                    </li>
                 {% endfor %}
             {% endfor %}
-
         </ul>
     </div>
     {% endif %}
@@ -284,22 +284,28 @@ fieldset[disabled] input[type="radio"] {
           {% elif modo_edicao %}
 
             <!-- INICIAR PROCESSO -->
-            <button type="submit"
-                    id="btn_iniciar"
-                    name="acao"
-                    value="iniciar"
-                    class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition
-                    {% if form.instance.tipo == 'outro' %}hidden{% endif %}">
+           {% if form.instance.status == "ativo" and form.instance.tipo != "outro" %}
+            <button type="button"
+                    @click="$dispatch('abrir-modal-confirmacao', {
+                        url: '{% url 'arquiteturaprocessos:finalizar_processomapear' form.instance.pk %}',
+                        mensagem: 'Confirma a inicialização do Processo a Mapear <strong>{{ form.instance.nome }}</strong>?'
+                    })"
+                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">
                 Iniciar Processo
             </button>
+            {% endif %}
 
             <!-- FINALIZAR TAREFA -->
-            <button type="button"
-                    id="btn_finalizar"
-                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition
-                    {% if form.instance.tipo != 'outro' %}hidden{% endif %}">
+           {% if form.instance.status == "ativo" and form.instance.tipo == "outro" %}
+           <button type="button"
+                    @click="$dispatch('abrir-modal-confirmacao', {
+                        url: '{% url 'arquiteturaprocessos:finalizar_processomapear' form.instance.pk %}',
+                        mensagem: 'Confirma a finalização da Tarefa <strong>{{ form.instance.nome }}</strong>?'
+                    })"
+                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">
                 Finalizar Tarefa
             </button>
+             {% endif %}
 
             <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                     type="submit">
@@ -516,6 +522,32 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     initTipoProcessoMapear({urlHeranca: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"});
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("form-processomapear");
+
+    if (!form) return;
+
+    form.addEventListener("submit", function () {
+
+        const tipo = document.querySelector('input[name="tipo"]:checked')?.value;
+
+        let nome = "";
+
+        if (tipo === "processo") {
+            nome = document.getElementById("processo_input_visible")?.value;
+        } else {
+            nome = document.getElementById("subprocesso_input_visible")?.value;
+        }
+
+        document.getElementById("id_nome").value = nome || "";
+
+    });
+
 });
 </script>
 
