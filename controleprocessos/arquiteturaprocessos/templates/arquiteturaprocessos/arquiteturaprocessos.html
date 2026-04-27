@@ -123,7 +123,21 @@
                             focus:ring-2 focus:ring-blue-500 text-gray-400"
                      value="{{ request.GET.criacao_ate }}">
             </div>
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Registros/Página
+              </label>
+              <select name="page_size"
+                      class="w-24 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                             focus:ring-2 focus:ring-blue-500 text-black">
 
+                <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
+                <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
+                <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
+                <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
+
+              </select>
+            </div>
           </div>
 
           <!-- BOTÕES -->
@@ -170,7 +184,7 @@
           ======================================================
           {% endcomment %}
 
-          {% for processo in processos %}
+          {% for processo in page_obj %}
               {% with rownum=forloop.counter %}
               <tr class="hover:bg-blue-100 transition-colors
                          {% if rownum|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
@@ -373,7 +387,29 @@
         </tbody>
 
       </table>
-    </div>
+      </div>
+      <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
+
+        <div>
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </div>
+
+        <div class="flex space-x-2">
+
+          {% if page_obj.has_previous %}
+            <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+
+            <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+          {% endif %}
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+
+            <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+          {% endif %}
+
+        </div>
+      </div>
 
   </div>
 </div>

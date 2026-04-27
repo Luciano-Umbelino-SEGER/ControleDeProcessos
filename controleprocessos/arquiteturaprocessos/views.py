@@ -540,6 +540,15 @@ class ArquiteruraProcessos(ListView):
     paginate_by = 30
     ordering = ["id"]
 
+    # 🔥 PAGINAÇÃO DINÂMICA - PADRÃO
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
+
     # -----------------------------------------
     # Montagem de documentos (reutilizável)
     # -----------------------------------------
@@ -664,6 +673,21 @@ class ArquiteruraProcessos(ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
+        # =========================
+        # 🔥 QUERY STRING (PAGINAÇÃO)
+        # =========================
+        query_params = self.request.GET.copy()
+
+        query_params_no_page = query_params.copy()
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        ctx["query_string"] = query_params_no_page.urlencode()
+        ctx["query_string_full"] = query_params.urlencode()
+
+        # =========================
+        # 🔥 PAGINAÇÃO SEGURA
+        # =========================
         page = ctx.get("page_obj")
         processos = page.object_list if page else ctx["processos"]
 
@@ -695,6 +719,9 @@ class ArquiteruraProcessos(ListView):
                     "normas": sub_docs["normas"],
                 }
 
+        # =========================
+        # 🔥 CONTEXTOS EXTRAS
+        # =========================
         ctx["classificacoes"] = Classificacao.objects.all().order_by("nome")
         ctx["documentos_por_processo"] = documentos_por_processo
         ctx["total_registros"] = self.object_list.count()
@@ -2433,14 +2460,14 @@ class ProcessoView(LoginRequiredMixin, ListView):
     context_object_name = 'processos'
     ordering = ['id']
 
-    # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO NOVO)
+    # 🔥 PAGINAÇÃO DINÂMICA - PADRÃO
     def get_paginate_by(self, queryset):
         page_size = self.request.GET.get("page_size")
 
         try:
             return int(page_size)
         except (TypeError, ValueError):
-            return 10  # default original mantido
+            return 10
 
     def get_queryset(self):
         req = self.request.GET
