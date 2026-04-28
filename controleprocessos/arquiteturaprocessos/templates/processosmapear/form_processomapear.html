@@ -161,7 +161,7 @@ fieldset[disabled] input[type="radio"] {
                       placeholder="{% if form.instance.tipo == 'outro' %}Nome do Elemento{% else %}Nome do Subprocesso{% endif %}"
                       {% if form.instance.tipo != "subprocesso" and form.instance.tipo != "outro" %}disabled{% endif %}>
 
-                <input type="hidden" name="nome" id="id_nome" value="{{ form.instance.nome }}">
+                <input type="hidden" name="nome" id="id_nome" value="{{ form.nome.value|default_if_none:'' }}">
             </div>
         </div>
 
@@ -287,7 +287,7 @@ fieldset[disabled] input[type="radio"] {
            {% if form.instance.status == "ativo" and form.instance.tipo != "outro" %}
             <button type="button"
                     @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:finalizar_processomapear' form.instance.pk %}',
+                        url: '{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}',
                         mensagem: 'Confirma a inicialização do Processo a Mapear <strong>{{ form.instance.nome }}</strong>?'
                     })"
                     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">
@@ -536,15 +536,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const tipo = document.querySelector('input[name="tipo"]:checked')?.value;
 
+        const inputProcesso = document.getElementById("processo_input_visible");
+        const inputSub = document.getElementById("subprocesso_input_visible");
+        const hiddenNome = document.getElementById("id_nome");
+
         let nome = "";
 
         if (tipo === "processo") {
-            nome = document.getElementById("processo_input_visible")?.value;
-        } else {
-            nome = document.getElementById("subprocesso_input_visible")?.value;
+            nome = inputProcesso?.value?.trim();
+        } else if (tipo === "subprocesso" || tipo === "outro") {
+            nome = inputSub?.value?.trim();
         }
 
-        document.getElementById("id_nome").value = nome || "";
+        // 🔥 fallback extra (segurança total)
+        if (!nome) {
+            nome = hiddenNome?.value || "";
+        }
+
+        hiddenNome.value = nome;
 
     });
 

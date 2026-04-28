@@ -218,6 +218,23 @@ function initTipoProcessoMapear(config = {}) {
         // 3. atualiza estado
         tipoAtual = novoTipo;
 
+        // 🔥 LIMPAR PARENT quando virar PROCESSO
+        if (tipoAtual === "processo") {
+
+            const parentHidden = document.getElementById("id_parent");
+            const parentSelect = document.getElementById("id_parent_select");
+
+            // limpa hidden
+            if (parentHidden) parentHidden.value = "";
+
+            // limpa select2 ou select normal
+            if (window.$ && parentSelect) {
+                $(parentSelect).val(null).trigger('change');
+            } else if (parentSelect) {
+                parentSelect.value = "";
+            }
+        }
+
         // 4. UI
         atualizarLabels();
         atualizarVisibilidadeCampos();

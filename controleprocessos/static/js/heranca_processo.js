@@ -69,6 +69,7 @@ window.HerancaProcesso = (function () {
        DESBLOQUEIO
     ========================= */
     function desbloquearCampo(id) {
+
         const el = document.getElementById(id)
         if (!el) return
 
@@ -111,28 +112,27 @@ window.HerancaProcesso = (function () {
 
         const url = options.url
 
-        fetch(url.replace('0', processoId))
+        const endpoint = url.replace(/0$/, processoId)
+
+        fetch(endpoint)
             .then(r => r.json())
             .then(data => {
 
-                /* =========================
-                   SELECTS
-                ========================= */
                 setSelect("id_classificacao", data.classificacao)
                 setSelect("id_macroprocesso_nivel1", data.macro1)
                 setSelect("id_macroprocesso_nivel2", data.macro2)
                 setSelect("id_area_responsavel", data.area)
 
-                /* =========================
-                   INPUTS
-                ========================= */
                 setInput("id_gestor", data.gestor)
                 setInput("id_telefone", data.telefone)
                 setInput("id_email", data.email)
 
-                /* =========================
-                   BLOQUEIO
-                ========================= */
+                // 🔥 sincroniza hidden
+                const hiddenParent = document.getElementById("id_parent")
+                if (hiddenParent) {
+                    hiddenParent.value = processoId
+                }
+
                 CAMPOS_PADRAO.forEach(bloquearCampo)
 
                 if (typeof options.onApply === "function") {

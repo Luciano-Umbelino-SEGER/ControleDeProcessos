@@ -1160,14 +1160,9 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         parent = cleaned.get("parent")
 
         if parent:
-            if cleaned.get("classificacao") is None:
-                cleaned["classificacao"] = parent.classificacao
-
-            if cleaned.get("macroprocesso_nivel1") is None:
-                cleaned["macroprocesso_nivel1"] = parent.macroprocesso_nivel1
-
-            if cleaned.get("macroprocesso_nivel2") is None:
-                cleaned["macroprocesso_nivel2"] = parent.macroprocesso_nivel2
+            cleaned["classificacao"] = parent.classificacao
+            cleaned["macroprocesso_nivel1"] = parent.macroprocesso_nivel1
+            cleaned["macroprocesso_nivel2"] = parent.macroprocesso_nivel2
 
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")

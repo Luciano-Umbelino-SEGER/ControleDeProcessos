@@ -49,6 +49,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
+)
 
 # ---------------------------------------------------
 # Utility to safely generate a username from names
@@ -1162,14 +1163,9 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
 
         # 🔥 GARANTE HERANÇA PERSISTIDA
         if processomapear.parent:
-            if not processomapear.classificacao:
-                processomapear.classificacao = processomapear.parent.classificacao
-
-            if not processomapear.macroprocesso_nivel1:
-                processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
-
-            if not processomapear.macroprocesso_nivel2:
-                processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
+            processomapear.classificacao = processomapear.parent.classificacao
+            processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
+            processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
 
         processomapear.save()
 
@@ -1295,14 +1291,9 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         acao = self.request.POST.get("acao", "").strip()
 
         if processomapear.parent:
-            if not processomapear.classificacao:
-                processomapear.classificacao = processomapear.parent.classificacao
-
-            if not processomapear.macroprocesso_nivel1:
-                processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
-
-            if not processomapear.macroprocesso_nivel2:
-                processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
+            processomapear.classificacao = processomapear.parent.classificacao
+            processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
+            processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
 
         # 🔥 Validação antes do iniciar
         if acao == "iniciar":
@@ -1401,11 +1392,6 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
                 usuario_atualizacao=request.user,
                 data_atualizacao=timezone.now(),
 
-                logger.info(
-                    f"[INICIAR] Processo criado id={processo.pk} nome='{processo.nome}' "
-                    f"a partir de ProcessoMapear id={processomapear.pk} "
-                    f"por usuario={request.user}"
-                )
             )
 
             processomapear.delete()
