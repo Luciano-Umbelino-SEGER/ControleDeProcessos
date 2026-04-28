@@ -1595,8 +1595,8 @@ function normaProcedimentoData() {
 /* =========================================================
    DADOS HIDRATADOS (DEBUG / USO FUTURO)
    ========================================================= */
-const MODELOS_HIDRATADOS = JSON.parse('{{ modelos_hidratados|default:"[]"|escapejs }}');
-const NORMAS_HIDRATADAS  = JSON.parse('{{ normas_hidratadas|default:"[]"|escapejs }}');
+const MODELOS_HIDRATADOS = {{ modelos_hidratados|default:"[]"|safe }};
+const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
 
 console.log("MODO:", window.MODO);
 console.log("MODELOS_HIDRATADOS:", MODELOS_HIDRATADOS);
@@ -1655,6 +1655,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const subprocessoInput = document.getElementById("subprocesso_input_visible")
     const hiddenNome = document.getElementById("id_nome")
 
+    // 🔥 hidratação inicial (ESSENCIAL)
+    if (hiddenNome && hiddenNome.value) {
+
+        if (rbSubprocesso && rbSubprocesso.checked) {
+            if (subprocessoInput) {
+                subprocessoInput.value = hiddenNome.value
+            }
+        } else {
+            if (processoInput) {
+                processoInput.value = hiddenNome.value
+            }
+        }
+    }
+
     window.atualizarVisualTipo = function(limparAoLiberar = true) {
 
         const CAMPOS_HERANCA = [
@@ -1670,9 +1684,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (processoInput) removerAvisoSimilaridade(processoInput);
         if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput);
 
-        if (processoInput) processoInput.value = "";
-        if (subprocessoInput) subprocessoInput.value = "";
-        if (hiddenNome) hiddenNome.value = "";
+        // 🔥 só limpa se for interação do usuário (não no load)
+        if (limparAoLiberar) {
+            if (processoInput) processoInput.value = ""
+            if (subprocessoInput) subprocessoInput.value = ""
+            if (hiddenNome) hiddenNome.value = ""
+        }
 
         if (rbSubprocesso && rbSubprocesso.checked) {
 
