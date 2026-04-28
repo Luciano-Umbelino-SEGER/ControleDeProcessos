@@ -1247,9 +1247,6 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
 
-        if self.request.session.pop("confirmar_iniciar", None):
-            context["confirmar_iniciar"] = True
-
         context["form"].modo_edicao = True
 
         context.update({
@@ -1295,7 +1292,7 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
             processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
 
-        # 🔥 Validação antes do iniciar
+        # 🔥 VALIDAÇÃO PARA INICIAR (SEM SALVAR AINDA)
         if acao == "iniciar":
 
             erros = processomapear.validar_para_iniciar()
@@ -1308,18 +1305,22 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 context["form"] = form
                 return self.render_to_response(context)
 
-        # 🔥 Persistência
-        processomapear.usuario_atualizacao = self.request.user
-        processomapear.data_atualizacao = timezone.now()
-        processomapear.save()
-        self.object = processomapear
+            # 🔥 salva só o necessário antes da confirmação
+            processomapear.usuario_atualizacao = self.request.user
+            processomapear.data_atualizacao = timezone.now()
+            processomapear.save()
 
-        if acao == "iniciar":
             self.request.session["confirmar_iniciar"] = True
+
             return redirect(
                 "arquiteturaprocessos:editar_processomapear",
                 pk=processomapear.pk
             )
+
+        # 🔵 fluxo normal (salvar sem iniciar)
+        processomapear.usuario_atualizacao = self.request.user
+        processomapear.data_atualizacao = timezone.now()
+        processomapear.save()
 
         messages.success(
             self.request,
@@ -1341,8 +1342,9 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
     def post(self, request, pk):
 
         processomapear = get_object_or_404(ProcessoMapear, pk=pk)
+        nome_normalizado = (processomapear.nome or "").strip()
 
-        # 🔥 VALIDAÇÃO DE NEGÓCIO CENTRAL
+        # 🔥 VALIDAÇÃO DE NEGÓCIO
         erros = processomapear.validar_para_iniciar()
 
         if erros:
@@ -1351,7 +1353,7 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
 
             return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
 
-        # 🔥 VALIDAÇÃO EXTRA DO PARENT (SE FOR SUBPROCESSO)
+        # 🔥 VALIDAÇÃO DE PARENT
         parent = processomapear.parent
 
         if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO:
@@ -1360,7 +1362,6 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
                 messages.error(request, "Subprocesso deve estar vinculado a um processo.")
                 return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
 
-            # garante que ainda existe
             if not Processo.objects.filter(pk=parent.pk).exists():
                 messages.error(request, "O processo pai não existe mais.")
                 return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
@@ -1368,7 +1369,15 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
         else:
             parent = None
 
-        # 🔥 TRANSFORMAÇÃO SEGURA
+        # 🔥 👉 AQUI ENTRA O BLOQUEIO
+        if Processo.objects.filter(nome__iexact=nome_normalizado).exists():
+            messages.error(
+                request,
+                f"Já existe um processo com o nome '{nome_normalizado}'."
+            )
+            return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
+
+        # 🔥 TRANSFORMAÇÃO
         with transaction.atomic():
 
             processo = Processo.objects.create(
@@ -1385,20 +1394,19 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
                 macroprocesso_nivel2=processomapear.macroprocesso_nivel2,
 
                 parent=parent,
-
                 area_responsavel=processomapear.area_responsavel,
 
                 usuario_cadastro=processomapear.usuario_cadastro,
                 usuario_atualizacao=request.user,
                 data_atualizacao=timezone.now(),
-
             )
 
             processomapear.delete()
 
         messages.success(
             request,
-            f"Processo/Subprocess '{processo.nome}' criado com sucesso!"
+            f"{'Subprocesso' if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO else 'Processo'} "
+            f"'{processo.nome}' criado com sucesso!"
         )
 
         return redirect("arquiteturaprocessos:processos")
@@ -1425,7 +1433,10 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
         obj.data_atualizacao = timezone.now()  # 👈 importante
         obj.save()
 
-        messages.success(request, f"Tarefa '{obj.nome}' finalizada com sucesso.")
+        messages.success(
+            request,
+            f"Tarefa '{obj.nome}' finalizada com sucesso."
+        )
 
         return redirect('arquiteturaprocessos:processosmapear')
 

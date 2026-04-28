@@ -288,10 +288,14 @@ fieldset[disabled] input[type="radio"] {
             <button type="button"
                     @click="$dispatch('abrir-modal-confirmacao', {
                         url: '{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}',
-                        mensagem: 'Confirma a inicialização do Processo a Mapear <strong>{{ form.instance.nome }}</strong>?'
+                        mensagem: `
+                            Você está prestes a transformar o Processo a Mapear -
+                            <strong>{{ form.instance.nome }}</strong>, em um {{ form.instance.tipo }}.<br><br>
+                            Confirma a inicialização do {{ form.instance.tipo }}?
+                        `
                     })"
                     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">
-                Iniciar Processo
+                 Iniciar Processo
             </button>
             {% endif %}
 
@@ -391,51 +395,6 @@ document.addEventListener("DOMContentLoaded", function() {
         macro2Id: "id_macroprocesso_nivel2",
         modoBloqueado: false
     });
-});
-</script>
-
-
-{% comment %}
-{# =========================================================
-   MODAL AUTOMÁTICO – CONFIRMAÇÃO DE INICIALIZAÇÃO
-   ---------------------------------------------------------
-   Este bloco escuta a mensagem especial "CONFIRMAR_INICIAR"
-   enviada pela UpdateView após salvar o formulário quando
-   o usuário clica em "Iniciar Processo".
-
-   Fluxo:
-   1) Usuário salva (acao=iniciar)
-   2) View salva o Processo a Mapear e adiciona message CONFIRMAR_INICIAR
-   3) Página recarrega
-   4) Este script detecta a flag e dispara o modal global
-   5) Modal chama a URL executar_iniciar_processomapear
-
-   ⚠ Importante:
-   - Não remover sem revisar o fluxo de transformação
-   - Depende do modal global 'abrir-modal-confirmacao'
-   ========================================================= #}
-{% endcomment %}
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-
-
-    const confirmarIniciar = "{{ confirmar_iniciar|yesno:'true,false' }}" === "true";
-    const urlIniciar = "{% if form.instance.pk %}{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}{% endif %}";
-
-    if (confirmarIniciar && urlIniciar) {
-        window.dispatchEvent(new CustomEvent("abrir-modal-confirmacao", {
-            detail: {
-                url: urlIniciar,
-                mensagem: `
-                    Você está prestes a transformar o Processo a Mapear -
-                    <strong>{{ form.instance.nome }}</strong>, em um {{ form.instance.tipo }}.<br><br>
-                    Confirma a inicialização do {{ form.instance.tipo }}?
-                `
-            }
-        }));
-    }
-
 });
 </script>
 

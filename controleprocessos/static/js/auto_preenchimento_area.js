@@ -36,34 +36,41 @@ function initAutoPreenchimentoArea(url) {
                 if (telefoneInput) telefoneInput.value = data.telefone || "";
                 if (emailInput) emailInput.value = data.email || "";
 
-                // 🔥 REUTILIZA HERANÇA
+                // 🔥 BLOQUEIA IMEDIATAMENTE (ANTES DO FETCH)
                 ["id_gestor","id_telefone","id_email"].forEach(id => {
                     HerancaProcesso.bloquearCampo(id)
                 })
 
             })
             .catch(error => console.error("Erro ao buscar contato:", error));
+
+
     }
 
     /* =========================
        EVENTO CHANGE
     ========================= */
     areaSelect.addEventListener("change", function () {
-        const areaId = this.value;
 
-        preencherCampos(areaId);
+        const tipo = document.querySelector('input[name="tipo"]:checked')?.value;
 
-        // 🔥 GARANTIA ABSOLUTA
-        if (areaId) {
-            bloquearContato();
-        } else {
-            liberarContato();
+        // 🔥 REGRA DE OURO — HERANÇA MANDA
+        if (tipo !== "processo" && parentInput && parentInput.value) {
+            return;
         }
 
+        preencherCampos(this.value);
     });
 
     if (window.$) {
         $(areaSelect).on("change", function () {
+
+            const tipo = document.querySelector('input[name="tipo"]:checked')?.value;
+
+            if (tipo !== "processo" && parentInput && parentInput.value) {
+                return;
+            }
+
             preencherCampos(this.value);
         });
     }

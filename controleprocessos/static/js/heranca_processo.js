@@ -56,10 +56,15 @@ window.HerancaProcesso = (function () {
         const el = document.getElementById(id)
         if (!el) return
 
-        el.disabled = true
+        if (el.tagName === "SELECT") {
+            el.disabled = true
+        } else {
+            el.readOnly = true
+        }
+
         el.classList.add("campo-herdado")
 
-        // suporte select2
+        // select2 continua funcionando
         if (window.$ && $(el).hasClass("select2-hidden-accessible")) {
             $(el).next('.select2-container').addClass("campo-herdado")
         }
@@ -69,11 +74,15 @@ window.HerancaProcesso = (function () {
        DESBLOQUEIO
     ========================= */
     function desbloquearCampo(id) {
-
         const el = document.getElementById(id)
         if (!el) return
 
-        el.disabled = false
+        if (el.tagName === "SELECT") {
+            el.disabled = false
+        } else {
+            el.readOnly = false
+        }
+
         el.classList.remove("campo-herdado")
 
         if (window.$ && $(el).hasClass("select2-hidden-accessible")) {
@@ -112,7 +121,7 @@ window.HerancaProcesso = (function () {
 
         const url = options.url
 
-        const endpoint = url.replace(/0$/, processoId)
+        const endpoint = url.replace(/\/0\//, `/${processoId}/`)
 
         fetch(endpoint)
             .then(r => r.json())
@@ -150,7 +159,6 @@ window.HerancaProcesso = (function () {
 
         CAMPOS_PADRAO.forEach(id => {
             desbloquearCampo(id)
-            limparCampo(id)
         })
 
         if (typeof options.onClear === "function") {

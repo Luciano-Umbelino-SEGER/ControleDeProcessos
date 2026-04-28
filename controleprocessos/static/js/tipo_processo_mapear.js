@@ -191,10 +191,23 @@ function initTipoProcessoMapear(config = {}) {
             HerancaProcesso.aplicar(processoId, {
                 url: urlHeranca,
                 onApply: () => restaurarCache()
-            });
-        } else {
-            HerancaProcesso.limpar();
-            restaurarCache();
+            });}
+        else {
+
+            const areaSelect = document.getElementById("id_area_responsavel");
+
+            const temArea = areaSelect && areaSelect.value;
+
+            if (!temArea) {
+                // 🔵 só limpa se NÃO houver área
+                HerancaProcesso.limpar();
+                restaurarCache();
+            } else {
+                // 🟢 área manda → reaplica regra
+                if (window.preencherCampos) {
+                    window.preencherCampos(areaSelect.value);
+                }
+            }
         }
     };
 
