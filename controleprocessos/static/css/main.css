@@ -76,12 +76,13 @@
 }
 
 .filtro-botao-primario {
-    background-color: #2563eb;
+    background: #2563eb;
     color: white;
 }
 
 .filtro-botao-primario:hover {
-    background-color: #1d4ed8;
+    background: #1d4ed8;
+    color: white; /* 🔥 ESSENCIAL */
 }
 
 .filtro-botao-secundario {
@@ -91,4 +92,20 @@
 
 .filtro-botao-secundario:hover {
     background-color: #d1d5db;
+    color: #374151;
+}
+
+/* =========================================
+   MODO COMPACTO (TELA PROCESSOS)
+========================================= */
+
+.filtro-compacto .filtro-input,
+.filtro-compacto .filtro-select {
+    height: 29px;          /* antes 26px */
+    font-size: 13px;       /* antes 11px */
+    padding: 4px 7px;      /* leve aumento */
+}
+
+.filtro-compacto .filtro-label {
+    font-size: 12px;       /* antes 10px */
 }

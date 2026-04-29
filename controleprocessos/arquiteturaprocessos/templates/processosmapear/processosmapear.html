@@ -123,7 +123,7 @@
 
             <!-- Registros -->
             <div class="filtro-campo">
-              <label class="filtro-label">Registros</label>
+              <label class="filtro-label">Registros/Página</label>
               <select name="page_size"
                       class="w-24 filtro-select text-black">
                 <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
