@@ -14,189 +14,150 @@
     </h2>
 
     {% if request.user.perfil.nome|lower == 'administrador' %}
-      <form method="GET" class="mb-4">
+    <form method="GET" class="mb-4">
 
-        <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
+      <div class="filtro-container">
 
-          <div class="flex items-end gap-4 flex-wrap w-full">
+        <div class="filtro-wrapper">
 
-            <!-- ESQUERDA (Filtros) -->
-            <div class="flex flex-wrap items-end gap-3">
+          <!-- ESQUERDA -->
+          <div class="filtro-grupo">
 
-              <!-- Processo -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                  Nome
-                </label>
-                <input type="text" name="nome"
-                       value="{{ request.GET.nome }}"
-                       placeholder="Digite nome ou parte..."
-                       class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none
-                              text-black placeholder-gray-400">
-              </div>
-
-              <!-- Tipo -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Tipo</label>
-                <select name="tipo"
-                  class="w-36 px-2 py-1.5 border border-gray-300 rounded-md bg-white
-                         focus:ring-2 focus:ring-blue-500
-                         {% if request.GET.tipo %}text-black{% else %}text-gray-400{% endif %}">
-                  <option value="">Todos</option>
-                  <option value="processo" {% if request.GET.tipo == 'processo' %}selected{% endif %}>Processo</option>
-                  <option value="subprocesso" {% if request.GET.tipo == 'subprocesso' %}selected{% endif %}>Subprocesso</option>
-                  <option value="outro" {% if request.GET.tipo == 'outro' %}selected{% endif %}>Outro</option>
-                </select>
-              </div>
-
-              <!-- Classificação -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
-                <select name="classificacao"
-                  class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white
-                         focus:ring-2 focus:ring-blue-500
-                         {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
-                  <option value="">Todas</option>
-                  {% for c in classificacoes %}
-                     <option value="{{ c.id }}"
-                          {% if classificacao_selecionada == c.id %}selected{% endif %}>
-                          {{ c.nome }}
-                      </option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <!-- Macro N1 -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Macro N1</label>
-                <input type="text" name="macro1" value="{{ request.GET.macro1 }}"
-                       placeholder="Macro N1..."
-                       class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500">
-              </div>
-
-              <!-- Macro N2 -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Macro N2</label>
-                <input type="text" name="macro2" value="{{ request.GET.macro2 }}"
-                       placeholder="Macro N2..."
-                       class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500">
-              </div>
-
-              <!-- Área -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Área</label>
-                <input name="area" type="text" value="{{ request.GET.area }}"
-                       placeholder="Área Responsável"
-                       class="w-36 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500">
-              </div>
-
-              <!-- Datas -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação De</label>
-                <input name="criacao_de"
-                       type="text"
-                       placeholder="dd/mm/aaaa"
-                       onfocus="
-                         this.type='date';
-                         this.classList.remove('text-gray-400');
-                         this.classList.add('text-black');
-                       "
-                       onblur="
-                         if(!this.value){
-                           this.type='text';
-                           this.classList.remove('text-black');
-                           this.classList.add('text-gray-400');
-                         }
-                       "
-                       class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                              focus:ring-2 focus:ring-blue-500 text-gray-400"
-                       value="{{ request.GET.criacao_de }}">
-              </div>
-
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação Até</label>
-                <input name="criacao_ate"
-                       type="text"
-                       placeholder="dd/mm/aaaa"
-                       onfocus="
-                         this.type='date';
-                         this.classList.remove('text-gray-400');
-                         this.classList.add('text-black');
-                       "
-                       onblur="
-                         if(!this.value){
-                           this.type='text';
-                           this.classList.remove('text-black');
-                           this.classList.add('text-gray-400');
-                         }
-                       "
-                       class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                              focus:ring-2 focus:ring-blue-500 text-gray-400"
-                       value="{{ request.GET.criacao_ate }}">
-              </div>
-
-              <!-- ESTADO -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Estado</label>
-                <select name="status"
-                        class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white
-                               focus:ring-2 focus:ring-blue-500 text-black">
-
-                  <option value=""
-                    {% if not request.GET.status %}selected{% endif %}>
-                    Ativos
-                  </option>
-
-                  <option value="finalizado"
-                    {% if request.GET.status == "finalizado" %}selected{% endif %}>
-                    Finalizados
-                  </option>
-
-                  <option value="todos"
-                    {% if request.GET.status == "todos" %}selected{% endif %}>
-                    Todos
-                  </option>
-                </select>
-              </div>
-
-              <!-- REGISTROS/PÁGINA -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Registros/Página</label>
-                <select name="page_size"
-                        class="w-24 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 text-black">
-                  <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
-                  <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
-                  <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
-                  <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
-                </select>
-              </div>
+            <!-- Nome -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Nome</label>
+              <input type="text" name="nome"
+                     value="{{ request.GET.nome }}"
+                     placeholder="Digite nome ou parte..."
+                     class="w-40 filtro-input">
             </div>
 
-            <!-- DIREITA -->
-            <div class="flex items-end gap-3 ml-auto">
-              <!-- BOTÕES -->
-              <button type="submit"
-                      class="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                Filtrar
-              </button>
+            <!-- Tipo -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Tipo</label>
+              <select name="tipo"
+                      class="w-32 filtro-select {% if request.GET.tipo %}text-black{% else %}text-gray-400{% endif %}">
+                <option value="">Todos</option>
+                <option value="processo" {% if request.GET.tipo == 'processo' %}selected{% endif %}>Processo</option>
+                <option value="subprocesso" {% if request.GET.tipo == 'subprocesso' %}selected{% endif %}>Subprocesso</option>
+                <option value="outro" {% if request.GET.tipo == 'outro' %}selected{% endif %}>Outro</option>
+              </select>
+            </div>
 
-              <a href="{% url 'arquiteturaprocessos:processosmapear' %}"
-                 class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
-                Limpar
-              </a>
+            <!-- Classificação -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Classificação</label>
+              <select name="classificacao"
+                      class="w-32 filtro-select {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
+                <option value="">Todas</option>
+                {% for c in classificacoes %}
+                  <option value="{{ c.id }}"
+                    {% if classificacao_selecionada == c.id %}selected{% endif %}>
+                    {{ c.nome }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
 
-              <a href="{% url 'arquiteturaprocessos:criar_processomapear' %}"
-                 class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition whitespace-nowrap">
-                + Novo
-              </a>
+            <!-- Macro N1 -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Macro N1</label>
+              <input type="text" name="macro1"
+                     value="{{ request.GET.macro1 }}"
+                     placeholder="Macro N1..."
+                     class="w-36 filtro-input">
+            </div>
 
+            <!-- Macro N2 -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Macro N2</label>
+              <input type="text" name="macro2"
+                     value="{{ request.GET.macro2 }}"
+                     placeholder="Macro N2..."
+                     class="w-36 filtro-input">
+            </div>
+
+            <!-- Área -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Área</label>
+              <input type="text" name="area"
+                     value="{{ request.GET.area }}"
+                     placeholder="Área Responsável"
+                     class="w-32 filtro-input">
+            </div>
+
+            <!-- Criação De -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Criação De</label>
+              <input name="criacao_de"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="this.type='date'; this.classList.remove('text-gray-400'); this.classList.add('text-black');"
+                     onblur="if(!this.value){ this.type='text'; this.classList.remove('text-black'); this.classList.add('text-gray-400'); }"
+                     class="w-32 filtro-input text-gray-400"
+                     value="{{ request.GET.criacao_de }}">
+            </div>
+
+            <!-- Criação Até -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Criação Até</label>
+              <input name="criacao_ate"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="this.type='date'; this.classList.remove('text-gray-400'); this.classList.add('text-black');"
+                     onblur="if(!this.value){ this.type='text'; this.classList.remove('text-black'); this.classList.add('text-gray-400'); }"
+                     class="w-32 filtro-input text-gray-400"
+                     value="{{ request.GET.criacao_ate }}">
+            </div>
+
+            <!-- Estado -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Estado</label>
+              <select name="status"
+                      class="w-28 filtro-select text-black">
+                <option value="" {% if not request.GET.status %}selected{% endif %}>Ativos</option>
+                <option value="finalizado" {% if request.GET.status == "finalizado" %}selected{% endif %}>Finalizados</option>
+                <option value="todos" {% if request.GET.status == "todos" %}selected{% endif %}>Todos</option>
+              </select>
+            </div>
+
+            <!-- Registros -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Registros</label>
+              <select name="page_size"
+                      class="w-24 filtro-select text-black">
+                <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
+                <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
+                <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
+                <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
+              </select>
             </div>
 
           </div>
 
+          <!-- DIREITA -->
+          <div class="filtro-acoes">
+
+            <button type="submit" class="filtro-botao filtro-botao-primario">
+              Filtrar
+            </button>
+
+            <a href="{% url 'arquiteturaprocessos:processosmapear' %}"
+               class="filtro-botao filtro-botao-secundario">
+              Limpar
+            </a>
+
+            <a href="{% url 'arquiteturaprocessos:criar_processomapear' %}"
+               class="filtro-botao filtro-botao-primario whitespace-nowrap">
+              + Novo
+            </a>
+
+          </div>
+
         </div>
-      </form>
+
+      </div>
+    </form>
     {% endif %}
 
     <div class="overflow-x-auto">
