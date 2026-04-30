@@ -12,7 +12,8 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
                     ExecutarIniciarProcessoMapear, FinalizarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear,
-                    EstatisticaComparativos)
+                    EstatisticaComparativos, AreasResponsaveisList, CriarAreasResponsaveis, VisualizarAreasResponsaveis,
+                    EditarAreasResponsaveis, ExcluirAreasResponsaveis, ImportarContatosSeger)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 from .utils_views import verificar_similaridade
@@ -97,6 +98,13 @@ urlpatterns = [
     path('modelagemprocesso/<int:pk>/visualizar/', VisualizarModelagemProcesso.as_view(), name='visualizar_modelagemprocesso'),
     path('modelagemprocesso/<int:pk>/editar/', EditarModelagemProcesso.as_view(), name='editar_modelagemprocesso'),
     path('modelagemprocesso/<int:pk>/excluir/', ExcluirModelagemProcesso.as_view(), name='excluir_modelagemprocesso'),
+    # Áreas Responsáveis
+    path('areasresponsaveis/', AreasResponsaveisList.as_view(), name='areasresponsaveis'),
+    path('areasresponsaveis/novo/', CriarAreasResponsaveis.as_view(), name='criar_areasresponsaveis'),
+    path('areasresponsaveis/<int:pk>/visualizar/', VisualizarAreasResponsaveis.as_view(), name='visualizar_areasresponsaveis'),
+    path('areasresponsaveis/<int:pk>/editar/', EditarAreasResponsaveis.as_view(), name='editar_areasresponsaveis'),
+    path('areasresponsaveis/<int:pk>/excluir/', ExcluirAreasResponsaveis.as_view(), name='excluir_areasresponsaveis'),
+    path('areasresponsaveis/importarcontatos/',ImportarContatosSeger.as_view(), name='importar_contatos_seger'),
     # Processos
     path('processos/', ProcessoView.as_view(), name='processos'),
     path('processo/novo/', CriarProcesso.as_view(), name='criar_processo'),

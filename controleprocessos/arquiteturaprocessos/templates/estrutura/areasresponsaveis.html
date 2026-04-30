@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block body %}
+<div class="py-10 px-2 flex justify-center">
+  <div class="w-full max-w-[98%]">
+
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">
+      Áreas Responsáveis
+      <span class="text-base font-normal text-gray-600">
+          ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }})
+      </span>
+    </h2>
+
+    {% if request.user.perfil.nome|lower == 'administrador' %}
+    <form method="GET" class="mb-4">
+
+      <div class="filtro-container filtro-compacto">
+        <div class="filtro-wrapper">
+
+          <!-- ESQUERDA -->
+          <div class="filtro-grupo">
+
+            <!-- Área -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Área</label>
+              <input type="text" name="nome_area"
+                     value="{{ nome_area_busca }}"
+                     placeholder="Nome da área..."
+                     class="filtro-input w-[160px]">
+            </div>
+
+            <!-- Titular -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Titular</label>
+              <input type="text" name="titular"
+                     value="{{ titular_busca }}"
+                     placeholder="Titular..."
+                     class="filtro-input w-[150px]">
+            </div>
+
+            <!-- Email -->
+            <div class="filtro-campo">
+              <label class="filtro-label">E-mail</label>
+              <input type="text" name="email"
+                     value="{{ email_busca }}"
+                     placeholder="E-mail..."
+                     class="filtro-input w-[180px]">
+            </div>
+
+            <!-- Ativo -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Ativo</label>
+              <select name="ativo"
+                      class="filtro-select w-[90px] {% if ativo_selecionado %}text-black{% else %}text-gray-400{% endif %}">
+                <option value="">Todos</option>
+                <option value="True" {% if ativo_selecionado == "True" %}selected{% endif %}>Sim</option>
+                <option value="False" {% if ativo_selecionado == "False" %}selected{% endif %}>Não</option>
+              </select>
+            </div>
+
+            <!-- Origem -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Origem</label>
+              <select name="origem"
+                      class="filtro-select w-[140px] {% if origem_selecionada %}text-black{% else %}text-gray-400{% endif %}">
+                <option value="">Todas</option>
+                <option value="SEGER_SITE" {% if origem_selecionada == "SEGER_SITE" %}selected{% endif %}>Importação SEGER</option>
+                <option value="MANUAL" {% if origem_selecionada == "MANUAL" %}selected{% endif %}>Manual</option>
+              </select>
+            </div>
+
+            <!-- Criado De -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Criado De</label>
+              <input name="criado_de"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="this.type='date'; this.classList.remove('text-gray-400'); this.classList.add('text-black');"
+                     onblur="if(!this.value){ this.type='text'; this.classList.remove('text-black'); this.classList.add('text-gray-400'); }"
+                     class="filtro-input w-[120px] text-gray-400"
+                     value="{{ request.GET.criado_de }}">
+            </div>
+
+            <!-- Criado Até -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Criado Até</label>
+              <input name="criado_ate"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="this.type='date'; this.classList.remove('text-gray-400'); this.classList.add('text-black');"
+                     onblur="if(!this.value){ this.type='text'; this.classList.remove('text-black'); this.classList.add('text-gray-400'); }"
+                     class="filtro-input w-[120px] text-gray-400"
+                     value="{{ request.GET.criado_ate }}">
+            </div>
+
+            <!-- Atualizado De -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Atualizado De</label>
+              <input name="atualizado_de"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="this.type='date'"
+                     class="filtro-input w-[120px]"
+                     value="{{ request.GET.atualizado_de }}">
+            </div>
+
+            <!-- Atualizado Até -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Atualizado Até</label>
+              <input name="atualizado_ate"
+                     type="text"
+                     placeholder="dd/mm/aaaa"
+                     onfocus="this.type='date'"
+                     class="filtro-input w-[120px]"
+                     value="{{ request.GET.atualizado_ate }}">
+            </div>
+
+            <!-- Registros -->
+            <div class="filtro-campo">
+              <label class="filtro-label">Registros/Página</label>
+              <select name="page_size"
+                      class="filtro-select w-[90px] text-black">
+                <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
+                <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
+                <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
+                <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
+              </select>
+            </div>
+
+          </div>
+
+          <!-- DIREITA -->
+          <div class="filtro-acoes">
+
+            <button type="submit" class="filtro-botao filtro-botao-primario">
+              Filtrar
+            </button>
+
+            <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}"
+               class="filtro-botao filtro-botao-secundario">
+              Limpar
+            </a>
+
+            <a href="{% url 'arquiteturaprocessos:criar_areasresponsaveis' %}"
+               class="filtro-botao filtro-botao-primario whitespace-nowrap">
+              + Novo
+            </a>
+
+            <!-- 🔥 BOTÃO IMPORTAÇÃO -->
+            <a href="{% url 'arquiteturaprocessos:importar_contatos_seger' %}"
+               class="filtro-botao filtro-botao-primario whitespace-nowrap bg-green-600 hover:bg-green-700">
+              Atualizar Contatos
+            </a>
+
+          </div>
+
+        </div>
+      </div>
+    </form>
+    {% endif %}
+
+    <!-- 🔥 TABELA -->
+    <div class="overflow-x-auto">
+      <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
+        <thead class="bg-blue-100 text-blue-800">
+          <tr>
+            <th class="py-3 px-3 text-left w-[20%]">Área</th>
+            <th class="py-3 px-2 text-left w-[15%]">Titular</th>
+            <th class="py-3 px-2 text-left w-[15%]">E-mail</th>
+            <th class="py-3 px-2 text-left w-[10%]">Telefone</th>
+            <th class="py-3 px-2 text-left w-[8%]">Origem</th>
+            <th class="py-3 px-2 text-left w-[6%]">Ativo</th>
+            <th class="py-3 px-2 text-left w-[10%]">Criado</th>
+            <th class="py-3 px-2 text-left w-[10%]">Atualizado</th>
+            <th class="py-3 px-2 text-center w-[8%]">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody>
+        {% for area in page_obj %}
+
+          <tr class="text-blue-500 hover:bg-blue-100 transition-colors
+                     {% if forloop.counter|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">
+
+            <td class="py-3 px-3 font-semibold text-blue-800">
+              {{ area.nome_area }}
+            </td>
+
+            <td class="py-3 px-2">
+              {{ area.titular|default:"—" }}
+            </td>
+
+            <td class="py-3 px-2 break-words">
+              {{ area.email|default:"—" }}
+            </td>
+
+            <td class="py-3 px-2">
+              {{ area.telefone|default:"—" }}
+            </td>
+
+            <td class="py-3 px-2">
+              {{ area.get_origem_display }}
+            </td>
+
+            <td class="py-3 px-2">
+              {% if area.ativo %}
+                <span class="text-green-600 font-semibold">Sim</span>
+              {% else %}
+                <span class="text-red-600">Não</span>
+              {% endif %}
+            </td>
+
+            <td class="py-3 px-2">
+              {{ area.criado_em|date:"d/m/Y" }}
+            </td>
+
+            <td class="py-3 px-2">
+              {{ area.atualizado_em|date:"d/m/Y" }}
+            </td>
+
+            <!-- AÇÕES -->
+            <td class="py-3 px-2 text-center">
+              <div class="flex justify-center space-x-1.5">
+
+                <a href="{% url 'arquiteturaprocessos:visualizar_areasresponsaveis' area.pk %}"
+                    class="text-blue-600 hover:text-blue-800" title="Visualizar">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </a>
+
+                <a href="{% url 'arquiteturaprocessos:editar_areasresponsaveis' area.pk %}"
+                   class="text-yellow-600 hover:text-yellow-800"
+                       title="Editar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                            <path fill-rule="evenodd"
+                                  d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                </a>
+
+                <a href="{% url 'arquiteturaprocessos:excluir_areasresponsaveis' area.pk %}"
+                   class="text-red-600 hover:text-red-800" title="Excluir">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                  </svg>
+                </a>
+
+              </div>
+            </td>
+
+          </tr>
+
+        {% empty %}
+          <tr>
+            <td colspan="8" class="py-4 text-center text-gray-500">
+              Nenhuma Área Responsável cadastrada.
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 🔥 PAGINAÇÃO -->
+    <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
+
+      <div>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </div>
+
+      <div class="flex space-x-2">
+
+        {% if page_obj.has_previous %}
+          <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+          <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

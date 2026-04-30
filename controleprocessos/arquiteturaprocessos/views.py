@@ -41,6 +41,7 @@ from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
 )
+from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
 from auditoria.services import registrar_log
 from auditoria.utils import registrar_tentativa, esta_bloqueado, resetar_tentativas
@@ -243,7 +244,7 @@ class CustomLoginView(LoginView):
             return redirect('arquiteturaprocessos:arquiteturaprocessos')
         return super().dispatch(request, *args, **kwargs)
 
-    # 🔥 👇 INSERIR AQUI
+    # 🔥
     def form_valid(self, form):
         username = self.request.POST.get("username", "").strip()
         ip = get_client_ip(self.request)
@@ -2511,6 +2512,185 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
             f"Modelagem de Processo '{titulo}' excluída com sucesso!"
         )
         return redirect('arquiteturaprocessos:modelagemprocessos')
+
+# Aqui 1
+# -------------------------------#
+# LISTAGEM - Áreas Responsáveis  #
+# -------------------------------#
+class AreasResponsaveisList(LoginRequiredMixin, ListView):
+    model = ContatoAreaSeger
+    template_name =  'estrutura/areasresponsaveis.html'
+    context_object_name = 'areas'
+
+    # 🔒 CONTROLE DE ACESSO (mantendo seu padrão)
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO SIGEMP)
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
+
+    # 🔥 CONTEXTO (padrão completo)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        req = self.request.GET
+
+        # 🔥 FILTROS (persistência no form)
+        context["nome_area_busca"] = req.get("nome_area", "")
+        context["titular_busca"] = req.get("titular", "")
+        context["email_busca"] = req.get("email", "")
+        context["ativo_selecionado"] = req.get("ativo", "")
+        context["origem_selecionada"] = req.get("origem", "")
+
+        # 🔥 QUERY STRING (PADRÃO GLOBAL)
+        query_params = self.request.GET.copy()
+
+        # 🔹 SEM PAGE
+        query_params_no_page = query_params.copy()
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = query_params_no_page.urlencode()
+        context["query_string_full"] = query_params.urlencode()
+
+        return context
+
+    # 🔥 QUERYSET (com filtros padrão)
+    def get_queryset(self):
+
+        req = self.request.GET
+
+        queryset = ContatoAreaSeger.objects.all().order_by('nome_area')
+
+        # ===== FILTROS =====
+        nome_area = req.get("nome_area", "").strip()
+        titular = req.get("titular", "").strip()
+        email = req.get("email", "").strip()
+        ativo = req.get("ativo", "").strip()
+        origem = req.get("origem", "").strip()
+
+        criado_de_raw = req.get("criado_de")
+        criado_ate_raw = req.get("criado_ate")
+
+        criado_de = parse_date(criado_de_raw) if criado_de_raw else None
+        criado_ate = parse_date(criado_ate_raw) if criado_ate_raw else None
+
+        atualizado_de_raw = req.get("atualizado_de")
+        atualizado_ate_raw = req.get("atualizado_ate")
+
+        atualizado_de = parse_date(atualizado_de_raw) if atualizado_de_raw else None
+        atualizado_ate = parse_date(atualizado_ate_raw) if atualizado_ate_raw else None
+
+        # 🔥 VALIDAÇÃO DE DATA
+        if criado_de and criado_ate and criado_ate < criado_de:
+            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
+            return ContatoAreaSeger.objects.none()
+
+        if atualizado_de and atualizado_ate and atualizado_ate < atualizado_de:
+            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
+            return ContatoAreaSeger.objects.none()
+
+        # 🔍 FILTROS
+        if nome_area:
+            queryset = queryset.filter(nome_area__icontains=nome_area)
+
+        if titular:
+            queryset = queryset.filter(titular__icontains=titular)
+
+        if email:
+            queryset = queryset.filter(email__icontains=email)
+
+        if ativo in ["True", "False"]:
+            queryset = queryset.filter(ativo=(ativo == "True"))
+
+        if origem:
+            queryset = queryset.filter(origem=origem)
+
+        if criado_de:
+            queryset = queryset.filter(criado_em__gte=criado_de)
+
+        if criado_ate:
+            fim_do_dia = datetime.combine(criado_ate, time.max)
+            queryset = queryset.filter(criado_em__lte=fim_do_dia)
+
+        if atualizado_de:
+            queryset = queryset.filter(atualizado_em__gte=atualizado_de)
+
+        if atualizado_ate:
+            fim_do_dia = datetime.combine(atualizado_ate, time.max)
+            queryset = queryset.filter(atualizado_em__lte=fim_do_dia)
+
+        return queryset
+
+# -----------------------------------------------------#
+# Importação de - Áreas Responsáveis - Contatos SEGER  #
+# -----------------------------------------------------#
+class ImportarContatosSeger(LoginRequiredMixin, View):
+
+    def get(self, request, *args, **kwargs):
+
+        if request.user.perfil.nome.lower() != 'administrador':
+            messages.error(request, "Você não tem permissão para executar esta ação.")
+            return redirect('arquiteturaprocessos:areasresponsaveis')
+
+        try:
+            total = atualizar_contatos_seger()
+
+            messages.success(
+                request,
+                f"Importação concluída com sucesso! {total} registros processados."
+            )
+
+        except Exception as e:
+            messages.error(
+                request,
+                f"Erro ao importar contatos: {str(e)}"
+            )
+
+        return redirect('arquiteturaprocessos:areasresponsaveis')
+
+class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
+    model = ContatoAreaSeger
+    fields = ['nome_area', 'titular', 'telefone', 'email', 'ativo']
+    template_name = 'estrutura/form_arearesponsavel.html'
+    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+
+    def form_valid(self, form):
+        form.instance.usuario_cadastro = self.request.user
+        form.instance.origem = "MANUAL"
+        return super().form_valid(form)
+
+
+class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
+    model = ContatoAreaSeger
+    template_name = 'estrutura/form_arearesponsavel.html'
+    context_object_name = 'area'
+
+
+class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
+    model = ContatoAreaSeger
+    fields = ['nome_area', 'titular', 'telefone', 'email', 'ativo']
+    template_name = 'estrutura/form_arearesponsavel.html'
+    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+
+    def form_valid(self, form):
+        form.instance.usuario_atualizacao = self.request.user
+        return super().form_valid(form)
+
+
+class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
+    model = ContatoAreaSeger
+    template_name = 'estrutura/confirm_delete.html'
+    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+
 
 # -------------------------------#
 # Listagem - Processos           #

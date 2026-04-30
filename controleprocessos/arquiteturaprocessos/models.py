@@ -272,16 +272,44 @@ class ModelagemProcesso(models.Model):
 # Contatos Seger - Area Responsável
 # ============================================================
 class ContatoAreaSeger(models.Model):
+
+    ORIGEM_CHOICES = [
+        ("SEGER_SITE", "Importação SEGER"),
+        ("MANUAL", "Cadastro Manual"),
+    ]
+
     nome_area = models.CharField("Nome da Área", max_length=255, unique=True)
     titular = models.CharField("Titular", max_length=255, blank=True, null=True)
     telefone = models.CharField("Telefone(s)", max_length=255, blank=True, null=True)
     email = models.EmailField("E-mail", blank=True, null=True)
 
     ativo = models.BooleanField(default=True)
-    origem = models.CharField("Origem dos dados", max_length=100, default="SEGER_SITE")
 
-    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+    origem = models.CharField(
+        "Origem dos dados",
+        max_length=20,
+        choices=ORIGEM_CHOICES,
+        default="SEGER_SITE"
+    )
+
+    usuario_cadastro = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='areasresponsaveis_criados',
+        null=True,  # 👈 IMPORTANTE PRA MIGRATION
+        blank=True
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='areasresponsaveis_atualizados',
+        null=True,
+        blank=True
+    )
+
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
 
     class Meta:
         verbose_name = "Contato Área SEGER"
