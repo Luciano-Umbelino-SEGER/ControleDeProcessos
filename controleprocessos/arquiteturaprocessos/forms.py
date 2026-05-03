@@ -1186,3 +1186,66 @@ class Form_ProcessoMapearForm(forms.ModelForm):
     def clean_area_responsavel(self):
         return self.cleaned_data.get("area_responsavel")
 
+# ----------------------------------
+# Área Responsável - Formulário
+# ----------------------------------
+class Form_AreaResponsavelForm(forms.ModelForm):
+
+    class Meta:
+        model = ContatoAreaSeger
+        fields = [
+            'nome_area',
+            'titular',
+            'telefone',
+            'email',
+            'origem',
+        ]
+
+        widgets = {
+            'nome_area': forms.TextInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]' ,
+                'placeholder': 'Nome da área...'
+            }),
+
+            'titular': forms.TextInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]',
+                'placeholder': 'Titular...'
+            }),
+
+            'telefone': forms.TextInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]',
+                'placeholder': 'Telefone(s)...'
+            }),
+
+            'email': forms.EmailInput(attrs={
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]',
+                'placeholder': 'E-mail...'
+            }),
+
+            'origem': forms.Select(attrs={
+                'class': 'w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black cursor-not-allowed'
+            }),
+        }
+
+    # 🔒 CAMPOS OBRIGATÓRIOS / OPCIONAIS
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['nome_area'].required = True
+        self.fields['titular'].required = False
+        self.fields['telefone'].required = False
+        self.fields['email'].required = False
+
+        # 🔒 origem NÃO editável pelo usuário
+        # 🔥 FORÇA origem como MANUAL no form
+        self.fields['origem'].initial = "MANUAL"
+        self.fields['origem'].disabled = True
+
+    # 🔎 VALIDAÇÃO EXTRA (opcional, mas recomendada)
+    def clean_nome_area(self):
+        nome = self.cleaned_data.get('nome_area')
+
+        if nome:
+            return nome.strip()
+
+        return nome

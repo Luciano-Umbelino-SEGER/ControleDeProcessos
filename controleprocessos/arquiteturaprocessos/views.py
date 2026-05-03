@@ -50,6 +50,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
+    Form_AreaResponsavelForm,
 )
 
 # ---------------------------------------------------
@@ -2657,16 +2658,61 @@ class ImportarContatosSeger(LoginRequiredMixin, View):
 
         return redirect('arquiteturaprocessos:areasresponsaveis')
 
+# Aqui 2
+# Criar Área Responsável          #
+# --------------------------------#
 class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
     model = ContatoAreaSeger
-    fields = ['nome_area', 'titular', 'telefone', 'email', 'ativo']
-    template_name = 'estrutura/form_arearesponsavel.html'
-    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+    form_class = Form_AreaResponsavelForm
+    template_name = "estrutura/form_arearesponsavel.html"
+    success_url = reverse_lazy("arquiteturaprocessos:areasresponsaveis")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        agora_local = timezone.localtime(timezone.now())
+
+        context.update({
+            "modo_inclusao": True,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+
+            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+            "cadastro_user": self.request.user.get_full_name()
+                             or self.request.user.username,
+
+            "atualizacao_data": "",
+            "atualizacao_user": "",
+        })
+
+        return context
+
 
     def form_valid(self, form):
-        form.instance.usuario_cadastro = self.request.user
-        form.instance.origem = "MANUAL"
-        return super().form_valid(form)
+        area = form.save(commit=False)
+
+        # 🔥 REGRAS DE NEGÓCIO
+        area.ativo = True
+        area.origem = "MANUAL"
+
+        area.usuario_cadastro = self.request.user
+        area.usuario_atualizacao = None
+
+        area.save()
+
+        messages.success(
+            self.request,
+            f"Área Responsável '{area.nome_area}' criada com sucesso!"
+        )
+
+        self.object = area
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
