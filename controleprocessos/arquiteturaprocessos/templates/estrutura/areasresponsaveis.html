@@ -149,9 +149,20 @@
             </a>
 
             <!-- 🔥 BOTÃO IMPORTAÇÃO -->
-            <a href="{% url 'arquiteturaprocessos:importar_contatos_seger' %}"
-               class="filtro-botao filtro-botao-primario whitespace-nowrap bg-green-600 hover:bg-green-700">
-              Atualizar Contatos
+            <a
+                @click="$dispatch('abrir-modal-confirmacao', {
+                    url: '{% url 'arquiteturaprocessos:importar_contatos_seger' %}',
+                    mensagem: `
+                        Será efetuada a atualização das Áreas Responsáveis obtidas diretamente do site:<br><br>
+                        <a href='https://seger.es.gov.br/contatos-seger' target='_blank' class='text-blue-600 underline'>
+                            https://seger.es.gov.br/contatos-seger
+                        </a>
+                        <br><br>
+                        <strong>Confirma a Atualização das Áreas Responsáveis?</strong>
+                    `
+                })"
+                class="filtro-botao filtro-botao-primario whitespace-nowrap bg-green-600 hover:bg-green-700 cursor-pointer">
+                Atualizar Contatos
             </a>
 
           </div>

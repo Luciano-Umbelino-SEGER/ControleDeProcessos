@@ -2514,7 +2514,6 @@ class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
         )
         return redirect('arquiteturaprocessos:modelagemprocessos')
 
-# Aqui 1
 # -------------------------------#
 # LISTAGEM - Áreas Responsáveis  #
 # -------------------------------#
@@ -2630,30 +2629,34 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
             queryset = queryset.filter(atualizado_em__lte=fim_do_dia)
 
         return queryset
-
+# Aqui 1
 # -----------------------------------------------------#
 # Importação de - Áreas Responsáveis - Contatos SEGER  #
 # -----------------------------------------------------#
 class ImportarContatosSeger(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
+        # 🔒 Bloqueia acesso direto via URL
+        return redirect('arquiteturaprocessos:areasresponsaveis')
+
+    def post(self, request, *args, **kwargs):
 
         if request.user.perfil.nome.lower() != 'administrador':
             messages.error(request, "Você não tem permissão para executar esta ação.")
             return redirect('arquiteturaprocessos:areasresponsaveis')
 
         try:
-            total = atualizar_contatos_seger()
+            total = atualizar_contatos_seger(usuario=request.user)
 
             messages.success(
                 request,
-                f"Importação concluída com sucesso! {total} registros processados."
+                f"Atualização concluída com sucesso! {total} Áreas Responsáveis atualizadas."
             )
 
         except Exception as e:
             messages.error(
                 request,
-                f"Erro ao importar contatos: {str(e)}"
+                f"Erro ao atualizar Áreas Responsáveis: {str(e)}"
             )
 
         return redirect('arquiteturaprocessos:areasresponsaveis')
@@ -2837,7 +2840,6 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
         self.object = area
         return HttpResponseRedirect(self.get_success_url())
 
-# Aqui 2
 # -------------------------------------#
 # Desativar Área Responsável (Soft Delete)
 # -------------------------------------#

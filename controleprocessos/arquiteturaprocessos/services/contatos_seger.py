@@ -1,11 +1,14 @@
-from arquiteturaprocessos.models import ContatoAreaSeger
+from arquiteturaprocessos.models import ContatoAreaSeger, ProcessoMapear, Processo
+from auditoria.models import LogAcaoSistema
+
+from django.utils import timezone
 
 import requests
 from bs4 import BeautifulSoup
 import re
 
 
-def atualizar_contatos_seger():
+def atualizar_contatos_seger(usuario=None):
 
     url = "https://seger.es.gov.br/contatos-seger"
 
@@ -18,18 +21,21 @@ def atualizar_contatos_seger():
 
     blocos = soup.find_all("li", class_="panel")
 
-    total = 0
-    areas_encontradas = set()
+    total_processados = 0
+    total_criados = 0
+    total_atualizados = 0
+    total_excluidos = 0
+
+    areas_site = set()
 
     for bloco in blocos:
-
         try:
             titulo = bloco.find("h4", class_="panel-title")
             if not titulo:
                 continue
 
             nome_area = titulo.get_text(strip=True)
-            areas_encontradas.add(nome_area)
+            areas_site.add(nome_area)
 
             body = bloco.find("div", class_="panel-body")
             if not body:
@@ -72,25 +78,73 @@ def atualizar_contatos_seger():
                 elif "E-mail" in titulo_texto:
                     email = valor
 
-            ContatoAreaSeger.objects.update_or_create(
-                nome_area=nome_area,
-                defaults={
-                    "titular": titular,
-                    "telefone": telefone,
-                    "email": email,
-                    "ativo": True,
-                    "origem": "SEGER_SITE",
-                }
+            obj, created = ContatoAreaSeger.objects.get_or_create(
+                nome_area=nome_area
             )
 
-            total += 1
+            if created:
+                obj.usuario_cadastro = usuario
+                total_criados += 1
+            else:
+                total_atualizados += 1
+
+            # Atualiza sempre
+            obj.titular = titular
+            obj.telefone = telefone
+            obj.email = email
+            obj.ativo = True
+            obj.origem = "SEGER_SITE"
+            obj.usuario_atualizacao = usuario
+            obj.atualizado_em = timezone.now()
+
+            obj.save()
+
+            # 🔥 Atualiza processos relacionados
+            ProcessoMapear.objects.filter(area_responsavel=obj).update(
+                gestor=titular,
+                telefone=telefone,
+                email=email
+            )
+
+            Processo.objects.filter(area_responsavel=obj).update(
+                gestor=titular,
+                telefone=telefone,
+                email=email
+            )
+
+            total_processados += 1
 
         except Exception:
             continue
 
-    # 🔥 Desativa áreas que sumiram do site
-    ContatoAreaSeger.objects.exclude(
-        nome_area__in=areas_encontradas
-    ).update(ativo=False)
+    # 🔥 DELETE FÍSICO (somente origem SEGER_SITE)
+    areas_para_excluir = ContatoAreaSeger.objects.filter(
+        origem="SEGER_SITE"
+    ).exclude(nome_area__in=areas_site)
 
-    return total
+    total_excluidos = areas_para_excluir.count()
+    areas_para_excluir.delete()
+
+    # 🔥 LOG ÚNICO
+    try:
+        LogAcaoSistema.objects.create(
+            usuario=usuario,
+            acao=LogAcaoSistema.TipoAcao.UPDATE,
+            modelo_afetado="ContatoAreaSeger",
+            descricao=(
+                f"Atualização de contatos SEGER | "
+                f"Criados: {total_criados}, "
+                f"Atualizados: {total_atualizados}, "
+                f"Excluídos: {total_excluidos}"
+            ),
+            dados_depois={
+                "criados": total_criados,
+                "atualizados": total_atualizados,
+                "excluidos": total_excluidos
+            },
+            sucesso=True
+        )
+    except Exception as e:
+        print("Erro ao registrar log:", e)
+
+    return total_processados

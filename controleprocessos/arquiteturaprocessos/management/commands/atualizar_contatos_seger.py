@@ -6,5 +6,8 @@ class Command(BaseCommand):
     help = "Atualiza contatos da SEGER"
 
     def handle(self, *args, **kwargs):
-        total = atualizar_contatos_seger()
-        self.stdout.write(self.style.SUCCESS(f"{total} registros processados"))
+        total = atualizar_contatos_seger(usuario=None)
+
+        self.stdout.write(
+            self.style.SUCCESS(f"{total} registros processados")
+        )
