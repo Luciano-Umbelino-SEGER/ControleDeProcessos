@@ -1191,6 +1191,30 @@ class Form_ProcessoMapearForm(forms.ModelForm):
 # ----------------------------------
 class Form_AreaResponsavelForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        # 🔥 CAPTURA MODOS (PADRÃO DO SISTEMA)
+        self.modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        self.modo_exclusao = kwargs.pop('modo_exclusao', False)
+        self.modo_edicao = kwargs.pop('modo_edicao', False)
+        self.modo_inclusao = kwargs.pop('modo_inclusao', False)
+
+        super().__init__(*args, **kwargs)
+
+        # 🔒 REGRAS DE OBRIGATORIEDADE
+        self.fields['nome_area'].required = True
+        self.fields['titular'].required = False
+        self.fields['telefone'].required = False
+        self.fields['email'].required = False
+
+        # 🔒 ORIGEM CONTROLADA PELO SISTEMA
+        self.fields['origem'].initial = "MANUAL"
+        self.fields['origem'].disabled = True
+
+        # 🔥 COMPORTAMENTO POR MODO (PADRÃO DO SISTEMA)
+        if self.modo_visualizacao or self.modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+
     class Meta:
         model = ContatoAreaSeger
         fields = [
@@ -1203,22 +1227,22 @@ class Form_AreaResponsavelForm(forms.ModelForm):
 
         widgets = {
             'nome_area': forms.TextInput(attrs={
-                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]' ,
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black',
                 'placeholder': 'Nome da área...'
             }),
 
             'titular': forms.TextInput(attrs={
-                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]',
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black',
                 'placeholder': 'Titular...'
             }),
 
             'telefone': forms.TextInput(attrs={
-                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]',
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black',
                 'placeholder': 'Telefone(s)...'
             }),
 
             'email': forms.EmailInput(attrs={
-                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]',
+                'class': 'w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black',
                 'placeholder': 'E-mail...'
             }),
 
@@ -1227,25 +1251,7 @@ class Form_AreaResponsavelForm(forms.ModelForm):
             }),
         }
 
-    # 🔒 CAMPOS OBRIGATÓRIOS / OPCIONAIS
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields['nome_area'].required = True
-        self.fields['titular'].required = False
-        self.fields['telefone'].required = False
-        self.fields['email'].required = False
-
-        # 🔒 origem NÃO editável pelo usuário
-        # 🔥 FORÇA origem como MANUAL no form
-        self.fields['origem'].initial = "MANUAL"
-        self.fields['origem'].disabled = True
-
-    # 🔎 VALIDAÇÃO EXTRA (opcional, mas recomendada)
+    # 🔎 VALIDAÇÃO
     def clean_nome_area(self):
         nome = self.cleaned_data.get('nome_area')
-
-        if nome:
-            return nome.strip()
-
-        return nome
+        return nome.strip() if nome else nome

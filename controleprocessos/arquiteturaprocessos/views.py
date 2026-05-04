@@ -2658,7 +2658,7 @@ class ImportarContatosSeger(LoginRequiredMixin, View):
 
         return redirect('arquiteturaprocessos:areasresponsaveis')
 
-# Aqui 2
+# --------------------------------#
 # Criar Área Responsável          #
 # --------------------------------#
 class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
@@ -2693,7 +2693,6 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
 
         return context
 
-
     def form_valid(self, form):
         area = form.save(commit=False)
 
@@ -2714,29 +2713,263 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
         self.object = area
         return HttpResponseRedirect(self.get_success_url())
 
-
+# --------------------------------#
+# Visualizar Área Responsável     #
+# --------------------------------#
 class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
     model = ContatoAreaSeger
+    form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
     context_object_name = 'area'
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        area = self.object
+
+        # 🔥 IGUAL AO PROCESSOMAPEAR
+        context["form"] = Form_AreaResponsavelForm(
+            instance=area,
+            modo_visualizacao=True
+        )
+
+        context.update({
+            "modo_visualizacao": True,
+            "modo_inclusao": False,
+            "modo_edicao": False,
+            "modo_exclusao": False,
+
+            "cadastro_data": (
+                timezone.localtime(area.criado_em)
+                .strftime("%d/%m/%Y %H:%M:%S")
+                if area.criado_em else ""
+            ),
+
+            "cadastro_user": (
+                area.usuario_cadastro.get_full_name()
+                if area.usuario_cadastro else ""
+            ),
+
+            "atualizacao_data": (
+                timezone.localtime(area.atualizado_em)
+                .strftime("%d/%m/%Y %H:%M:%S")
+                if area.atualizado_em else ""
+            ),
+
+            "atualizacao_user": (
+                area.usuario_atualizacao.get_full_name()
+                if area.usuario_atualizacao else ""
+            ),
+        })
+
+        return context
+
+# --------------------------------#
+# Editar Área Responsável         #
+# --------------------------------#
 class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
     model = ContatoAreaSeger
-    fields = ['nome_area', 'titular', 'telefone', 'email', 'ativo']
+    form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
     success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        area = self.object
+
+        # 🔥 ATIVA MODO NO FORM (igual ProcessoMapear)
+        context["form"].modo_edicao = True
+
+        context.update({
+            "modo_edicao": True,
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+
+            "cadastro_data": (
+                timezone.localtime(area.criado_em)
+                .strftime("%d/%m/%Y %H:%M:%S")
+                if area.criado_em else ""
+            ),
+
+            "cadastro_user": (
+                area.usuario_cadastro.get_full_name()
+                if area.usuario_cadastro else ""
+            ),
+
+            "atualizacao_data": (
+                timezone.localtime(area.atualizado_em)
+                .strftime("%d/%m/%Y %H:%M:%S")
+                if area.atualizado_em else ""
+            ),
+
+            "atualizacao_user": (
+                area.usuario_atualizacao.get_full_name()
+                if area.usuario_atualizacao else ""
+            ),
+        })
+
+        return context
+
     def form_valid(self, form):
-        form.instance.usuario_atualizacao = self.request.user
-        return super().form_valid(form)
+        area = form.save(commit=False)
 
+        # 🔥 PADRÃO SISTEMA
+        area.usuario_atualizacao = self.request.user
+        area.atualizado_em = timezone.now()
 
+        area.save()
+
+        messages.success(
+            self.request,
+            f"Área Responsável '{area.nome_area}' atualizada com sucesso!"
+        )
+
+        self.object = area
+        return HttpResponseRedirect(self.get_success_url())
+
+# Aqui 2
+# -------------------------------------#
+# Desativar Área Responsável (Soft Delete)
+# -------------------------------------#
 class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
     model = ContatoAreaSeger
-    template_name = 'estrutura/confirm_delete.html'
-    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+    form_class = Form_AreaResponsavelForm
+    template_name = 'estrutura/form_arearesponsavel.html'
+    context_object_name = 'area'
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        area = self.object
+
+        context["form"] = Form_AreaResponsavelForm(
+            instance=area,
+            modo_exclusao=True
+        )
+
+        context.update({
+            "modo_exclusao": True,
+            "modo_visualizacao": False,
+            "modo_inclusao": False,
+            "modo_edicao": False,
+
+            "cadastro_data": (
+                timezone.localtime(area.criado_em).strftime("%d/%m/%Y %H:%M:%S")
+                if area.criado_em else ""
+            ),
+
+            "cadastro_user": (
+                area.usuario_cadastro.get_full_name()
+                or area.usuario_cadastro.username
+                if area.usuario_cadastro else ""
+            ),
+
+            "atualizacao_data": (
+                timezone.localtime(area.atualizado_em).strftime("%d/%m/%Y %H:%M:%S")
+                if area.atualizado_em else ""
+            ),
+
+            "atualizacao_user": (
+                area.usuario_atualizacao.get_full_name()
+                or area.usuario_atualizacao.username
+                if area.usuario_atualizacao else ""
+            ),
+        })
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        area = self.object
+
+        estado_anterior = area.ativo
+
+        # 🔴 DESATIVAÇÃO
+        area.ativo = False
+        area.usuario_atualizacao = request.user
+        area.atualizado_em = timezone.now()
+        area.save()
+
+        # 🔥 LOG
+        try:
+            LogAcaoSistema.objects.create(
+                usuario=request.user,
+                acao=LogAcaoSistema.TipoAcao.UPDATE,
+                modelo_afetado="ContatoAreaSeger",
+                objeto_id=str(area.id),
+                descricao=f"Desativação da Área Responsável '{area.nome_area}'",
+                dados_antes={"ativo": estado_anterior},
+                dados_depois={"ativo": area.ativo},
+                sucesso=True
+            )
+        except Exception as e:
+            print("Erro ao registrar log:", e)
+
+        messages.success(
+            request,
+            f"Área Responsável '{area.nome_area}' desativada com sucesso!"
+        )
+
+        return redirect("arquiteturaprocessos:areasresponsaveis")
+
+# -------------------------------------#
+# Reativar Área Responsável
+# -------------------------------------#
+class ReativarAreasResponsaveis(LoginRequiredMixin, View):
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.perfil.nome.lower() != 'administrador':
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, pk):
+        try:
+            area = ContatoAreaSeger.objects.get(pk=pk)
+
+            # 🟢 REATIVAÇÃO DIRETA (SEM FORM)
+            area.ativo = True
+            area.usuario_atualizacao = request.user
+            area.atualizado_em = timezone.now()
+            area.save()
+
+            # 🔥 LOG
+            try:
+                LogAcaoSistema.objects.create(
+                    usuario=request.user,
+                    acao=LogAcaoSistema.TipoAcao.UPDATE,
+                    modelo_afetado="ContatoAreaSeger",
+                    objeto_id=str(area.id),
+                    descricao=f"Reativação da Área Responsável '{area.nome_area}'",
+                    dados_antes={"ativo": False},
+                    dados_depois={"ativo": True},
+                    sucesso=True
+                )
+            except Exception as e:
+                print("Erro ao registrar log:", e)
+
+            messages.success(
+                request,
+                f"Área Responsável '{area.nome_area}' reativada com sucesso!"
+            )
+
+        except ContatoAreaSeger.DoesNotExist:
+            messages.error(request, "Área não encontrada.")
+
+        return redirect("arquiteturaprocessos:areasresponsaveis")
 
 # -------------------------------#
 # Listagem - Processos           #

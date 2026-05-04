@@ -20,9 +20,15 @@
         {% else %}Inclusão de Área Responsável{% endif %}
     </h2>
 
+    {% if modo_edicao and not form.instance.ativo %}
+    <div class="mb-6 p-3 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-sm">
+        Esta área está <strong>inativa</strong>. Para editar os dados, é necessário ativá-la.
+    </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
-        <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
+        <fieldset {% if modo_visualizacao or modo_exclusao or not form.instance.ativo %}disabled{% endif %}>
 
         <!-- LINHA 1 -->
         <div class="grid grid-cols-2 gap-6 mb-6">
@@ -58,7 +64,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-blue-700">Telefone</label>
+                <label class="block text-sm font-medium text-blue-700">Telefone/Ramal</label>
                 {{ form.telefone|add_attr:"class:w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500" }}
             </div>
 
@@ -103,9 +109,7 @@
                            readonly
                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black">
                 {% else %}
-                    <input type="text"
-                           value=""
-                           readonly
+                    <input type="text" value="" readonly
                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black">
                 {% endif %}
             </div>
@@ -147,27 +151,45 @@
         <div class="flex justify-end mt-8 space-x-4">
 
           {% if modo_exclusao %}
+
             <button
                 @click="$dispatch('abrir-modal-confirmacao', {
                     url: '{% url 'arquiteturaprocessos:excluir_areasresponsaveis' form.instance.pk %}',
-                    mensagem: 'Será feita uma exclusão lógica da Área Responsável.<br><br>Confirma a desativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
+                    mensagem: 'Será feita a exclusão lógica de uma Área Responsável.<br><br>Confirma a desativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
                 })"
                 type="button"
                 class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
-              Excluir Área
+              Desativar Área
             </button>
 
           {% elif modo_edicao %}
+
+            {% if form.instance.ativo %}
             <button type="submit"
                     class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-              Salvar Alterações
+                Salvar Alterações
             </button>
+            {% endif %}
+
+            {% if not form.instance.ativo %}
+              <button
+                  @click="$dispatch('abrir-modal-confirmacao', {
+                      url: '{% url 'arquiteturaprocessos:reativar_areasresponsaveis' form.instance.pk %}',
+                      mensagem: 'Você está prestes a efetuar a reativação de uma Área Responsável.<br><br>Confirma a ativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
+                  })"
+                  type="button"
+                  class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                Ativar Área
+              </button>
+            {% endif %}
 
           {% elif modo_inclusao %}
+
             <button type="submit"
                     class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
               Adicionar Área
             </button>
+
           {% endif %}
 
           <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}"

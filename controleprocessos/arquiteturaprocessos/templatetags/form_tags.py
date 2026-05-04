@@ -34,22 +34,28 @@ def add_attr(field, attr):
     Adiciona atributos HTML ao widget.
     Funciona mesmo quando o campo já foi renderizado (SafeString).
     """
-    # Se for SafeString (HTML já renderizado)
+
     from django.utils.safestring import SafeString
+
+    # 🔥 Caso 1: HTML já renderizado
     if isinstance(field, SafeString):
-        # Injetar atributo diretamente no HTML
         key, value = attr.split(":", 1)
         insertion = f' {key}="{value}"'
         html = str(field)
 
-        # insere antes do fechamento do primeiro > do widget
         index = html.find('>')
         if index != -1:
             html = html[:index] + insertion + html[index:]
+
         return mark_safe(html)
 
-    # Caso normal: BoundField
+    # 🔥 Caso 2: NÃO é BoundField → retorna sem quebrar
+    if not hasattr(field, "field"):
+        return field
+
+    # 🔥 Caso normal
     key, value = attr.split(":", 1)
     attrs = field.field.widget.attrs.copy()
     attrs[key] = value
+
     return field.as_widget(attrs=attrs)

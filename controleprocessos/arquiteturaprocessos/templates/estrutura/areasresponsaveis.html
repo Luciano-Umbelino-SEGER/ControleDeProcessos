@@ -51,12 +51,12 @@
 
             <!-- Ativo -->
             <div class="filtro-campo">
-              <label class="filtro-label">Ativo</label>
+              <label class="filtro-label">Estado</label>
               <select name="ativo"
                       class="filtro-select w-[90px] {% if ativo_selecionado %}text-black{% else %}text-gray-400{% endif %}">
                 <option value="">Todos</option>
-                <option value="True" {% if ativo_selecionado == "True" %}selected{% endif %}>Sim</option>
-                <option value="False" {% if ativo_selecionado == "False" %}selected{% endif %}>Não</option>
+                <option value="True" {% if ativo_selecionado == "True" %}selected{% endif %}>Ativo</option>
+                <option value="False" {% if ativo_selecionado == "False" %}selected{% endif %}>Inativo</option>
               </select>
             </div>
 
@@ -169,9 +169,9 @@
             <th class="py-3 px-3 text-left w-[20%]">Área</th>
             <th class="py-3 px-2 text-left w-[15%]">Titular</th>
             <th class="py-3 px-2 text-left w-[15%]">E-mail</th>
-            <th class="py-3 px-2 text-left w-[10%]">Telefone</th>
+            <th class="py-3 px-2 text-left w-[10%]">Telefone/Ramal</th>
             <th class="py-3 px-2 text-left w-[8%]">Origem</th>
-            <th class="py-3 px-2 text-left w-[6%]">Ativo</th>
+            <th class="py-3 px-2 text-left w-[6%]">Estado</th>
             <th class="py-3 px-2 text-left w-[10%]">Criado</th>
             <th class="py-3 px-2 text-left w-[10%]">Atualizado</th>
             <th class="py-3 px-2 text-center w-[8%]">Ações</th>
@@ -206,9 +206,13 @@
 
             <td class="py-3 px-2">
               {% if area.ativo %}
-                <span class="text-green-600 font-semibold">Sim</span>
+                <span class="px-3 py-1 text-sm font-semibold bg-green-100 text-green-700 rounded">
+                  Ativo
+                </span>
               {% else %}
-                <span class="text-red-600">Não</span>
+                <span class="px-3 py-1 text-sm font-semibold bg-red-100 text-red-700 rounded">
+                  Inativo
+                </span>
               {% endif %}
             </td>
 
@@ -247,16 +251,29 @@
                         </svg>
                 </a>
 
-                <a href="{% url 'arquiteturaprocessos:excluir_areasresponsaveis' area.pk %}"
-                   class="text-red-600 hover:text-red-800" title="Excluir">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
-                  </svg>
-                </a>
+                {% if area.ativo %}
+                  <a href="{% url 'arquiteturaprocessos:excluir_areasresponsaveis' area.pk %}"
+                     class="text-red-600 hover:text-red-800"
+                     title="Desativar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                    </svg>
+                  </a>
+                {% else %}
+                  <span class="text-gray-400 cursor-not-allowed" title="Área já inativa">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                    </svg>
+                  </span>
+                {% endif %}
 
               </div>
             </td>
