@@ -309,7 +309,7 @@ class ContatoAreaSeger(models.Model):
     )
 
     criado_em = models.DateTimeField("Criado em", auto_now_add=True)
-    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+    atualizado_em = models.DateTimeField("Atualizado em", null=True, blank=True)
 
     class Meta:
         verbose_name = "Contato Área SEGER"

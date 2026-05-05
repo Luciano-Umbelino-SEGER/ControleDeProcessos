@@ -93,7 +93,8 @@ def log_create_update(sender, instance, created, **kwargs):
 
     diff = gerar_diff(dados_antes, dados_depois)
 
-    if not diff:
+    # 🔥 SEMPRE LOGA CREATE
+    if not diff and not created:
         return
 
     acao = "CREATE" if created else "UPDATE"
@@ -103,7 +104,12 @@ def log_create_update(sender, instance, created, **kwargs):
             usuario=get_usuario_logado_seguro(),  # 🔥 AQUI
             acao=acao,
             modelo_afetado=sender.__name__,
-            descricao=f"{sender.__name__} {'criado' if created else 'atualizado'}",
+            descricao=(
+                f"Atualização de contatos SEGER | "
+                f"{'criado' if created else 'atualizado'}"
+                if sender.__name__ == "ContatoAreaSeger"
+                else f"{sender.__name__} {'criado' if created else 'atualizado'}"
+            ),
             dados_antes=dados_antes,
             dados_depois=dados_depois,
         )
@@ -123,7 +129,11 @@ def log_delete(sender, instance, **kwargs):
             usuario=get_usuario_logado_seguro(),  # 🔥 CORRETO
             acao="DELETE",
             modelo_afetado=sender.__name__,
-            descricao=f"{sender.__name__} excluído",
+            descricao=(
+                "Atualização de contatos SEGER | excluído"
+                if sender.__name__ == "ContatoAreaSeger"
+                else f"{sender.__name__} excluído"
+            ),
             dados_antes=serializar(instance),
             dados_depois={},
         )

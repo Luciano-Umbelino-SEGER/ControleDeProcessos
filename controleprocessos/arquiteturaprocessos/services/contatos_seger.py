@@ -79,25 +79,34 @@ def atualizar_contatos_seger(usuario=None):
                     email = valor
 
             obj, created = ContatoAreaSeger.objects.get_or_create(
-                nome_area=nome_area
+                nome_area=nome_area,
+                defaults={
+                    "titular": titular,
+                    "telefone": telefone,
+                    "email": email,
+                    "ativo": True,
+                    "origem": "SEGER_SITE",
+                    "usuario_cadastro": usuario,
+                }
             )
 
             if created:
-                obj.usuario_cadastro = usuario
                 total_criados += 1
+
             else:
                 total_atualizados += 1
 
-            # Atualiza sempre
-            obj.titular = titular
-            obj.telefone = telefone
-            obj.email = email
-            obj.ativo = True
-            obj.origem = "SEGER_SITE"
-            obj.usuario_atualizacao = usuario
-            obj.atualizado_em = timezone.now()
+                obj.titular = titular
+                obj.telefone = telefone
+                obj.email = email
+                obj.ativo = True
+                obj.origem = "SEGER_SITE"
 
-            obj.save()
+                # 🔥 SOMENTE UPDATE recebe isso
+                obj.usuario_atualizacao = usuario
+                obj.atualizado_em = timezone.now()
+
+                obj.save()
 
             # 🔥 Atualiza processos relacionados
             ProcessoMapear.objects.filter(area_responsavel=obj).update(
