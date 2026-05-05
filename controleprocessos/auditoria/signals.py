@@ -99,21 +99,20 @@ def log_create_update(sender, instance, created, **kwargs):
 
     acao = "CREATE" if created else "UPDATE"
 
+    if sender.__name__ == "ContatoAreaSeger":
+        descricao = f"Atualização de contatos SEGER | Área {'criada' if created else 'atualizada'}"
+    else:
+        descricao = f"{sender.__name__} {'criado' if created else 'atualizado'}"
+
     if tabela_existe("log_acao_sistema"):
         LogAcaoSistema.objects.create(
-            usuario=get_usuario_logado_seguro(),  # 🔥 AQUI
+            usuario=get_usuario_logado_seguro(),
             acao=acao,
             modelo_afetado=sender.__name__,
-            descricao=(
-                f"Atualização de contatos SEGER | "
-                f"{'criado' if created else 'atualizado'}"
-                if sender.__name__ == "ContatoAreaSeger"
-                else f"{sender.__name__} {'criado' if created else 'atualizado'}"
-            ),
+            descricao=descricao,
             dados_antes=dados_antes,
             dados_depois=dados_depois,
         )
-
 
 # -----------------------------------------
 # DELETE
@@ -124,16 +123,17 @@ def log_delete(sender, instance, **kwargs):
     if sender.__name__ in MODELOS_IGNORADOS:
         return
 
+    if sender.__name__ == "ContatoAreaSeger":
+        descricao = "Atualização de contatos SEGER | Área excluída"
+    else:
+        descricao = f"{sender.__name__} excluído"
+
     if tabela_existe("log_acao_sistema"):
         LogAcaoSistema.objects.create(
-            usuario=get_usuario_logado_seguro(),  # 🔥 CORRETO
+            usuario=get_usuario_logado_seguro(),
             acao="DELETE",
             modelo_afetado=sender.__name__,
-            descricao=(
-                "Atualização de contatos SEGER | excluído"
-                if sender.__name__ == "ContatoAreaSeger"
-                else f"{sender.__name__} excluído"
-            ),
+            descricao=descricao,
             dados_antes=serializar(instance),
             dados_depois={},
         )

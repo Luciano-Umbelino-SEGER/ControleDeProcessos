@@ -142,14 +142,14 @@ def atualizar_contatos_seger(usuario=None):
             modelo_afetado="ContatoAreaSeger",
             descricao=(
                 f"Atualização de contatos SEGER | "
-                f"Criados: {total_criados}, "
-                f"Atualizados: {total_atualizados}, "
-                f"Excluídos: {total_excluidos}"
+                f"Áreas Criadas: {total_criados}, "
+                f"Atualizadas: {total_atualizados}, "
+                f"Excluídas: {total_excluidos}"
             ),
             dados_depois={
-                "criados": total_criados,
-                "atualizados": total_atualizados,
-                "excluidos": total_excluidos
+                "Áreas criadas": total_criados,
+                "Áreas atualizadas": total_atualizados,
+                "Áreas excluidas": total_excluidos
             },
             sucesso=True
         )

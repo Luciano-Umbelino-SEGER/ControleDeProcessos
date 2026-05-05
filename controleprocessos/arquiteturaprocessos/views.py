@@ -34,6 +34,7 @@ from urllib.parse import unquote
 from django.http import HttpResponseRedirect
 import mimetypes
 from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
+from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
 
@@ -2599,8 +2600,14 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
             return ContatoAreaSeger.objects.none()
 
         # 🔍 FILTROS
-        if nome_area:
-            queryset = queryset.filter(nome_area__icontains=nome_area)
+        if nome_area and nome_area.strip():
+            busca = remover_acentos(nome_area.strip())
+
+            queryset = queryset.annotate(
+                nome_area_sem_acento=Unaccent('nome_area')
+            ).filter(
+                nome_area_sem_acento__icontains=busca
+            )
 
         if titular:
             queryset = queryset.filter(titular__icontains=titular)
