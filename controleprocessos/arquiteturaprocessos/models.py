@@ -196,36 +196,87 @@ def mp_upload_to(instance, filename):
 # ============================================================
 # MODELAGEM DE PROCESSO
 # ============================================================
+# ============================================================
+# MODELAGEM DE PROCESSO
+# ============================================================
 class ModelagemProcesso(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
 
     tipo_documento = models.ForeignKey(
-        "TiposDocumento", on_delete=models.PROTECT, related_name="modelagens"
+        "TiposDocumento",
+        on_delete=models.PROTECT,
+        related_name="modelagens"
     )
 
-    titulo = models.CharField(max_length=255, null=True, blank=True)
+    # 🔹 SEMPRE obrigatório
+    titulo = models.CharField(max_length=255)
+
+    # 🔹 Opcionais para Modelo de Processo
     codigo = models.CharField(
         max_length=10,
         db_index=True,
         validators=[RegexValidator(r"^[A-Z0-9.\-_/]+$")],
+        null=True,
+        blank=True,
     )
+
     sequencial = models.CharField(
         max_length=4,
         validators=[RegexValidator(r"^\d{1,4}$")],
+        null=True,
+        blank=True,
     )
-    versao = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(9999)])
-    tema = models.CharField(max_length=150, db_index=True)
-    emitente = models.CharField(max_length=150, db_index=True)
-    sistema = models.CharField(max_length=100, db_index=True)
 
+    versao = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(9999)],
+        null=True,
+        blank=True,
+    )
+
+    tema = models.CharField(
+        max_length=150,
+        db_index=True,
+        null=True,
+        blank=True,
+    )
+
+    emitente = models.CharField(
+        max_length=150,
+        db_index=True,
+        null=True,
+        blank=True,
+    )
+
+    sistema = models.CharField(
+        max_length=100,
+        db_index=True,
+        null=True,
+        blank=True,
+    )
+
+    # 🔹 Datas opcionais
     data_elaboracao = models.DateField(null=True, blank=True)
-    portaria_aprovacao = models.CharField(max_length=150, blank=True)
+
+    portaria_aprovacao = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True,
+    )
+
     data_aprovacao = models.DateField(null=True, blank=True)
+
     vigencia_inicio = models.DateField(null=True, blank=True)
+
     vigencia_fim = models.DateField(null=True, blank=True)
 
-    link_normaprocedimento = models.URLField(max_length=500, null=True, blank=True)
+    # 🔹 Link opcional
+    link_normaprocedimento = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
 
+    # 🔹 PDF opcional
     documento_modelagem_processo = models.FileField(
         upload_to=mp_upload_to,
         max_length=500,
@@ -235,11 +286,15 @@ class ModelagemProcesso(models.Model):
     )
 
     data_cadastro = models.DateTimeField(auto_now_add=True)
+
     data_atualizacao = models.DateTimeField(auto_now=True)
 
     usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="modelagens_criadas"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="modelagens_criadas"
     )
+
     usuario_atualizacao = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -250,23 +305,41 @@ class ModelagemProcesso(models.Model):
 
     class Meta:
         db_table = "arquiteturaprocessos_modelagem_processo"
-        ordering = ["titulo", "codigo", "sequencial", "versao", "tema"]
+
+        ordering = [
+            "titulo",
+            "codigo",
+            "sequencial",
+            "versao",
+            "tema",
+        ]
 
     def save(self, *args, **kwargs):
         try:
             old = ModelagemProcesso.objects.get(pk=self.pk)
+
         except ModelagemProcesso.DoesNotExist:
             old = None
 
         super().save(*args, **kwargs)
 
-        if old and old.documento_modelagem_processo and old.documento_modelagem_processo != self.documento_modelagem_processo:
+        # 🔹 Remove PDF antigo após substituição
+        if (
+            old
+            and old.documento_modelagem_processo
+            and old.documento_modelagem_processo != self.documento_modelagem_processo
+        ):
             old_path = old.documento_modelagem_processo.path
+
             if os.path.isfile(old_path):
                 os.remove(old_path)
 
     def __str__(self):
-        return f"{self.titulo} - {self.codigo}-{self.sequencial} - V{self.versao}"
+        codigo = self.codigo or "---"
+        sequencial = self.sequencial or "---"
+        versao = self.versao or "--"
+
+        return f"{self.titulo} - {codigo}-{sequencial} - V{versao}"
 
 # ============================================================
 # Contatos Seger - Area Responsável

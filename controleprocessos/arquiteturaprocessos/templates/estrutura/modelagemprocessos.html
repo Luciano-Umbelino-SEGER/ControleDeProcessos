@@ -202,7 +202,7 @@
 
             <!-- Tema -->
            <td class="py-3 px-2 align-top break-words text-[0.8rem] leading-snug">
-            {{ modelagem.tema }}
+            {{ modelagem.tema|default_if_none:"----"  }}
           </td>
 
             <!-- Processo (PDF da Modelagem) -->
@@ -218,6 +218,8 @@
                          break-all leading-snug">
                   {{ modelagem.documento_modelagem_processo|filename }}
                 </button>
+              {% else %}
+                ----
               {% endif %}
             </td>
 
@@ -234,15 +236,23 @@
                         break-all leading-snug text-[0.8rem]">
                   {{ modelagem.link_normaprocedimento|filename }}
                 </button>
+              {% else %}
+                ----
               {% endif %}
             </td>
 
-            <td class="py-3 px-2 align-top break-words">{{ modelagem.emitente }}</td>
+            <td class="py-3 px-2 align-top break-words">{{ modelagem.emitente|default_if_none:"----" }}</td>
             <td class="py-3 px-2 align-top break-words">
-              {{ modelagem.codigo }} – {{ modelagem.sistema }}
+                {% if modelagem.codigo or modelagem.sistema %}
+                    {{ modelagem.codigo|default_if_none:"----" }}
+                    {% if modelagem.codigo and modelagem.sistema %} – {% endif %}
+                    {{ modelagem.sistema|default_if_none:"----" }}
+                {% else %}
+                    ----
+                {% endif %}
             </td>
             <td class="py-3 px-2 align-top break-words text-[0.8rem] leading-snug">
-              {{ modelagem.portaria_aprovacao }}
+              {{ modelagem.portaria_aprovacao|default_if_none:"----"  }}
             </td>
 
             <td class="py-3 px-2 align-top text-center whitespace-nowrap">

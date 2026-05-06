@@ -2370,14 +2370,6 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
 
         return response
 
-    def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo."
-        )
-        return super().form_invalid(form)
-
-
 # ---------------------------------------------------
 # VISUALIZAR
 # ---------------------------------------------------
@@ -2454,13 +2446,6 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
             f"Modelagem de Processo '{self.object.titulo}' atualizada com sucesso!"
         )
         return response
-
-    def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Não foi possível atualizar a Modelagem de Processo. Corrija os erros abaixo."
-        )
-        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:modelagemprocessos')

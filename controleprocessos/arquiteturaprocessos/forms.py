@@ -516,7 +516,7 @@ class Form_TipoDocumentoForm(forms.ModelForm):
 class Form_ModelagemProcessoForm(forms.ModelForm):
 
     # ============================================================
-    # 🔹 CAMPO: TÍTULO (substitui "nome")
+    # 🔹 CAMPO: TÍTULO
     # ============================================================
     titulo = forms.CharField(
         required=True,
@@ -547,54 +547,123 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     # ============================================================
     class Meta:
         model = ModelagemProcesso
+
         exclude = (
             "usuario",
             "data_cadastro",
             "data_atualizacao",
             "usuario_atualizacao",
         )
+
         widgets = {
-            "data_elaboracao": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
-            "data_aprovacao": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
-            "vigencia_inicio": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
-            "vigencia_fim": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+            "data_elaboracao": forms.DateInput(
+                format="%Y-%m-%d",
+                attrs={"type": "date"}
+            ),
+
+            "data_aprovacao": forms.DateInput(
+                format="%Y-%m-%d",
+                attrs={"type": "date"}
+            ),
+
+            "vigencia_inicio": forms.DateInput(
+                format="%Y-%m-%d",
+                attrs={"type": "date"}
+            ),
+
+            "vigencia_fim": forms.DateInput(
+                format="%Y-%m-%d",
+                attrs={"type": "date"}
+            ),
         }
 
     # ============================================================
     # INIT
     # ============================================================
     def __init__(self, *args, **kwargs):
+
         self.usuario_logado = kwargs.pop("usuario_logado", None)
+
         self.modo_inclusao = kwargs.pop("modo_inclusao", False)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
         self.modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
-        self.label_suffix = ""
 
-        # Ajuste datas iniciais (evita quebra em edição)
-        for fname in ["data_elaboracao", "data_aprovacao", "vigencia_inicio", "vigencia_fim"]:
+        self.label_suffix = ""
+        self.fields["codigo"].label = "Sigla Sistema"
+
+        # ========================================================
+        # CAMPOS OPCIONAIS
+        # ========================================================
+        campos_opcionais = [
+            "sistema",
+            "codigo",
+            "sequencial",
+            "tema",
+            "emitente",
+            "versao",
+            "data_elaboracao",
+            "data_aprovacao",
+            "portaria_aprovacao",
+            "vigencia_inicio",
+            "vigencia_fim",
+            "link_normaprocedimento",
+        ]
+
+        for campo in campos_opcionais:
+            if campo in self.fields:
+                self.fields[campo].required = False
+
+        # ========================================================
+        # DATAS INICIAIS
+        # ========================================================
+        for fname in [
+            "data_elaboracao",
+            "data_aprovacao",
+            "vigencia_inicio",
+            "vigencia_fim",
+        ]:
             try:
-                if getattr(self.instance, fname):
-                    self.fields[fname].initial = getattr(self.instance, fname).strftime("%Y-%m-%d")
+                valor = getattr(self.instance, fname)
+
+                if valor:
+                    self.fields[fname].initial = valor.strftime("%Y-%m-%d")
+
             except Exception:
                 pass
 
-        # Classe base visual
+        # ========================================================
+        # CLASSE BASE
+        # ========================================================
         base_class = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
             "focus:outline-none focus:ring-2 focus:ring-blue-500"
         )
 
-        # Estilo geral
+        # ========================================================
+        # ESTILO GERAL
+        # ========================================================
         for field in self.fields.values():
-            existing = field.widget.attrs.get("class", "")
-            bg = "bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white"
 
-            field.widget.attrs["class"] = f"{existing} {base_class} {bg}".strip()
-            field.widget.attrs.setdefault("placeholder", field.label)
+            existing = field.widget.attrs.get("class", "")
+
+            bg = (
+                "bg-gray-100"
+                if (self.modo_visualizacao or self.modo_exclusao)
+                else "bg-white"
+            )
+
+            field.widget.attrs["class"] = (
+                f"{existing} {base_class} {bg}"
+            ).strip()
+
+            field.widget.attrs.setdefault(
+                "placeholder",
+                field.label
+            )
 
             field.widget.attrs.update({
                 "autocomplete": "off",
@@ -604,141 +673,322 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 "spellcheck": "false",
             })
 
-        # Ajustes específicos
+        # ========================================================
+        # AJUSTES ESPECÍFICOS
+        # ========================================================
         self.fields["codigo"].widget.attrs["class"] += " uppercase"
-        self.fields["sequencial"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,4}", "maxlength": "4"})
-        self.fields["versao"].widget.attrs.update({"inputmode": "numeric", "pattern": r"\d{1,4}", "maxlength": "4"})
 
-        # PDF widget
+        self.fields["sequencial"].widget.attrs.update({
+            "inputmode": "numeric",
+            "pattern": r"\d{1,4}",
+            "maxlength": "4",
+        })
+
+        self.fields["versao"].widget.attrs.update({
+            "inputmode": "numeric",
+            "pattern": r"\d{1,4}",
+            "maxlength": "4",
+        })
+
+        # ========================================================
+        # PDF WIDGET
+        # ========================================================
         if "documento_modelagem_processo" in self.fields:
+
             fwidget = self.fields["documento_modelagem_processo"].widget
+
             fwidget.attrs.setdefault("tabindex", "0")
-            fwidget.attrs.setdefault("accept", ".pdf,application/pdf")
 
-            if self.modo_edicao or self.modo_visualizacao or self.modo_exclusao:
-                self.fields["documento_modelagem_processo"].widget = FileInput(attrs=fwidget.attrs)
+            fwidget.attrs.setdefault(
+                "accept",
+                ".pdf,application/pdf"
+            )
 
-                if self.instance and self.instance.documento_modelagem_processo:
-                    nome_arq = os.path.basename(self.instance.documento_modelagem_processo.name)
-                    self.fields["documento_modelagem_processo"].widget.attrs["placeholder"] = nome_arq
+            if (
+                self.modo_edicao
+                or self.modo_visualizacao
+                or self.modo_exclusao
+            ):
 
-        # Valores padrão para inclusão
-        if self.modo_inclusao:
-            self.fields["sequencial"].initial = "001"
-            self.fields["versao"].initial = "01"
+                self.fields["documento_modelagem_processo"].widget = (
+                    FileInput(attrs=fwidget.attrs)
+                )
 
-        # 🔹 ZEROS À ESQUERDA — edição / visualização
+                if (
+                    self.instance
+                    and self.instance.documento_modelagem_processo
+                ):
+                    nome_arq = os.path.basename(
+                        self.instance.documento_modelagem_processo.name
+                    )
+
+                    self.fields[
+                        "documento_modelagem_processo"
+                    ].widget.attrs["placeholder"] = nome_arq
+
+        # ========================================================
+        # ZEROS À ESQUERDA
+        # ========================================================
         if self.instance and self.instance.pk:
-            if self.instance.sequencial is not None:
-                self.initial["sequencial"] = f"{int(self.instance.sequencial):04d}"
-            if self.instance.versao is not None:
-                self.initial["versao"] = f"{int(self.instance.versao):02d}"
 
-        # Usuário criador / atualização
+            if self.instance.sequencial is not None:
+                self.initial["sequencial"] = (
+                    f"{int(self.instance.sequencial):04d}"
+                )
+
+            if self.instance.versao is not None:
+                self.initial["versao"] = (
+                    f"{int(self.instance.versao):02d}"
+                )
+
+        # ========================================================
+        # USUÁRIO
+        # ========================================================
         if self.usuario_logado and not self.instance.pk:
             self.instance.usuario = self.usuario_logado
 
         if self.usuario_logado and self.instance.pk:
             self.instance.usuario_atualizacao = self.usuario_logado
 
-        # Modo somente leitura
+        # ========================================================
+        # MODO SOMENTE LEITURA
+        # ========================================================
         if self.modo_visualizacao or self.modo_exclusao:
+
             for field in self.fields.values():
+
                 field.disabled = True
+
                 field.widget.attrs["class"] += " bg-gray-100"
 
-        # Guarda versão original
-        self._versao_original = getattr(self.instance, "versao", None) if self.instance.pk else None
+        # ========================================================
+        # GUARDA VERSÃO ORIGINAL
+        # ========================================================
+        self._versao_original = (
+            getattr(self.instance, "versao", None)
+            if self.instance.pk
+            else None
+        )
 
+        # ========================================================
+        # LINK NORMA
+        # ========================================================
         if "link_normaprocedimento" in self.fields:
-            self.fields["link_normaprocedimento"].widget.attrs.update({
+
+            self.fields[
+                "link_normaprocedimento"
+            ].widget.attrs.update({
                 "type": "url",
                 "placeholder": "https://exemplo.com/documento.pdf",
             })
 
-            # 🔥 GARANTE QUE O CAMPO OCUPA TODA A LARGURA (NÃO QUEBRA LAYOUT)
-            self.fields["link_normaprocedimento"].widget.attrs["class"] += " w-full"
+            self.fields[
+                "link_normaprocedimento"
+            ].widget.attrs["class"] += " w-full"
+
+    # ============================================================
+    # 🔹 TIPO DOCUMENTO
+    # ============================================================
+    def _is_norma_procedimento(self):
+
+        tipo = self.cleaned_data.get("tipo_documento")
+
+        if not tipo:
+            return False
+
+        nome = (tipo.nome or "").strip().upper()
+
+        return nome == "NORMA DE PROCEDIMENTO"
 
     # ============================================================
     # VALIDAÇÕES
     # ============================================================
     def clean_titulo(self):
-        titulo = (self.cleaned_data.get("titulo") or "").strip().upper()
+
+        titulo = (
+            self.cleaned_data.get("titulo") or ""
+        ).strip().upper()
+
         if not titulo:
             raise ValidationError("Informe o Título.")
+
         return titulo
 
+    def clean_sistema(self):
+
+        sistema = (
+            self.cleaned_data.get("sistema") or ""
+        ).strip().upper()
+
+        if self._is_norma_procedimento() and not sistema:
+            raise ValidationError("Informe o sistema.")
+
+        return sistema or None
+
     def clean_codigo(self):
-        codigo = (self.cleaned_data.get("codigo") or "").strip().upper()
-        if not re.fullmatch(r"[A-Z0-9._-]{2,20}", codigo):
+
+        codigo = (
+            self.cleaned_data.get("codigo") or ""
+        ).strip().upper()
+
+        # Sigla do Sistema → obrigatório
+        if self._is_norma_procedimento():
+
+            if not codigo:
+                raise ValidationError(
+                    "Informe a sigla do sistema."
+                )
+
+        # Modelo → opcional
+        else:
+
+            if not codigo:
+                return None
+
+        if not re.fullmatch(r"[A-Z0-9._/-]{2,20}", codigo):
             raise ValidationError(
-                "Código inválido. Use 2 a 20 caracteres (A–Z, 0–9, ponto, hífen ou sublinhado)."
+                "Sigla do Sistema inválida. Use 2 a 20 caracteres "
+                "(A–Z, 0–9, ponto, hífen, barra ou sublinhado)."
             )
+
         return codigo
 
     def clean_sequencial(self):
+
         seq = self.cleaned_data.get("sequencial")
+
         if not seq:
-            raise ValidationError("Informe o número sequencial da modelagem de processos.")
+            return None
+
         seq = str(seq).strip()
+
         if not seq.isdigit():
-            raise ValidationError("O número sequencial deve conter apenas dígitos.")
+            raise ValidationError(
+                "O número sequencial deve conter apenas dígitos."
+            )
+
         num = int(seq)
+
         if not (1 <= num <= 9999):
-            raise ValidationError("O número sequencial deve estar entre 1 e 9999.")
-        return num
+            raise ValidationError(
+                "O número sequencial deve estar entre 1 e 9999."
+            )
+
+        return str(num)
+
+    def clean_tema(self):
+
+        tema = (
+            self.cleaned_data.get("tema") or ""
+        ).strip().upper()
+
+        if self._is_norma_procedimento() and not tema:
+            raise ValidationError("Informe o tema.")
+
+        return tema or None
+
+    def clean_emitente(self):
+
+        emitente = (
+            self.cleaned_data.get("emitente") or ""
+        ).strip().upper()
+
+        if self._is_norma_procedimento() and not emitente:
+            raise ValidationError("Informe o emitente.")
+
+        return emitente or None
 
     def clean_versao(self):
+
         ver = self.cleaned_data.get("versao")
-        if ver is None:
-            raise ValidationError("Informe a versão.")
-        if not isinstance(ver, int):
-            raise ValidationError("Versão deve ser um número inteiro.")
-        if not (1 <= ver <= 9999):
-            raise ValidationError("A versão deve estar entre 1 e 9999.")
-        if self._versao_original is not None and ver < self._versao_original:
+
+        # Norma → obrigatório
+        if self._is_norma_procedimento():
+
+            if ver is None:
+                raise ValidationError("Informe a versão.")
+
+        # Modelo → opcional
+        else:
+
+            if ver in (None, ""):
+                return None
+
+        try:
+            ver = int(ver)
+
+        except (TypeError, ValueError):
             raise ValidationError(
-                f"A versão não pode ser menor que {self._versao_original}."
+                "Versão deve ser um número inteiro."
             )
+
+        if not (1 <= ver <= 9999):
+            raise ValidationError(
+                "A versão deve estar entre 1 e 9999."
+            )
+
+        if (
+            self._versao_original is not None
+            and ver < self._versao_original
+        ):
+            raise ValidationError(
+                f"A versão não pode ser menor que "
+                f"{self._versao_original}."
+            )
+
         return ver
 
     def clean_documento_modelagem_processo(self):
-        f = self.cleaned_data.get("documento_modelagem_processo")
 
-        # 🔹 1. Nenhum arquivo enviado → mantém o atual
+        f = self.cleaned_data.get(
+            "documento_modelagem_processo"
+        )
+
+        # mantém arquivo atual
         if not f:
             return f
 
-        # 🔹 2. Se NÃO tem content_type → é FieldFile (edição sem novo upload)
+        # edição sem novo upload
         if not hasattr(f, "content_type"):
             return f
 
-        # 🔹 3. Novo upload → validar tipo básico
         content_type = f.content_type
         file_name = f.name.lower()
 
-        is_pdf_type = content_type in ("application/pdf", "application/x-pdf")
+        is_pdf_type = content_type in (
+            "application/pdf",
+            "application/x-pdf",
+        )
+
         is_pdf_name = file_name.endswith(".pdf")
 
         if not (is_pdf_type or is_pdf_name):
-            raise ValidationError("Envie um PDF válido (.pdf).")
+            raise ValidationError(
+                "Envie um PDF válido (.pdf)."
+            )
 
-        # 💡 4. VALIDAÇÃO EXTRA (nível enterprise)
-        # Verifica assinatura real do arquivo (%PDF)
+        # valida assinatura
         if hasattr(f, "read"):
+
             header = f.read(4)
-            f.seek(0)  # ⚠️ MUITO IMPORTANTE: voltar o ponteiro
+
+            f.seek(0)
 
             if header != b"%PDF":
-                raise ValidationError("Arquivo não é um PDF válido.")
+                raise ValidationError(
+                    "Arquivo não é um PDF válido."
+                )
 
         return f
 
     # ============================================================
-    # 🔹 VALIDAÇÃO: LINK NORMA DE PROCEDIMENTO
+    # 🔹 LINK NORMA
     # ============================================================
     def clean_link_normaprocedimento(self):
-        link = self.cleaned_data.get("link_normaprocedimento")
+
+        link = self.cleaned_data.get(
+            "link_normaprocedimento"
+        )
 
         if not link:
             return link
@@ -748,10 +998,14 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         parsed = urlparse(link)
 
         if not parsed.scheme or not parsed.netloc:
-            raise ValidationError("Informe uma URL válida.")
+            raise ValidationError(
+                "Informe uma URL válida."
+            )
 
         if parsed.scheme not in ("http", "https"):
-            raise ValidationError("A URL deve começar com http:// ou https://.")
+            raise ValidationError(
+                "A URL deve começar com http:// ou https://."
+            )
 
         return link
 
@@ -759,6 +1013,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     # SAVE
     # ============================================================
     def save(self, commit=True):
+
         obj = super().save(commit=False)
 
         if self.usuario_logado and not obj.usuario_id:
@@ -768,14 +1023,13 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             obj.usuario_atualizacao = self.usuario_logado
 
         if commit:
-            obj.full_clean()
             obj.save()
 
         return obj
 
-# ----------------------------
-# Widgets customizados
-# ----------------------------
+# -------------------------------
+# Widgets - Selects customizados
+# -------------------------------
 class MacroN1Select(forms.Select):
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
