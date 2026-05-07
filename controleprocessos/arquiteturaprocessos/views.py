@@ -37,7 +37,7 @@ from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_s
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
-from arquiteturaprocessos.utils.exportacao import csv_exporter, txt_exporter
+from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, xlsx_exporter,)
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
@@ -2299,7 +2299,6 @@ def exportar_modelagemprocessos_csv(request):
         row_builder=row_builder
     )
 
-# Aqui 1
 # ---------------------------------------------------
 # Exportação para Arquivos .TXT
 # ---------------------------------------------------
@@ -2400,6 +2399,113 @@ def exportar_modelagemprocessos_txt(request):
         ]
 
     return txt_exporter(
+        filename='modelagem_processos',
+        headers=headers,
+        queryset=queryset,
+        row_builder=row_builder
+    )
+
+# Aqui 1
+# ---------------------------------------------------
+# Exportação para Arquivo .XLSX
+# ---------------------------------------------------
+def exportar_modelagemprocessos_xlsx(request):
+
+    queryset = ModelagemProcesso.objects.all()
+
+    headers = [
+        'Tipo',
+        'Título',
+        'Tema',
+        'Modelo de Processo',
+        'Norma de Procedimento',
+        'Emitente',
+        'Sistema',
+        'Portaria',
+        'Data Aprovação',
+        'Início Vigência',
+        'Fim Vigência',
+    ]
+
+    def row_builder(obj):
+
+        tipo_nome = (
+            obj.tipo_documento.nome
+            .strip()
+            .lower()
+        )
+
+        if tipo_nome == 'modelo de processo':
+            tipo = 'Modelo de Processo'
+
+        elif tipo_nome == 'norma de procedimento':
+            tipo = 'Norma de Procedimento'
+
+        else:
+            tipo = obj.tipo_documento.nome
+
+        # Sistema
+        if obj.codigo or obj.sistema:
+
+            sistema = (
+                f'{obj.codigo or ""}'
+            )
+
+            if obj.codigo and obj.sistema:
+                sistema += ' - '
+
+            sistema += f'{obj.sistema or ""}'
+
+        else:
+            sistema = '----'
+
+        return [
+            tipo,
+            obj.titulo,
+            obj.tema or '----',
+
+            (
+                unquote(
+                    obj.documento_modelagem_processo.name.split('/')[-1]
+                )
+                if obj.documento_modelagem_processo
+                else '----'
+            ),
+
+            (
+                unquote(
+                    obj.link_normaprocedimento.split('/')[-1]
+                )
+                if obj.link_normaprocedimento
+                else '----'
+            ),
+
+            obj.emitente or '----',
+
+            sistema,
+
+            obj.portaria_aprovacao or '----',
+
+            (
+                obj.data_aprovacao.strftime('%d/%m/%Y')
+                if obj.data_aprovacao
+                else ''
+            ),
+
+            (
+                obj.vigencia_inicio.strftime('%d/%m/%Y')
+                if obj.vigencia_inicio
+                else ''
+            ),
+
+            (
+                obj.vigencia_fim.strftime('%d/%m/%Y')
+                if obj.vigencia_fim
+                else ''
+            ),
+        ]
+
+    return xlsx_exporter(
         filename='modelagem_processos',
         headers=headers,
         queryset=queryset,

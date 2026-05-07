@@ -5,6 +5,8 @@
 import csv
 from datetime import datetime
 from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 
 # ---------------------------------------------------
@@ -112,5 +114,80 @@ def txt_exporter(
         response.write(
             delimiter.join(linha) + '\n'
         )
+
+    return response
+
+# ---------------------------------------------------
+# Exportação para arquivo .XLSX
+# ---------------------------------------------------
+def xlsx_exporter(
+    filename,
+    headers,
+    queryset,
+    row_builder
+):
+    """
+    Exportador XLSX genérico do SIGEMP.
+    """
+
+    nome_arquivo = gerar_nome_arquivo(
+        filename,
+        'xlsx'
+    )
+
+    response = HttpResponse(
+        content_type=(
+            'application/vnd.openxmlformats-officedocument.'
+            'spreadsheetml.sheet'
+        )
+    )
+
+    response['Content-Disposition'] = (
+        f'attachment; filename="{nome_arquivo}"'
+    )
+
+    workbook = Workbook()
+
+    worksheet = workbook.active
+
+    worksheet.title = 'Dados'
+
+    # Cabeçalhos
+    worksheet.append(headers)
+
+    # Negrito no cabeçalho
+    for cell in worksheet[1]:
+        cell.font = Font(bold=True)
+
+    # Dados
+    for obj in queryset:
+
+        worksheet.append(
+            row_builder(obj)
+        )
+
+    # Ajustar largura automática
+    for column_cells in worksheet.columns:
+
+        max_length = 0
+
+        column_letter = column_cells[0].column_letter
+
+        for cell in column_cells:
+
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+
+            except Exception:
+                pass
+
+        adjusted_width = min(max_length + 2, 60)
+
+        worksheet.column_dimensions[
+            column_letter
+        ].width = adjusted_width
+
+    workbook.save(response)
 
     return response
