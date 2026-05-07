@@ -1,0 +1,73 @@
+<div x-data="{ open: false }"
+     class="relative inline-block text-left">
+
+    <!-- BOTÃO -->
+    <button
+        @click="open = !open"
+        @click.away="open = false"
+        class="inline-flex items-center gap-1
+               text-sm font-semibold text-blue-800
+               hover:text-blue-600 transition">
+
+        <span>Exportar</span>
+
+        <!-- SETA -->
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="w-4 h-4 transition-transform duration-200"
+             :class="{ 'rotate-180': open }"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor">
+
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+
+    <!-- MENU -->
+    <div
+        x-show="open"
+        x-transition
+        class="absolute right-0 mt-1
+               bg-white border border-gray-200
+               rounded-lg shadow-lg z-50">
+
+        <div class="flex flex-col items-center py-1">
+
+            <!-- CSV -->
+            <a href="{% url 'arquiteturaprocessos:exportar_modelagemprocessos_csv' %}"
+               title="Exportar para arquivo .CSV"
+               class="p-2 hover:bg-gray-100 rounded transition">
+
+                <i class="fas fa-file-csv text-green-600 text-lg"></i>
+            </a>
+
+            <!-- XLSX -->
+            <a href="#"
+               title="Exportar para arquivo .XLSX"
+               class="p-2 hover:bg-gray-100 rounded transition">
+
+                <i class="fas fa-file-excel text-green-700 text-lg"></i>
+            </a>
+
+            <!-- TXT -->
+            <a href="#"
+               title="Exportar para arquivo .TXT"
+               class="p-2 hover:bg-gray-100 rounded transition">
+
+                <i class="fas fa-file-alt text-gray-500 text-lg"></i>
+            </a>
+
+            <!-- PDF -->
+            <a href="#"
+               title="Exportar para arquivo .PDF"
+               class="p-2 hover:bg-gray-100 rounded transition">
+
+                <i class="fas fa-file-pdf text-red-600 text-lg"></i>
+            </a>
+
+        </div>
+    </div>
+</div>
