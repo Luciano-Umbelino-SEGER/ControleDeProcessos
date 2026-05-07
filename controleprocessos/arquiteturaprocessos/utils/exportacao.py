@@ -3,12 +3,13 @@
 # ============================================================
 
 import csv
-
 from datetime import datetime
-
 from django.http import HttpResponse
 
 
+# ---------------------------------------------------
+# Normalização do Nome dos Arquivos
+# ---------------------------------------------------
 def gerar_nome_arquivo(nome_base, extensao):
     """
     Gera nome padronizado:
@@ -19,7 +20,9 @@ def gerar_nome_arquivo(nome_base, extensao):
 
     return f'{nome_base}_{timestamp}.{extensao}'
 
-
+# ---------------------------------------------------
+# Exportação para arquivo .CSV
+# ---------------------------------------------------
 def csv_exporter(
     filename,
     headers,
@@ -59,6 +62,55 @@ def csv_exporter(
     for obj in queryset:
         writer.writerow(
             row_builder(obj)
+        )
+
+    return response
+
+# ---------------------------------------------------
+# Exportação para Arquivos .TXT
+# ---------------------------------------------------
+def txt_exporter(
+    filename,
+    headers,
+    queryset,
+    row_builder,
+    delimiter=' | '
+):
+    """
+    Exportador TXT genérico do SIGEMP.
+    """
+
+    nome_arquivo = gerar_nome_arquivo(
+        filename,
+        'txt'
+    )
+
+    response = HttpResponse(
+        content_type='text/plain; charset=utf-8'
+    )
+
+    response['Content-Disposition'] = (
+        f'attachment; filename="{nome_arquivo}"'
+    )
+
+    # UTF-8 BOM
+    response.write('\ufeff')
+
+    # Cabeçalhos
+    response.write(
+        delimiter.join(headers) + '\n'
+    )
+
+    # Dados
+    for obj in queryset:
+
+        linha = [
+            str(valor)
+            for valor in row_builder(obj)
+        ]
+
+        response.write(
+            delimiter.join(linha) + '\n'
         )
 
     return response

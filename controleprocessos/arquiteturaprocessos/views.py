@@ -37,7 +37,7 @@ from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_s
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
-from arquiteturaprocessos.utils.exportacao import csv_exporter
+from arquiteturaprocessos.utils.exportacao import csv_exporter, txt_exporter
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
@@ -2198,9 +2198,8 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
         })
         return ctx
 
-# Aqui 1
 # ---------------------------------------------------
-# Exportação de Arquivos
+# Exportação para Arquivos .CSV
 # ---------------------------------------------------
 def exportar_modelagemprocessos_csv(request):
 
@@ -2253,13 +2252,17 @@ def exportar_modelagemprocessos_csv(request):
             obj.tema or '----',
 
             (
-                obj.documento_modelagem_processo.name.split('/')[-1]
+                unquote(
+                    obj.documento_modelagem_processo.name.split('/')[-1]
+                )
                 if obj.documento_modelagem_processo
                 else '----'
             ),
 
             (
-                obj.link_normaprocedimento.split('/')[-1]
+                unquote(
+                    obj.link_normaprocedimento.split('/')[-1]
+                )
                 if obj.link_normaprocedimento
                 else '----'
             ),
@@ -2295,6 +2298,114 @@ def exportar_modelagemprocessos_csv(request):
         queryset=queryset,
         row_builder=row_builder
     )
+
+# Aqui 1
+# ---------------------------------------------------
+# Exportação para Arquivos .TXT
+# ---------------------------------------------------
+def exportar_modelagemprocessos_txt(request):
+
+    queryset = ModelagemProcesso.objects.all()
+
+    headers = [
+        'Tipo',
+        'Título',
+        'Tema',
+        'Modelo de Processo',
+        'Norma de Procedimento',
+        'Emitente',
+        'Sistema',
+        'Portaria',
+        'Data Aprovação',
+        'Início Vigência',
+        'Fim Vigência',
+    ]
+
+    def row_builder(obj):
+
+        tipo_nome = (
+            obj.tipo_documento.nome
+            .strip()
+            .lower()
+        )
+
+        if tipo_nome == 'modelo de processo':
+            tipo = 'Modelo de Processo'
+
+        elif tipo_nome == 'norma de procedimento':
+            tipo = 'Norma de Procedimento'
+
+        else:
+            tipo = obj.tipo_documento.nome
+
+        # Sistema
+        if obj.codigo or obj.sistema:
+
+            sistema = (
+                f'{obj.codigo or ""}'
+            )
+
+            if obj.codigo and obj.sistema:
+                sistema += ' - '
+
+            sistema += f'{obj.sistema or ""}'
+
+        else:
+            sistema = '----'
+
+        return [
+            tipo,
+            obj.titulo,
+            obj.tema or '----',
+
+            (
+                unquote(
+                    obj.documento_modelagem_processo.name.split('/')[-1]
+                )
+                if obj.documento_modelagem_processo
+                else '----'
+            ),
+
+            (
+                unquote(
+                    obj.link_normaprocedimento.split('/')[-1]
+                )
+                if obj.link_normaprocedimento
+                else '----'
+            ),
+
+            obj.emitente or '----',
+
+            sistema,
+
+            obj.portaria_aprovacao or '----',
+
+            (
+                obj.data_aprovacao.strftime('%d/%m/%Y')
+                if obj.data_aprovacao
+                else ''
+            ),
+
+            (
+                obj.vigencia_inicio.strftime('%d/%m/%Y')
+                if obj.vigencia_inicio
+                else ''
+            ),
+
+            (
+                obj.vigencia_fim.strftime('%d/%m/%Y')
+                if obj.vigencia_fim
+                else ''
+            ),
+        ]
+
+    return txt_exporter(
+        filename='modelagem_processos',
+        headers=headers,
+        queryset=queryset,
+        row_builder=row_builder
+    )
+
 # ---------------------------------------------------
 # LISTAGEM MODELAGEM DE PROCESSOS
 # ---------------------------------------------------
@@ -2719,7 +2830,7 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
             queryset = queryset.filter(atualizado_em__lte=fim_do_dia)
 
         return queryset
-# Aqui 1
+
 # -----------------------------------------------------#
 # Importação de - Áreas Responsáveis - Contatos SEGER  #
 # -----------------------------------------------------#
