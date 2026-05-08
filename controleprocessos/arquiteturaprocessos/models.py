@@ -123,7 +123,9 @@ class Classificacao(models.Model):
     def __str__(self):
         return self.nome
 
-
+# ============================================================
+# Macroprocesso Nível 1
+# ============================================================
 class MacroprocessoNivel1(models.Model):
     nome = models.CharField(max_length=200)
     descricao = models.TextField()
@@ -132,7 +134,12 @@ class MacroprocessoNivel1(models.Model):
     def __str__(self):
         return self.nome
 
+    class Meta:
+        ordering = ['nome']
 
+# ============================================================
+# Macroprocesso Nível 2
+# ============================================================
 class MacroprocessoNivel2(models.Model):
     nome = models.CharField(max_length=200)
     descricao = models.TextField()
@@ -193,9 +200,6 @@ def mp_upload_to(instance, filename):
 
     return f"modelagemprocessos/{novo_nome}"
 
-# ============================================================
-# MODELAGEM DE PROCESSO
-# ============================================================
 # ============================================================
 # MODELAGEM DE PROCESSO
 # ============================================================

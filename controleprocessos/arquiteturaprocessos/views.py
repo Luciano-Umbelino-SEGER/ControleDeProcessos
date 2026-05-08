@@ -1837,11 +1837,99 @@ class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
 class MacroProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/macroprocesso.html'
 
+# Aqui 1
+# ---------------------------------------------------
+# LISTAGEM DE MACROPROCESSO NIVEL 1
+# ---------------------------------------------------
 class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
     model = MacroprocessoNivel1
     template_name = 'estrutura/macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
-    queryset = MacroprocessoNivel1.objects.order_by('nome')
+
+    # ---------------------------------------------------
+    # PAGINAÇÃO DINÂMICA
+    # ---------------------------------------------------
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
+
+    # ---------------------------------------------------
+    # QUERYSET + FILTROS + ORDENAÇÃO
+    # ---------------------------------------------------
+    def get_queryset(self):
+
+        req = self.request.GET
+
+        queryset = (
+            MacroprocessoNivel1.objects
+            .select_related('classificacao')
+        )
+
+        # ---------------------------------------------------
+        # FILTROS
+        # ---------------------------------------------------
+        classificacao = req.get("classificacao", "").strip()
+        nome = req.get("nome", "").strip()
+
+        if classificacao:
+            queryset = queryset.filter(
+                classificacao__nome__icontains=classificacao
+            )
+
+        if nome:
+            queryset = queryset.filter(
+                nome__icontains=nome
+            )
+
+        # ---------------------------------------------------
+        # ORDENAÇÃO PADRÃO
+        # ---------------------------------------------------
+        queryset = queryset.order_by(
+            'classificacao__nome',
+            'nome'
+        )
+
+        return queryset
+
+    # ---------------------------------------------------
+    # CONTEXTO
+    # ---------------------------------------------------
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        req = self.request.GET
+
+        # ---------------------------------------------------
+        # MANTER VALORES NOS FILTROS
+        # ---------------------------------------------------
+        context["classificacao_busca"] = req.get("classificacao", "")
+        context["nome_busca"] = req.get("nome", "")
+
+        # ---------------------------------------------------
+        # QUERY STRING PAGINAÇÃO
+        # ---------------------------------------------------
+        query_params = self.request.GET.copy()
+
+        query_params_no_page = query_params.copy()
+
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = query_params_no_page.urlencode()
+
+        context["query_string_full"] = query_params.urlencode()
+
+        # ---------------------------------------------------
+        # TOTAL DE REGISTROS
+        # ---------------------------------------------------
+        context["total_registros"] = context["page_obj"].paginator.count
+
+        return context
 
 class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_macroprocessonivel1.html'
@@ -1955,19 +2043,118 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         messages.success(request, f"Macroprocesso Nível 1 '{macroprocessonivel.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:macroprocessonivel1')
 
+# ---------------------------------------------------
+# LISTAGEM DE MACROPROCESSO NIVEL 2
+# ---------------------------------------------------
 class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
     model = MacroprocessoNivel2
     template_name = 'estrutura/macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
 
+    # ---------------------------------------------------
+    # PAGINAÇÃO DINÂMICA
+    # ---------------------------------------------------
+    def get_paginate_by(self, queryset):
+
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+
+        except (TypeError, ValueError):
+            return 10
+
+    # ---------------------------------------------------
+    # QUERYSET + FILTROS + ORDENAÇÃO
+    # ---------------------------------------------------
     def get_queryset(self):
-        return MacroprocessoNivel2.objects.select_related(
-            'macroprocesso_nivel1', 'macroprocesso_nivel1__classificacao'
-        ).order_by(
-        "macroprocesso_nivel1__classificacao__nome",
-        "macroprocesso_nivel1__nome",
-        "nome"
+
+        req = self.request.GET
+
+        queryset = (
+            MacroprocessoNivel2.objects
+            .select_related(
+                'macroprocesso_nivel1',
+                'macroprocesso_nivel1__classificacao'
+            )
         )
+
+        # ---------------------------------------------------
+        # FILTROS
+        # ---------------------------------------------------
+        classificacao = req.get("classificacao", "").strip()
+
+        macro_n1 = req.get("macro_n1", "").strip()
+
+        nome = req.get("nome", "").strip()
+
+        if classificacao:
+
+            queryset = queryset.filter(
+                macroprocesso_nivel1__classificacao__nome__icontains=classificacao
+            )
+
+        if macro_n1:
+
+            queryset = queryset.filter(
+                macroprocesso_nivel1__nome__icontains=macro_n1
+            )
+
+        if nome:
+
+            queryset = queryset.filter(
+                nome__icontains=nome
+            )
+
+        # ---------------------------------------------------
+        # ORDENAÇÃO
+        # ---------------------------------------------------
+        queryset = queryset.order_by(
+            "macroprocesso_nivel1__classificacao__nome",
+            "macroprocesso_nivel1__nome",
+            "nome"
+        )
+
+        return queryset
+
+    # ---------------------------------------------------
+    # CONTEXTO
+    # ---------------------------------------------------
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        req = self.request.GET
+
+        # ---------------------------------------------------
+        # MANTER FILTROS
+        # ---------------------------------------------------
+        context["classificacao_busca"] = req.get("classificacao", "")
+
+        context["macro_n1_busca"] = req.get("macro_n1", "")
+
+        context["nome_busca"] = req.get("nome", "")
+
+        # ---------------------------------------------------
+        # QUERY STRING PAGINAÇÃO
+        # ---------------------------------------------------
+        query_params = self.request.GET.copy()
+
+        query_params_no_page = query_params.copy()
+
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = query_params_no_page.urlencode()
+
+        context["query_string_full"] = query_params.urlencode()
+
+        # ---------------------------------------------------
+        # TOTAL REGISTROS
+        # ---------------------------------------------------
+        context["total_registros"] = context["page_obj"].paginator.count
+
+        return context
 
 class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_macroprocessonivel2.html'
@@ -2511,7 +2698,6 @@ def exportar_modelagemprocessos_xlsx(request):
         row_builder=row_builder
     )
 
-# Aqui 1
 # ---------------------------------------------------
 # Exportação para Arquivo .PDF
 # ---------------------------------------------------
