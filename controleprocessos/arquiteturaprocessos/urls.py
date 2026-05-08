@@ -14,7 +14,8 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     ExecutarIniciarProcessoMapear, FinalizarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear,
                     EstatisticaComparativos, AreasResponsaveisList, CriarAreasResponsaveis, VisualizarAreasResponsaveis,
                     EditarAreasResponsaveis, ExcluirAreasResponsaveis, ImportarContatosSeger, ReativarAreasResponsaveis,
-                    exportar_modelagemprocessos_csv, exportar_modelagemprocessos_txt, exportar_modelagemprocessos_xlsx)
+                    exportar_modelagemprocessos_csv, exportar_modelagemprocessos_txt, exportar_modelagemprocessos_xlsx,
+                    exportar_modelagemprocessos_pdf)
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 from .utils_views import verificar_similaridade
@@ -103,6 +104,7 @@ urlpatterns = [
     path('modelagemprocessos/exportar/csv/', exportar_modelagemprocessos_csv, name='exportar_modelagemprocessos_csv'),
     path('modelagemprocessos/exportar/txt/', exportar_modelagemprocessos_txt, name='exportar_modelagemprocessos_txt'),
     path('modelagemprocessos/exportar/xlsx/', exportar_modelagemprocessos_xlsx, name='exportar_modelagemprocessos_xlsx'),
+    path('modelagemprocessos/exportar/pdf/', exportar_modelagemprocessos_pdf, name='exportar_modelagemprocessos_pdf'),
     # Áreas Responsáveis
     path('areasresponsaveis/', AreasResponsaveisList.as_view(), name='areasresponsaveis'),
     path('areasresponsaveis/novo/', CriarAreasResponsaveis.as_view(), name='criar_areasresponsaveis'),

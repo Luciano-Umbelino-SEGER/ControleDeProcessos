@@ -7,6 +7,13 @@ from datetime import datetime
 from django.http import HttpResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,)
+from reportlab.platypus.flowables import KeepTogether
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.styles import ParagraphStyle
 
 
 # ---------------------------------------------------
@@ -189,5 +196,165 @@ def xlsx_exporter(
         ].width = adjusted_width
 
     workbook.save(response)
+
+    return response
+
+# ---------------------------------------------------
+# Exportação para arquivo .PDF
+# ---------------------------------------------------
+def pdf_exporter(
+    filename,
+    headers,
+    queryset,
+    row_builder,
+    titulo='Relatório'
+):
+    """
+    Exportador PDF genérico do SIGEMP.
+    """
+
+    nome_arquivo = gerar_nome_arquivo(
+        filename,
+        'pdf'
+    )
+
+    response = HttpResponse(
+        content_type='application/pdf'
+    )
+
+    response['Content-Disposition'] = (
+        f'attachment; filename="{nome_arquivo}"'
+    )
+
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=landscape(A4),
+        leftMargin=5,
+        rightMargin=5,
+        topMargin=20,
+        bottomMargin=20,
+    )
+
+    elementos = []
+
+    styles = getSampleStyleSheet()
+
+    estilo_titulo = ParagraphStyle(
+        name='Titulo',
+        parent=styles['Heading1'],
+        alignment=TA_CENTER,
+        fontSize=16,
+        leading=20,
+        textColor=colors.HexColor('#1e40af'),
+        spaceAfter=20,
+    )
+
+    estilo_celula = ParagraphStyle(
+        name='Celula',
+        parent=styles['BodyText'],
+        fontSize=6,
+        leading=7,
+    )
+
+    estilo_header = ParagraphStyle(
+        name='Header',
+        parent=styles['BodyText'],
+        fontSize=6,
+        leading=7,
+        alignment=TA_CENTER,
+    )
+
+    elementos.append(
+        Paragraph(titulo, estilo_titulo)
+    )
+
+    # Dados da tabela
+    dados = [[
+
+        Paragraph(
+            str(header),
+
+            ParagraphStyle(
+                'header_centralizado',
+                parent=estilo_celula,
+                alignment=TA_CENTER,
+            )
+
+            if index >= 8 else estilo_celula
+
+        )
+
+        for index, header in enumerate(headers)
+
+    ]]
+
+    for obj in queryset:
+        linha = [
+            Paragraph(str(valor), estilo_celula)
+            for valor in row_builder(obj)
+        ]
+
+        dados.append(linha)
+
+    tabela = Table(
+        dados,
+        repeatRows=1,
+        colWidths=[
+            58,  # Tipo
+            90,  # Título
+            72,  # Tema
+            102,  # Modelo Processo
+            102,  # Norma Procedimento
+            82,  # Emitente
+            82,  # Sistema
+            48,  # Portaria
+            46,  # Data Aprovação
+            46,  # Início Vigência
+            46,  # Fim Vigência
+        ]
+    )
+
+    tabela.setStyle(TableStyle([
+
+        # Cabeçalho
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dbeafe')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 6),
+
+        # Corpo
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+
+        # Zebrado linhas
+        ('ROWBACKGROUNDS',
+         (0, 1),
+         (-1, -1),
+         [
+             colors.white,
+             colors.HexColor('#eff6ff')
+         ]),
+
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+
+        # Espaçamento
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+
+        # Alinhamento
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+
+        # Centralizar datas
+        ('ALIGN', (8, 1), (10, -1), 'CENTER'),
+
+        # Quebra linha
+        ('WORDWRAP', (0, 0), (-1, -1), True),
+
+    ]))
+
+    elementos.append(
+        KeepTogether(tabela)
+    )
+
+    doc.build(elementos)
 
     return response
