@@ -42,6 +42,7 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
+    Perfil,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -1533,6 +1534,7 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
 
         return redirect("arquiteturaprocessos:processosmapear")
 
+# Aqui 1
 # ------------------------------
 # Cadastro / Listagem Usuários
 # ------------------------------
@@ -1541,21 +1543,106 @@ class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
     model = Usuario
     context_object_name = 'usuarios'
 
+    # 🔥 PAGINAÇÃO DINÂMICA
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
+
     def get_queryset(self):
-        status = self.request.GET.get("status", "ativos")
 
-        queryset = Usuario.objects.filter(is_master=False)
+        queryset = Usuario.objects.filter(
+            is_master=False
+        )
 
-        if status == "inativos":
-            return queryset.filter(is_active=False).order_by(
-                "perfil__nome",
-                "username"
+        # ------------------------------------------------
+        # FILTRO USUÁRIO
+        # ------------------------------------------------
+        username = self.request.GET.get('username')
+
+        if username:
+            queryset = queryset.filter(
+                username__icontains=username
             )
 
-        return queryset.filter(is_active=True).order_by(
-            "perfil__nome",
-            "username"
+        # ------------------------------------------------
+        # FILTRO NOME
+        # ------------------------------------------------
+        nome = self.request.GET.get('nome')
+
+        if nome:
+            queryset = queryset.filter(
+                first_name__icontains=nome
+            )
+
+        # ------------------------------------------------
+        # FILTRO SETOR
+        # ------------------------------------------------
+        setor = self.request.GET.get('setor')
+
+        if setor:
+            queryset = queryset.filter(
+                setor__nome__icontains=setor
+            )
+
+        # ------------------------------------------------
+        # FILTRO CARGO
+        # ------------------------------------------------
+        cargo = self.request.GET.get('cargo')
+
+        if cargo:
+            queryset = queryset.filter(
+                cargo__icontains=cargo
+            )
+
+        # ------------------------------------------------
+        # FILTRO PERFIL
+        # ------------------------------------------------
+        perfil = self.request.GET.get('perfil')
+
+        if perfil:
+            queryset = queryset.filter(
+                perfil_id=perfil
+            )
+
+        # ------------------------------------------------
+        # FILTRO ESTADO
+        # ------------------------------------------------
+        estado = self.request.GET.get('estado')
+
+        if estado == 'ativo':
+            queryset = queryset.filter(
+                is_active=True
+            )
+
+        elif estado == 'inativo':
+            queryset = queryset.filter(
+                is_active=False
+            )
+
+        # ------------------------------------------------
+        # ORDENAÇÃO
+        # ------------------------------------------------
+        return queryset.order_by(
+            'perfil__nome',
+            'username'
         )
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        perfis = Perfil.objects.order_by('nome')
+
+        for perfil in perfis:
+            perfil.id_str = str(perfil.id)
+
+        context['perfis'] = perfis
+
+        return context
 
 # ----------------------------------------
 # Criar Usuário (com username automático)
@@ -1837,7 +1924,6 @@ class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
 class MacroProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/macroprocesso.html'
 
-# Aqui 1
 # ---------------------------------------------------
 # LISTAGEM DE MACROPROCESSO NIVEL 1
 # ---------------------------------------------------

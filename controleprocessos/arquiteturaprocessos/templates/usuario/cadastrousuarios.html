@@ -4,44 +4,180 @@
 
 {% block body %}
 <div class="py-10 px-4">
-    <h2 class="text-2xl font-bold text-blue-800 mb-6">Cadastro de Usuários</h2>
+    <h2 class="text-2xl font-bold text-blue-800 mb-6">
+        Cadastro de Usuários
+
+        <span class="text-base font-normal text-gray-600">
+            ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }})
+        </span>
+    </h2>
 
     {% if request.user.perfil.nome|lower == 'administrador' %}
-    <div class="flex justify-between items-center mb-4">
-        <!-- Botões de filtro -->
-        <div class="inline-flex rounded-md shadow-sm" role="group">
-            <a href="?status=ativos"
-               class="px-4 py-2 text-sm font-medium border rounded-l
-                      {% if request.GET.status != 'inativos' %}
-                          bg-blue-600 text-white border-blue-600 hover:bg-blue-700
-                      {% else %}
-                          bg-white text-blue-600 border-gray-300 hover:bg-gray-100
-                      {% endif %}">
-                Ativos
-            </a>
-            <a href="?status=inativos"
-               class="px-4 py-2 text-sm font-medium border rounded-r
-                      {% if request.GET.status == 'inativos' %}
-                          bg-blue-600 text-white border-blue-600 hover:bg-blue-700
-                      {% else %}
-                          bg-white text-blue-600 border-gray-300 hover:bg-gray-100
-                      {% endif %}">
-                Inativos
-            </a>
+    <form method="GET" class="mb-0.5">
+        <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
+            <div class="flex items-end gap-4 flex-wrap w-full">
+
+                <!-- ESQUERDA -->
+                <div class="flex flex-wrap items-end gap-3">
+
+                    <!-- Usuário -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                            Usuário
+                        </label>
+
+                        <input type="text"
+                               name="username"
+                               value="{{ request.GET.username }}"
+                               placeholder="Digite usuário..."
+                               class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
+                                      focus:ring-2 focus:ring-blue-500
+                                      text-black placeholder-gray-400">
+                    </div>
+
+                    <!-- Nome -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                            Nome
+                        </label>
+
+                        <input type="text"
+                               name="nome"
+                               value="{{ request.GET.nome }}"
+                               placeholder="Digite nome..."
+                               class="w-52 px-2 py-1.5 border border-gray-300 rounded-md
+                                      focus:ring-2 focus:ring-blue-500
+                                      text-black placeholder-gray-400">
+                    </div>
+
+                    <!-- Setor -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                            Setor
+                        </label>
+
+                        <input type="text"
+                               name="setor"
+                               value="{{ request.GET.setor }}"
+                               placeholder="Digite setor..."
+                               class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
+                                      focus:ring-2 focus:ring-blue-500
+                                      text-black placeholder-gray-400">
+                    </div>
+
+                    <!-- Cargo -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                            Cargo
+                        </label>
+
+                        <input type="text"
+                               name="cargo"
+                               value="{{ request.GET.cargo }}"
+                               placeholder="Digite cargo..."
+                               class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
+                                      focus:ring-2 focus:ring-blue-500
+                                      text-black placeholder-gray-400">
+                    </div>
+
+                    <!-- Perfil -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                            Perfil
+                        </label>
+                        <select
+                            name="perfil"
+                            class="w-44 px-2 py-1.5
+                                   border border-gray-300 rounded-md bg-white
+                                   focus:ring-2 focus:ring-blue-500 text-black">
+
+                            <option value="">
+                                Todos
+                            </option>
+                            {% for perfil in perfis %}
+                                <option value="{{ perfil.id }}"
+                                    {% if request.GET.perfil == perfil.id_str %}
+                                        selected
+                                    {% endif %}>
+                                    {{ perfil.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                            Estado
+                        </label>
+                        <select
+                            name="estado"
+                            class="w-32 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                                   focus:ring-2 focus:ring-blue-500 text-black">
+
+                            <option value="">
+                                Todos
+                            </option>
+                            <option value="ativo"
+                                {% if request.GET.estado == 'ativo' %}
+                                    selected
+                                {% endif %}>
+                                Ativos
+                            </option>
+                            <option value="inativo"
+                                {% if request.GET.estado == 'inativo' %}
+                                    selected
+                                {% endif %}>
+                                Inativos
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- REGISTROS/PÁGINA -->
+                      <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-blue-800 mb-0.5">Registros/Página</label>
+                        <select name="page_size"
+                                class="w-24 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 text-black">
+                          <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
+                          <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
+                          <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
+                          <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
+                        </select>
+                      </div>
+                </div>
+
+                <!-- DIREITA -->
+                <div class="flex items-end gap-3 ml-auto">
+
+                    <button type="submit"
+                            class="px-3 py-1.5 bg-blue-600 text-white rounded-md
+                                   hover:bg-blue-700 transition">
+                        Filtrar
+                    </button>
+
+                    <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
+                       class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+                      Limpar
+                    </a>
+
+                    <a href="{% url 'arquiteturaprocessos:criar_usuario' %}"
+                       class="inline-flex items-center px-3 py-1.5
+                              bg-blue-600 text-white rounded-md
+                              hover:bg-blue-700 transition">
+                        + Novo
+                    </a>
+                </div>
+
+            </div>
+
         </div>
 
-        <!-- Botão Novo -->
-        <a href="{% url 'arquiteturaprocessos:criar_usuario' %}"
-           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                      d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                      clip-rule="evenodd"/>
-            </svg>
-            Novo Usuário
-        </a>
-    </div>
+    </form>
+
     {% endif %}
+    <div class="flex justify-end mb-0.5">
+        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
+    </div>
 
     <div class="overflow-x-auto">
         <table class="table-listagem min-w-full bg-white border border-gray-200 rounded-lg shadow">
@@ -49,12 +185,13 @@
             <tr>
                 <th class="py-3 px-2 text-left w-[12%]">Usuário</th>
                 <th class="py-3 px-3 text-left w-[18%]">Nome</th>
-                <th class="py-3 px-2 text-left w-[8%]">Setor</th>
-                <th class="py-3 px-2 text-left w-[8%]">Cargo</th>
-                <th class="py-3 px-2 text-left w-[10%]">Perfil</th>
-                <th class="py-3 px-3 text-left w-[18%]">Telefone</th>
+                <th class="py-3 px-2 text-left w-[14%]">Setor</th>
+                <th class="py-3 px-2 text-left w-[14%]">Cargo</th>
+                <th class="py-3 px-2 text-left w-[6%]">Perfil</th>
+                <th class="py-3 px-2 text-center w-[4%]">Estado</th>
+                <th class="py-3 px-3 text-left w-[14%]">Telefone</th>
                 <th class="py-3 px-3 text-left w-[20%]">E-mail</th>
-                <th class="py-3 px-2 text-right w-[6%]">Ações</th>
+                <th class="py-3 px-2 text-center w-[8%]">Ações</th>
             </tr>
             </thead>
             <tbody>
@@ -65,6 +202,22 @@
                 <td class="py-3 px-2">{{ usuario.setor }}</td>
                 <td class="py-3 px-2">{{ usuario.cargo }}</td>
                 <td class="py-3 px-2">{{ usuario.perfil.nome }}</td>
+                <td class="py-3 px-2 text-center">
+                    {% if usuario.is_active %}
+                        <span class="inline-flex items-center justify-center
+                                     px-2 py-1 text-[10px] font-bold rounded
+                                     bg-green-100 text-green-700">
+                            Ativo
+                        </span>
+                    {% else %}-
+                        <span class="inline-flex items-center justify-center
+                                     px-2 py-1 text-[10px] font-bold rounded
+                                     bg-red-100 text-red-700">
+
+                            Inativo
+                        </span>
+                    {% endif %}
+                </td>
                 <td class="py-3 px-3">
                   <div class="flex flex-col gap-0.5">
                     {% for tel in usuario.telefones.all %}
@@ -75,43 +228,45 @@
                   </div>
                 </td>
                 <td class="py-3 px-3">{{ usuario.email }}</td>
-                <td class="py-3 px-2 text-right space-x-2">
-                    <!-- Ícone Visualizar -->
-                    <a href="{% url 'arquiteturaprocessos:visualizar_usuario' usuario.pk %}"
-                       class="text-blue-600 hover:text-blue-800" title="Visualizar">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                    </a>
+                <td class="py-3 px-2">
+                    <div class="flex items-center justify-center gap-2 whitespace-nowrap">
+                        <!-- Ícone Visualizar -->
+                        <a href="{% url 'arquiteturaprocessos:visualizar_usuario' usuario.pk %}"
+                           class="text-blue-600 hover:text-blue-800" title="Visualizar">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </a>
 
-                    {% if request.user.perfil.nome|lower == 'administrador' %}
-                    <!-- Ícone Editar -->
-                    <a href="{% url 'arquiteturaprocessos:editar_usuario' usuario.pk %}"
-                       class="text-yellow-600 hover:text-yellow-800" title="Editar">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                             class="h-5 w-5 inline text-yellow-600 hover:text-yellow-800">
-                            <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                            <path fill-rule="evenodd"
-                                  d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
-                                  clip-rule="evenodd"/>
-                        </svg>
-                    </a>
-                        {% if usuario.is_active %}
-                            <!-- Ícone Excluir -->
-                            <a href="{% url 'arquiteturaprocessos:excluir_usuario' usuario.pk %}"
-                               class="text-red-600 hover:text-red-800" title="Excluir">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline text-red-600 hover:text-red-800"
-                                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
-                                </svg>
-                            </a>
+                        {% if request.user.perfil.nome|lower == 'administrador' %}
+                        <!-- Ícone Editar -->
+                        <a href="{% url 'arquiteturaprocessos:editar_usuario' usuario.pk %}"
+                           class="text-yellow-600 hover:text-yellow-800" title="Editar">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                 class="h-5 w-5 inline text-yellow-600 hover:text-yellow-800">
+                                <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+                                <path fill-rule="evenodd"
+                                      d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                      clip-rule="evenodd"/>
+                            </svg>
+                        </a>
+                            {% if usuario.is_active %}
+                                <!-- Ícone Excluir -->
+                                <a href="{% url 'arquiteturaprocessos:excluir_usuario' usuario.pk %}"
+                                   class="text-red-600 hover:text-red-800" title="Excluir">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline text-red-600 hover:text-red-800"
+                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                                    </svg>
+                                </a>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
+                    </div>
                 </td>
             </tr>
             {% empty %}
@@ -121,6 +276,25 @@
             {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
+        <div>
+            Página 1 de 1
+        </div>
+        <div class="flex space-x-2">
+            <span class="px-3 py-1 border rounded text-gray-400">
+                « Primeira
+            </span>
+            <span class="px-3 py-1 border rounded text-gray-400">
+                ‹ Anterior
+            </span>
+            <span class="px-3 py-1 border rounded text-gray-400">
+                Próxima ›
+            </span>
+            <span class="px-3 py-1 border rounded text-gray-400">
+                Última »
+            </span>
+        </div>
     </div>
 </div>
 {% endblock %}
