@@ -3,7 +3,8 @@
 {% include 'navbar.html' %}
 
 {% block body %}
-<div class="py-10 px-4">
+<div class="py-10 px-2 flex justify-center">
+  <div class="w-full max-w-[98%]">
     <h2 class="text-2xl font-bold text-blue-800 mb-6">
         Cadastro de Usuários
 
@@ -209,11 +210,10 @@
                                      bg-green-100 text-green-700">
                             Ativo
                         </span>
-                    {% else %}-
+                    {% else %}
                         <span class="inline-flex items-center justify-center
                                      px-2 py-1 text-[10px] font-bold rounded
                                      bg-red-100 text-red-700">
-
                             Inativo
                         </span>
                     {% endif %}
@@ -271,30 +271,36 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="py-4 px-4 text-center text-gray-500">Nenhum usuário encontrado.</td>
+                <td colspan="9" class="py-4 px-4 text-center text-gray-500">Nenhum usuário encontrado.</td>
             </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
+
     <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
-        <div>
-            Página 1 de 1
-        </div>
-        <div class="flex space-x-2">
-            <span class="px-3 py-1 border rounded text-gray-400">
-                « Primeira
-            </span>
-            <span class="px-3 py-1 border rounded text-gray-400">
-                ‹ Anterior
-            </span>
-            <span class="px-3 py-1 border rounded text-gray-400">
-                Próxima ›
-            </span>
-            <span class="px-3 py-1 border rounded text-gray-400">
-                Última »
-            </span>
-        </div>
+
+      <div>
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </div>
+
+      {% if page_obj.has_previous or page_obj.has_next %}
+          <div class="flex space-x-2">
+
+            {% if page_obj.has_previous %}
+              <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+
+              <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+
+              <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+            {% endif %}
+          </div>
+      {% endif %}
     </div>
+  </div>
 </div>
 {% endblock %}
