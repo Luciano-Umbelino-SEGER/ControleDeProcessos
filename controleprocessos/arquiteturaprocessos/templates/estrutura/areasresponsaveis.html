@@ -14,8 +14,7 @@
     </h2>
 
     {% if request.user.perfil.nome|lower == 'administrador' %}
-    <form method="GET" class="mb-4">
-
+    <form method="GET" class="mb-0.5">
       <div class="filtro-container filtro-compacto">
         <div class="filtro-wrapper">
 
@@ -101,8 +100,9 @@
               <input name="atualizado_de"
                      type="text"
                      placeholder="dd/mm/aaaa"
-                     onfocus="this.type='date'"
-                     class="filtro-input w-[120px]"
+                     onfocus="this.type='date'; this.classList.remove('text-gray-400'); this.classList.add('text-black');"
+                     onblur="if(!this.value){ this.type='text'; this.classList.remove('text-black'); this.classList.add('text-gray-400'); }"
+                     class="filtro-input w-[120px] text-gray-400"
                      value="{{ request.GET.atualizado_de }}">
             </div>
 
@@ -112,8 +112,9 @@
               <input name="atualizado_ate"
                      type="text"
                      placeholder="dd/mm/aaaa"
-                     onfocus="this.type='date'"
-                     class="filtro-input w-[120px]"
+                     onfocus="this.type='date'; this.classList.remove('text-gray-400'); this.classList.add('text-black');"
+                     onblur="if(!this.value){ this.type='text'; this.classList.remove('text-black'); this.classList.add('text-gray-400'); }"
+                     class="filtro-input w-[120px] text-gray-400"
                      value="{{ request.GET.atualizado_ate }}">
             </div>
 
@@ -172,6 +173,10 @@
     </form>
     {% endif %}
 
+    <div class="flex justify-end mb-0.5">
+        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
+    </div>
+
     <!-- 🔥 TABELA -->
     <div class="overflow-x-auto">
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
@@ -217,11 +222,11 @@
 
             <td class="py-3 px-2">
               {% if area.ativo %}
-                <span class="px-3 py-1 text-sm font-semibold bg-green-100 text-green-700 rounded">
+                <span class="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 rounded">
                   Ativo
                 </span>
               {% else %}
-                <span class="px-3 py-1 text-sm font-semibold bg-red-100 text-red-700 rounded">
+                <span class="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700 rounded">
                   Inativo
                 </span>
               {% endif %}
@@ -237,7 +242,7 @@
 
             <!-- AÇÕES -->
             <td class="py-3 px-2 text-center">
-              <div class="flex justify-center space-x-1.5">
+              <div class="flex justify-center items-center space-x-1.5">
 
                 <a href="{% url 'arquiteturaprocessos:visualizar_areasresponsaveis' area.pk %}"
                     class="text-blue-600 hover:text-blue-800" title="Visualizar">
@@ -293,7 +298,7 @@
 
         {% empty %}
           <tr>
-            <td colspan="8" class="py-4 text-center text-gray-500">
+            <td colspan="9" class="py-4 text-center text-gray-500">
               Nenhuma Área Responsável cadastrada.
             </td>
           </tr>
@@ -309,19 +314,22 @@
         Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
       </div>
 
-      <div class="flex space-x-2">
+      {% if page_obj.has_previous or page_obj.has_next %}
+        <div class="flex space-x-2">
 
-        {% if page_obj.has_previous %}
-          <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
-          <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
-        {% endif %}
+          {% if page_obj.has_previous %}
+            <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">« Primeira</a>
+            <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">‹ Anterior</a>
+          {% endif %}
 
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
-          <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
-        {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Próxima ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Última »</a>
+          {% endif %}
 
-      </div>
+        </div>
+      {% endif %}
+
     </div>
 
   </div>

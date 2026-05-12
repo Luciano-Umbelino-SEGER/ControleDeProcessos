@@ -174,8 +174,8 @@
         </div>
 
     </form>
-
     {% endif %}
+
     <div class="flex justify-end mb-0.5">
         {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
     </div>
@@ -288,15 +288,15 @@
           <div class="flex space-x-2">
 
             {% if page_obj.has_previous %}
-              <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+              <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">« Primeira</a>
 
-              <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
+              <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">‹ Anterior</a>
             {% endif %}
 
             {% if page_obj.has_next %}
-              <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+              <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Próxima ›</a>
 
-              <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
+              <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Última »</a>
             {% endif %}
           </div>
       {% endif %}

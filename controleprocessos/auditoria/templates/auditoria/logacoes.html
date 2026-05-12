@@ -109,14 +109,13 @@
       </div>
     </form>
 
+    <!-- BARRA EXPORTAÇÃO -->
+    <div class="flex justify-end mb-0.5">
+        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
+    </div>
+
     <!-- TABELA -->
     <div class="overflow-x-auto">
-
-      <!-- BARRA EXPORTAÇÃO -->
-      <div class="flex justify-end mb-0.5">
-          {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
-      </div>
-
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
 
         <!-- HEADER -->
