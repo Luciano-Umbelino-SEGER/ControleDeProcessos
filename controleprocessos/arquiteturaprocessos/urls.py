@@ -19,6 +19,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
 from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
                         macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
 from .utils_views import verificar_similaridade
+from .exports.views import (exportar_generico,)
 
 from django.contrib.auth import views as auth_views
 from django.conf import settings
@@ -101,6 +102,7 @@ urlpatterns = [
     path('modelagemprocesso/<int:pk>/editar/', EditarModelagemProcesso.as_view(), name='editar_modelagemprocesso'),
     path('modelagemprocesso/<int:pk>/excluir/', ExcluirModelagemProcesso.as_view(), name='excluir_modelagemprocesso'),
     # Exportação de Arquivos
+    path('exportar/<str:resource>/<str:formato>/', exportar_generico, name='exportar_generico'),
     path('modelagemprocessos/exportar/csv/', exportar_modelagemprocessos_csv, name='exportar_modelagemprocessos_csv'),
     path('modelagemprocessos/exportar/txt/', exportar_modelagemprocessos_txt, name='exportar_modelagemprocessos_txt'),
     path('modelagemprocessos/exportar/xlsx/', exportar_modelagemprocessos_xlsx, name='exportar_modelagemprocessos_xlsx'),

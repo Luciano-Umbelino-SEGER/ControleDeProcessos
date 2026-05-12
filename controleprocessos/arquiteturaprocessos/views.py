@@ -1534,7 +1534,6 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
 
         return redirect("arquiteturaprocessos:processosmapear")
 
-# Aqui 1
 # ------------------------------
 # Cadastro / Listagem Usuários
 # ------------------------------
