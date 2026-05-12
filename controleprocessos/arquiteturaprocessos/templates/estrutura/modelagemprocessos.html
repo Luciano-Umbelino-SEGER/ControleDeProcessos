@@ -324,21 +324,23 @@
         Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
       </div>
 
-      <div class="flex space-x-2">
+      {% if page_obj.has_previous or page_obj.has_next %}
+        <div class="flex space-x-2">
 
-        {% if page_obj.has_previous %}
-          <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">« Primeira</a>
+          {% if page_obj.has_previous %}
+            <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">« Primeira</a>
 
-          <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">‹ Anterior</a>
-        {% endif %}
+            <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">‹ Anterior</a>
+          {% endif %}
 
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Próxima ›</a>
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Próxima ›</a>
 
-          <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100">Última »</a>
-        {% endif %}
+            <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Última »</a>
+          {% endif %}
 
-      </div>
+        </div>
+      {% endif %}
     </div>
   </div>
 </div>
