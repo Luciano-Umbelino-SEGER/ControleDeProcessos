@@ -4,7 +4,7 @@
 
 from urllib.parse import unquote
 
-from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger,)
+from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger, Usuario,)
 from arquiteturaprocessos.exports.registry import (register_export,)
 
 # -----------------------------------------------------#
@@ -267,6 +267,88 @@ class AreasResponsaveisExportConfig:
             ),
         ]
 
+# -----------------------------------------------------#
+# Exportação da Listagem Usuários                      #
+# -----------------------------------------------------#
+class UsuariosExportConfig:
+
+    filename = 'usuarios'
+
+    titulo_pdf = 'Cadastro de Usuários'
+
+    headers = [
+        'Usuário',
+        'Nome',
+        'Setor',
+        'Cargo',
+        'Perfil',
+        'Estado',
+        'Telefone',
+        'E-mail',
+    ]
+
+    pdf_col_widths = [
+        75,   # Usuário
+        120,  # Nome
+        110,  # Setor
+        105,  # Cargo
+        65,   # Perfil
+        45,   # Estado
+        95,   # Telefone
+        150,  # E-mail
+    ]
+
+    def get_queryset(self, request):
+
+        return (
+            Usuario.objects
+            .select_related('perfil')
+            .prefetch_related('telefones')
+            .all()
+            .order_by('username')
+        )
+
+    def row_builder(self, obj):
+
+        telefones = ' | '.join(
+            telefone.numero_formatado
+            for telefone in obj.telefones.all()
+        )
+
+        return [
+
+            obj.username or '----',
+
+            (
+                f'{obj.first_name} {obj.last_name}'.strip()
+                or '----'
+            ),
+
+            obj.setor or '----',
+
+            obj.cargo or '----',
+
+            (
+                obj.perfil.nome
+                if obj.perfil
+                else '----'
+            ),
+
+            (
+                'Ativo'
+                if obj.is_active
+                else 'Inativo'
+            ),
+
+            (
+                telefones
+                if telefones
+                else '----'
+            ),
+
+            obj.email or '----',
+        ]
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
@@ -278,4 +360,9 @@ register_export(
 register_export(
     key='areasresponsaveis',
     config=AreasResponsaveisExportConfig(),
+)
+
+register_export(
+    key='usuarios',
+    config=UsuariosExportConfig(),
 )

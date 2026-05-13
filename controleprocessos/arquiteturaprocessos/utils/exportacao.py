@@ -290,7 +290,10 @@ def pdf_exporter(
 
     for obj in queryset:
         linha = [
-            Paragraph(str(valor), estilo_celula)
+            Paragraph(
+                str(valor).replace('|', '<br/>'),
+                estilo_celula
+            )
             for valor in row_builder(obj)
         ]
 
