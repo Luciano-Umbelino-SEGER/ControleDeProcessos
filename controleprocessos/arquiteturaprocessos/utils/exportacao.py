@@ -11,7 +11,6 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,)
-from reportlab.platypus.flowables import KeepTogether
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
 
@@ -207,7 +206,8 @@ def pdf_exporter(
     headers,
     queryset,
     row_builder,
-    titulo='Relatório'
+    titulo='Relatório',
+    col_widths=None,
 ):
     """
     Exportador PDF genérico do SIGEMP.
@@ -299,19 +299,7 @@ def pdf_exporter(
     tabela = Table(
         dados,
         repeatRows=1,
-        colWidths=[
-            58,  # Tipo
-            90,  # Título
-            72,  # Tema
-            102,  # Modelo Processo
-            102,  # Norma Procedimento
-            82,  # Emitente
-            82,  # Sistema
-            48,  # Portaria
-            46,  # Data Aprovação
-            46,  # Início Vigência
-            46,  # Fim Vigência
-        ]
+        colWidths=col_widths,
     )
 
     tabela.setStyle(TableStyle([
@@ -351,9 +339,7 @@ def pdf_exporter(
 
     ]))
 
-    elementos.append(
-        KeepTogether(tabela)
-    )
+    elementos.append(tabela)
 
     doc.build(elementos)
 

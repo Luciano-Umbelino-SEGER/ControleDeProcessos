@@ -4,14 +4,31 @@
 
 from urllib.parse import unquote
 
-from arquiteturaprocessos.models import (ModelagemProcesso,)
+from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger,)
 from arquiteturaprocessos.exports.registry import (register_export,)
 
+# -----------------------------------------------------#
+# Exportação da Listagem de Modelagem de Processos     #
+# -----------------------------------------------------#
 class ModelagemProcessosExportConfig:
 
     filename = 'modelagem_processos'
 
     titulo_pdf = 'Modelagem de Processos'
+
+    pdf_col_widths = [
+        58,  # Tipo
+        90,  # Título
+        72,  # Tema
+        102,  # Modelo Processo
+        102,  # Norma Procedimento
+        82,  # Emitente
+        82,  # Sistema
+        48,  # Portaria
+        46,  # Data Aprovação
+        46,  # Início Vigência
+        46,  # Fim Vigência
+    ]
 
     headers = [
         'Tipo',
@@ -114,10 +131,151 @@ class ModelagemProcessosExportConfig:
             ),
         ]
 
+# -----------------------------------------------------#
+# Exportação da Listagem de Áreas Responsáveis         #
+# -----------------------------------------------------#
+class AreasResponsaveisExportConfig:
+
+    filename = 'areas_responsaveis'
+
+    titulo_pdf = 'Áreas Responsáveis'
+
+    pdf_col_widths = [
+
+        140,  # Área
+        130,  # Titular
+        155,  # E-mail
+        95,  # Telefone/Ramal
+        65,  # Origem
+        42,  # Estado
+        67,  # Criado
+        67,  # Atualizado
+    ]
+
+    headers = [
+        'Área',
+        'Titular',
+        'E-mail',
+        'Telefone/Ramal',
+        'Origem',
+        'Estado',
+        'Criado',
+        'Atualizado',
+    ]
+
+    def get_queryset(self, request):
+
+        queryset = (
+            ContatoAreaSeger.objects
+            .all()
+            .order_by('nome_area')
+        )
+
+        # ===== FILTROS =====
+        nome_area = request.GET.get(
+            "nome_area",
+            ""
+        ).strip()
+
+        titular = request.GET.get(
+            "titular",
+            ""
+        ).strip()
+
+        email = request.GET.get(
+            "email",
+            ""
+        ).strip()
+
+        ativo = request.GET.get(
+            "ativo",
+            ""
+        ).strip()
+
+        origem = request.GET.get(
+            "origem",
+            ""
+        ).strip()
+
+        # 🔍 FILTROS
+        if nome_area:
+
+            queryset = queryset.filter(
+                nome_area__icontains=nome_area
+            )
+
+        if titular:
+
+            queryset = queryset.filter(
+                titular__icontains=titular
+            )
+
+        if email:
+
+            queryset = queryset.filter(
+                email__icontains=email
+            )
+
+        if ativo in ["True", "False"]:
+
+            queryset = queryset.filter(
+                ativo=(ativo == "True")
+            )
+
+        if origem:
+
+            queryset = queryset.filter(
+                origem=origem
+            )
+
+        return queryset
+
+    def row_builder(self, obj):
+
+        return [
+            obj.nome_area,
+
+            obj.titular or '----',
+
+            obj.email or '----',
+
+            (
+                obj.telefone
+                .replace('|', '<br/>')
+                if obj.telefone
+                else '----'
+            ),
+
+            obj.get_origem_display(),
+
+            'Ativo' if obj.ativo else 'Inativo',
+
+            (
+                obj.criado_em.strftime(
+                    '%d/%m/%Y %H:%M'
+                )
+                if obj.criado_em
+                else '----'
+            ),
+
+            (
+                obj.atualizado_em.strftime(
+                    '%d/%m/%Y %H:%M'
+                )
+                if obj.atualizado_em
+                else '----'
+            ),
+        ]
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
 register_export(
     key='modelagemprocessos',
     config=ModelagemProcessosExportConfig(),
+)
+
+register_export(
+    key='areasresponsaveis',
+    config=AreasResponsaveisExportConfig(),
 )

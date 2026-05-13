@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_filters %}
+{% load form_tags %}
 
 {% block body %}
 <div class="py-10 px-2 flex justify-center">
@@ -173,8 +174,8 @@
     </form>
     {% endif %}
 
-    <div class="flex justify-end mb-0.5">
-        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
+     <div class="flex justify-end mb-0.5">
+        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='areasresponsaveis' %}
     </div>
 
     <!-- 🔥 TABELA -->
@@ -213,7 +214,7 @@
             </td>
 
             <td class="py-3 px-2">
-              {{ area.telefone|default:"—" }}
+              {{ area.telefone|quebra_telefone }}
             </td>
 
             <td class="py-3 px-2">

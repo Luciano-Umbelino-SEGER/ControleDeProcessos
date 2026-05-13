@@ -59,3 +59,16 @@ def add_attr(field, attr):
     attrs[key] = value
 
     return field.as_widget(attrs=attrs)
+
+@register.filter
+def quebra_telefone(valor):
+    """
+    Quebra telefones separados por pipe em múltiplas linhas.
+    """
+
+    if not valor:
+        return '—'
+
+    return mark_safe(
+        valor.replace('|', '<br>')
+    )

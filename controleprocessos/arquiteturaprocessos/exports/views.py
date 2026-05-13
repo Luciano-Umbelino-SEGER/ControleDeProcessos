@@ -51,9 +51,8 @@ def exportar_generico(
         'row_builder': config.row_builder,
     }
 
-    # PDF possui parâmetro extra
+    # PDF possui parâmetros extras
     if formato == 'pdf':
-
         export_kwargs['titulo'] = (
             getattr(
                 config,
@@ -61,5 +60,15 @@ def exportar_generico(
                 config.filename
             )
         )
+
+        export_kwargs['col_widths'] = (
+            getattr(
+                config,
+                'pdf_col_widths',
+                None
+            )
+        )
+
+    return exporter(**export_kwargs)
 
     return exporter(**export_kwargs)

@@ -38,7 +38,7 @@
 
             <!-- CSV -->
             {% if exportacao_habilitada != False %}
-                <a href="{% url 'arquiteturaprocessos:exportar_modelagemprocessos_csv' %}"
+                <a href="{% url 'arquiteturaprocessos:exportar_generico' resource=export_resource formato='csv' %}"
                    title="Exportar para arquivo .CSV"
                    class="p-2 hover:bg-gray-100 rounded transition">
 
@@ -56,7 +56,7 @@
 
             <!-- XLSX -->
             {% if exportacao_habilitada != False %}
-                <a href="{% url 'arquiteturaprocessos:exportar_modelagemprocessos_xlsx' %}"
+                <a href="{% url 'arquiteturaprocessos:exportar_generico' resource=export_resource formato='xlsx' %}"
                    title="Exportar para arquivo .XLSX"
                    class="p-2 hover:bg-gray-100 rounded transition">
 
@@ -74,7 +74,7 @@
 
             <!-- TXT -->
             {% if exportacao_habilitada != False %}
-                <a href="{% url 'arquiteturaprocessos:exportar_modelagemprocessos_txt' %}"
+                <a href="{% url 'arquiteturaprocessos:exportar_generico' resource=export_resource formato='txt' %}"
                    title="Exportar para arquivo .TXT"
                    class="p-2 hover:bg-gray-100 rounded transition">
 
@@ -92,7 +92,7 @@
 
             <!-- PDF -->
             {% if exportacao_habilitada != False %}
-                <a href="{% url 'arquiteturaprocessos:exportar_modelagemprocessos_pdf' %}"
+                <a href="{% url 'arquiteturaprocessos:exportar_generico' resource=export_resource formato='pdf' %}"
                    title="Exportar para arquivo .PDF"
                    class="p-2 hover:bg-gray-100 rounded transition">
 
