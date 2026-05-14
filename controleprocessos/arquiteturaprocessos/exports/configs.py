@@ -5,6 +5,7 @@
 from urllib.parse import unquote
 
 from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger, Usuario,)
+from auditoria.models import LogAcaoSistema
 from arquiteturaprocessos.exports.registry import (register_export,)
 
 # -----------------------------------------------------#
@@ -349,6 +350,136 @@ class UsuariosExportConfig:
             obj.email or '----',
         ]
 
+# -----------------------------------------------------#
+# Exportação da Listagem de Log de Ações               #
+# -----------------------------------------------------#
+class LogAcoesExportConfig:
+
+    filename = 'log_acoes'
+
+    titulo_pdf = 'Log de Ações'
+
+    headers = [
+        'Data/Hora',
+        'Usuário',
+        'Perfil',
+        'Ação',
+        'Modelo',
+        'Descrição',
+    ]
+
+    pdf_col_widths = [
+        78,   # Data/Hora
+        95,   # Usuário
+        60,   # Perfil
+        55,   # Ação
+        90,   # Modelo
+        300,  # Descrição
+    ]
+
+    def get_queryset(self, request):
+
+        queryset = (
+            LogAcaoSistema.objects
+            .select_related(
+                'usuario',
+                'usuario__perfil',
+            )
+            .order_by('-data_registro')
+        )
+
+        # FILTROS
+        usuario = request.GET.get('usuario')
+        perfil = request.GET.get('perfil')
+        acao = request.GET.get('acao')
+        modelo = request.GET.get('modelo')
+        data_inicio = request.GET.get('data_inicio')
+        data_fim = request.GET.get('data_fim')
+
+        from django.db.models import Q, Value
+        from django.db.models.functions import Concat
+
+        if usuario:
+
+            queryset = queryset.annotate(
+                nome_completo=Concat(
+                    'usuario__first_name',
+                    Value(' '),
+                    'usuario__last_name',
+                )
+            ).filter(
+                Q(usuario__username__icontains=usuario)
+                |
+                Q(nome_completo__icontains=usuario)
+            )
+
+        if perfil:
+
+            queryset = queryset.filter(
+                usuario__perfil__nome__icontains=perfil
+            )
+
+        if acao:
+
+            queryset = queryset.filter(
+                acao=acao
+            )
+
+        if modelo:
+
+            queryset = queryset.filter(
+                modelo_afetado__icontains=modelo
+            )
+
+        if data_inicio:
+
+            queryset = queryset.filter(
+                data_registro__date__gte=data_inicio
+            )
+
+        if data_fim:
+
+            queryset = queryset.filter(
+                data_registro__date__lte=data_fim
+            )
+
+        return queryset
+
+    def row_builder(self, obj):
+
+        return [
+
+            (
+                obj.data_registro.strftime(
+                    '%d/%m/%Y %H:%M:%S'
+                )
+                if obj.data_registro
+                else '----'
+            ),
+
+            (
+                obj.usuario.get_full_name()
+                or obj.usuario.username
+            )
+            if obj.usuario
+            else 'Sistema',
+
+            (
+                obj.usuario.perfil.nome
+                if (
+                    obj.usuario
+                    and obj.usuario.perfil
+                )
+                else '----'
+            ),
+
+            obj.acao or '----',
+
+            obj.modelo_afetado or '----',
+
+            obj.descricao or '----',
+        ]
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
@@ -365,4 +496,9 @@ register_export(
 register_export(
     key='usuarios',
     config=UsuariosExportConfig(),
+)
+
+register_export(
+    key='logacoes',
+    config=LogAcoesExportConfig(),
 )
