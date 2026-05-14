@@ -43,12 +43,34 @@ def exportar_generico(
     # Queryset
     queryset = config.get_queryset(request)
 
+    # =====================================================
+    # BUILD DAS LINHAS
+    # Compatível com:
+    # - row_builder()
+    # - build_rows()
+    # =====================================================
+
+    if hasattr(config, 'build_rows'):
+
+        rows = []
+
+        for obj in queryset:
+            rows.extend(
+                config.build_rows(obj)
+            )
+
+    else:
+
+        rows = [
+            config.row_builder(obj)
+            for obj in queryset
+        ]
+
     # Parâmetros base
     export_kwargs = {
         'filename': config.filename,
         'headers': config.headers,
-        'queryset': queryset,
-        'row_builder': config.row_builder,
+        'rows': rows,
     }
 
     # PDF possui parâmetros extras
@@ -69,6 +91,12 @@ def exportar_generico(
             )
         )
 
-    return exporter(**export_kwargs)
+        export_kwargs['center_columns'] = (
+            getattr(
+                config,
+                'pdf_center_columns',
+                []
+            )
+        )
 
     return exporter(**export_kwargs)
