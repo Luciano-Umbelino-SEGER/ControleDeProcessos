@@ -348,7 +348,7 @@ def pdf_exporter(
                 alignment=TA_CENTER,
             )
 
-            if index >= 8 else estilo_celula
+            if index in center_columns else estilo_celula
 
         )
 

@@ -962,6 +962,323 @@ class ProcessosMapearExportConfig:
             ),
         ]
 
+# -----------------------------------------------------#
+# Exportação Processos                                 #
+# -----------------------------------------------------#
+class ProcessosExportConfig:
+
+    filename = 'processos'
+
+    titulo_pdf = 'Processos'
+
+    headers = [
+        'Processo / Subprocesso',
+        'Versão',
+        'Estado',
+        'Classificação',
+        'Macro N1',
+        'Macro N2',
+        'Área',
+        'Gestor',
+        'Criação',
+        'Conclusão',
+    ]
+
+    pdf_col_widths = [
+
+        138,  # Processo/Subprocesso
+        38,  # Versão
+        50,  # Estado
+        62,  # Classificação
+        100,  # Macro N1
+        100,  # Macro N2
+        78,  # Área
+        84,  # Gestor
+        48,  # Criação
+        48,  # Conclusão
+    ]
+
+    pdf_center_columns = [1, 2, 8, 9]
+
+    # -------------------------------------------------
+    # Queryset
+    # -------------------------------------------------
+    def get_queryset(self, request):
+
+        req = request.GET
+
+        nome = req.get("nome", "").strip()
+        classificacao = req.get("classificacao", "").strip()
+        macro1 = req.get("macro1", "").strip()
+        macro2 = req.get("macro2", "").strip()
+        area = req.get("area", "").strip()
+        estado = req.get("estado", "").strip().lower()
+
+        cri_de_raw = req.get("criacao_de")
+        cri_ate_raw = req.get("criacao_ate")
+
+        con_de_raw = req.get("conclusao_de")
+        con_ate_raw = req.get("conclusao_ate")
+
+        cri_de = parse_date(cri_de_raw) if cri_de_raw else None
+        cri_ate = parse_date(cri_ate_raw) if cri_ate_raw else None
+
+        con_de = parse_date(con_de_raw) if con_de_raw else None
+        con_ate = parse_date(con_ate_raw) if con_ate_raw else None
+
+        # -------------------------------------------------
+        # Validação
+        # -------------------------------------------------
+
+        if cri_de and cri_ate and cri_ate < cri_de:
+            return Processo.objects.none()
+
+        if con_de and con_ate and con_ate < con_de:
+            return Processo.objects.none()
+
+        # -------------------------------------------------
+        # Query base
+        # -------------------------------------------------
+
+        qs = (
+            Processo.objects
+            .filter(parent__isnull=True)
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "area_responsavel",
+            )
+            .prefetch_related(
+                "documentos",
+                "subprocessos",
+                "subprocessos__documentos",
+                "subprocessos__classificacao",
+                "subprocessos__macroprocesso_nivel1",
+                "subprocessos__macroprocesso_nivel2",
+                "subprocessos__area_responsavel",
+            )
+            .order_by("id")
+        )
+
+        # -------------------------------------------------
+        # Filtros
+        # -------------------------------------------------
+
+        if nome:
+            qs = qs.filter(nome__icontains=nome)
+
+        if classificacao:
+            qs = qs.filter(classificacao_id=classificacao)
+
+        if macro1:
+            qs = qs.filter(
+                macroprocesso_nivel1__nome__icontains=macro1
+            )
+
+        if macro2:
+            qs = qs.filter(
+                macroprocesso_nivel2__nome__icontains=macro2
+            )
+
+        if area:
+            qs = qs.filter(
+                area_responsavel__nome_area__icontains=area
+            )
+
+        # -------------------------------------------------
+        # Estado
+        # -------------------------------------------------
+
+        if estado == "concluido":
+
+            qs = qs.filter(
+                data_conclusao__isnull=False
+            )
+
+        elif estado == "ativo":
+
+            qs = qs.filter(
+                data_conclusao__isnull=True,
+                documentos__isnull=False
+            ).distinct()
+
+        elif estado == "iniciado":
+
+            qs = qs.filter(
+                data_conclusao__isnull=True,
+                documentos__isnull=True
+            )
+
+        # -------------------------------------------------
+        # Datas criação
+        # -------------------------------------------------
+
+        if cri_de:
+            qs = qs.filter(
+                data_criacao__gte=cri_de
+            )
+
+        if cri_ate:
+            fim = datetime.combine(
+                cri_ate,
+                time.max
+            )
+
+            qs = qs.filter(
+                data_criacao__lte=fim
+            )
+
+        # -------------------------------------------------
+        # Datas conclusão
+        # -------------------------------------------------
+
+        if con_de:
+            qs = qs.filter(
+                data_conclusao__date__gte=con_de
+            )
+
+        if con_ate:
+            qs = qs.filter(
+                data_conclusao__date__lte=con_ate
+            )
+
+        return qs
+
+    # -------------------------------------------------
+    # Linha individual
+    # -------------------------------------------------
+    def build_row(self, obj, is_subprocesso=False):
+
+        # -------------------------------------------------
+        # Nome hierárquico
+        # -------------------------------------------------
+
+        nome = (
+            f'-> {obj.nome}'
+            if is_subprocesso
+            else obj.nome
+        )
+
+        # -------------------------------------------------
+        # Status
+        # -------------------------------------------------
+
+        if obj.status == 'concluido':
+            status = 'Concluído'
+
+        elif obj.status == 'ativo':
+            status = 'Ativo'
+
+        else:
+            status = 'Iniciado'
+
+        # -------------------------------------------------
+        # Blindagem FK órfã
+        # -------------------------------------------------
+
+        try:
+            classificacao = (
+                obj.classificacao.nome
+                if obj.classificacao
+                else '----'
+            )
+
+        except Exception:
+            classificacao = '----'
+
+        try:
+            macro_n1 = (
+                obj.macroprocesso_nivel1.nome
+                if obj.macroprocesso_nivel1
+                else '----'
+            )
+
+        except Exception:
+            macro_n1 = '----'
+
+        try:
+            macro_n2 = (
+                obj.macroprocesso_nivel2.nome
+                if obj.macroprocesso_nivel2
+                else '----'
+            )
+
+        except Exception:
+            macro_n2 = '----'
+
+        try:
+            area_responsavel = (
+                obj.area_responsavel.nome_area
+                if obj.area_responsavel
+                else '----'
+            )
+
+        except Exception:
+            area_responsavel = '----'
+
+        # -------------------------------------------------
+        # Linha
+        # -------------------------------------------------
+
+        return [
+
+            nome or '----',
+
+            (
+                obj.versao_processo
+                if obj.versao_processo
+                else '—'
+            ),
+
+            status,
+
+            classificacao,
+
+            macro_n1,
+
+            macro_n2,
+
+            area_responsavel,
+
+            obj.gestor or '----',
+
+            (
+                obj.data_criacao.strftime('%d/%m/%Y')
+                if obj.data_criacao
+                else '----'
+            ),
+
+            (
+                obj.data_conclusao.strftime('%d/%m/%Y')
+                if obj.data_conclusao
+                else '----'
+            ),
+        ]
+
+    # -------------------------------------------------
+    # Construção hierárquica
+    # -------------------------------------------------
+    def build_rows(self, obj):
+
+        linhas = []
+
+        # Processo pai
+        linhas.append(
+            self.build_row(obj)
+        )
+
+        # Subprocessos
+        for sub in obj.subprocessos.all():
+            linhas.append(
+                self.build_row(
+                    sub,
+                    is_subprocesso=True
+                )
+            )
+
+        return linhas
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
@@ -993,4 +1310,9 @@ register_export(
 register_export(
     key='processosmapear',
     config=ProcessosMapearExportConfig(),
+)
+
+register_export(
+    key='processos',
+    config=ProcessosExportConfig(),
 )
