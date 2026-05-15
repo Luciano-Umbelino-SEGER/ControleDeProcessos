@@ -368,7 +368,7 @@ def pdf_exporter(
         for row in rows:
             linha = [
                 Paragraph(
-                    str(valor),
+                    str(valor).replace('|', '<br/>'),
                     (
                         estilo_celula_centralizado
                         if index in center_columns
@@ -385,7 +385,7 @@ def pdf_exporter(
         for obj in queryset:
             linha = [
                 Paragraph(
-                    str(valor),
+                    str(valor).replace('|', '<br/>'),
                     (
                         estilo_celula_centralizado
                         if index in center_columns

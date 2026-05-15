@@ -7,7 +7,7 @@ from django.utils.dateparse import parse_date
 from datetime import datetime, time
 from urllib.parse import unquote
 
-from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger, Usuario, Processo,)
+from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger, Usuario, Processo, ProcessoMapear,)
 from auditoria.models import LogAcaoSistema
 from arquiteturaprocessos.exports.registry import (register_export,)
 
@@ -245,7 +245,6 @@ class AreasResponsaveisExportConfig:
 
             (
                 obj.telefone
-                .replace('|', '<br/>')
                 if obj.telefone
                 else '----'
             ),
@@ -677,7 +676,7 @@ class ArquiteturaProcessosExportConfig:
             obj.gestor or '----',
 
             (
-                telefone.replace('|', '<br/>')
+                telefone
                 if telefone
                 else '----'
             ),
@@ -721,6 +720,248 @@ class ArquiteturaProcessosExportConfig:
 
         return linhas
 
+# -----------------------------------------------------#
+# Exportação Processos a Mapear                        #
+# -----------------------------------------------------#
+class ProcessosMapearExportConfig:
+
+    filename = 'processos_mapear'
+
+    titulo_pdf = 'Processos a Mapear'
+
+    headers = [
+        'Nome',
+        'Tipo',
+        'Classificação',
+        'Macro N1',
+        'Macro N2',
+        'Área',
+        'Gestor',
+        'E-mail',
+        'Telefone',
+        'Criação',
+    ]
+
+    pdf_col_widths = [
+        120,  # Nome
+        55,   # Tipo
+        70,   # Classificação
+        82,   # Macro N1
+        82,   # Macro N2
+        70,   # Área
+        75,   # Gestor
+        110,  # Email
+        70,   # Telefone
+        50,   # Criação
+    ]
+
+    pdf_center_columns = [9]
+
+    # -------------------------------------------------
+    # Queryset
+    # -------------------------------------------------
+    def get_queryset(self, request):
+
+        req = request.GET
+
+        queryset = (
+            ProcessoMapear.objects
+            .select_related(
+                'classificacao',
+                'macroprocesso_nivel1',
+                'macroprocesso_nivel2',
+                'parent',
+                'area_responsavel',
+            )
+            .order_by('-data_criacao')
+        )
+
+        # ===== FILTROS =====
+        nome = req.get("nome", "").strip()
+        tipo = req.get("tipo", "").strip()
+        classificacao = req.get("classificacao", "").strip()
+        macro1 = req.get("macro1", "").strip()
+        macro2 = req.get("macro2", "").strip()
+        area = req.get("area", "").strip()
+
+        cri_de_raw = req.get("criacao_de")
+        cri_ate_raw = req.get("criacao_ate")
+
+        cri_de = parse_date(cri_de_raw) if cri_de_raw else None
+        cri_ate = parse_date(cri_ate_raw) if cri_ate_raw else None
+
+        status = req.get("status", "ativo").strip()
+
+        # 🔥 VALIDAÇÃO
+        if cri_de and cri_ate and cri_ate < cri_de:
+            return ProcessoMapear.objects.none()
+
+        # 🔍 FILTROS
+        if nome:
+            queryset = queryset.filter(nome__icontains=nome)
+
+        if tipo in ["processo", "subprocesso", "outro"]:
+            queryset = queryset.filter(tipo=tipo)
+
+        if classificacao:
+            queryset = queryset.filter(classificacao_id=classificacao)
+
+        if macro1:
+            queryset = queryset.filter(
+                macroprocesso_nivel1__nome__icontains=macro1
+            )
+
+        if macro2:
+            queryset = queryset.filter(
+                macroprocesso_nivel2__nome__icontains=macro2
+            )
+
+        if area:
+            queryset = queryset.filter(
+                area_responsavel__nome_area__icontains=area
+            )
+
+        if cri_de:
+            queryset = queryset.filter(
+                data_criacao__gte=cri_de
+            )
+
+        if cri_ate:
+
+            fim_do_dia = datetime.combine(
+                cri_ate,
+                time.max
+            )
+
+            queryset = queryset.filter(
+                data_criacao__lte=fim_do_dia
+            )
+
+        # STATUS
+        if status == "finalizado":
+
+            queryset = queryset.filter(
+                status="finalizado"
+            )
+
+        elif status == "todos":
+            pass
+
+        else:
+
+            queryset = queryset.filter(
+                status="ativo"
+            )
+
+        return queryset
+
+    # -------------------------------------------------
+    # Row Builder
+    # -------------------------------------------------
+    def row_builder(self, obj):
+
+        telefone = obj.telefone or ''
+
+        # -----------------------------------------
+        # Tipo
+        # -----------------------------------------
+        if obj.tipo == 'processo':
+            tipo = 'Processo'
+
+        elif obj.tipo == 'subprocesso':
+            tipo = 'Subprocesso'
+
+        else:
+
+            if obj.status == 'finalizado':
+                tipo = 'Outro (Finalizado)'
+            else:
+                tipo = 'Outro'
+
+        # -----------------------------------------
+        # Nome subprocesso
+        # -----------------------------------------
+        nome = (
+            f'-> {obj.nome}'
+            if obj.tipo == 'subprocesso'
+            else obj.nome
+        )
+
+        # -------------------------------------------------
+        # Blindagem contra FK órfã
+        # -------------------------------------------------
+
+        try:
+            classificacao = (
+                obj.classificacao.nome
+                if obj.classificacao
+                else '----'
+            )
+
+        except Exception:
+            classificacao = '----'
+
+        try:
+            macro_n1 = (
+                obj.macroprocesso_nivel1.nome
+                if obj.macroprocesso_nivel1
+                else '----'
+            )
+
+        except Exception:
+            macro_n1 = '----'
+
+        try:
+            macro_n2 = (
+                obj.macroprocesso_nivel2.nome
+                if obj.macroprocesso_nivel2
+                else '----'
+            )
+
+        except Exception:
+            macro_n2 = '----'
+
+        try:
+            area_responsavel = (
+                obj.area_responsavel.nome_area
+                if obj.area_responsavel
+                else '----'
+            )
+
+        except Exception:
+            area_responsavel = '----'
+
+        return [
+
+            nome or '----',
+
+            tipo,
+
+            classificacao,
+
+            macro_n1,
+
+            macro_n2,
+
+            area_responsavel,
+
+            obj.gestor or '----',
+
+            obj.email or '----',
+
+            (
+                telefone
+                if telefone
+                else '----'
+            ),
+
+            (
+                obj.data_criacao.strftime('%d/%m/%Y')
+                if obj.data_criacao
+                else '----'
+            ),
+        ]
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
@@ -747,4 +988,9 @@ register_export(
 register_export(
     key='arquiteturaprocessos',
     config=ArquiteturaProcessosExportConfig(),
+)
+
+register_export(
+    key='processosmapear',
+    config=ProcessosMapearExportConfig(),
 )
