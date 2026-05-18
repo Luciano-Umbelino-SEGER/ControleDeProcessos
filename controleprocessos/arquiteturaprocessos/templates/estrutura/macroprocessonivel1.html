@@ -117,11 +117,11 @@
         {% endif %}
 
         <div class="flex justify-end mb-0.5">
-            {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=False %}
+            {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='macroprocessonivel1' %}
         </div>
 
         <div class="overflow-x-auto">
-            <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow">
+            <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
                 <thead class="bg-blue-100 text-blue-800">
                     <tr>
                         <th class="py-3 px-2 text-left whitespace-nowrap w-[18%]">

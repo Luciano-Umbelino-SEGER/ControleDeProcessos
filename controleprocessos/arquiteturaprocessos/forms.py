@@ -879,8 +879,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     def clean_tema(self):
 
         tema = (
-            self.cleaned_data.get("tema") or ""
-        ).strip().upper()
+                self.cleaned_data.get("tema") or ""
+        ).strip()
 
         if self._is_norma_procedimento() and not tema:
             raise ValidationError("Informe o tema.")

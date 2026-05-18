@@ -7,7 +7,8 @@ from django.utils.dateparse import parse_date
 from datetime import datetime, time
 from urllib.parse import unquote
 
-from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger, Usuario, Processo, ProcessoMapear,)
+from arquiteturaprocessos.models import (ModelagemProcesso, ContatoAreaSeger, Usuario, Processo, ProcessoMapear,
+                                         MacroprocessoNivel1, MacroprocessoNivel2,)
 from auditoria.models import LogAcaoSistema
 from arquiteturaprocessos.exports.registry import (register_export,)
 
@@ -1279,6 +1280,220 @@ class ProcessosExportConfig:
 
         return linhas
 
+# -----------------------------------------------------#
+# Exportação Macroprocesso Nível 1                     #
+# -----------------------------------------------------#
+class MacroprocessoNivel1ExportConfig:
+
+    filename = 'macroprocesso_nivel1'
+
+    titulo_pdf = 'Macroprocesso Nível 1'
+
+    headers = [
+        'Classificação',
+        'Nome',
+        'Descrição',
+    ]
+
+    pdf_col_widths = [
+        120,  # Classificação
+        180,  # Nome
+        420,  # Descrição
+    ]
+
+    # -------------------------------------------------
+    # Queryset
+    # -------------------------------------------------
+    def get_queryset(self, request):
+
+        req = request.GET
+
+        queryset = (
+            MacroprocessoNivel1.objects
+            .select_related('classificacao')
+        )
+
+        # -------------------------------------------------
+        # Filtros
+        # -------------------------------------------------
+
+        classificacao = req.get(
+            "classificacao",
+            ""
+        ).strip()
+
+        nome = req.get(
+            "nome",
+            ""
+        ).strip()
+
+        if classificacao:
+
+            queryset = queryset.filter(
+                classificacao__nome__icontains=classificacao
+            )
+
+        if nome:
+
+            queryset = queryset.filter(
+                nome__icontains=nome
+            )
+
+        # -------------------------------------------------
+        # Ordenação
+        # -------------------------------------------------
+
+        queryset = queryset.order_by(
+            'classificacao__nome',
+            'nome'
+        )
+
+        return queryset
+
+    # -------------------------------------------------
+    # Row Builder
+    # -------------------------------------------------
+    def row_builder(self, obj):
+
+        return [
+
+            (
+                obj.classificacao.nome
+                if obj.classificacao
+                else '----'
+            ),
+
+            obj.nome or '----',
+
+            obj.descricao or '----',
+        ]
+
+# -----------------------------------------------------#
+# Exportação Macroprocesso Nível 2                     #
+# -----------------------------------------------------#
+class MacroprocessoNivel2ExportConfig:
+
+    filename = 'macroprocesso_nivel2'
+
+    titulo_pdf = 'Macroprocesso Nível 2'
+
+    headers = [
+        'Classificação',
+        'Macroprocesso Nível 1',
+        'Nome',
+        'Descrição',
+    ]
+
+    pdf_col_widths = [
+        120,  # Classificação
+        180,  # Macro N1
+        180,  # Nome
+        320,  # Descrição
+    ]
+
+    # -------------------------------------------------
+    # Queryset
+    # -------------------------------------------------
+    def get_queryset(self, request):
+
+        req = request.GET
+
+        queryset = (
+            MacroprocessoNivel2.objects
+            .select_related(
+                'macroprocesso_nivel1',
+                'macroprocesso_nivel1__classificacao'
+            )
+        )
+
+        # -------------------------------------------------
+        # Filtros
+        # -------------------------------------------------
+
+        classificacao = req.get(
+            "classificacao",
+            ""
+        ).strip()
+
+        macro_n1 = req.get(
+            "macro_n1",
+            ""
+        ).strip()
+
+        nome = req.get(
+            "nome",
+            ""
+        ).strip()
+
+        if classificacao:
+
+            queryset = queryset.filter(
+                macroprocesso_nivel1__classificacao__nome__icontains=classificacao
+            )
+
+        if macro_n1:
+
+            queryset = queryset.filter(
+                macroprocesso_nivel1__nome__icontains=macro_n1
+            )
+
+        if nome:
+
+            queryset = queryset.filter(
+                nome__icontains=nome
+            )
+
+        # -------------------------------------------------
+        # Ordenação
+        # -------------------------------------------------
+
+        queryset = queryset.order_by(
+            "macroprocesso_nivel1__classificacao__nome",
+            "macroprocesso_nivel1__nome",
+            "nome"
+        )
+
+        return queryset
+
+    # -------------------------------------------------
+    # Row Builder
+    # -------------------------------------------------
+    def row_builder(self, obj):
+
+        try:
+            classificacao = (
+                obj.macroprocesso_nivel1.classificacao.nome
+                if (
+                    obj.macroprocesso_nivel1
+                    and obj.macroprocesso_nivel1.classificacao
+                )
+                else '----'
+            )
+
+        except Exception:
+            classificacao = '----'
+
+        try:
+            macro_n1 = (
+                obj.macroprocesso_nivel1.nome
+                if obj.macroprocesso_nivel1
+                else '----'
+            )
+
+        except Exception:
+            macro_n1 = '----'
+
+        return [
+
+            classificacao,
+
+            macro_n1,
+
+            obj.nome or '----',
+
+            obj.descricao or '----',
+        ]
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
@@ -1315,4 +1530,14 @@ register_export(
 register_export(
     key='processos',
     config=ProcessosExportConfig(),
+)
+
+register_export(
+    key='macroprocessonivel1',
+    config=MacroprocessoNivel1ExportConfig(),
+)
+
+register_export(
+    key='macroprocessonivel2',
+    config=MacroprocessoNivel2ExportConfig(),
 )
