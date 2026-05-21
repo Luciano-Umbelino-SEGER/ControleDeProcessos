@@ -2468,13 +2468,31 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
             'modo_inclusao': False,
             'modo_edicao': False,
         })
-        return c
+        return ctx
+
+
+# ============================================================
+# MODELOS DE PROCESSO
+# ============================================================
+
+class ModelosProcessoView(TemplateView):
+    template_name = "modelagemprocessos/modelosprocesso.html"
+
+
+# ============================================================
+# NORMAS DE PROCEDIMENTO
+# ============================================================
+
+class NormasProcedimentoView(TemplateView):
+    template_name = "modelagemprocessos/normasprocedimento.html"
+
 # ---------------------------------------------------
 # LISTAGEM MODELAGEM DE PROCESSOS
 # ---------------------------------------------------
 class ModelagemProcessoView(LoginRequiredMixin, ListView):
+
     model = ModelagemProcesso
-    template_name = 'estrutura/modelagemprocessos.html'
+    template_name = 'estrutura/modelosprocesso.html'
     context_object_name = 'modelagemprocessos'
 
     # 🔥 PAGINAÇÃO DINÂMICA
@@ -2596,7 +2614,7 @@ class ModelagemProcessoView(LoginRequiredMixin, ListView):
 # ---------------------------------------------------
 class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
     model = ModelagemProcesso
-    template_name = 'estrutura/form_modelagemprocesso.html'
+    template_name = 'estrutura/form_modeloprocesso.html'
     form_class = Form_ModelagemProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:modelagemprocessos')
 
@@ -2647,7 +2665,7 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
 # ---------------------------------------------------
 class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
     model = ModelagemProcesso
-    template_name = 'estrutura/form_modelagemprocesso.html'
+    template_name = 'estrutura/form_modeloprocesso.html'
     context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
@@ -2677,7 +2695,7 @@ class VisualizarModelagemProcesso(LoginRequiredMixin, DetailView):
 # ---------------------------------------------------
 class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
     model = ModelagemProcesso
-    template_name = 'estrutura/form_modelagemprocesso.html'
+    template_name = 'estrutura/form_modeloprocesso.html'
     context_object_name = 'modelagemprocesso'
     form_class = Form_ModelagemProcessoForm
 
@@ -2728,7 +2746,7 @@ class EditarModelagemProcesso(LoginRequiredMixin, UpdateView):
 # ---------------------------------------------------
 class ExcluirModelagemProcesso(LoginRequiredMixin, DetailView):
     model = ModelagemProcesso
-    template_name = 'estrutura/form_modelagemprocesso.html'
+    template_name = 'estrutura/form_modeloprocesso.html'
     context_object_name = 'modelagemprocesso'
 
     def get_context_data(self, **kwargs):
