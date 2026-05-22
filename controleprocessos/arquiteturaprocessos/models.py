@@ -345,6 +345,295 @@ class ModelagemProcesso(models.Model):
 
         return f"{self.titulo} - {codigo}-{sequencial} - V{versao}"
 
+# aqui 1
+# ============================================================
+# UPLOAD MODELO DE PROCESSO
+# ============================================================
+def modelo_processo_upload_to(instance, filename):
+    """
+    Gera caminho seguro para upload de documentos de Modelo de Processo.
+
+    - Remove acentos
+    - Remove caracteres especiais
+    - Substitui espaços por _
+    - Mantém extensão minúscula
+    - Garante unicidade com UUID
+    """
+
+    nome, ext = os.path.splitext(filename)
+    ext = ext.lower()
+
+    # Remove acentos
+    nome = (
+        unicodedata
+        .normalize("NFKD", nome)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+
+    # Remove caracteres inválidos
+    nome = re.sub(r"[^\w\-_.]", "_", nome)
+
+    # Evita nome vazio
+    if not nome:
+        nome = "modelo_processo"
+
+    # UUID curto
+    novo_nome = f"{nome}_{uuid4().hex[:8]}{ext}"
+
+    return (
+        f"arquiteturaprocessos/modelosprocesso/"
+        f"{instance.uuid}/{novo_nome}"
+    )
+
+# ============================================================
+# MODELO DE PROCESSO
+# ============================================================
+class ModeloProcesso(models.Model):
+
+    STATUS_CHOICES = [
+        ("ELABORADO", "Elaborado"),
+        ("REVISADO", "Revisado"),
+        ("APROVADO", "Aprovado"),
+    ]
+
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+    )
+
+    # ========================================================
+    # IDENTIFICAÇÃO DO DOCUMENTO
+    # ========================================================
+    titulo = models.CharField(
+        max_length=255,
+        db_index=True,
+        verbose_name="Título",
+    )
+
+    codigo = models.CharField(
+        max_length=20,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r"^[A-Z0-9.\-_/]+$",
+                message="Utilize apenas letras maiúsculas, números e . - _ /",
+            )
+        ],
+        verbose_name="Código",
+    )
+
+    numero_modelo = models.CharField(
+        max_length=20,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r"^\d{1,10}$",
+                message="Informe apenas números.",
+            )
+        ],
+        verbose_name="Número do Modelo",
+    )
+
+    versao = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(9999),
+        ],
+        verbose_name="Versão",
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="ELABORADO",
+        db_index=True,
+        verbose_name="Estado",
+    )
+
+    # ========================================================
+    # DADOS DO PROCESSO
+    # ========================================================
+    setor = models.CharField(
+        max_length=150,
+        verbose_name="Setor",
+    )
+
+    unidades_envolvidas = models.TextField(
+        blank=True,
+        verbose_name="Unidades Envolvidas",
+    )
+
+    objetivo_processo = models.TextField(
+        verbose_name="Objetivo do Processo",
+    )
+
+    abrangencia = models.TextField(
+        blank=True,
+        verbose_name="Abrangência",
+    )
+
+    fundamentacao_definicoes = models.TextField(
+        blank=True,
+        verbose_name="Fundamentação / Definições",
+    )
+
+    envolvidos_externos = models.TextField(
+        blank=True,
+        verbose_name="Envolvidos Externos",
+    )
+
+    observacao = models.TextField(
+        blank=True,
+        verbose_name="Observação",
+    )
+
+    # ========================================================
+    # DOCUMENTAÇÃO
+    # ========================================================
+    documento_modelo_processo = models.FileField(
+        upload_to=modelo_processo_upload_to,
+        max_length=500,
+        null=True,
+        blank=True,
+        validators=[
+            FileExtensionValidator(["pdf"])
+        ],
+        verbose_name="Documento Modelo de Processo",
+    )
+
+    link_documento_externo = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Link Documento Externo",
+    )
+
+    # ========================================================
+    # ELABORAÇÃO
+    # ========================================================
+    data_elaboracao = models.DateTimeField(
+        verbose_name="Data de Elaboração",
+    )
+
+    usuario_elaboracao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="modelos_processo_elaborados",
+        verbose_name="Usuário Elaboração",
+    )
+
+    # ========================================================
+    # REVISÃO
+    # ========================================================
+    data_revisao = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data de Revisão",
+    )
+
+    usuario_revisao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="modelos_processo_revisados",
+        null=True,
+        blank=True,
+        verbose_name="Usuário Revisão",
+    )
+
+    # ========================================================
+    # APROVAÇÃO
+    # ========================================================
+    data_aprovacao = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data de Aprovação",
+    )
+
+    usuario_aprovacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="modelos_processo_aprovados",
+        null=True,
+        blank=True,
+        verbose_name="Usuário Aprovação",
+    )
+
+    # ========================================================
+    # ATUALIZAÇÃO
+    # ========================================================
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Data de Atualização",
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="modelos_processo_atualizados",
+        null=True,
+        blank=True,
+        verbose_name="Usuário Atualização",
+    )
+
+    # ========================================================
+    # METADADOS
+    # ========================================================
+    class Meta:
+
+        db_table = "arquiteturaprocessos_modelo_processo"
+
+        verbose_name = "Modelo de Processo"
+
+        verbose_name_plural = "Modelos de Processo"
+
+        ordering = [
+            "-data_atualizacao",
+            "-data_elaboracao",
+        ]
+
+    # ========================================================
+    # SAVE
+    # ========================================================
+    def save(self, *args, **kwargs):
+
+        try:
+            old = ModeloProcesso.objects.get(pk=self.pk)
+
+        except ModeloProcesso.DoesNotExist:
+            old = None
+
+        super().save(*args, **kwargs)
+
+        # ====================================================
+        # REMOVE PDF ANTIGO
+        # ====================================================
+        if (
+                old
+                and old.documento_modelo_processo
+                and old.documento_modelo_processo != self.documento_modelo_processo
+        ):
+            if hasattr(old.documento_modelo_processo, "path"):
+                old_path = old.documento_modelo_processo.path
+                if os.path.isfile(old_path):
+                    os.remove(old_path)
+
+    # ========================================================
+    # STRING
+    # ========================================================
+    def __str__(self):
+
+        codigo = self.codigo or "---"
+
+        numero = self.numero_modelo or "---"
+
+        versao = self.versao or "--"
+
+        return f"{self.titulo} - {codigo}-{numero} - V{versao}"
+
+
 # ============================================================
 # Contatos Seger - Area Responsável
 # ============================================================
