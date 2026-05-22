@@ -3,26 +3,33 @@
 {% load custom_tags %}
 
 {% block titulo %}
-{% if modo_visualizacao %}Visualização de Modelagem de Processos
-{% elif modo_edicao %}Edição de Modelagem de Processos
-{% elif modo_exclusao %}Exclusão de Modelagem de Processos
-{% else %}Inclusão de Modelagem de Processos{% endif %}
+{% if modo_visualizacao %}Visualização de Norma de Procedimento
+{% elif modo_edicao %}Edição de Norma de Procedimento
+{% elif modo_exclusao %}Exclusão de Norma de Procedimento
+{% else %}Inclusão de Norma de Procedimento{% endif %}
 {% endblock %}
 
 {% block body %}
 <div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-  <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
-    {% if modo_visualizacao %}Visualização de Modelagem de Processos
-    {% elif modo_edicao %}Edição de Modelagem de Processos
-    {% elif modo_exclusao %}Exclusão de Modelagem de Processos
-    {% else %}Inclusão de Modelagem de Processos{% endif %}
-  </h1>
 
-  {% if form.errors %}
+    <!-- ===================================================== -->
+    <!-- TÍTULO -->
+    <!-- ===================================================== -->
+    <h1 class="text-xl md:text-2xl font-bold text-blue-800 mb-6 text-center">
+        {% if modo_visualizacao %}Visualização de Norma de Procedimento
+        {% elif modo_edicao %}Edição de Norma de Procedimento
+        {% elif modo_exclusao %}Exclusão de Norma de Procedimento
+        {% else %}Inclusão de Norma de Procedimento{% endif %}
+    </h1>
+
+    <!-- ===================================================== -->
+    <!-- ERROS -->
+    <!-- ===================================================== -->
+    {% if form.errors %}
     <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-6">
 
         <strong class="block mb-2">
-            Não foi possível criar a Modelagem de Processo. Corrija os erros abaixo:
+            Não foi possível salvar a Norma de Procedimento. Corrija os erros abaixo:
         </strong>
 
         <ul class="list-disc list-inside space-y-1">
@@ -41,473 +48,412 @@
 
         </ul>
     </div>
-  {% endif %}
+    {% endif %}
 
-  <form autocomplete="off" class="space-y-6" data-form-type="other" data-lpignore="true" enctype="multipart/form-data" id="form-exclusao" method="post">
-    {% csrf_token %}
+    <!-- ===================================================== -->
+    <!-- FORM -->
+    <!-- ===================================================== -->
+    <form autocomplete="off"
+          class="space-y-6"
+          enctype="multipart/form-data"
+          method="post">
 
-    <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
-      <!-- Layout principal -->
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+        {% csrf_token %}
 
-        <!-- Linha 1: Tipo de Documento + Título -->
-        <div class="col-span-12 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">
-            Tipo de Documento
-          </label>
-          {{ form.tipo_documento }}
-        </div>
+        <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
-        <div class="col-span-12 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">
-            Título
-          </label>
-          <input
-            type="text"
-            name="titulo"
-            id="id_titulo"
-            data-similarity-table="ModelagemProcesso"
-            data-similarity-field="titulo"
-            data-similarity-id="{{ form.instance.id }}"
-            value="{{ form.titulo.value|default_if_none:'' }}"
-            placeholder="DIGITE O TÍTULO"
-            class="w-full border border-gray-300 rounded px-3 py-2 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase
-                   {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}"
-            {% if modo_visualizacao or modo_exclusao %}readonly disabled{% endif %}
-          />
-        </div>
+            <div class="grid grid-cols-12 gap-3">
 
-        <!-- Linha 2: Sistema | Código | Sequencial -->
-        <div class="col-span-12 md:col-span-12">
-          <div class="grid grid-cols-12 gap-3 items-end">
+                <!-- ===================================================== -->
+                <!-- IDENTIFICAÇÃO -->
+                <!-- ===================================================== -->
+                <div class="col-span-12">
 
-            <!-- Sistema -->
-            <div class="col-span-12 md:col-span-9">
-              <label class="block text-sm font-semibold text-blue-700 mb-1">
-                Sistema
-              </label>
-              {{ form.sistema }}
-            </div>
+                    <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
-            <!-- Código Sistema -->
-            <div class="col-span-5 md:col-span-2">
-              <div class="w-full max-w-[17ch]">
-                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                  Sigla Sistema
-                </label>
-                <input
-                  type="text"
-                  name="codigo"
-                  id="id_codigo"
-                  value="{{ form.codigo.value|default_if_none:'' }}"
-                  placeholder="SIGLA"
-                  maxlength="10"
-                  class="w-full border border-gray-300 rounded px-3 py-2 text-black uppercase
-                         focus:ring-2 focus:ring-blue-500 focus:outline-none
-                         {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}"
-                  {% if modo_visualizacao or modo_exclusao %}readonly disabled{% endif %}>
-              </div>
-            </div>
+                        <!-- TÍTULO SOBREPOSTO -->
+                        <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                            <h2 class="text-base font-semibold text-blue-800 leading-none">
+                                Identificação do Documento
+                            </h2>
+                        </div>
 
-            <!-- Sequencial -->
-            <div class="col-span-5 md:col-span-1 flex justify-end">
-              <div class="w-full max-w-[17ch]">
-                <label class="block text-sm font-semibold text-blue-700 mb-1 text-left">
-                  Sequencial
-                </label>
-                <input
-                  class="w-full border border-gray-300 rounded px-3 py-2 text-black text-center
-                         {% if modo_visualizacao or modo_exclusao %}bg-gray-100{% else %}bg-white{% endif %}"
-                  id="id_sequencial"
-                  name="sequencial"
-                  type="text"
-                  value="{{ form.sequencial.value|default_if_none:'' }}"
-                  inputmode="numeric"
-                  maxlength="4"
-                  {% if modo_visualizacao or modo_exclusao %}readonly disabled{% endif %}
-                />
-              </div>
-            </div>
+                        <div class="grid grid-cols-12 gap-3">
 
-          </div>
-        </div>
+                            <!-- Tipo Documento -->
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Tipo de Documento
+                                </label>
 
-        <!-- Linha 3 -->
-        <div class="col-span-12 md:col-span-5">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">Tema</label>
-          <div class="w-full">
-            {{ form.tema }}
-          </div>
-        </div>
+                                <div class="flex items-center h-[42px]">
+                                    <span class="inline-flex items-center justify-center w-full h-[42px]
+                                                 rounded-md bg-green-100 text-green-800 text-[12px]
+                                                 font-semibold border border-green-300
+                                                 uppercase tracking-wide">
 
-        <div class="col-span-12 md:col-start-6 md:col-span-6">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">Emitente</label>
-          <div class="w-full">
-            {{ form.emitente }}
-          </div>
-        </div>
+                                        NORMA DE PROCEDIMENTO
+                                    </span>
+                                </div>
+                            </div>
 
-        <!-- Versão -->
-        <div class="col-span-12 md:col-span-1">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">Versão</label>
-          <div class="w-full flex justify-end">
-            <div class="w-[10ch]">
-              {{ form.versao }}
-            </div>
-          </div>
-        </div>
+                            <!-- Título -->
+                            <div class="col-span-12 md:col-span-9">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Título
+                                </label>
 
-        <!-- Datas -->
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[18ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              Data Elaboração
-            </label>
-            {{ form.data_elaboracao }}
-          </div>
-        </div>
+                                <input type="text"
+                                       placeholder="DIGITE O TÍTULO"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black uppercase">
+                            </div>
 
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[20ch] ml-auto">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              Data Aprovação
-            </label>
-            {{ form.data_aprovacao }}
-          </div>
-        </div>
+                            <!-- Sistema -->
+                            <div class="col-span-12 md:col-span-6">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Sistema
+                                </label>
 
-        <div class="col-span-12 md:col-span-4 min-w-0">
-          <label class="block text-sm font-semibold text-blue-700 mb-1">
-            Portaria Aprovação
-          </label>
-          <div class="w-full">
-            {{ form.portaria_aprovacao }}
-          </div>
-        </div>
+                                <input type="text"
+                                       placeholder="Sistema"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black">
+                            </div>
 
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[18ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              Vigência Início
-            </label>
-            {{ form.vigencia_inicio }}
-          </div>
-        </div>
+                            <!-- Sigla -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Sigla Sistema
+                                </label>
 
-        <div class="col-span-12 md:col-span-2">
-          <div class="w-full max-w-[18ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              Vigência Fim
-            </label>
-            {{ form.vigencia_fim }}
-          </div>
-        </div>
+                                <input type="text"
+                                       placeholder="SIGLA"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black uppercase">
+                            </div>
 
-        <!-- ================================================================ -->
-        <!-- ========== DOCUMENTO DE MODELAGEM DE PROCESSO (PDF) ========== -->
-        <!-- ================================================================ -->
+                            <!-- Nr Norma -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Nr. Norma
+                                </label>
 
-        <style>
-          .pdf-dropzone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 10;
-            display: block !important;
-            pointer-events: auto;
-            contain: layout paint;
-          }
+                                <input type="text"
+                                       placeholder="057"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black">
+                            </div>
 
-          .file-display {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            width: 100%;
-            min-width: 0;
-            overflow: hidden;
-            padding: 0.5rem 0.75rem;
-            border: 1px dashed #d1d5db;
-            border-radius: 0.375rem;
-            background: white;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            transition: max-width 0.25s ease;
-          }
+                            <!-- Versão -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Versão
+                                </label>
 
-          .file-name {
-            display: block;
-            flex: 1;
-            min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: black;
-          }
+                                <input type="text"
+                                       placeholder="01"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black">
+                            </div>
 
-          .icon-visualizar {
-            transition: color 0.15s ease-in-out, transform 0.15s ease-in-out;
-            cursor: pointer;
-            display: inline-flex;
-          }
-          .icon-visualizar:hover {
-            transform: scale(1.05);
-          }
-        </style>
+                            <!-- Emitente -->
+                            <div class="col-span-12 md:col-span-6">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Emitente
+                                </label>
 
-        {% with file_name=form.instance.documento_modelagem_processo.name|default_if_none:"" %}
-        <div class="col-span-12 md:col-start-1 md:col-span-4">
-          <div class="w-full">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              Documento Modelo de Processo (PDF)
-            </label>
+                                <input type="text"
+                                       placeholder="Emitente"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black">
+                            </div>
 
-            <!-- Componente Alpine único e autocontido -->
-            <div x-data="{
-                fileName: (function(){
-                  const v = '{{ file_name|escapejs }}';
-                  return v ? v.replace(/^.*[\\\/]/, '') : '';
-                })(),
-                fileObjectURL: (function(){
-                  {% if form.instance.documento_modelagem_processo %}
-                    return '{{ form.instance.documento_modelagem_processo.url|escapejs }}';
-                  {% else %}
-                    return null;
-                  {% endif %}
-                })(),
-                error: '',
-                over: false,
-                readonlyMode: {% if modo_visualizacao or modo_exclusao %}true{% else %}false{% endif %},
+                            <!-- Tema -->
+                            <div class="col-span-12 md:col-span-4">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Tema
+                                </label>
 
-                init() {
-                  const inp = this.$el.querySelector('input[type=file]');
-                  const dz = this.$el.querySelector('.pdf-dropzone');
-                  if (!inp) return;
+                                <input type="text"
+                                       placeholder="Tema"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black">
+                            </div>
 
-                  inp.setAttribute('accept', '.pdf,application/pdf');
+                            <!-- Estado -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Estado
+                                </label>
 
-                  if (this.readonlyMode) {
-                    inp.style.display = 'none';
-                    inp.disabled = true;
-                    return;
-                  }
+                                <div class="flex items-center h-[42px]">
+                                    <span class="inline-flex items-center justify-center w-full h-[42px]
+                                                 rounded-md bg-blue-100 text-blue-800 text-[12px]
+                                                 font-semibold border border-blue-300 uppercase tracking-wide">
 
-                  // mudança via input
-                  inp.addEventListener('change', () => {
-                    const f = inp.files?.[0];
-                    if (!f) {
-                      this.fileName = '';
-                      this.fileObjectURL = '';
-                      return;
-                    }
-                    const ok = (
-                      f.type === 'application/pdf' ||
-                      f.type === 'application/x-pdf' ||
-                      f.name.toLowerCase().endsWith('.pdf')
-                    );
-                    if (!ok) {
-                      this.error = 'Apenas arquivos PDF são aceitos.';
-                      inp.value = '';
-                      this.fileName = '';
-                      this.fileObjectURL = '';
-                      return;
-                    }
-                    this.error = '';
-                    this.fileName = f.name;
-                    if (this.fileObjectURL) {
-                      URL.revokeObjectURL(this.fileObjectURL);
-                    }
-                    try {
-                      this.fileObjectURL = URL.createObjectURL(f);
-                    } catch (e) {
-                      this.fileObjectURL = '';
-                    }
-                  });
+                                        ELABORADO
+                                    </span>
+                                </div>
+                            </div>
 
-                  // drag & drop
-                  ['dragenter','dragover'].forEach(ev =>
-                    dz.addEventListener(ev, e => { e.preventDefault(); this.over = true; })
-                  );
-                  ['dragleave','dragend'].forEach(ev =>
-                    dz.addEventListener(ev, e => { e.preventDefault(); this.over = false; })
-                  );
-                  dz.addEventListener('drop', e => {
-                    e.preventDefault();
-                    this.over = false;
-                    const file = e.dataTransfer?.files?.[0];
-                    if (!file) return;
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-                    inp.files = dt.files;
-                    inp.dispatchEvent(new Event('change', { bubbles: true }));
-                  });
-                }
-              }">
-
-              <div class="flex items-center space-x-2 min-w-0">
-
-                <div class="relative pdf-dropzone flex-1 min-w-0">
-
-                 <div class="file-display w-full overflow-hidden">
-
-                    <svg aria-hidden="true" class="h-6 w-6 flex-shrink-0 text-gray-600"
-                         fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path d="M4 15a3 3 0 003 3h10a3 3 0 003-3"
-                            stroke-linecap="round" stroke-linejoin="round"></path>
-                      <path d="M12 7v8m0-8l-3 3m3-3l3 3"
-                            stroke-linecap="round" stroke-linejoin="round"></path>
-                    </svg>
-
-                    <span class="file-name"
-                          x-text="fileName || (readonlyMode ? '—' : 'Click ou arraste para enviar o PDF')">
-                    </span>
-                  </div>
-
-                  <!-- input original (mantido) -->
-                  <div class="absolute inset-0 z-10">
-                    {{ form.documento_modelagem_processo }}
-                  </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Ícone do olho — aparece somente quando há nome e URL (salvo ou temporário) -->
-                <template x-if="fileName && fileObjectURL">
-                  <a @click="abrirModalDocumento(fileObjectURL, fileName)"
-                     class="text-blue-500 hover:text-blue-700 icon-visualizar"
-                     title="Visualizar">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                         viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-                         class="w-5 h-5">
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                  </a>
-                </template>
+                <!-- ===================================================== -->
+                <!-- VIGÊNCIA E APROVAÇÃO -->
+                <!-- ===================================================== -->
+                <div class="col-span-12">
 
-              </div>
+                    <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
-             <!-- Mensagens de erro (frontend Alpine) -->
-            <p class="mt-1 text-sm text-red-600" x-show="error" x-text="error"></p>
+                        <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                            <h2 class="text-base font-semibold text-blue-800 leading-none">
+                                Vigência e Aprovação
+                            </h2>
+                        </div>
 
-            <!-- 🔥 ERRO DO BACKEND (Django) -->
-            {% if form.documento_modelagem_processo.errors %}
-              <p class="mt-1 text-sm text-red-600">
-                {{ form.documento_modelagem_processo.errors|striptags }}
-              </p>
+                        <div class="grid grid-cols-12 gap-3">
+
+                            <!-- Data Elaboração -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Data Elaboração
+                                </label>
+
+                                <input type="date"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                            </div>
+
+                            <!-- Data Aprovação -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Data Aprovação
+                                </label>
+
+                                <input type="date"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                            </div>
+
+                            <!-- Portaria -->
+                            <div class="col-span-12 md:col-span-4">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Portaria Aprovação
+                                </label>
+
+                                <input type="text"
+                                       placeholder="Portaria aprovação"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                            </div>
+
+                            <!-- Vigência Início -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Vigência Início
+                                </label>
+
+                                <input type="date"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                            </div>
+
+                            <!-- Vigência Fim -->
+                            <div class="col-span-12 md:col-span-2">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Vigência Fim
+                                </label>
+
+                                <input type="date"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================================================== -->
+                <!-- DOCUMENTAÇÃO -->
+                <!-- ===================================================== -->
+                <div class="col-span-12">
+
+                    <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
+
+                        <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                            <h2 class="text-base font-semibold text-blue-800 leading-none">
+                                Documentação
+                            </h2>
+                        </div>
+
+                        <div class="grid grid-cols-12 gap-3">
+
+                            <!-- PDF -->
+                            <div class="col-span-12 md:col-span-6">
+
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Documento Norma Procedimento (PDF)
+                                </label>
+
+                                <div class="border border-dashed border-gray-300 rounded px-3 py-2
+                                            bg-white flex items-center gap-2">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="h-5 w-5 text-gray-600"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor">
+
+                                        <path stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              stroke-width="2"
+                                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 8l-4-4m0 0L8 8m4-4v12"/>
+                                    </svg>
+
+                                    <span class="text-black">
+                                        Click ou arraste para enviar o PDF
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Link -->
+                            <div class="col-span-12 md:col-span-6">
+
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Documento Externo Norma (link)
+                                </label>
+
+                                <input type="text"
+                                       placeholder="https://exemplo.com/documento.pdf"
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-white text-black">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===================================================== -->
+                <!-- AUDITORIA -->
+                <!-- ===================================================== -->
+                <div class="col-span-12">
+
+                    <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
+
+                        <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                            <h2 class="text-base font-semibold text-blue-800 leading-none">
+                                Auditoria
+                            </h2>
+                        </div>
+
+                        <div class="grid grid-cols-12 gap-3">
+
+                            <!-- Cadastro -->
+                            <div class="col-span-12 md:col-span-3">
+
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Cadastro
+                                </label>
+
+                                <input type="text"
+                                       readonly
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                            </div>
+
+                            <!-- Responsável Cadastro -->
+                            <div class="col-span-12 md:col-span-3">
+
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Responsável Cadastro
+                                </label>
+
+                                <input type="text"
+                                       readonly
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                            </div>
+
+                            <!-- Atualização -->
+                            <div class="col-span-12 md:col-span-3">
+
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Atualização
+                                </label>
+
+                                <input type="text"
+                                       readonly
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                            </div>
+
+                            <!-- Responsável Atualização -->
+                            <div class="col-span-12 md:col-span-3">
+
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Responsável Atualização
+                                </label>
+
+                                <input type="text"
+                                       readonly
+                                       class="w-full border border-gray-300 rounded px-3 py-2
+                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </fieldset>
+
+        <!-- ===================================================== -->
+        <!-- BOTÕES -->
+        <!-- ===================================================== -->
+        <div class="flex justify-end mt-8 space-x-4">
+
+            {% if not modo_visualizacao %}
+
+                {% if modo_exclusao %}
+
+                    <button type="button"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+
+                        Confirmar Exclusão
+                    </button>
+
+                {% elif modo_edicao %}
+
+                    <button type="submit"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+
+                        Salvar Alterações
+                    </button>
+
+                {% else %}
+
+                    <button type="submit"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+
+                        Adicionar Norma Procedimento
+                    </button>
+
+                {% endif %}
+
             {% endif %}
 
-            </div>
-          </div>
-        </div>
-        {% endwith %}
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+               href="{% url 'arquiteturaprocessos:normasprocedimento' %}">
 
+                {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+            </a>
 
-        <!-- ================================================================ -->
-        <!-- ===================== FIM DO PDF =============================== -->
-        <!-- ================================================================ -->
-
-        <!-- Link da Norma -->
-        <div class="col-span-12 md:col-start-5 md:col-span-8">
-          <div class="w-full ml-[0.2rem] max-w-[76ch]">
-            <label class="block text-sm font-semibold text-blue-700 mb-1">
-              Norma de Procedimento (link)
-            </label>
-            <div class="flex items-center space-x-2 min-w-0">
-              <div class="flex-grow">
-                {{ form.link_normaprocedimento }}
-                {% if form.link_normaprocedimento.errors %}
-                  <p class="mt-1 text-sm text-red-600">{{ form.link_normaprocedimento.errors|striptags }}</p>
-                {% endif %}
-              </div>
-
-              {% if form.link_normaprocedimento.value and "http" in form.link_normaprocedimento.value %}
-                <a  onclick="abrirModalDocumento('{{ form.link_normaprocedimento.value|escapejs }}', '{{ form.link_normaprocedimento.value|filename|escapejs }}')"
-                    class="text-blue-500 hover:text-blue-700 icon-visualizar"
-                    title="Visualizar">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                </a>
-              {% endif %}
-            </div>
-          </div>
         </div>
 
-      </div>
-    </fieldset>
-
-    <!-- Botões -->
-    <div class="flex justify-end mt-8 space-x-4">
-      {% if not modo_visualizacao %}
-        {% if modo_exclusao %}
-          <button @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:excluir_modelagemprocesso' modelagemprocesso.id %}',
-                        mensagem: 'Confirma a exclusão da Modelagem de Processo &lt;strong&gt;{{ modelagemprocesso.codigo }} Nº {{ modelagemprocesso.sequencial }} - Versão {{ modelagemprocesso.versao }} - {{ modelagemprocesso.tema }}&lt;/strong&gt;?'
-                    })" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="button">
-            Confirmar Exclusão
-          </button>
-        {% elif modo_edicao %}
-          <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-            Salvar Alterações
-          </button>
-        {% else %}
-          <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-            Adicionar Modelo
-          </button>
-        {% endif %}
-      {% endif %}
-
-      <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition" href="{% url 'arquiteturaprocessos:modelagemprocessos' %}">
-         {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
-      </a>
-    </div>
-  </form>
+    </form>
 </div>
-
-<script>
-  (function () {
-    function setupNumericPad(el, maxLen, padLen) {
-      if (!el) return;
-      el.setAttribute('type', 'text');
-      el.setAttribute('inputmode', 'numeric');
-      el.setAttribute('pattern', '[0-9]*');
-      el.setAttribute('autocomplete', 'off');
-      el.maxLength = maxLen;
-      el.addEventListener('input', function () {
-        const onlyDigits = this.value.replace(/\D+/g, '').slice(0, maxLen);
-        if (this.value !== onlyDigits) this.value = onlyDigits;
-      });
-      el.addEventListener('blur', function () {
-        if (this.value.trim() !== '') {
-            this.value = this.value.padStart(padLen, '0');
-        }
-      });
-    }
-
-    setupNumericPad(document.getElementById('id_sequencial'), 4, 4);
-    setupNumericPad(document.getElementById('id_versao'), 4, 2);
-
-    ['id_data_elaboracao', 'id_data_aprovacao', 'id_vigencia_inicio', 'id_vigencia_fim']
-      .forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.whiteSpace = 'nowrap';
-      });
-  })();
-</script>
-
-<script>
-  document.addEventListener("alpine:init", () => {
-    // Nenhum código global é necessário.
-    // O comportamento está 100% encapsulado no componente Alpine pdfField.
-  });
-</script>
 
 <script src="{% static 'js/utils.js' %}"></script>
 
 {% include 'components/modal_documento_processo.html' %}
+
 {% endblock %}

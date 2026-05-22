@@ -105,6 +105,7 @@ urlpatterns = [
     path('modelos-processo/novo/',TemplateView.as_view(template_name='modelagemprocessos/form_modeloprocesso.html'), name='form_modeloprocesso'),
     # NORMAS DE PROCEDIMENTO
     path('normas-procedimento/', NormasProcedimentoView.as_view(), name='normasprocedimento'),
+    path('normas-procedimento/novo/',TemplateView.as_view(template_name='modelagemprocessos/form_normaprocedimento.html'), name='form_normaprocedimento'),
     # Exportação de Arquivos
     path('exportar/<str:resource>/<str:formato>/', exportar_generico, name='exportar_generico'),
     # Áreas Responsáveis
