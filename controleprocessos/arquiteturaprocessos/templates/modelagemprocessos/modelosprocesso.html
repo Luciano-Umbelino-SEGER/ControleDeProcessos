@@ -6,132 +6,172 @@
 {% block body %}
 <div class="py-10 px-2 flex justify-center">
   <div class="w-full max-w-[98%]">
+
+    <!-- ===================================================== -->
+    <!-- TÍTULO -->
+    <!-- ===================================================== -->
     <h2 class="text-2xl font-bold text-blue-800 mb-6">
-      Modelos de Processos
+      Modelos de Processo
       <span class="text-base font-normal text-gray-600">
         ({{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize:"s" }})
       </span>
     </h2>
 
+    <!-- ===================================================== -->
+    <!-- FILTROS -->
+    <!-- ===================================================== -->
     {% if request.user.perfil.nome|lower == 'administrador' %}
     <form method="GET" class="mb-0.5">
+
       <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
+
         <div class="flex items-end gap-4 flex-wrap w-full">
 
           <!-- ESQUERDA -->
           <div class="flex flex-wrap items-end gap-3">
-            <!-- Tipo -->
+
+            <!-- TÍTULO -->
             <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Tipo</label>
-              <select name="tipo"
-                class="w-40 px-2 py-1.5 border border-gray-300 rounded-md bg-white
-                       focus:ring-2 focus:ring-blue-500
-                       {% if tipo_selecionado %}text-black{% else %}text-black placeholder-gray-400{% endif %}">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Título
+              </label>
+
+              <input type="text"
+                     name="titulo"
+                     value="{{ titulo_busca }}"
+                     placeholder="Digite o título..."
+                     class="w-56 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500
+                            text-black placeholder-gray-400">
+            </div>
+
+            <!-- CÓDIGO -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Código
+              </label>
+
+              <input type="text"
+                     name="codigo"
+                     value="{{ codigo_busca }}"
+                     placeholder="Código..."
+                     class="w-36 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500
+                            text-black placeholder-gray-400">
+            </div>
+
+            <!-- NÚMERO -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Número
+              </label>
+
+              <input type="text"
+                     name="numero"
+                     value="{{ numero_busca }}"
+                     placeholder="Número..."
+                     class="w-28 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500
+                            text-black placeholder-gray-400">
+            </div>
+
+            <!-- SETOR -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Setor
+              </label>
+
+              <input type="text"
+                     name="setor"
+                     value="{{ setor_busca }}"
+                     placeholder="Setor..."
+                     class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
+                            focus:ring-2 focus:ring-blue-500
+                            text-black placeholder-gray-400">
+            </div>
+
+            <!-- ESTADO -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Estado
+              </label>
+
+              <select name="estado"
+                      class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
+                             bg-white focus:ring-2 focus:ring-blue-500 text-black">
 
                 <option value="">Todos</option>
 
-                {% for tipo in tipos_documento %}
-                  <option value="{{ tipo.slug }}"
-                    {% if tipo_selecionado == tipo.slug %}selected{% endif %}>
-                    {{ tipo.label }}
-                  </option>
-                {% endfor %}
+                <option value="ELABORADO"
+                  {% if estado_busca == "ELABORADO" %}selected{% endif %}>
+                  Elaborado
+                </option>
+
+                <option value="REVISADO"
+                  {% if estado_busca == "REVISADO" %}selected{% endif %}>
+                  Revisado
+                </option>
+
+                <option value="APROVADO"
+                  {% if estado_busca == "APROVADO" %}selected{% endif %}>
+                  Aprovado
+                </option>
+
               </select>
             </div>
 
-            <!-- Título -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Título</label>
-              <input type="text" name="titulo"
-                     value="{{ titulo_busca }}"
-                     placeholder="Digite título..."
-                     class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400">
-            </div>
-
-            <!-- Tema -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Tema</label>
-              <input type="text" name="tema"
-                     value="{{ tema_busca }}"
-                     placeholder="Digite tema..."
-                     class="w-48 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400">
-            </div>
-
-            <!-- Emitente -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Emitente</label>
-              <input type="text" name="emitente"
-                     value="{{ emitente_busca }}"
-                     placeholder="Emitente..."
-                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400">
-            </div>
-
-            <!-- Sistema -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Sistema</label>
-              <input type="text" name="sistema"
-                     value="{{ sistema_busca }}"
-                     placeholder="Sistema..."
-                     class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400">
-            </div>
-
-            <!-- Vigência De -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Vigência De</label>
-              <input name="vigencia_de"
-                     type="text"
-                     placeholder="dd/mm/aaaa"
-                     onfocus="this.type='date'"
-                     onblur="if(!this.value)this.type='text'"
-                     value="{{ vigencia_de }}"
-                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400">
-            </div>
-
-            <!-- Vigência Até -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Vigência Até</label>
-              <input name="vigencia_ate"
-                     type="text"
-                     placeholder="dd/mm/aaaa"
-                     onfocus="this.type='date'"
-                     onblur="if(!this.value)this.type='text'"
-                     value="{{ vigencia_ate }}"
-                     class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-400">
-            </div>
-
             <!-- REGISTROS/PÁGINA -->
-              <div class="flex flex-col">
-                <label class="text-sm font-semibold text-blue-800 mb-0.5">Registros/Página</label>
-                <select name="page_size"
-                        class="w-24 px-2 py-1.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 text-black">
-                  <option value="10" {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>10</option>
-                  <option value="20" {% if request.GET.page_size == "20" %}selected{% endif %}>20</option>
-                  <option value="30" {% if request.GET.page_size == "30" %}selected{% endif %}>30</option>
-                  <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
-                </select>
-              </div>
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                Registros/Página
+              </label>
+
+              <select name="page_size"
+                      class="w-24 px-2 py-1.5 border border-gray-300 rounded-md
+                             bg-white focus:ring-2 focus:ring-blue-500 text-black">
+
+                <option value="10"
+                  {% if request.GET.page_size == "10" or not request.GET.page_size %}selected{% endif %}>
+                  10
+                </option>
+
+                <option value="20"
+                  {% if request.GET.page_size == "20" %}selected{% endif %}>
+                  20
+                </option>
+
+                <option value="30"
+                  {% if request.GET.page_size == "30" %}selected{% endif %}>
+                  30
+                </option>
+
+                <option value="50"
+                  {% if request.GET.page_size == "50" %}selected{% endif %}>
+                  50
+                </option>
+
+              </select>
+            </div>
+
           </div>
 
           <!-- DIREITA -->
           <div class="flex items-end gap-3 ml-auto">
             <button type="submit"
-                    class="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    class="px-3 py-1.5 bg-blue-600 text-white rounded-md
+                           hover:bg-blue-700 transition">
               Filtrar
             </button>
 
-            <a href="{% url 'arquiteturaprocessos:modelagemprocessos' %}"
-               class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+            <a href="{% url 'arquiteturaprocessos:modelosprocesso' %}"
+               class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md
+                      hover:bg-gray-300 transition">
               Limpar
             </a>
 
-            <a href="{% url 'arquiteturaprocessos:form_modeloprocesso' %}"
-               class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+            <a href="{% url 'arquiteturaprocessos:criar_modeloprocesso' %}"
+               class="inline-flex items-center px-3 py-1.5 bg-blue-600
+                      text-white rounded-md hover:bg-blue-700 transition">
               + Novo
             </a>
           </div>
@@ -140,176 +180,204 @@
     </form>
     {% endif %}
 
+    <!-- ===================================================== -->
+    <!-- EXPORTAÇÃO -->
+    <!-- ===================================================== -->
     <div class="flex justify-end mb-0.5">
-        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='modelagemprocessos' %}
+      {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='modelosprocesso' %}
     </div>
 
+    <!-- ===================================================== -->
+    <!-- TABELA -->
+    <!-- ===================================================== -->
     <div class="overflow-x-auto">
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow">
+
+        <!-- HEADER -->
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 px-2 text-center w-[4%] align-middle">Tipo</th>
-            <th class="py-3 px-2 text-left w-[17%]">Título</th>
-            <th class="py-3 px-2 text-left w-[17%]">Tema</th>
-            <th class="py-3 px-2 text-left w-[14%]">Modelo de Processo</th>
-            <th class="py-3 px-2 text-left w-[14%]">Norma de Procedimento</th>
-            <th class="py-3 px-2 text-left w-[13%]">Emitente</th>
-            <th class="py-3 px-2 text-left w-[13%]">Sistema</th>
-            <th class="py-3 px-2 text-left w-[12%]">Portaria</th>
-            <th class="py-3 px-2 text-center w-[5%]">
-              <div class="flex flex-col items-center">
-                <span>Data</span><span>Aprovação</span>
-              </div>
-            </th>
-            <th class="py-3 px-2 text-center w-[7%] leading-tight">
-              <div class="flex flex-col items-center">
-                <span>Início</span><span>Vigência</span>
-              </div>
-            </th>
-            <th class="py-3 px-2 text-center w-[7%] leading-tight">
-              <div class="flex flex-col items-center">
-                <span>Fim</span><span>Vigência</span>
-              </div>
-            </th>
-
-            <th class="py-3 px-2 text-center w-[5%]">Ações</th>
+            <th class="py-3 pl-4 pr-2 text-left w-[18%]">Título</th>
+            <th class="py-3 px-2 text-left w-[22%]">Objetivo do Processo</th>
+            <th class="py-3 px-2 text-left w-[8%]">Código</th>
+            <th class="py-3 px-2 text-center w-[7%]">Número</th>
+            <th class="py-3 px-2 text-center w-[6%]">Versão</th>
+            <th class="py-3 px-2 text-left w-[10%]">Setor</th>
+            <th class="py-3 px-2 text-center w-[8%]">Estado</th>
+            <th class="py-3 px-2 text-left w-[10%]">Documento PDF</th>
+            <th class="py-3 px-2 text-left w-[10%]">Link Externo</th>
+            <th class="py-3 px-2 text-center w-[6%]">Ações</th>
           </tr>
         </thead>
 
+        <!-- BODY -->
         <tbody class="text-[0.8rem] leading-snug">
-          {% for modelagem in modelagemprocessos %}
+          {% for modelo in modelosprocesso %}
           <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %} hover:bg-blue-100 transition-colors">
-
-            <!-- Tipo de Documento -->
-            <td class="py-3 px-2 align-middle">
-              <div class="flex items-center justify-center h-full">
-                {% if modelagem.tipo_documento.nome == "MODELO DE PROCESSO" %}
-                  <span
-                    title="Modelo de Processo"
-                    class="inline-flex items-center justify-center w-7 h-5 text-[10px] font-bold rounded bg-blue-100 text-blue-700 cursor-help hover:bg-blue-200 transition">
-                    MP
-                  </span>
-                {% elif modelagem.tipo_documento.nome == "NORMA DE PROCEDIMENTO" %}
-                  <span
-                    title="Norma de Procedimento"
-                    class="inline-flex items-center justify-center w-7 h-5 text-[10px] font-bold rounded bg-green-100 text-green-700 cursor-help hover:bg-green-200 transition">
-                    NP
-                  </span>
-                {% endif %}
-              </div>
+            <!-- TÍTULO -->
+            <td class="py-3 pl-4 pr-2 align-top break-words">
+              {{ modelo.titulo }}
             </td>
 
-            <!-- Título -->
-            <td class="py-3 px-2 align-top break-words text-[0.8rem] leading-snug">
-              {{ modelagem.titulo }}
+            <!-- OBJETIVO -->
+            <td class="py-3 px-2 align-top break-words text-gray-700">
+              {{ modelo.objetivo_processo|truncatechars:120 }}
             </td>
 
-            <!-- Tema -->
-           <td class="py-3 px-2 align-top break-words text-[0.8rem] leading-snug">
-            {{ modelagem.tema|default_if_none:"----"  }}
-          </td>
-
-            <!-- Processo (PDF da Modelagem) -->
-            <td class="py-3 px-2 align-top">
-              {% if modelagem.documento_modelagem_processo %}
-                <button
-                  onclick="abrirModalDocumento(
-                    'http://127.0.0.1:8000{{ modelagem.documento_modelagem_processo.url }}',
-                    '{{ modelagem.documento_modelagem_processo|filename }}'
-                  )"
-                  title="{{ modelagem.documento_modelagem_processo|filename }}"
-                  class="block text-left text-blue-600 hover:underline cursor-pointer
-                         break-all leading-snug">
-                  {{ modelagem.documento_modelagem_processo|filename }}
-                </button>
-              {% else %}
-                ----
-              {% endif %}
+            <!-- CÓDIGO -->
+            <td class="py-3 px-2 align-top whitespace-nowrap">
+              {{ modelo.codigo }}
             </td>
 
-            <!-- Norma de Procedimento -->
-            <td class="py-3 px-2 align-top">
-              {% if modelagem.link_normaprocedimento %}
-                <button
-                  onclick="abrirModalDocumento(
-                    '{{ modelagem.link_normaprocedimento }}',
-                    '{{ modelagem.link_normaprocedimento|filename }}'
-                  )"
-                  title="{{ modelagem.link_normaprocedimento|filename }}"
-                  class="block text-left text-blue-600 hover:underline cursor-pointer
-                        break-all leading-snug text-[0.8rem]">
-                  {{ modelagem.link_normaprocedimento|filename }}
-                </button>
-              {% else %}
-                ----
-              {% endif %}
+            <!-- NÚMERO -->
+            <td class="py-3 px-2 align-top text-center whitespace-nowrap">
+              {{ modelo.numero_modelo }}
             </td>
 
-            <td class="py-3 px-2 align-top break-words">{{ modelagem.emitente|default_if_none:"----" }}</td>
+            <!-- VERSÃO -->
+            <td class="py-3 px-2 align-top text-center whitespace-nowrap">
+              V{{ modelo.versao }}
+            </td>
+
+            <!-- SETOR -->
             <td class="py-3 px-2 align-top break-words">
-                {% if modelagem.codigo or modelagem.sistema %}
-                    {{ modelagem.codigo|default_if_none:"----" }}
-                    {% if modelagem.codigo and modelagem.sistema %} – {% endif %}
-                    {{ modelagem.sistema|default_if_none:"----" }}
-                {% else %}
-                    ----
-                {% endif %}
-            </td>
-            <td class="py-3 px-2 align-top break-words text-[0.8rem] leading-snug">
-              {{ modelagem.portaria_aprovacao|default_if_none:"----"  }}
+              {{ modelo.setor }}
             </td>
 
-            <td class="py-3 px-2 align-top text-center whitespace-nowrap">
-              {% if modelagem.data_aprovacao %}{{ modelagem.data_aprovacao|date:"d/m/Y" }}{% endif %}
-            </td>
-            <td class="py-3 px-2 align-top text-center whitespace-nowrap">
-              {% if modelagem.vigencia_inicio %}{{ modelagem.vigencia_inicio|date:"d/m/Y" }}{% endif %}
-            </td>
-            <td class="py-3 px-2 align-top text-center whitespace-nowrap">
-              {% if modelagem.vigencia_fim %}{{ modelagem.vigencia_fim|date:"d/m/Y" }}{% endif %}
+            <!-- ESTADO -->
+            <td class="py-3 px-2 align-middle text-center">
+              {% if modelo.estado == "ELABORADO" %}
+                <span class="inline-flex items-center justify-center
+                             px-2 py-1 rounded text-[10px] font-bold
+                             bg-blue-100 text-blue-700">
+                  ELABORADO
+                </span>
+              {% elif modelo.estado == "REVISADO" %}
+                <span class="inline-flex items-center justify-center
+                             px-2 py-1 rounded text-[10px] font-bold
+                             bg-yellow-100 text-yellow-700">
+                  REVISADO
+                </span>
+              {% elif modelo.estado == "APROVADO" %}
+                <span class="inline-flex items-center justify-center
+                             px-2 py-1 rounded text-[10px] font-bold
+                             bg-green-100 text-green-700">
+                  APROVADO
+                </span>
+              {% endif %}
             </td>
 
-            <!-- Ações -->
+            <!-- DOCUMENTO PDF -->
+            <td class="py-3 px-2 align-top">
+              {% if modelo.documento_modelo_processo %}
+                <button
+                  onclick="abrirModalDocumento(
+                    'http://127.0.0.1:8000{{ modelo.documento_modelo_processo.url }}',
+                    '{{ modelo.documento_modelo_processo|filename }}'
+                  )"
+                  title="{{ modelo.documento_modelo_processo|filename }}"
+                  class="block text-left text-blue-600 hover:underline
+                         cursor-pointer break-all leading-snug">
+                  {{ modelo.documento_modelo_processo|filename }}
+                </button>
+              {% else %}
+                ----
+              {% endif %}
+            </td>
+
+            <!-- LINK EXTERNO -->
+            <td class="py-3 px-2 align-top">
+              {% if modelo.link_documento_externo %}
+                <button
+                  onclick="abrirModalDocumento(
+                    '{{ modelo.link_documento_externo }}',
+                    '{{ modelo.link_documento_externo|filename }}'
+                  )"
+                  title="{{ modelo.link_documento_externo|filename }}"
+                  class="block text-left text-blue-600 hover:underline
+                         cursor-pointer break-all leading-snug">
+                  {{ modelo.link_documento_externo|filename }}
+                </button>
+              {% else %}
+                ----
+              {% endif %}
+            </td>
+
+            <!-- AÇÕES -->
             <td class="py-3 px-2 text-center align-middle">
               <div class="flex justify-center items-center space-x-1.5">
-                <a href="{% url 'arquiteturaprocessos:visualizar_modelagemprocesso' modelagem.pk %}"
-                   title="Visualizar" class="text-blue-600 hover:text-blue-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                         viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                    </svg>
+
+                <!-- VISUALIZAR -->
+                <a href="{% url 'arquiteturaprocessos:visualizar_modeloprocesso' modelo.pk %}"
+                   title="Visualizar"
+                   class="text-blue-600 hover:text-blue-800">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       class="h-5 w-5"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5
+                             12 5c4.477 0 8.268 2.943 9.542 7
+                             -1.274 4.057-5.065 7-9.542 7
+                             -4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
                 </a>
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
-                <a href="{% url 'arquiteturaprocessos:editar_modelagemprocesso' modelagem.pk %}"
-                   class="text-yellow-600 hover:text-yellow-800" title="Editar">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                         viewBox="0 0 24 24" stroke="currentColor">
-                        <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
-                        <path fill-rule="evenodd"
-                              d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
-                              clip-rule="evenodd"/>
-                    </svg>
+
+                <!-- EDITAR -->
+                <a href="{% url 'arquiteturaprocessos:editar_modeloprocesso' modelo.pk %}"
+                   title="Editar"
+                   class="text-yellow-600 hover:text-yellow-800">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       class="h-5 w-5"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor">
+                    <path d="M17.414 2.586a2 2 0 0 0-2.828 0
+                             L7 10.172V13h2.828l7.586-7.586
+                             a2 2 0 0 0 0-2.828z"/>
+                    <path fill-rule="evenodd"
+                          clip-rule="evenodd"
+                          d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 0 2H4v10h10v-4
+                             a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4
+                             a2 2 0 0 1-2-2V6z"/>
+                  </svg>
                 </a>
-                <a href="{% url 'arquiteturaprocessos:excluir_modelagemprocesso' modelagem.pk %}"
-                    title="Excluir" class="text-red-600 hover:text-red-800">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                          viewBox="0 0 24 24" stroke="currentColor">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2h10z"/>
-                     </svg>
-                 </a>
+
+                <!-- EXCLUIR -->
+                <a href="{% url 'arquiteturaprocessos:excluir_modeloprocesso' modelo.pk %}"
+                   title="Excluir"
+                   class="text-red-600 hover:text-red-800">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       class="h-5 w-5"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                       stroke="currentColor">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21
+                             H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6
+                             m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9
+                             a2 2 0 0 0-2 2h10z"/>
+                  </svg>
+                </a>
                 {% endif %}
               </div>
             </td>
           </tr>
+
           {% empty %}
           <tr>
-            <td colspan="12" class="py-4 px-4 text-center text-gray-500">
-              Nenhuma modelagem de Processo encontrada.
+            <td colspan="10" class="py-4 px-4 text-center text-gray-500">
+              Nenhum Modelo de Processo encontrado.
             </td>
           </tr>
           {% endfor %}
@@ -317,28 +385,40 @@
       </table>
     </div>
 
+    <!-- ===================================================== -->
+    <!-- PAGINAÇÃO -->
+    <!-- ===================================================== -->
     <div class="flex justify-between items-center mt-6 text-sm text-gray-700">
-
       <div>
         Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
       </div>
 
       {% if page_obj.has_previous or page_obj.has_next %}
-        <div class="flex space-x-2">
+      <div class="flex space-x-2">
+        {% if page_obj.has_previous %}
+          <a href="?page=1&{{ query_string }}"
+             class="px-3 py-1 border rounded hover:bg-blue-100 transition">
+            « Primeira
+          </a>
 
-          {% if page_obj.has_previous %}
-            <a href="?page=1&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">« Primeira</a>
+          <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}"
+             class="px-3 py-1 border rounded hover:bg-blue-100 transition">
+            ‹ Anterior
+          </a>
+        {% endif %}
 
-            <a href="?page={{ page_obj.previous_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">‹ Anterior</a>
-          {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}"
+             class="px-3 py-1 border rounded hover:bg-blue-100 transition">
+            Próxima ›
+          </a>
 
-          {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Próxima ›</a>
-
-            <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}" class="px-3 py-1 border rounded hover:bg-blue-100 transition">Última »</a>
-          {% endif %}
-
-        </div>
+          <a href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}"
+             class="px-3 py-1 border rounded hover:bg-blue-100 transition">
+            Última »
+          </a>
+        {% endif %}
+      </div>
       {% endif %}
     </div>
   </div>

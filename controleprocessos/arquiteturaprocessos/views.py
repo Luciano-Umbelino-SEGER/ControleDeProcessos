@@ -42,7 +42,7 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
-    Perfil,
+    Perfil, ModeloProcesso,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -2470,18 +2470,206 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
         })
         return ctx
 
+# Aqui 1
+# ============================================================
+# LISTAGEM DE MODELOS DE PROCESSO
+# ===========================================================
+class ModelosProcessoView(LoginRequiredMixin, ListView):
 
-# ============================================================
-# LISTAGEM DE sssMODELOS DE PROCESSO
-# ============================================================
-class ModelosProcessoView(TemplateView):
+    model = ModeloProcesso
     template_name = "modelagemprocessos/modelosprocesso.html"
+    context_object_name = "modelos_processo"
 
+    # 🔥 PAGINAÇÃO DINÂMICA
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get("page_size")
+        try:
+            return int(page_size)
+        except (TypeError, ValueError):
+            return 10
+
+    # QUERYSET
+    def get_queryset(self):
+        req = self.request.GET
+        queryset = (
+            ModeloProcesso.objects
+            .select_related(
+                "usuario_elaboracao",
+                "usuario_revisao",
+                "usuario_aprovacao",
+                "usuario_atualizacao",
+            )
+        )
+
+        # FILTROS
+        titulo = req.get("titulo", "").strip()
+        codigo = req.get("codigo", "").strip()
+        estado = req.get("estado", "").strip()
+        setor = req.get("setor", "").strip()
+
+        # APLICA FILTROS
+        if titulo:
+            queryset = queryset.filter(
+                titulo__icontains=titulo
+            )
+
+        if codigo:
+            queryset = queryset.filter(
+                codigo__icontains=codigo
+            )
+
+        if estado:
+            queryset = queryset.filter(
+                estado=estado
+            )
+
+        if setor:
+            queryset = queryset.filter(
+                setor__icontains=setor
+            )
+
+        # ORDENAÇÃO
+        queryset = queryset.order_by(
+            "-data_atualizacao",
+            "-data_elaboracao",
+        )
+
+        return queryset
+
+    # ========================================================
+    # CONTEXTO
+    # ========================================================
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        req = self.request.GET
+
+        # MANTER FILTROS
+        context["titulo_busca"] = req.get("titulo", "")
+        context["codigo_busca"] = req.get("codigo", "")
+        context["estado_busca"] = req.get("estado", "")
+        context["setor_busca"] = req.get("setor", "")
+
+        # STATUS
+        context["status_choices"] = (
+            ModeloProcesso.STATUS_CHOICES
+        )
+
+        # QUERY STRING
+        query_params = self.request.GET.copy()
+        query_params_no_page = query_params.copy()
+
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = (
+            query_params_no_page.urlencode()
+        )
+
+        context["query_string_full"] = (
+            query_params.urlencode()
+        )
+
+        # TOTAL
+        context["total_registros"] = (
+            context["page_obj"].paginator.count
+        )
+
+        return context
+
+# ---------------------------------------------------
+# CRIAR
+# ---------------------------------------------------
+class CriarModeloProcesso(LoginRequiredMixin, CreateView):
+
+    model = ModeloProcesso
+    template_name = ('modelagemprocessos/form_modeloprocesso.html')
+    fields = "__all__"
+    success_url = reverse_lazy('arquiteturaprocessos:modelosprocesso')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
+
+        return context
+
+# ---------------------------------------------------
+# VISUALIZAR
+# ---------------------------------------------------
+class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
+
+    model = ModeloProcesso
+    template_name = ('modelagemprocessos/form_modeloprocesso.html')
+    context_object_name = 'modeloprocesso'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
+
+        return context
+
+# ---------------------------------------------------
+# EDITAR
+# ---------------------------------------------------
+class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
+
+    model = ModeloProcesso
+    template_name = ('modelagemprocessos/form_modeloprocesso.html')
+    context_object_name = 'modeloprocesso'
+    fields = "__all__"
+    success_url = reverse_lazy('arquiteturaprocessos:modelosprocesso')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
+
+        return context
+
+
+# ---------------------------------------------------
+# EXCLUIR
+# ---------------------------------------------------
+class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
+
+    model = ModeloProcesso
+    template_name = ('modelagemprocessos/form_modeloprocesso.html')
+    context_object_name = 'modeloprocesso'
+    success_url = reverse_lazy('arquiteturaprocessos:modelosprocesso')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
+
+        return context
 
 # ============================================================
 # NORMAS DE PROCEDIMENTO
 # ============================================================
-
 class NormasProcedimentoView(TemplateView):
     template_name = "modelagemprocessos/normasprocedimento.html"
 

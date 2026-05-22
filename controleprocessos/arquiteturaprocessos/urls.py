@@ -8,7 +8,8 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2, VisualizarMacroProcessoNivel2,
                     EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
-                    ModelosProcessoView, TemplateView, NormasProcedimentoView,
+                    ModelosProcessoView, CriarModeloProcesso, VisualizarModeloProcesso, EditarModeloProcesso, ExcluirModeloProcesso,
+                    TemplateView, NormasProcedimentoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
@@ -102,7 +103,10 @@ urlpatterns = [
     path('modelagemprocesso/<int:pk>/excluir/', ExcluirModelagemProcesso.as_view(), name='excluir_modelagemprocesso'),
     # MODELOS DE PROCESSO
     path('modelos-processo/', ModelosProcessoView.as_view(), name='modelosprocesso'),
-    path('modelos-processo/novo/',TemplateView.as_view(template_name='modelagemprocessos/form_modeloprocesso.html'), name='form_modeloprocesso'),
+    path('modelos-processo/novo/',  CriarModeloProcesso.as_view(), name='criar_modeloprocesso'),
+    path('modelos-processo/<int:pk>/visualizar/', VisualizarModeloProcesso.as_view(), name='visualizar_modeloprocesso'),
+    path('modelos-processo/<int:pk>/editar/', EditarModeloProcesso.as_view(), name='editar_modeloprocesso'),
+    path('modelos-processo/<int:pk>/excluir/', ExcluirModeloProcesso.as_view(), name='excluir_modeloprocesso'),
     # NORMAS DE PROCEDIMENTO
     path('normas-procedimento/', NormasProcedimentoView.as_view(), name='normasprocedimento'),
     path('normas-procedimento/novo/',TemplateView.as_view(template_name='modelagemprocessos/form_normaprocedimento.html'), name='form_normaprocedimento'),
