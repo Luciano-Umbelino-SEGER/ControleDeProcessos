@@ -15,7 +15,8 @@ from urllib.parse import urlparse
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
-    ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger
+    ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger,
+    ModeloProcesso
 )
 from django.db.models import Q
 
@@ -509,6 +510,515 @@ class Form_TipoDocumentoForm(forms.ModelForm):
         if nome:
             nome = nome.strip().upper()
         return nome
+
+# Aqui 1
+# ============================================================
+# FORM MODELO DE PROCESSO
+# ============================================================
+class Form_ModeloProcessoForm(forms.ModelForm):
+
+    # TÍTULO
+    titulo = forms.CharField(
+        required=True,
+        label="Título",
+        widget=forms.TextInput(attrs={
+            "class": "w-full border border-gray-300 rounded px-3 py-2 text-black "
+                     "focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase",
+            "placeholder": "Digite o Nome do Processo",
+            "autocomplete": "off",
+        })
+    )
+
+    # META
+    class Meta:
+        model = ModeloProcesso
+        exclude = (
+            "usuario_elaboracao",
+            "usuario_revisao",
+            "usuario_aprovacao",
+            "usuario_atualizacao",
+            "data_atualizacao",
+        )
+
+        widgets = {
+
+            "data_elaboracao": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={
+                    "type": "datetime-local"
+                }
+            ),
+
+            "data_revisao": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={
+                    "type": "datetime-local"
+                }
+            ),
+
+            "data_aprovacao": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={
+                    "type": "datetime-local"
+                }
+            ),
+        }
+
+    # INIT
+    def __init__(self, *args, **kwargs):
+
+        self.usuario_logado = kwargs.pop(
+            "usuario_logado",
+            None
+        )
+
+        self.modo_inclusao = kwargs.pop(
+            "modo_inclusao",
+            False
+        )
+
+        self.modo_visualizacao = kwargs.pop(
+            "modo_visualizacao",
+            False
+        )
+
+        self.modo_exclusao = kwargs.pop(
+            "modo_exclusao",
+            False
+        )
+
+        self.modo_edicao = kwargs.pop(
+            "modo_edicao",
+            False
+        )
+
+        super().__init__(*args, **kwargs)
+
+        self.label_suffix = ""
+
+        # DATAS INICIAIS
+        for fname in [
+            "data_elaboracao",
+            "data_revisao",
+            "data_aprovacao",
+        ]:
+
+            try:
+                valor = getattr(
+                    self.instance,
+                    fname
+                )
+
+                if valor:
+                    self.fields[fname].initial = (
+                        valor.strftime("%Y-%m-%dT%H:%M")
+                    )
+
+            except Exception:
+                pass
+
+        # CLASSE BASE
+        base_class = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        # ESTILO GERAL
+        for field in self.fields.values():
+            existing = field.widget.attrs.get(
+                "class",
+                ""
+            )
+
+            bg = (
+                "bg-gray-100"
+                if (
+                    self.modo_visualizacao
+                    or self.modo_exclusao
+                )
+                else "bg-white"
+            )
+
+            field.widget.attrs["class"] = (
+                f"{existing} {base_class} {bg}"
+            ).strip()
+
+            field.widget.attrs.setdefault(
+                "placeholder",
+                field.label
+            )
+
+            field.widget.attrs.update({
+
+                "autocomplete": "off",
+
+                "data-lpignore": "true",
+
+                "autocorrect": "off",
+
+                "autocapitalize": "off",
+
+                "spellcheck": "false",
+            })
+
+        # ========================================================
+        # AJUSTES ESPECÍFICOS
+        # ========================================================
+
+        # TÍTULO
+        self.fields["titulo"].widget.attrs[
+            "class"
+        ] += " uppercase"
+
+        # CÓDIGO
+        self.fields["codigo"].widget.attrs.update({
+
+            "placeholder": "Ex.: ELPI/SRH/SPA",
+
+            "maxlength": "20",
+
+            "class": (
+                self.fields["codigo"]
+                .widget.attrs["class"]
+                + " uppercase"
+            )
+        })
+
+        # NÚMERO MODELO
+        self.fields["numero_modelo"].widget.attrs.update({
+
+            "placeholder": "Ex.: 001/2025",
+
+            "inputmode": "numeric",
+
+            "maxlength": "8",
+        })
+
+        # VERSÃO
+        self.fields["versao"].widget.attrs.update({
+
+            "placeholder": "0001",
+
+            "inputmode": "numeric",
+
+            "maxlength": "4",
+        })
+
+        # LINK EXTERNO
+        self.fields[
+            "link_documento_externo"
+        ].widget.attrs.update({
+            "type": "url",
+            "placeholder": (
+                "https://exemplo.com/documento.pdf"
+            ),
+        })
+
+        # TEXTAREAS
+        textarea_fields = [
+            "objetivo_processo",
+            "abrangencia",
+            "fundamentacao_definicoes",
+            "envolvidos_externos",
+            "observacao",
+        ]
+
+        for field_name in textarea_fields:
+            self.fields[field_name].widget.attrs.update({
+                "rows": 3,
+                "class": (
+                    self.fields[field_name]
+                    .widget.attrs["class"]
+                    + " resize-none"
+                ),
+            })
+
+        # PDF WIDGET
+        if "documento_modelo_processo" in self.fields:
+            fwidget = self.fields[
+                "documento_modelo_processo"
+            ].widget
+
+            fwidget.attrs.setdefault(
+                "tabindex",
+                "0"
+            )
+
+            fwidget.attrs.setdefault(
+                "accept",
+                ".pdf,application/pdf"
+            )
+
+            if (
+                self.modo_edicao
+                or self.modo_visualizacao
+                or self.modo_exclusao
+            ):
+
+                self.fields[
+                    "documento_modelo_processo"
+                ].widget = FileInput(
+                    attrs=fwidget.attrs
+                )
+
+                if (
+                    self.instance
+                    and self.instance.documento_modelo_processo
+                ):
+
+                    nome_arq = os.path.basename(
+                        self.instance
+                        .documento_modelo_processo.name
+                    )
+
+                    self.fields[
+                        "documento_modelo_processo"
+                    ].widget.attrs[
+                        "placeholder"
+                    ] = nome_arq
+
+        # USUÁRIO
+        if (self.usuario_logado
+            and not self.instance.pk):
+            self.instance.usuario_elaboracao = (
+                self.usuario_logado
+            )
+
+        if (self.usuario_logado
+            and self.instance.pk):
+            self.instance.usuario_atualizacao = (
+                self.usuario_logado
+            )
+
+        # SOMENTE LEITURA
+        if (self.modo_visualizacao
+            or self.modo_exclusao):
+            for field in self.fields.values():
+                field.disabled = True
+                field.widget.attrs[
+                    "class"
+                ] += " bg-gray-100"
+
+    # TÍTULO
+    def clean_titulo(self):
+        titulo = (
+            self.cleaned_data.get("titulo") or ""
+        ).strip().upper()
+
+        if not titulo:
+            raise ValidationError(
+                "Informe o Nome do Processo."
+            )
+
+        return titulo
+
+    # CÓDIGO
+    def clean_codigo(self):
+
+        codigo = (
+            self.cleaned_data.get("codigo") or ""
+        ).strip().upper()
+
+        if not codigo:
+            raise ValidationError(
+                "Informe o Código."
+            )
+
+        if not re.fullmatch(
+            r"[A-Z0-9._/-]{2,20}",
+            codigo
+        ):
+
+            raise ValidationError(
+                "Código inválido. Utilize apenas "
+                "letras, números, ponto, hífen, "
+                "barra ou sublinhado."
+            )
+
+        return codigo
+
+    # NÚMERO MODELO
+    def clean_numero_modelo(self):
+        numero = (
+            self.cleaned_data.get(
+                "numero_modelo"
+            ) or ""
+        ).strip()
+
+        match = re.fullmatch(
+            r"(\d{1,3})/(\d{4})",
+            numero
+        )
+
+        if not match:
+            raise ValidationError(
+                "Informe no formato 001/2025."
+            )
+
+        seq, ano = match.groups()
+
+        return f"{int(seq):03d}/{ano}"
+
+    # VERSÃO
+    def clean_versao(self):
+        versao = (
+            self.cleaned_data.get("versao") or ""
+        ).strip()
+
+        if not versao:
+            raise ValidationError(
+                "Informe a versão."
+            )
+
+        if not versao.isdigit():
+            raise ValidationError(
+                "A versão deve conter apenas números."
+            )
+
+        versao = versao.zfill(4)
+        if versao == "0000":
+            raise ValidationError(
+                "A versão deve ser maior que 0000."
+            )
+
+        if not re.fullmatch(
+                r"\d{4}",
+                versao
+        ):
+
+            raise ValidationError(
+                "Informe no formato 0001."
+            )
+
+        return versao
+
+    # SETOR
+    def clean_setor(self):
+        setor = (
+            self.cleaned_data.get("setor") or ""
+        ).strip().upper()
+
+        if not setor:
+            raise ValidationError(
+                "Informe o Setor."
+            )
+
+        return setor
+
+    # OBJETIVO
+    def clean_objetivo_processo(self):
+        objetivo = (
+            self.cleaned_data.get(
+                "objetivo_processo"
+            ) or ""
+        ).strip()
+
+        if not objetivo:
+            raise ValidationError(
+                "Informe o Objetivo do Processo."
+            )
+
+        return objetivo
+
+    # PDF
+    def clean_documento_modelo_processo(self):
+        f = self.cleaned_data.get(
+            "documento_modelo_processo"
+        )
+
+        if not f:
+            return f
+
+        # edição sem novo upload
+        if not hasattr(f, "content_type"):
+            return f
+
+        content_type = f.content_type
+
+        file_name = f.name.lower()
+
+        is_pdf_type = content_type in (
+            "application/pdf",
+            "application/x-pdf",
+        )
+
+        is_pdf_name = file_name.endswith(".pdf")
+
+        if not (is_pdf_type
+            or is_pdf_name):
+            raise ValidationError(
+                "Envie um PDF válido (.pdf)."
+            )
+
+        # assinatura PDF
+        if hasattr(f, "read"):
+            header = f.read(4)
+            f.seek(0)
+
+            if header != b"%PDF":
+                raise ValidationError(
+                    "Arquivo não é um PDF válido."
+                )
+
+        return f
+
+    # LINK EXTERNO
+    def clean_link_documento_externo(self):
+        link = self.cleaned_data.get(
+            "link_documento_externo"
+        )
+
+        if not link:
+            return link
+
+        link = link.strip()
+
+        parsed = urlparse(link)
+
+        if (not parsed.scheme
+            or not parsed.netloc):
+
+            raise ValidationError(
+                "Informe uma URL válida."
+            )
+
+        if parsed.scheme not in (
+            "http",
+            "https"
+        ):
+
+            raise ValidationError(
+                "A URL deve começar com "
+                "http:// ou https://."
+            )
+
+        return link
+
+    # SAVE
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+
+        # elaboração
+        if (self.usuario_logado
+            and not obj.usuario_elaboracao_id):
+
+            obj.usuario_elaboracao = (
+                self.usuario_logado
+            )
+
+        # atualização
+        if (self.usuario_logado
+            and obj.pk):
+
+            obj.usuario_atualizacao = (
+                self.usuario_logado
+            )
+
+        if commit:
+            obj.save()
+
+        return obj
 
 # ============================================================
 # Modelagem de Processos

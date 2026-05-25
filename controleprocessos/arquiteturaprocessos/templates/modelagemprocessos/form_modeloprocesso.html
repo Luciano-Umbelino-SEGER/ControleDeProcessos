@@ -86,20 +86,17 @@
                             <label class="block text-sm font-semibold text-blue-700 mb-1">
                                 Código
                             </label>
-
-                            <input type="text"
-                                   placeholder="ELPI-PRO-ASCOM"
-                                   class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-black">
+                            {{ form.codigo }}
                         </div>
 
                         <!-- Número -->
                         <div class="col-span-12 md:col-span-2">
                             <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                Número
+                                Número do Modelo
                             </label>
 
                             <input type="text"
-                                   placeholder="001-2025"
+                                   placeholder="Ex.:001/2025"
                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-black">
                         </div>
 
@@ -110,7 +107,7 @@
                             </label>
 
                             <input type="text"
-                                   placeholder="01"
+                                   placeholder="0001"
                                    class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-black">
                         </div>
 
@@ -135,7 +132,7 @@
                             </label>
 
                             <input type="text"
-                                   placeholder="DIGITE O NOME DO PROCESSO"
+                                   placeholder="Digite o Nome do Processo"
                                    class="w-full border border-gray-300 rounded px-3 py-2
                                           bg-white text-black uppercase">
                         </div>
@@ -412,8 +409,8 @@
       {% if not modo_visualizacao %}
         {% if modo_exclusao %}
           <button @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:excluir_modelagemprocesso' modelagemprocesso.id %}',
-                        mensagem: 'Confirma a exclusão da Modelagem de Processo &lt;strong&gt;{{ modelagemprocesso.codigo }} Nº {{ modelagemprocesso.sequencial }} - Versão {{ modelagemprocesso.versao }} - {{ modelagemprocesso.tema }}&lt;/strong&gt;?'
+                        url: '{% url 'arquiteturaprocessos:excluir_modeloprocesso' modeloprocesso.id %}',
+                        mensagem: 'Confirma a exclusão do Modelo de Processo &lt;strong&gt;{{ modeloprocesso.codigo }} Nº {{ modeloprocesso.numero_modelo }} - Versão {{ modeloprocesso.versao }} - {{ modeloprocesso.titulo }}&lt;/strong&gt;?'
                     })" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="button">
             Confirmar Exclusão
           </button>
@@ -423,7 +420,7 @@
           </button>
         {% else %}
           <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-            Adicionar Modelo Processo
+            Adicionar Modelo de Processo
           </button>
         {% endif %}
       {% endif %}
@@ -436,34 +433,93 @@
 </div>
 
 <script>
-  (function () {
-    function setupNumericPad(el, maxLen, padLen) {
-      if (!el) return;
-      el.setAttribute('type', 'text');
-      el.setAttribute('inputmode', 'numeric');
-      el.setAttribute('pattern', '[0-9]*');
-      el.setAttribute('autocomplete', 'off');
-      el.maxLength = maxLen;
-      el.addEventListener('input', function () {
-        const onlyDigits = this.value.replace(/\D+/g, '').slice(0, maxLen);
-        if (this.value !== onlyDigits) this.value = onlyDigits;
-      });
-      el.addEventListener('blur', function () {
-        if (this.value.trim() !== '') {
-            this.value = this.value.padStart(padLen, '0');
-        }
-      });
+(function () {
+
+    // =====================================================
+    // VERSÃO -> 0001
+    // =====================================================
+
+    const versao = document.getElementById('id_versao');
+
+    if (versao) {
+
+        versao.setAttribute('inputmode', 'numeric');
+
+        versao.addEventListener('input', function () {
+            this.value = this.value.replace(/\D+/g, '').slice(0, 4);
+        });
+
+        versao.addEventListener('blur', function () {
+
+            if (this.value.trim() !== '') {
+                this.value = this.value.padStart(4, '0');
+            }
+
+        });
     }
 
-    setupNumericPad(document.getElementById('id_sequencial'), 4, 4);
-    setupNumericPad(document.getElementById('id_versao'), 4, 2);
+    // =====================================================
+    // NÚMERO MODELO -> 001/2025
+    // =====================================================
+    const numero = document.getElementById('id_numero_modelo');
 
-    ['id_data_elaboracao', 'id_data_aprovacao', 'id_vigencia_inicio', 'id_vigencia_fim']
-      .forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.whiteSpace = 'nowrap';
-      });
-  })();
+    if (numero) {
+        numero.setAttribute('inputmode', 'numeric');
+        numero.addEventListener('input', function () {
+
+            let value = this.value
+                .replace(/[^\d/]/g, '')
+                .replace(/\/+/g, '/');
+
+            // Remove barras extras
+            const parts = value.split('/');
+
+            if (parts.length > 2) {
+                value = parts[0] + '/' + parts[1];
+            }
+
+            // Limita número
+            if (parts[0]) {
+                parts[0] = parts[0].slice(0, 3);
+            }
+
+            // Limita ano
+            if (parts[1]) {
+                parts[1] = parts[1].slice(0, 4);
+            }
+
+            value = parts.join('/');
+
+            // Adiciona barra automática
+            if (
+                parts[0]
+                && parts[0].length === 3
+                && parts.length === 1
+            ) {
+                value += '/';
+            }
+
+            this.value = value;
+
+        });
+
+        numero.addEventListener('blur', function () {
+
+            let match = this.value.match(/^(\d{1,3})\/(\d{4})$/);
+
+            if (match) {
+
+                let numeroParte = match[1].padStart(3, '0');
+
+                this.value = numeroParte + '/' + match[2];
+
+            }
+
+        });
+
+    }
+
+})();
 </script>
 
 <script>

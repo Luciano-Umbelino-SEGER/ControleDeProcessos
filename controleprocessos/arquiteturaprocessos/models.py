@@ -426,22 +426,27 @@ class ModeloProcesso(models.Model):
     )
 
     numero_modelo = models.CharField(
-        max_length=20,
+        max_length=8,
         db_index=True,
         validators=[
             RegexValidator(
-                regex=r"^\d{1,10}$",
-                message="Informe apenas números.",
+                regex=r"^\d{3}/\d{4}$",
+                message="Informe no formato 001/2025.",
             )
         ],
         verbose_name="Número do Modelo",
     )
 
-    versao = models.PositiveSmallIntegerField(
+    versao = models.CharField(
+        max_length=4,
+        db_index=True,
         validators=[
-            MinValueValidator(1),
-            MaxValueValidator(9999),
+            RegexValidator(
+                regex=r"^(?!0000)\d{4}$",
+                message="Informe a versão no formato 0001.",
+            )
         ],
+        default="0001",
         verbose_name="Versão",
     )
 
@@ -589,9 +594,18 @@ class ModeloProcesso(models.Model):
 
         verbose_name_plural = "Modelos de Processo"
 
+        indexes = [
+            models.Index(fields=["titulo"]),
+            models.Index(fields=["codigo"]),
+            models.Index(fields=["numero_modelo"]),
+            models.Index(fields=["estado"]),
+        ]
+
         ordering = [
             "-data_atualizacao",
-            "-data_elaboracao",
+            "titulo",
+            "numero_modelo",
+            "versao",
         ]
 
     # ========================================================
@@ -631,7 +645,7 @@ class ModeloProcesso(models.Model):
 
         versao = self.versao or "--"
 
-        return f"{self.titulo} - {codigo}-{numero} - V{versao}"
+        return f"{self.titulo} | {codigo} | {numero} | V{versao}"
 
 
 # ============================================================
