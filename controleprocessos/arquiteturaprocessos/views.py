@@ -53,7 +53,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
-    Form_AreaResponsavelForm,
+    Form_AreaResponsavelForm, Form_ModeloProcessoForm,
 )
 
 # ---------------------------------------------------
@@ -2578,15 +2578,24 @@ class ModelosProcessoView(LoginRequiredMixin, ListView):
 
         return context
 
+# Aqui 2
 # ---------------------------------------------------
 # CRIAR
 # ---------------------------------------------------
 class CriarModeloProcesso(LoginRequiredMixin, CreateView):
-
     model = ModeloProcesso
     template_name = ('modelagemprocessos/form_modeloprocesso.html')
-    fields = "__all__"
+    form_class = Form_ModeloProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:modelosprocesso')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({
+            'usuario_logado': self.request.user,
+            'modo_inclusao': True,
+        })
+
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

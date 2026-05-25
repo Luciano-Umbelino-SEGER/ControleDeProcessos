@@ -517,21 +517,25 @@ class Form_TipoDocumentoForm(forms.ModelForm):
 # ============================================================
 class Form_ModeloProcessoForm(forms.ModelForm):
 
+    # ========================================================
     # TÍTULO
+    # ========================================================
     titulo = forms.CharField(
         required=True,
         label="Título",
         widget=forms.TextInput(attrs={
-            "class": "w-full border border-gray-300 rounded px-3 py-2 text-black "
-                     "focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase",
-            "placeholder": "Digite o Nome do Processo",
+            "placeholder": "DIGITE O NOME DO PROCESSO",
             "autocomplete": "off",
         })
     )
 
+    # ========================================================
     # META
+    # ========================================================
     class Meta:
+
         model = ModeloProcesso
+
         exclude = (
             "usuario_elaboracao",
             "usuario_revisao",
@@ -564,9 +568,10 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             ),
         }
 
+    # ========================================================
     # INIT
+    # ========================================================
     def __init__(self, *args, **kwargs):
-
         self.usuario_logado = kwargs.pop(
             "usuario_logado",
             None
@@ -596,7 +601,9 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         self.label_suffix = ""
 
+        # ====================================================
         # DATAS INICIAIS
+        # ====================================================
         for fname in [
             "data_elaboracao",
             "data_revisao",
@@ -604,12 +611,14 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ]:
 
             try:
+
                 valor = getattr(
                     self.instance,
                     fname
                 )
 
                 if valor:
+
                     self.fields[fname].initial = (
                         valor.strftime("%Y-%m-%dT%H:%M")
                     )
@@ -617,105 +626,89 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             except Exception:
                 pass
 
-        # CLASSE BASE
+        # ====================================================
+        # CLASSE BASE PADRÃO SIGEMP
+        # ====================================================
         base_class = (
-            "w-full border border-gray-300 rounded-md px-3 py-2 "
-            "text-black placeholder-gray-500 "
-            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+            "w-full h-[42px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "bg-white "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500"
         )
 
-        # ESTILO GERAL
-        for field in self.fields.values():
-            existing = field.widget.attrs.get(
-                "class",
-                ""
+        textarea_class = (
+            "w-full min-h-[140px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "bg-white "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500 "
+            "resize-none"
+        )
+
+        # ====================================================
+        # BACKGROUND
+        # ====================================================
+        bg = (
+            "bg-gray-100"
+            if (
+                self.modo_visualizacao
+                or self.modo_exclusao
             )
+            else "bg-white"
+        )
 
-            bg = (
-                "bg-gray-100"
-                if (
-                    self.modo_visualizacao
-                    or self.modo_exclusao
-                )
-                else "bg-white"
-            )
-
-            field.widget.attrs["class"] = (
-                f"{existing} {base_class} {bg}"
-            ).strip()
-
-            field.widget.attrs.setdefault(
-                "placeholder",
-                field.label
-            )
-
-            field.widget.attrs.update({
-
-                "autocomplete": "off",
-
-                "data-lpignore": "true",
-
-                "autocorrect": "off",
-
-                "autocapitalize": "off",
-
-                "spellcheck": "false",
-            })
-
-        # ========================================================
-        # AJUSTES ESPECÍFICOS
-        # ========================================================
-
-        # TÍTULO
-        self.fields["titulo"].widget.attrs[
-            "class"
-        ] += " uppercase"
+        # ====================================================
+        # IDENTIFICAÇÃO DO DOCUMENTO
+        # ====================================================
 
         # CÓDIGO
         self.fields["codigo"].widget.attrs.update({
-
-            "placeholder": "Ex.: ELPI/SRH/SPA",
-
+            "class": f"{base_class} {bg} uppercase",
+            "placeholder": "Ex.: ELPI/SRH/...",
             "maxlength": "20",
-
-            "class": (
-                self.fields["codigo"]
-                .widget.attrs["class"]
-                + " uppercase"
-            )
+            "autocomplete": "off",
         })
 
-        # NÚMERO MODELO
+        # NÚMERO
         self.fields["numero_modelo"].widget.attrs.update({
-
+            "class": f"{base_class} {bg}",
             "placeholder": "Ex.: 001/2025",
-
-            "inputmode": "numeric",
-
             "maxlength": "8",
+            "autocomplete": "off",
         })
 
         # VERSÃO
         self.fields["versao"].widget.attrs.update({
-
-            "placeholder": "0001",
-
-            "inputmode": "numeric",
-
+            "class": f"{base_class} {bg}",
+            "placeholder": "Ex.: 0001",
             "maxlength": "4",
+            "autocomplete": "off",
         })
 
-        # LINK EXTERNO
-        self.fields[
-            "link_documento_externo"
-        ].widget.attrs.update({
-            "type": "url",
-            "placeholder": (
-                "https://exemplo.com/documento.pdf"
-            ),
+        # ESTADO
+        self.fields["estado"].widget.attrs.update({
+            "class": f"{base_class} {bg}",
         })
 
+        # TÍTULO
+        self.fields["titulo"].widget.attrs.update({
+            "class": f"{base_class} {bg} uppercase",
+            "placeholder": "DIGITE O NOME DO PROCESSO",
+            "autocomplete": "off",
+        })
+
+        # ====================================================
         # TEXTAREAS
+        # ====================================================
         textarea_fields = [
             "objetivo_processo",
             "abrangencia",
@@ -725,17 +718,25 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ]
 
         for field_name in textarea_fields:
+            if field_name not in self.fields:
+                continue
+
+            self.fields[field_name].widget = forms.Textarea()
+
             self.fields[field_name].widget.attrs.update({
-                "rows": 3,
-                "class": (
-                    self.fields[field_name]
-                    .widget.attrs["class"]
-                    + " resize-none"
-                ),
+                "class": f"{textarea_class} {bg}",
+                "rows": 5,
+                "maxlength": "3000",
+                "style": "text-align:justify;",
+                "autocomplete": "off",
+                "placeholder": self.fields[field_name].label,
             })
 
+        # ====================================================
         # PDF WIDGET
+        # ====================================================
         if "documento_modelo_processo" in self.fields:
+
             fwidget = self.fields[
                 "documento_modelo_processo"
             ].widget
@@ -778,42 +779,63 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                         "placeholder"
                     ] = nome_arq
 
+        # ====================================================
         # USUÁRIO
-        if (self.usuario_logado
-            and not self.instance.pk):
+        # ====================================================
+        if (
+            self.usuario_logado
+            and not self.instance.pk
+        ):
+
             self.instance.usuario_elaboracao = (
                 self.usuario_logado
             )
 
-        if (self.usuario_logado
-            and self.instance.pk):
+        if (
+            self.usuario_logado
+            and self.instance.pk
+        ):
+
             self.instance.usuario_atualizacao = (
                 self.usuario_logado
             )
 
+        # ====================================================
         # SOMENTE LEITURA
-        if (self.modo_visualizacao
-            or self.modo_exclusao):
+        # ====================================================
+        if (
+            self.modo_visualizacao
+            or self.modo_exclusao
+        ):
+
             for field in self.fields.values():
+
                 field.disabled = True
+
                 field.widget.attrs[
                     "class"
                 ] += " bg-gray-100"
 
+    # ========================================================
     # TÍTULO
+    # ========================================================
     def clean_titulo(self):
+
         titulo = (
             self.cleaned_data.get("titulo") or ""
         ).strip().upper()
 
         if not titulo:
+
             raise ValidationError(
                 "Informe o Nome do Processo."
             )
 
         return titulo
 
+    # ========================================================
     # CÓDIGO
+    # ========================================================
     def clean_codigo(self):
 
         codigo = (
@@ -821,6 +843,7 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ).strip().upper()
 
         if not codigo:
+
             raise ValidationError(
                 "Informe o Código."
             )
@@ -838,8 +861,11 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         return codigo
 
+    # ========================================================
     # NÚMERO MODELO
+    # ========================================================
     def clean_numero_modelo(self):
+
         numero = (
             self.cleaned_data.get(
                 "numero_modelo"
@@ -847,67 +873,73 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ).strip()
 
         match = re.fullmatch(
-            r"(\d{1,3})/(\d{4})",
+            r"(\d{1,3})[-/](\d{4})",
             numero
         )
 
         if not match:
+
             raise ValidationError(
-                "Informe no formato 001/2025."
+                "Informe no formato 001-2025."
             )
 
         seq, ano = match.groups()
 
-        return f"{int(seq):03d}/{ano}"
+        return f"{int(seq):03d}-{ano}"
 
+    # ========================================================
     # VERSÃO
+    # ========================================================
     def clean_versao(self):
+
         versao = (
             self.cleaned_data.get("versao") or ""
         ).strip()
 
         if not versao:
+
             raise ValidationError(
                 "Informe a versão."
             )
 
         if not versao.isdigit():
+
             raise ValidationError(
                 "A versão deve conter apenas números."
             )
 
-        versao = versao.zfill(4)
-        if versao == "0000":
-            raise ValidationError(
-                "A versão deve ser maior que 0000."
-            )
+        versao = versao.zfill(2)
 
-        if not re.fullmatch(
-                r"\d{4}",
-                versao
-        ):
+        if versao == "00":
 
             raise ValidationError(
-                "Informe no formato 0001."
+                "A versão deve ser maior que 00."
             )
 
         return versao
 
+    # ========================================================
     # SETOR
+    # ========================================================
     def clean_setor(self):
+
         setor = (
             self.cleaned_data.get("setor") or ""
         ).strip().upper()
 
         if not setor:
+
             raise ValidationError(
                 "Informe o Setor."
             )
 
         return setor
 
+    # ========================================================
     # OBJETIVO
+    # ========================================================
     def clean_objetivo_processo(self):
+
         objetivo = (
             self.cleaned_data.get(
                 "objetivo_processo"
@@ -915,14 +947,18 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ).strip()
 
         if not objetivo:
+
             raise ValidationError(
                 "Informe o Objetivo do Processo."
             )
 
         return objetivo
 
+    # ========================================================
     # PDF
+    # ========================================================
     def clean_documento_modelo_processo(self):
+
         f = self.cleaned_data.get(
             "documento_modelo_processo"
         )
@@ -930,7 +966,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         if not f:
             return f
 
-        # edição sem novo upload
         if not hasattr(f, "content_type"):
             return f
 
@@ -945,26 +980,34 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         is_pdf_name = file_name.endswith(".pdf")
 
-        if not (is_pdf_type
-            or is_pdf_name):
+        if not (
+            is_pdf_type
+            or is_pdf_name
+        ):
+
             raise ValidationError(
                 "Envie um PDF válido (.pdf)."
             )
 
-        # assinatura PDF
         if hasattr(f, "read"):
+
             header = f.read(4)
+
             f.seek(0)
 
             if header != b"%PDF":
+
                 raise ValidationError(
                     "Arquivo não é um PDF válido."
                 )
 
         return f
 
+    # ========================================================
     # LINK EXTERNO
+    # ========================================================
     def clean_link_documento_externo(self):
+
         link = self.cleaned_data.get(
             "link_documento_externo"
         )
@@ -976,8 +1019,10 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         parsed = urlparse(link)
 
-        if (not parsed.scheme
-            or not parsed.netloc):
+        if (
+            not parsed.scheme
+            or not parsed.netloc
+        ):
 
             raise ValidationError(
                 "Informe uma URL válida."
@@ -995,21 +1040,26 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         return link
 
+    # ========================================================
     # SAVE
+    # ========================================================
     def save(self, commit=True):
+
         obj = super().save(commit=False)
 
-        # elaboração
-        if (self.usuario_logado
-            and not obj.usuario_elaboracao_id):
+        if (
+            self.usuario_logado
+            and not obj.usuario_elaboracao_id
+        ):
 
             obj.usuario_elaboracao = (
                 self.usuario_logado
             )
 
-        # atualização
-        if (self.usuario_logado
-            and obj.pk):
+        if (
+            self.usuario_logado
+            and obj.pk
+        ):
 
             obj.usuario_atualizacao = (
                 self.usuario_logado
