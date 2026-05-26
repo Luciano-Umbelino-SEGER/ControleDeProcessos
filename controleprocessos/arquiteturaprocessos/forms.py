@@ -642,7 +642,7 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         )
 
         textarea_class = (
-            "w-full min-h-[140px] "
+            "w-full h-[96px] "
             "border border-gray-300 rounded-md "
             "px-3 py-2 "
             "text-black "
@@ -717,6 +717,26 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             "observacao",
         ]
 
+        # ====================================================
+        # DADOS DO PROCESSO - INPUTS
+        # ====================================================
+
+        self.fields["setor"].widget = forms.TextInput()
+
+        self.fields["setor"].widget.attrs.update({
+            "class": f"{base_class} {bg}",
+            "placeholder": "Ex.: GERÊNCIA / SETOR",
+            "autocomplete": "off",
+        })
+
+        self.fields["unidades_envolvidas"].widget = forms.TextInput()
+
+        self.fields["unidades_envolvidas"].widget.attrs.update({
+            "class": f"{base_class} {bg}",
+            "placeholder": "Ex.: RH / FINANCEIRO / TI",
+            "autocomplete": "off",
+        })
+
         for field_name in textarea_fields:
             if field_name not in self.fields:
                 continue
@@ -730,6 +750,29 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                 "style": "text-align:justify;",
                 "autocomplete": "off",
                 "placeholder": self.fields[field_name].label,
+            })
+
+        # ========================================================
+        # LINK DOCUMENTO EXTERNO
+        # ========================================================
+        if "link_documento_externo" in self.fields:
+            self.fields[
+                "link_documento_externo"
+            ].widget.attrs.update({
+                "type": "url",
+                "placeholder": "https://exemplo.com/documento.pdf",
+                "autocomplete": "off",
+                "class": (
+                    "w-full min-h-[42px] "
+                    "border border-gray-300 rounded-lg "
+                    "px-4 py-3 "
+                    "text-black "
+                    "bg-white "
+                    "placeholder-gray-400 "
+                    "focus:outline-none "
+                    "focus:ring-2 "
+                    "focus:ring-blue-500"
+                ),
             })
 
         # ====================================================
