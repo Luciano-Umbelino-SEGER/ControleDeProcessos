@@ -541,32 +541,12 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             "usuario_revisao",
             "usuario_aprovacao",
             "usuario_atualizacao",
+
+            "data_elaboracao",
+            "data_revisao",
+            "data_aprovacao",
             "data_atualizacao",
         )
-
-        widgets = {
-
-            "data_elaboracao": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M",
-                attrs={
-                    "type": "datetime-local"
-                }
-            ),
-
-            "data_revisao": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M",
-                attrs={
-                    "type": "datetime-local"
-                }
-            ),
-
-            "data_aprovacao": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M",
-                attrs={
-                    "type": "datetime-local"
-                }
-            ),
-        }
 
     # ========================================================
     # INIT
@@ -602,31 +582,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         self.label_suffix = ""
 
         # ====================================================
-        # DATAS INICIAIS
-        # ====================================================
-        for fname in [
-            "data_elaboracao",
-            "data_revisao",
-            "data_aprovacao",
-        ]:
-
-            try:
-
-                valor = getattr(
-                    self.instance,
-                    fname
-                )
-
-                if valor:
-
-                    self.fields[fname].initial = (
-                        valor.strftime("%Y-%m-%dT%H:%M")
-                    )
-
-            except Exception:
-                pass
-
-        # ====================================================
         # CLASSE BASE PADRÃO SIGEMP
         # ====================================================
         base_class = (
@@ -634,7 +589,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             "border border-gray-300 rounded-md "
             "px-3 py-2 "
             "text-black "
-            "bg-white "
             "placeholder-gray-400 "
             "focus:outline-none "
             "focus:ring-2 "
@@ -651,7 +605,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             "focus:outline-none "
             "focus:ring-2 "
             "focus:ring-blue-500 "
-            "resize-none"
         )
 
         # ====================================================
@@ -702,7 +655,7 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         # TÍTULO
         self.fields["titulo"].widget.attrs.update({
             "class": f"{base_class} {bg} uppercase",
-            "placeholder": "DIGITE O NOME DO PROCESSO",
+            "placeholder": "DIGITE O NOME DO MODELO DE PROCESSO",
             "autocomplete": "off",
         })
 
@@ -745,7 +698,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
             self.fields[field_name].widget.attrs.update({
                 "class": f"{textarea_class} {bg}",
-                "rows": 5,
                 "maxlength": "3000",
                 "style": "text-align:justify;",
                 "autocomplete": "off",
@@ -763,9 +715,10 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                 "placeholder": "https://exemplo.com/documento.pdf",
                 "autocomplete": "off",
                 "class": (
-                    "w-full min-h-[42px] "
+                    "w-full min-h-[48px] "
+                    "leading-normal "
                     "border border-gray-300 rounded-lg "
-                    "px-4 py-3 "
+                    "px-3 py-2 "
                     "text-black "
                     "bg-white "
                     "placeholder-gray-400 "
@@ -794,11 +747,10 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                 ".pdf,application/pdf"
             )
 
-            if (
-                self.modo_edicao
-                or self.modo_visualizacao
-                or self.modo_exclusao
-            ):
+            # =================================================
+            # FILE INPUT APENAS NA EDIÇÃO
+            # =================================================
+            if self.modo_edicao:
 
                 self.fields[
                     "documento_modelo_processo"
@@ -807,10 +759,9 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                 )
 
                 if (
-                    self.instance
-                    and self.instance.documento_modelo_processo
+                        self.instance
+                        and self.instance.documento_modelo_processo
                 ):
-
                     nome_arq = os.path.basename(
                         self.instance
                         .documento_modelo_processo.name
@@ -823,24 +774,15 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                     ] = nome_arq
 
         # ====================================================
-        # USUÁRIO
+        # REMOVE FILE INPUT NA VISUALIZAÇÃO/EXCLUSÃO
         # ====================================================
         if (
-            self.usuario_logado
-            and not self.instance.pk
+                self.modo_visualizacao
+                or self.modo_exclusao
         ):
-
-            self.instance.usuario_elaboracao = (
-                self.usuario_logado
-            )
-
-        if (
-            self.usuario_logado
-            and self.instance.pk
-        ):
-
-            self.instance.usuario_atualizacao = (
-                self.usuario_logado
+            self.fields.pop(
+                "documento_modelo_processo",
+                None
             )
 
         # ====================================================
@@ -852,12 +794,12 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ):
 
             for field in self.fields.values():
-
                 field.disabled = True
 
-                field.widget.attrs[
-                    "class"
-                ] += " bg-gray-100"
+                field.widget.attrs["class"] = (
+                        field.widget.attrs.get("class", "")
+                        + " bg-gray-100"
+                )
 
     # ========================================================
     # TÍTULO
@@ -923,12 +865,12 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         if not match:
 
             raise ValidationError(
-                "Informe no formato 001-2025."
+                "Informe no formato 001/2025."
             )
 
         seq, ano = match.groups()
 
-        return f"{int(seq):03d}-{ano}"
+        return f"{int(seq):03d}/{ano}"
 
     # ========================================================
     # VERSÃO
@@ -951,9 +893,9 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                 "A versão deve conter apenas números."
             )
 
-        versao = versao.zfill(2)
+        versao = versao.zfill(4)
 
-        if versao == "00":
+        if versao == "0000":
 
             raise ValidationError(
                 "A versão deve ser maior que 00."
@@ -1077,8 +1019,7 @@ class Form_ModeloProcessoForm(forms.ModelForm):
         ):
 
             raise ValidationError(
-                "A URL deve começar com "
-                "http:// ou https://."
+                "A URL deve começar com http:// ou https://."
             )
 
         return link
@@ -1087,26 +1028,7 @@ class Form_ModeloProcessoForm(forms.ModelForm):
     # SAVE
     # ========================================================
     def save(self, commit=True):
-
         obj = super().save(commit=False)
-
-        if (
-            self.usuario_logado
-            and not obj.usuario_elaboracao_id
-        ):
-
-            obj.usuario_elaboracao = (
-                self.usuario_logado
-            )
-
-        if (
-            self.usuario_logado
-            and obj.pk
-        ):
-
-            obj.usuario_atualizacao = (
-                self.usuario_logado
-            )
 
         if commit:
             obj.save()
@@ -1184,8 +1106,6 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     # INIT
     # ============================================================
     def __init__(self, *args, **kwargs):
-
-        self.usuario_logado = kwargs.pop("usuario_logado", None)
 
         self.modo_inclusao = kwargs.pop("modo_inclusao", False)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
@@ -1307,27 +1227,28 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 ".pdf,application/pdf"
             )
 
-            if (
-                self.modo_edicao
-                or self.modo_visualizacao
-                or self.modo_exclusao
-            ):
+            if self.modo_edicao:
 
-                self.fields["documento_modelagem_processo"].widget = (
-                    FileInput(attrs=fwidget.attrs)
+                self.fields[
+                    "documento_modelo_processo"
+                ].widget = FileInput(
+                    attrs=fwidget.attrs
                 )
 
                 if (
-                    self.instance
-                    and self.instance.documento_modelagem_processo
+                        self.instance
+                        and self.instance.documento_modelo_processo
                 ):
                     nome_arq = os.path.basename(
-                        self.instance.documento_modelagem_processo.name
+                        self.instance
+                        .documento_modelo_processo.name
                     )
 
                     self.fields[
-                        "documento_modelagem_processo"
-                    ].widget.attrs["placeholder"] = nome_arq
+                        "documento_modelo_processo"
+                    ].widget.attrs[
+                        "placeholder"
+                    ] = nome_arq
 
         # ========================================================
         # ZEROS À ESQUERDA

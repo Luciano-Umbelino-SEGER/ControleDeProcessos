@@ -2506,6 +2506,7 @@ class ModelosProcessoView(LoginRequiredMixin, ListView):
         codigo = req.get("codigo", "").strip()
         estado = req.get("estado", "").strip()
         setor = req.get("setor", "").strip()
+        numero = req.get("numero", "").strip()
 
         # APLICA FILTROS
         if titulo:
@@ -2516,6 +2517,11 @@ class ModelosProcessoView(LoginRequiredMixin, ListView):
         if codigo:
             queryset = queryset.filter(
                 codigo__icontains=codigo
+            )
+
+        if numero:
+            queryset = queryset.filter(
+                numero_modelo__icontains=numero
             )
 
         if estado:
@@ -2550,6 +2556,7 @@ class ModelosProcessoView(LoginRequiredMixin, ListView):
         context["codigo_busca"] = req.get("codigo", "")
         context["estado_busca"] = req.get("estado", "")
         context["setor_busca"] = req.get("setor", "")
+        context["numero_busca"] = req.get("numero", "")
 
         # STATUS
         context["status_choices"] = (
@@ -2590,10 +2597,7 @@ class CriarModeloProcesso(LoginRequiredMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            'usuario_logado': self.request.user,
-            'modo_inclusao': True,
-        })
+        kwargs.update({'modo_inclusao': True,})
 
         return kwargs
 
@@ -2609,23 +2613,160 @@ class CriarModeloProcesso(LoginRequiredMixin, CreateView):
 
         return context
 
+    def form_valid(self, form):
+        form.instance.estado = (
+            ModeloProcesso.STATUS_ELABORADO
+        )
+
+        form.instance.usuario_elaboracao = (
+            self.request.user
+        )
+
+        form.instance.data_elaboracao = (
+            timezone.now()
+        )
+
+        form.instance.usuario_atualizacao = (
+            self.request.user
+        )
+
+        response = super().form_valid(form)
+
+        messages.success(
+            self.request,
+            (
+                f"Modelo de Processo "
+                f"'{self.object.titulo}' "
+                f"criado com sucesso!"
+            )
+        )
+
+        return response
+
 # ---------------------------------------------------
 # VISUALIZAR
 # ---------------------------------------------------
 class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
 
     model = ModeloProcesso
-    template_name = ('modelagemprocessos/form_modeloprocesso.html')
-    context_object_name = 'modeloprocesso'
+    template_name = ("modelagemprocessos/form_modeloprocesso.html")
+    context_object_name = "modeloprocesso"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        obj = self.get_object()
+        context["form"] = (
+            Form_ModeloProcessoForm(
+                instance=obj,
+                modo_visualizacao=True,
+            )
+        )
+
+        obj = self.get_object()
+
+        usuario_elaboracao = obj.usuario_elaboracao
+        usuario_revisao = obj.usuario_revisao
+        usuario_aprovacao = obj.usuario_aprovacao
 
         context.update({
+
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
+
+            # ====================================================
+            # ELABORAÇÃO
+            # ====================================================
+            'usuario_elaboracao_nome': (
+                f"{usuario_elaboracao.first_name} "
+                f"{usuario_elaboracao.last_name}"
+            ).strip()
+            if usuario_elaboracao else "",
+
+            'usuario_elaboracao_cargo': (
+                usuario_elaboracao.cargo
+                if usuario_elaboracao else ""
+            ),
+
+            'usuario_elaboracao_funcao': (
+                usuario_elaboracao.funcao
+                if usuario_elaboracao else ""
+            ),
+
+            'usuario_elaboracao_setor': (
+                usuario_elaboracao.setor
+                if usuario_elaboracao else ""
+            ),
+
+            'data_elaboracao': (
+                obj.data_elaboracao.strftime(
+                    "%d/%m/%Y %H:%M"
+                )
+                if obj.data_elaboracao else ""
+            ),
+
+            # ====================================================
+            # REVISÃO
+            # ====================================================
+            'usuario_revisao_nome': (
+                f"{usuario_revisao.first_name} "
+                f"{usuario_revisao.last_name}"
+            ).strip()
+            if usuario_revisao else "",
+
+            'usuario_revisao_cargo': (
+                usuario_revisao.cargo
+                if usuario_revisao else ""
+            ),
+
+            'usuario_revisao_funcao': (
+                usuario_revisao.funcao
+                if usuario_revisao else ""
+            ),
+
+            'usuario_revisao_setor': (
+                usuario_revisao.setor
+                if usuario_revisao else ""
+            ),
+
+            'data_revisao': (
+                obj.data_revisao.strftime(
+                    "%d/%m/%Y %H:%M"
+                )
+                if obj.data_revisao else ""
+            ),
+
+            # ====================================================
+            # APROVAÇÃO
+            # ====================================================
+            'usuario_aprovacao_nome': (
+                f"{usuario_aprovacao.first_name} "
+                f"{usuario_aprovacao.last_name}"
+            ).strip()
+            if usuario_aprovacao else "",
+
+            'usuario_aprovacao_cargo': (
+                usuario_aprovacao.cargo
+                if usuario_aprovacao else ""
+            ),
+
+            'usuario_aprovacao_funcao': (
+                usuario_aprovacao.funcao
+                if usuario_aprovacao else ""
+            ),
+
+            'usuario_aprovacao_setor': (
+                usuario_aprovacao.setor
+                if usuario_aprovacao else ""
+            ),
+
+            'data_aprovacao': (
+                obj.data_aprovacao.strftime(
+                    "%d/%m/%Y %H:%M"
+                )
+                if obj.data_aprovacao else ""
+            ),
         })
 
         return context
@@ -2636,22 +2777,86 @@ class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
 class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
 
     model = ModeloProcesso
-    template_name = ('modelagemprocessos/form_modeloprocesso.html')
-    context_object_name = 'modeloprocesso'
-    fields = "__all__"
-    success_url = reverse_lazy('arquiteturaprocessos:modelosprocesso')
 
+    template_name = (
+        'modelagemprocessos/form_modeloprocesso.html'
+    )
+
+    context_object_name = 'modeloprocesso'
+
+    form_class = Form_ModeloProcessoForm
+
+    success_url = reverse_lazy(
+        'arquiteturaprocessos:modelosprocesso'
+    )
+
+    # =================================================
+    # FORM KWARGS
+    # =================================================
+    def get_form_kwargs(self):
+
+        kwargs = super().get_form_kwargs()
+
+        kwargs.update({
+            'usuario_logado': self.request.user,
+            'modo_edicao': True,
+        })
+
+        return kwargs
+
+    # =================================================
+    # CONTEXTO
+    # =================================================
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        obj = self.get_object()
 
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
+
+            'usuario_elaboracao': obj.usuario_elaboracao,
+            'usuario_revisao': obj.usuario_revisao,
+            'usuario_aprovacao': obj.usuario_aprovacao,
         })
 
         return context
+
+    # =================================================
+    # FORM VALID
+    # =================================================
+    def form_valid(self, form):
+
+        obj = form.instance
+
+        obj.usuario_atualizacao = (
+            self.request.user
+        )
+
+        response = super().form_valid(form)
+
+        messages.success(
+            self.request,
+            (
+                f"Modelo de Processo "
+                f"'{self.object.titulo}' "
+                f"atualizado com sucesso!"
+            )
+        )
+
+        return response
+
+    # =================================================
+    # SUCCESS URL
+    # =================================================
+    def get_success_url(self):
+
+        return reverse(
+            'arquiteturaprocessos:modelosprocesso'
+        )
 
 
 # ---------------------------------------------------

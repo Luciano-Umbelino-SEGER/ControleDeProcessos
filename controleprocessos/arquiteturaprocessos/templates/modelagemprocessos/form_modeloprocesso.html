@@ -193,7 +193,7 @@ textarea {
                     <!-- Título -->
                     <div class="col-span-12 md:col-span-9">
                         <label class="block text-sm font-medium text-blue-700 mb-1">
-                            Nome do Processo
+                            Nome do Modelo
                         </label>
                         {{ form.titulo }}
                     </div>
@@ -457,7 +457,10 @@ textarea {
 
                                     <div class="relative pdf-dropzone flex-1 min-w-0">
 
-                                        <div class="file-display w-full overflow-hidden">
+                                        <div class="file-display w-full overflow-hidden
+                                                    {% if modo_visualizacao or modo_exclusao %}
+                                                        bg-gray-100
+                                                    {% endif %}">
 
                                             <!-- Ícone -->
                                             <svg
@@ -483,23 +486,21 @@ textarea {
 
                                             <!-- Nome -->
                                             <span
-                                                class="file-name"
+                                                class="file-name text-gray-500"
                                                 x-text="
                                                     fileName ||
-                                                    (
-                                                        readonlyMode
-                                                        ? '—'
-                                                        : 'Click ou arraste para enviar o PDF'
-                                                    )
+                                                    'Click ou arraste para enviar o PDF'
                                                 ">
                                             </span>
 
                                         </div>
 
                                         <!-- INPUT -->
-                                        <div class="absolute inset-0 z-10">
-                                            {{ form.documento_modelo_processo }}
-                                        </div>
+                                        {% if not modo_visualizacao and not modo_exclusao %}
+                                            <div class="absolute inset-0 z-10">
+                                                {{ form.documento_modelo_processo }}
+                                            </div>
+                                        {% endif %}
 
                                         <input type="hidden"
                                                name="remover_documento_modelo_processo"
@@ -616,13 +617,13 @@ textarea {
                         {% endwith %}
 
                         <!-- LINK DOCUMENTO EXTERNO -->
-                        <div>
+                        <div class="mt-2">
                             <label class="block text-sm font-medium text-blue-700 mb-1">
                                 Documento Externo (link)
                             </label>
 
                             <div class="flex items-center space-x-2 min-w-0">
-                                <div class="flex-grow">
+                                <div class="flex-1 min-w-0">
                                     {{ form.link_documento_externo }}
 
                                     {% if form.link_documento_externo.errors %}
@@ -632,34 +633,70 @@ textarea {
                                     {% endif %}
                                 </div>
 
-                                {% if form.instance.link_documento_externo %}
-                                    <a onclick="abrirModalDocumento(
-                                            '{{ form.instance.link_documento_externo|escapejs }}',
-                                            'Documento Externo'
-                                        )"
-                                        class="text-blue-500 hover:text-blue-700 cursor-pointer"
-                                        title="Visualizar">
+                                {% if form.link_documento_externo.value %}
 
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke-width="2"
-                                            stroke="currentColor"
-                                            class="w-5 h-5">
+                                <!-- VISUALIZAR -->
+                                <a onclick="abrirModalDocumento(
+                                        '{{ form.link_documento_externo.value|escapejs }}',
+                                        'Documento Externo'
+                                    )"
+                                    class="text-blue-500 hover:text-blue-700 cursor-pointer"
+                                    title="Visualizar">
 
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                        stroke="currentColor"
+                                        class="w-5 h-5">
 
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        </svg>
-                                    </a>
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </a>
+
+                                {% if modo_edicao %}
+                                <!-- REMOVER -->
+                                <button
+                                    type="button"
+                                    onclick="
+                                        document.getElementById(
+                                            '{{ form.link_documento_externo.id_for_label }}'
+                                        ).value = '';
+                                    "
+                                    class="text-red-500 hover:text-red-700 cursor-pointer"
+                                    title="Limpar link">
+
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                        stroke="currentColor"
+                                        class="w-5 h-5">
+
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M9 3h6l1 2h4v2H4V5h4l1-2z"/>
+
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M7 7h10l-1 12H8L7 7z"/>
+                                    </svg>
+                                </button>
                                 {% endif %}
+
+                            {% endif %}
                             </div>
                         </div>
                     </div>
@@ -681,13 +718,13 @@ textarea {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
 
                     <!-- ELABORAÇÃO -->
-                    <div class="border border-gray-300 rounded-lg p-4 bg-white/50">
+                    <div class="border border-gray-300 rounded-lg p-3 bg-white/50">
 
-                        <h3 class="text-blue-700 font-semibold mb-4">
+                        <h3 class="text-blue-700 font-semibold mb-1">
                             Elaboração
                         </h3>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2">
 
                             <input type="text"
                                    value="{{ usuario_elaboracao_nome }}"
@@ -723,13 +760,13 @@ textarea {
                     </div>
 
                     <!-- REVISÃO -->
-                    <div class="border border-gray-300 rounded-lg p-4 bg-white/50">
+                    <div class="border border-gray-300 rounded-lg p-3 bg-white/50">
 
-                        <h3 class="text-yellow-700 font-semibold mb-4">
+                        <h3 class="text-yellow-700 font-semibold mb-1">
                             Revisão
                         </h3>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2">
 
                             <input type="text"
                                    value="{{ usuario_revisao_nome }}"
@@ -765,13 +802,13 @@ textarea {
                     </div>
 
                     <!-- APROVAÇÃO -->
-                    <div class="border border-gray-300 rounded-lg p-4 bg-white/50">
+                    <div class="border border-gray-300 rounded-lg p-3 bg-white/50">
 
-                        <h3 class="text-green-700 font-semibold mb-4">
+                        <h3 class="text-green-700 font-semibold mb-1">
                             Aprovação
                         </h3>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2">
 
                             <input type="text"
                                    value="{{ usuario_aprovacao_nome }}"

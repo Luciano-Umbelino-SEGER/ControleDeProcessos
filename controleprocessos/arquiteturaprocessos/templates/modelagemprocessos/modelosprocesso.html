@@ -30,16 +30,16 @@
           <!-- ESQUERDA -->
           <div class="flex flex-wrap items-end gap-3">
 
-            <!-- TÍTULO -->
+            <!-- Nome do Modelo -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Título
+                Nome do Modelo
               </label>
 
               <input type="text"
                      name="titulo"
                      value="{{ titulo_busca }}"
-                     placeholder="Digite o título..."
+                     placeholder="Digite o Nome do Modelo..."
                      class="w-56 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500
                             text-black placeholder-gray-400">
@@ -196,7 +196,7 @@
         <!-- HEADER -->
         <thead class="bg-blue-100 text-blue-800">
           <tr>
-            <th class="py-3 pl-4 pr-2 text-left w-[18%]">Título</th>
+            <th class="py-3 pl-4 pr-2 text-left w-[18%]">Nome do Modelo</th>
             <th class="py-3 px-2 text-left w-[22%]">Objetivo do Processo</th>
             <th class="py-3 px-2 text-left w-[8%]">Código</th>
             <th class="py-3 px-2 text-center w-[7%]">Número</th>
@@ -204,24 +204,26 @@
             <th class="py-3 px-2 text-left w-[10%]">Setor</th>
             <th class="py-3 px-2 text-center w-[8%]">Estado</th>
             <th class="py-3 px-2 text-left w-[10%]">Documento PDF</th>
-            <th class="py-3 px-2 text-left w-[10%]">Link Externo</th>
+            <th class="py-3 px-2 text-left w-[10%]">Documento Externo</th>
             <th class="py-3 px-2 text-center w-[6%]">Ações</th>
           </tr>
         </thead>
 
         <!-- BODY -->
         <tbody class="text-[0.8rem] leading-snug">
-          {% for modelo in modelosprocesso %}
+          {% for modelo in modelos_processo %}
           <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %} hover:bg-blue-100 transition-colors">
-            <!-- TÍTULO -->
+            <!-- Nome do Modelo -->
             <td class="py-3 pl-4 pr-2 align-top break-words">
               {{ modelo.titulo }}
             </td>
 
             <!-- OBJETIVO -->
-            <td class="py-3 px-2 align-top break-words text-gray-700">
-              {{ modelo.objetivo_processo|truncatechars:120 }}
-            </td>
+            <td class="py-3 px-2 align-top">
+              <div class="line-clamp-3 break-words leading-snug">
+                  {{ modelo.objetivo_processo }}
+              </div>
+          </td>
 
             <!-- CÓDIGO -->
             <td class="py-3 px-2 align-top whitespace-nowrap">
@@ -235,7 +237,7 @@
 
             <!-- VERSÃO -->
             <td class="py-3 px-2 align-top text-center whitespace-nowrap">
-              V{{ modelo.versao }}
+              {{ modelo.versao }}
             </td>
 
             <!-- SETOR -->
@@ -247,19 +249,19 @@
             <td class="py-3 px-2 align-middle text-center">
               {% if modelo.estado == "ELABORADO" %}
                 <span class="inline-flex items-center justify-center
-                             px-2 py-1 rounded text-[10px] font-bold
+                             px-2 py-1 rounded text-[11px] font-bold
                              bg-blue-100 text-blue-700">
                   ELABORADO
                 </span>
               {% elif modelo.estado == "REVISADO" %}
                 <span class="inline-flex items-center justify-center
-                             px-2 py-1 rounded text-[10px] font-bold
+                             px-2 py-1 rounded text-[11px] font-bold
                              bg-yellow-100 text-yellow-700">
                   REVISADO
                 </span>
               {% elif modelo.estado == "APROVADO" %}
                 <span class="inline-flex items-center justify-center
-                             px-2 py-1 rounded text-[10px] font-bold
+                             px-2 py-1 rounded text-[11px] font-bold
                              bg-green-100 text-green-700">
                   APROVADO
                 </span>
@@ -269,9 +271,9 @@
             <!-- DOCUMENTO PDF -->
             <td class="py-3 px-2 align-top">
               {% if modelo.documento_modelo_processo %}
-                <button
+               <button
                   onclick="abrirModalDocumento(
-                    'http://127.0.0.1:8000{{ modelo.documento_modelo_processo.url }}',
+                    '{{ modelo.documento_modelo_processo.url }}',
                     '{{ modelo.documento_modelo_processo|filename }}'
                   )"
                   title="{{ modelo.documento_modelo_processo|filename }}"

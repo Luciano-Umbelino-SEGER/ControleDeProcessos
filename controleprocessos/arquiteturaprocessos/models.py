@@ -345,7 +345,6 @@ class ModelagemProcesso(models.Model):
 
         return f"{self.titulo} - {codigo}-{sequencial} - V{versao}"
 
-# aqui 1
 # ============================================================
 # UPLOAD MODELO DE PROCESSO
 # ============================================================
@@ -390,6 +389,12 @@ def modelo_processo_upload_to(instance, filename):
 # MODELO DE PROCESSO
 # ============================================================
 class ModeloProcesso(models.Model):
+    # ============================================================
+    # STATUS
+    # ============================================================
+    STATUS_ELABORADO = "ELABORADO"
+    STATUS_REVISADO = "REVISADO"
+    STATUS_APROVADO = "APROVADO"
 
     STATUS_CHOICES = [
         ("ELABORADO", "Elaborado"),
@@ -453,7 +458,7 @@ class ModeloProcesso(models.Model):
     estado = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="ELABORADO",
+        default=STATUS_ELABORADO,
         db_index=True,
         verbose_name="Estado",
     )
@@ -520,6 +525,7 @@ class ModeloProcesso(models.Model):
     # ELABORAÇÃO
     # ========================================================
     data_elaboracao = models.DateTimeField(
+        auto_now_add=True,
         verbose_name="Data de Elaboração",
     )
 
@@ -632,7 +638,10 @@ class ModeloProcesso(models.Model):
             if hasattr(old.documento_modelo_processo, "path"):
                 old_path = old.documento_modelo_processo.path
                 if os.path.isfile(old_path):
-                    os.remove(old_path)
+                    try:
+                        os.remove(old_path)
+                    except OSError:
+                        pass
 
     # ========================================================
     # STRING
