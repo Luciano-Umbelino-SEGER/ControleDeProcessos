@@ -2943,10 +2943,6 @@ class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
 
         return response
 
-
-# ---------------------------------------------------
-# EXCLUIR
-# ---------------------------------------------------
 # ---------------------------------------------------
 # EXCLUIR
 # ---------------------------------------------------
@@ -2964,6 +2960,14 @@ class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
     # CONTEXT
     # =================================================
     def get_context_data(self, **kwargs):
+
+        # TODO:
+        # Impedir exclusão quando houver
+        # ProcessoDocumento associado.
+        # Implementar após refatoração da tabela
+        # ProcessoDocumento para ModeloProcesso
+        # e NormaProcedimento.
+
 
         context = super().get_context_data(**kwargs)
 

@@ -346,7 +346,7 @@ class ModelagemProcesso(models.Model):
         return f"{self.titulo} - {codigo}-{sequencial} - V{versao}"
 
 # ============================================================
-# UPLOAD MODELO DE PROCESSO
+# UPLOAD DE ARQUIVO DE MODELO DE PROCESSO
 # ============================================================
 def modelo_processo_upload_to(instance, filename):
     """
@@ -360,6 +360,7 @@ def modelo_processo_upload_to(instance, filename):
     """
 
     nome, ext = os.path.splitext(filename)
+
     ext = ext.lower()
 
     # Remove acentos
@@ -371,18 +372,23 @@ def modelo_processo_upload_to(instance, filename):
     )
 
     # Remove caracteres inválidos
-    nome = re.sub(r"[^\w\-_.]", "_", nome)
+    nome = re.sub(
+        r"[^\w\-_.]",
+        "_",
+        nome
+    )
 
     # Evita nome vazio
     if not nome:
         nome = "modelo_processo"
 
     # UUID curto
-    novo_nome = f"{nome}_{uuid4().hex[:8]}{ext}"
+    novo_nome = (
+        f"{nome}_{uuid4().hex[:8]}{ext}"
+    )
 
     return (
-        f"arquiteturaprocessos/modelosprocesso/"
-        f"{instance.uuid}/{novo_nome}"
+        f"modelosprocesso/{novo_nome}"
     )
 
 # ============================================================
