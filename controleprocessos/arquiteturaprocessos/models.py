@@ -514,7 +514,7 @@ class ModeloProcesso(models.Model):
         verbose_name="Documento Modelo de Processo",
     )
 
-    link_documento_externo = models.URLField(
+    link_documento_externo = models.CharField(
         max_length=500,
         null=True,
         blank=True,

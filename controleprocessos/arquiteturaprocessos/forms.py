@@ -2,16 +2,16 @@ import os
 import re
 from django import forms
 from django.forms import inlineformset_factory
-from django.forms.widgets import FileInput
+from django.forms.widgets import (FileInput, Select,)
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.utils.encoding import iri_to_uri
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from datetime import date
-from django.forms.widgets import Select
-from urllib.parse import urlparse
+from urllib.parse import (urlparse, unquote,)
 
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
@@ -728,6 +728,19 @@ class Form_ModeloProcessoForm(forms.ModelForm):
                 ),
             })
 
+        # ================================================
+        # URL LIMPA SEM ENCODING
+        # ================================================
+        if (
+                self.instance
+                and self.instance.link_documento_externo
+        ):
+            self.initial["link_documento_externo"] = (
+                unquote(
+                    self.instance.link_documento_externo
+                )
+            )
+
         # ====================================================
         # PDF WIDGET
         # ====================================================
@@ -1001,23 +1014,21 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             return link
 
         link = link.strip()
-
+        link = iri_to_uri(link)
         parsed = urlparse(link)
 
         if (
-            not parsed.scheme
-            or not parsed.netloc
+                not parsed.scheme
+                or not parsed.netloc
         ):
-
             raise ValidationError(
                 "Informe uma URL válida."
             )
 
         if parsed.scheme not in (
-            "http",
-            "https"
+                "http",
+                "https"
         ):
-
             raise ValidationError(
                 "A URL deve começar com http:// ou https://."
             )
@@ -1302,7 +1313,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             self.fields[
                 "link_normaprocedimento"
             ].widget.attrs.update({
-                "type": "url",
+                "type": "text",
                 "placeholder": "https://exemplo.com/documento.pdf",
             })
 

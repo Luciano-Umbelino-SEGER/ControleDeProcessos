@@ -2777,22 +2777,16 @@ class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
 class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
 
     model = ModeloProcesso
-
-    template_name = (
-        'modelagemprocessos/form_modeloprocesso.html'
-    )
-
+    template_name = 'modelagemprocessos/form_modeloprocesso.html'
     context_object_name = 'modeloprocesso'
-
     form_class = Form_ModeloProcessoForm
-
     success_url = reverse_lazy(
         'arquiteturaprocessos:modelosprocesso'
     )
 
-    # =================================================
+    # ====================================================
     # FORM KWARGS
-    # =================================================
+    # ====================================================
     def get_form_kwargs(self):
 
         kwargs = super().get_form_kwargs()
@@ -2804,82 +2798,345 @@ class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
 
         return kwargs
 
-    # =================================================
+    # ====================================================
     # CONTEXTO
-    # =================================================
+    # ====================================================
     def get_context_data(self, **kwargs):
+
         context = super().get_context_data(**kwargs)
 
         obj = self.get_object()
+
+        # ================================================
+        # ELABORAÇÃO
+        # ================================================
+        if obj.usuario_elaboracao:
+
+            usuario = obj.usuario_elaboracao
+
+            context.update({
+                "usuario_elaboracao_nome":
+                    f"{usuario.first_name} {usuario.last_name}".strip(),
+
+                "usuario_elaboracao_cargo":
+                    getattr(usuario, "cargo", ""),
+
+                "usuario_elaboracao_funcao":
+                    getattr(usuario, "funcao", ""),
+
+                "usuario_elaboracao_setor":
+                    getattr(usuario, "setor", ""),
+
+                "data_elaboracao":
+                    obj.data_elaboracao.strftime("%d/%m/%Y %H:%M")
+                    if obj.data_elaboracao else "",
+            })
+
+        # ================================================
+        # REVISÃO
+        # ================================================
+        if obj.usuario_revisao:
+
+            usuario = obj.usuario_revisao
+
+            context.update({
+                "usuario_revisao_nome":
+                    f"{usuario.first_name} {usuario.last_name}".strip(),
+
+                "usuario_revisao_cargo":
+                    getattr(usuario, "cargo", ""),
+
+                "usuario_revisao_funcao":
+                    getattr(usuario, "funcao", ""),
+
+                "usuario_revisao_setor":
+                    getattr(usuario, "setor", ""),
+
+                "data_revisao":
+                    obj.data_revisao.strftime("%d/%m/%Y %H:%M")
+                    if obj.data_revisao else "",
+            })
+
+        # ================================================
+        # APROVAÇÃO
+        # ================================================
+        if obj.usuario_aprovacao:
+
+            usuario = obj.usuario_aprovacao
+
+            context.update({
+                "usuario_aprovacao_nome":
+                    f"{usuario.first_name} {usuario.last_name}".strip(),
+
+                "usuario_aprovacao_cargo":
+                    getattr(usuario, "cargo", ""),
+
+                "usuario_aprovacao_funcao":
+                    getattr(usuario, "funcao", ""),
+
+                "usuario_aprovacao_setor":
+                    getattr(usuario, "setor", ""),
+
+                "data_aprovacao":
+                    obj.data_aprovacao.strftime("%d/%m/%Y %H:%M")
+                    if obj.data_aprovacao else "",
+            })
 
         context.update({
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
-
-            'usuario_elaboracao': obj.usuario_elaboracao,
-            'usuario_revisao': obj.usuario_revisao,
-            'usuario_aprovacao': obj.usuario_aprovacao,
         })
 
         return context
 
-    # =================================================
-    # FORM VALID
-    # =================================================
     def form_valid(self, form):
 
         obj = form.instance
 
-        obj.usuario_atualizacao = (
-            self.request.user
-        )
+        # ============================================
+        # REMOVE PDF
+        # ============================================
+        if self.request.POST.get(
+                "remover_documento_modelo_processo"
+        ) == "1":
+
+            if obj.documento_modelo_processo:
+                obj.documento_modelo_processo.delete(
+                    save=False
+                )
+
+            obj.documento_modelo_processo = None
+
+        # ============================================
+        # RESPONSÁVEIS
+        # ============================================
+        obj.usuario_atualizacao = self.request.user
+
+        obj.data_atualizacao = timezone.now()
+
+        # ============================================
+        # REVISÃO
+        # ============================================
+        if obj.estado == "REVISADO":
+
+            obj.usuario_revisao = self.request.user
+
+            obj.data_revisao = timezone.now()
+
+        # ============================================
+        # APROVAÇÃO
+        # ============================================
+        elif obj.estado == "APROVADO":
+
+            obj.usuario_aprovacao = self.request.user
+
+            obj.data_aprovacao = timezone.now()
 
         response = super().form_valid(form)
 
         messages.success(
             self.request,
-            (
-                f"Modelo de Processo "
-                f"'{self.object.titulo}' "
-                f"atualizado com sucesso!"
-            )
+            f"Modelo de Processo '{self.object.titulo}' atualizado com sucesso!"
         )
 
         return response
 
-    # =================================================
-    # SUCCESS URL
-    # =================================================
-    def get_success_url(self):
 
-        return reverse(
-            'arquiteturaprocessos:modelosprocesso'
-        )
-
-
+# ---------------------------------------------------
+# EXCLUIR
+# ---------------------------------------------------
 # ---------------------------------------------------
 # EXCLUIR
 # ---------------------------------------------------
 class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
 
     model = ModeloProcesso
-    template_name = ('modelagemprocessos/form_modeloprocesso.html')
-    context_object_name = 'modeloprocesso'
-    success_url = reverse_lazy('arquiteturaprocessos:modelosprocesso')
 
+    template_name = (
+        'modelagemprocessos/form_modeloprocesso.html'
+    )
+
+    context_object_name = 'modeloprocesso'
+
+    # =================================================
+    # CONTEXT
+    # =================================================
     def get_context_data(self, **kwargs):
+
         context = super().get_context_data(**kwargs)
 
+        obj = self.get_object()
+
+        context['form'] = Form_ModeloProcessoForm(
+            instance=obj,
+            modo_exclusao=True
+        )
+
+        # =============================================
+        # RESPONSÁVEIS
+        # =============================================
+        def hydrate_usuario(usuario, data):
+
+            if not usuario:
+                return {
+                    "nome": "",
+                    "cargo": "",
+                    "funcao": "",
+                    "setor": "",
+                    "data": "",
+                }
+
+            return {
+                "nome": (
+                    f"{usuario.first_name} "
+                    f"{usuario.last_name}"
+                ).strip(),
+
+                "cargo": getattr(
+                    usuario,
+                    "cargo",
+                    ""
+                ),
+
+                "funcao": getattr(
+                    usuario,
+                    "funcao",
+                    ""
+                ),
+
+                "setor": getattr(
+                    usuario,
+                    "setor",
+                    ""
+                ),
+
+                "data": (
+                    data.strftime("%d/%m/%Y %H:%M")
+                    if data else ""
+                )
+            }
+
+        elaboracao = hydrate_usuario(
+            obj.usuario_elaboracao,
+            obj.data_elaboracao
+        )
+
+        revisao = hydrate_usuario(
+            obj.usuario_revisao,
+            obj.data_revisao
+        )
+
+        aprovacao = hydrate_usuario(
+            obj.usuario_aprovacao,
+            obj.data_aprovacao
+        )
+
         context.update({
+
+            # =========================================
+            # FLAGS
+            # =========================================
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,
             'modo_edicao': False,
+
+            # =========================================
+            # ELABORAÇÃO
+            # =========================================
+            'usuario_elaboracao_nome':
+                elaboracao["nome"],
+
+            'usuario_elaboracao_cargo':
+                elaboracao["cargo"],
+
+            'usuario_elaboracao_funcao':
+                elaboracao["funcao"],
+
+            'usuario_elaboracao_setor':
+                elaboracao["setor"],
+
+            'data_elaboracao':
+                elaboracao["data"],
+
+            # =========================================
+            # REVISÃO
+            # =========================================
+            'usuario_revisao_nome':
+                revisao["nome"],
+
+            'usuario_revisao_cargo':
+                revisao["cargo"],
+
+            'usuario_revisao_funcao':
+                revisao["funcao"],
+
+            'usuario_revisao_setor':
+                revisao["setor"],
+
+            'data_revisao':
+                revisao["data"],
+
+            # =========================================
+            # APROVAÇÃO
+            # =========================================
+            'usuario_aprovacao_nome':
+                aprovacao["nome"],
+
+            'usuario_aprovacao_cargo':
+                aprovacao["cargo"],
+
+            'usuario_aprovacao_funcao':
+                aprovacao["funcao"],
+
+            'usuario_aprovacao_setor':
+                aprovacao["setor"],
+
+            'data_aprovacao':
+                aprovacao["data"],
         })
 
         return context
+
+    # =================================================
+    # POST
+    # =================================================
+    def post(self, request, *args, **kwargs):
+
+        obj = self.get_object()
+
+        # =============================================
+        # REMOVE PDF
+        # =============================================
+        if obj.documento_modelo_processo:
+
+            try:
+
+                if os.path.isfile(
+                    obj.documento_modelo_processo.path
+                ):
+                    os.remove(
+                        obj.documento_modelo_processo.path
+                    )
+
+            except Exception:
+                pass
+
+        titulo = obj.titulo
+
+        obj.delete()
+
+        messages.success(
+            request,
+            f"Modelo de Processo '{titulo}' "
+            f"excluído com sucesso!"
+        )
+
+        return redirect(
+            'arquiteturaprocessos:modelosprocesso'
+        )
 
 # ============================================================
 # NORMAS DE PROCEDIMENTO
