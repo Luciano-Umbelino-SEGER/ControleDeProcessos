@@ -3282,10 +3282,8 @@ class CriarModelagemProcesso(LoginRequiredMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            'usuario_logado': self.request.user,
-            'modo_inclusao': True,
-        })
+        kwargs.update({'modo_inclusao': True, })
+
         return kwargs
 
     def get_context_data(self, **kwargs):

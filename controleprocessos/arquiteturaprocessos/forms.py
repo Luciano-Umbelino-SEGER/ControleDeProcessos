@@ -16,7 +16,7 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
     ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger,
-    ModeloProcesso
+    ModeloProcesso, NormaProcedimento,
 )
 from django.db.models import Q
 
@@ -511,7 +511,6 @@ class Form_TipoDocumentoForm(forms.ModelForm):
             nome = nome.strip().upper()
         return nome
 
-# Aqui 1
 # ============================================================
 # FORM MODELO DE PROCESSO
 # ============================================================
@@ -645,6 +644,27 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             "placeholder": "Ex.: 0001",
             "maxlength": "4",
             "autocomplete": "off",
+        })
+
+        # ====================================================
+        # EMITENTE
+        # ====================================================
+        self.fields["emitente"].widget.attrs.update({
+            "placeholder": "Órgão Emitente",
+        })
+
+        # ====================================================
+        # TEMA
+        # ====================================================
+        self.fields["tema"].widget.attrs.update({
+            "placeholder": "Tema",
+        })
+
+        # ====================================================
+        # PORTARIA
+        # ====================================================
+        self.fields["portaria_aprovacao"].widget.attrs.update({
+            "placeholder": "Portaria de Aprovação",
         })
 
         # ESTADO
@@ -1046,6 +1066,502 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         return obj
 
+# Aqui 1
+# ============================================================
+# FORM NORMA DE PROCEDIMENTO
+# ============================================================
+class Form_NormaProcedimentoForm(forms.ModelForm):
+
+    # ========================================================
+    # META
+    # ========================================================
+    class Meta:
+
+        model = NormaProcedimento
+
+        exclude = (
+
+            # Auditoria
+            "data_cadastro",
+            "usuario",
+
+            "data_atualizacao",
+            "usuario_atualizacao",
+
+            # Workflow
+            "usuario_elaboracao",
+            "usuario_revisao",
+            "usuario_aprovacao",
+
+            "data_revisao",
+        )
+
+    # ========================================================
+    # INIT
+    # ========================================================
+    def __init__(self, *args, **kwargs):
+
+        self.modo_inclusao = kwargs.pop(
+            "modo_inclusao",
+            False
+        )
+
+        self.modo_visualizacao = kwargs.pop(
+            "modo_visualizacao",
+            False
+        )
+
+        self.modo_exclusao = kwargs.pop(
+            "modo_exclusao",
+            False
+        )
+
+        self.modo_edicao = kwargs.pop(
+            "modo_edicao",
+            False
+        )
+
+        super().__init__(*args, **kwargs)
+
+        self.label_suffix = ""
+
+        # ====================================================
+        # CLASSE PADRÃO
+        # ====================================================
+        base_class = (
+            "w-full h-[42px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500"
+        )
+
+        bg = (
+            "bg-gray-100"
+            if (
+                self.modo_visualizacao
+                or self.modo_exclusao
+            )
+            else "bg-white"
+        )
+
+        # ====================================================
+        # CAMPOS TEXTO
+        # ====================================================
+        campos = [
+            "titulo",
+            "sistema",
+            "sigla_sistema",
+            "numero_norma",
+            "versao",
+            "emitente",
+            "tema",
+            "portaria_aprovacao",
+        ]
+
+        for campo in campos:
+
+            if campo not in self.fields:
+                continue
+
+            self.fields[campo].widget.attrs.update({
+                "class": f"{base_class} {bg}",
+                "autocomplete": "off",
+            })
+
+        # ====================================================
+        # CAMPOS DATA
+        # ====================================================
+        campos_data = [
+            "data_elaboracao",
+            "data_aprovacao",
+            "vigencia_inicio",
+            "vigencia_fim",
+        ]
+
+        for campo in campos_data:
+
+            if campo not in self.fields:
+                continue
+
+            self.fields[campo].widget = forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": f"{base_class} {bg}",
+                }
+            )
+
+        # ====================================================
+        # TÍTULO
+        # ====================================================
+        self.fields["titulo"].widget.attrs.update({
+            "placeholder": "DIGITE O TÍTULO",
+            "class": f"{base_class} {bg} uppercase",
+        })
+
+        # ====================================================
+        # SISTEMA
+        # ====================================================
+        self.fields["sistema"].widget.attrs.update({
+            "placeholder": "Sistema",
+        })
+
+        # ====================================================
+        # SIGLA
+        # ====================================================
+        self.fields["sigla_sistema"].widget.attrs.update({
+            "placeholder": "SIGLA",
+            "maxlength": "20",
+            "class": f"{base_class} {bg} uppercase",
+        })
+
+        # ====================================================
+        # NR NORMA
+        # ====================================================
+        self.fields["numero_norma"].widget.attrs.update({
+            "placeholder": "0001",
+            "maxlength": "4",
+        })
+
+        # ====================================================
+        # VERSÃO
+        # ====================================================
+        self.fields["versao"].widget.attrs.update({
+            "placeholder": "0001",
+            "maxlength": "4",
+        })
+
+        # ====================================================
+        # ESTADO
+        # ====================================================
+        self.fields["estado"].widget.attrs.update({
+            "class": f"{base_class} {bg}",
+        })
+
+        # ====================================================
+        # LINK EXTERNO
+        # ====================================================
+        if "link_documento_externo" in self.fields:
+
+            self.fields[
+                "link_documento_externo"
+            ].widget.attrs.update({
+
+                "type": "text",
+
+                "placeholder":
+                    "https://exemplo.com/documento.pdf",
+
+                "autocomplete": "off",
+
+                "class": (
+                    f"w-full h-[42px] "
+                    f"border border-gray-300 rounded-md "
+                    f"px-3 py-2 "
+                    f"text-black "
+                    f"{bg} "
+                    f"focus:outline-none "
+                    f"focus:ring-2 "
+                    f"focus:ring-blue-500"
+                ),
+            })
+
+        # ====================================================
+        # URL LIMPA
+        # ====================================================
+        if (
+            self.instance
+            and self.instance.link_documento_externo
+        ):
+
+            self.initial[
+                "link_documento_externo"
+            ] = unquote(
+                self.instance.link_documento_externo
+            )
+
+        # ====================================================
+        # PDF
+        # ====================================================
+        if "documento_norma_procedimento" in self.fields:
+
+            fwidget = self.fields[
+                "documento_norma_procedimento"
+            ].widget
+
+            fwidget.attrs.setdefault(
+                "tabindex",
+                "0"
+            )
+
+            fwidget.attrs.setdefault(
+                "accept",
+                ".pdf,application/pdf"
+            )
+
+            if (self.modo_inclusao
+                or self.modo_edicao):
+
+                self.fields[
+                    "documento_norma_procedimento"
+                ].widget = FileInput(
+                    attrs=fwidget.attrs
+                )
+
+                if (
+                        self.instance
+                        and self.instance.documento_norma_procedimento
+                ):
+                    nome_arq = os.path.basename(
+                        self.instance
+                        .documento_norma_procedimento.name
+                    )
+
+                    self.fields[
+                        "documento_norma_procedimento"
+                    ].widget.attrs[
+                        "placeholder"
+                    ] = nome_arq
+
+        # ====================================================
+        # REMOVE FILE INPUT
+        # ====================================================
+        if (
+                self.modo_visualizacao
+                or self.modo_exclusao
+        ):
+            self.fields.pop(
+                "documento_norma_procedimento",
+                None
+            )
+
+        # ====================================================
+        # SOMENTE LEITURA
+        # ====================================================
+        if (
+            self.modo_visualizacao
+            or self.modo_exclusao
+        ):
+
+            for field in self.fields.values():
+
+                field.disabled = True
+
+                field.widget.attrs["class"] = (
+                    field.widget.attrs.get(
+                        "class",
+                        ""
+                    )
+                    + " bg-gray-100"
+                )
+
+    def clean_titulo(self):
+
+        titulo = (
+                self.cleaned_data.get("titulo") or ""
+        ).strip().upper()
+
+        if not titulo:
+            raise ValidationError(
+                "Informe o Título."
+            )
+
+        return titulo
+
+    def clean_sigla_sistema(self):
+
+        sigla = (
+                self.cleaned_data.get(
+                    "sigla_sistema"
+                ) or ""
+        ).strip().upper()
+
+        if not sigla:
+            raise ValidationError(
+                "Informe a Sigla do Sistema."
+            )
+
+        return sigla
+
+    def clean_numero_norma(self):
+
+        numero = (
+                self.cleaned_data.get(
+                    "numero_norma"
+                ) or ""
+        ).strip()
+
+        if not numero.isdigit():
+            raise ValidationError(
+                "Informe apenas números."
+            )
+
+        return numero.zfill(4)
+
+    def clean_versao(self):
+
+        versao = (
+                self.cleaned_data.get(
+                    "versao"
+                ) or ""
+        ).strip()
+
+        if not versao.isdigit():
+            raise ValidationError(
+                "Informe apenas números."
+            )
+
+        versao = versao.zfill(4)
+
+        if versao == "0000":
+            raise ValidationError(
+                "A versão deve ser maior que 0000."
+            )
+
+        return versao
+
+    def clean_data_elaboracao(self):
+
+        data = self.cleaned_data.get(
+            "data_elaboracao"
+        )
+
+        if not data:
+            raise ValidationError(
+                "Informe a Data de Elaboração."
+            )
+
+        return data
+
+    def clean_documento_norma_procedimento(self):
+
+        f = self.cleaned_data.get(
+            "documento_norma_procedimento"
+        )
+
+        if not f:
+            return f
+
+        if not hasattr(f, "content_type"):
+            return f
+
+        content_type = f.content_type
+
+        file_name = f.name.lower()
+
+        is_pdf_type = content_type in (
+            "application/pdf",
+            "application/x-pdf",
+        )
+
+        is_pdf_name = file_name.endswith(".pdf")
+
+        if not (
+                is_pdf_type
+                or is_pdf_name
+        ):
+            raise ValidationError(
+                "Envie um PDF válido (.pdf)."
+            )
+
+        if hasattr(f, "read"):
+
+            header = f.read(4)
+
+            f.seek(0)
+
+            if header != b"%PDF":
+                raise ValidationError(
+                    "Arquivo não é um PDF válido."
+                )
+
+        return f
+
+    def clean_link_documento_externo(self):
+
+        link = self.cleaned_data.get(
+            "link_documento_externo"
+        )
+
+        if not link:
+            return link
+
+        link = link.strip()
+
+        link = iri_to_uri(link)
+
+        parsed = urlparse(link)
+
+        if (
+                not parsed.scheme
+                or not parsed.netloc
+        ):
+            raise ValidationError(
+                "Informe uma URL válida."
+            )
+
+        if parsed.scheme not in (
+                "http",
+                "https"
+        ):
+            raise ValidationError(
+                "A URL deve começar com http:// ou https://."
+            )
+
+        return link
+
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        pdf = cleaned_data.get(
+            "documento_norma_procedimento"
+        )
+
+        link = cleaned_data.get(
+            "link_documento_externo"
+        )
+
+        if not pdf and not link:
+            raise ValidationError(
+                "Informe um PDF ou um Link Externo."
+            )
+
+        inicio = cleaned_data.get(
+            "vigencia_inicio"
+        )
+
+        fim = cleaned_data.get(
+            "vigencia_fim"
+        )
+
+        if (
+                inicio
+                and fim
+                and fim < inicio
+        ):
+            raise ValidationError(
+                "A Vigência Final não pode ser menor que a Vigência Inicial."
+            )
+
+        return cleaned_data
+
+    # ========================================================
+    # SAVE
+    # ========================================================
+    def save(self, commit=True):
+
+        obj = super().save(commit=False)
+
+        if commit:
+            obj.save()
+
+        return obj
+
+
 # ============================================================
 # Modelagem de Processos
 # ============================================================
@@ -1279,11 +1795,11 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         # ========================================================
         # USUÁRIO
         # ========================================================
-        if self.usuario_logado and not self.instance.pk:
-            self.instance.usuario = self.usuario_logado
+        #if self.usuario_logado and not self.instance.pk:
+        #    self.instance.usuario = self.usuario_logado
 
-        if self.usuario_logado and self.instance.pk:
-            self.instance.usuario_atualizacao = self.usuario_logado
+        #if self.usuario_logado and self.instance.pk:
+        #    self.instance.usuario_atualizacao = self.usuario_logado
 
         # ========================================================
         # MODO SOMENTE LEITURA

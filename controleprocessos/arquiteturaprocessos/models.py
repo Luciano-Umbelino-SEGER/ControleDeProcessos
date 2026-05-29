@@ -660,8 +660,382 @@ class ModeloProcesso(models.Model):
 
         versao = self.versao or "--"
 
-        return f"{self.titulo} | {codigo} | {numero} | V{versao}"
+        return f"{self.titulo} | {codigo} | {numero} | {versao}"
 
+# ============================================================
+# UPLOAD DE ARQUIVO DE NORMA DE PROCEDIMENTO
+# ============================================================
+def norma_procedimento_upload_to(instance, filename):
+    """
+    Gera caminho seguro para upload de documentos
+    de Norma de Procedimento.
+
+    - Remove acentos
+    - Remove caracteres especiais
+    - Substitui espaços por _
+    - Mantém extensão minúscula
+    - Garante unicidade com UUID
+    """
+
+    nome, ext = os.path.splitext(filename)
+
+    ext = ext.lower()
+
+    nome = (
+        unicodedata
+        .normalize("NFKD", nome)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+
+    nome = re.sub(
+        r"[^\w\-_.]",
+        "_",
+        nome
+    )
+
+    if not nome:
+        nome = "norma_procedimento"
+
+    novo_nome = (
+        f"{nome}_{uuid4().hex[:8]}{ext}"
+    )
+
+    return (
+        f"normaprocedimento/{novo_nome}"
+    )
+
+
+# ============================================================
+# NORMA DE PROCEDIMENTO
+# ============================================================
+class NormaProcedimento(models.Model):
+
+    # ========================================================
+    # STATUS
+    # ========================================================
+    STATUS_ELABORADO = "ELABORADO"
+    STATUS_REVISADO = "REVISADO"
+    STATUS_APROVADO = "APROVADO"
+    STATUS_PRESCRITO = "PRESCRITO"
+
+    STATUS_CHOICES = [
+        (STATUS_ELABORADO, "Elaborado"),
+        (STATUS_REVISADO, "Revisado"),
+        (STATUS_APROVADO, "Aprovado"),
+        (STATUS_PRESCRITO, "Prescrito"),
+    ]
+
+    # ========================================================
+    # UUID
+    # ========================================================
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+    )
+
+    # ========================================================
+    # IDENTIFICAÇÃO
+    # ========================================================
+    titulo = models.CharField(
+        max_length=255,
+        db_index=True,
+        verbose_name="Título",
+    )
+
+    sistema = models.CharField(
+        max_length=100,
+        db_index=True,
+        verbose_name="Sistema",
+    )
+
+    sigla_sistema = models.CharField(
+        max_length=20,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r"^[A-Z0-9.\-_/]+$",
+                message=(
+                    "Utilize apenas letras "
+                    "maiúsculas, números e . - _ /"
+                ),
+            )
+        ],
+        verbose_name="Sigla Sistema",
+    )
+
+    numero_norma = models.CharField(
+        max_length=4,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r"^(?!0000)\d{4}$",
+                message="Informe no formato 0001.",
+            )
+        ],
+        verbose_name="Nr. Norma",
+    )
+
+    versao = models.CharField(
+        max_length=4,
+        db_index=True,
+        default="0001",
+        validators=[
+            RegexValidator(
+                regex=r"^(?!0000)\d{4}$",
+                message="Informe a versão no formato 0001.",
+            )
+        ],
+        verbose_name="Versão",
+    )
+
+    emitente = models.CharField(
+        max_length=150,
+        db_index=True,
+        verbose_name="Emitente",
+    )
+
+    tema = models.CharField(
+        max_length=150,
+        db_index=True,
+        verbose_name="Tema",
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_ELABORADO,
+        db_index=True,
+        verbose_name="Estado",
+    )
+
+    # ========================================================
+    # ELABORAÇÃO
+    # ========================================================
+    data_elaboracao = models.DateField(
+        verbose_name="Data Elaboração",
+    )
+
+    # ========================================================
+    # APROVAÇÃO
+    # ========================================================
+    portaria_aprovacao = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Portaria Aprovação",
+    )
+
+    data_aprovacao = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Data Aprovação",
+    )
+
+    # ========================================================
+    # VIGÊNCIA
+    # ========================================================
+    vigencia_inicio = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Início Vigência",
+    )
+
+    vigencia_fim = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fim Vigência",
+    )
+
+    # ========================================================
+    # DOCUMENTAÇÃO
+    # ========================================================
+    documento_norma_procedimento = models.FileField(
+        upload_to=norma_procedimento_upload_to,
+        max_length=500,
+        null=True,
+        blank=True,
+        validators=[
+            FileExtensionValidator(
+                ["pdf"]
+            )
+        ],
+        verbose_name="Documento Norma de Procedimento",
+    )
+
+    link_documento_externo = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Link Documento Externo",
+    )
+
+    # ========================================================
+    # ELABORAÇÃO
+    # ========================================================
+    usuario_elaboracao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="normas_elaboradas",
+        verbose_name="Usuário Elaboração",
+    )
+
+    # ========================================================
+    # REVISÃO
+    # ========================================================
+    data_revisao = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data Revisão",
+    )
+
+    usuario_revisao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="normas_revisadas",
+        null=True,
+        blank=True,
+        verbose_name="Usuário Revisão",
+    )
+
+    # ========================================================
+    # APROVAÇÃO
+    # ========================================================
+    usuario_aprovacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="normas_aprovadas",
+        null=True,
+        blank=True,
+        verbose_name="Usuário Aprovação",
+    )
+
+    # ========================================================
+    # AUDITORIA
+    # ========================================================
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data Cadastro",
+    )
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="normas_criadas",
+        verbose_name="Usuário Cadastro",
+    )
+
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Data Atualização",
+    )
+
+    usuario_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="normas_atualizadas",
+        null=True,
+        blank=True,
+        verbose_name="Usuário Atualização",
+    )
+
+    # ========================================================
+    # META
+    # ========================================================
+    class Meta:
+
+        db_table = (
+            "arquiteturaprocessos_norma_procedimento"
+        )
+
+        verbose_name = (
+            "Norma de Procedimento"
+        )
+
+        verbose_name_plural = (
+            "Normas de Procedimento"
+        )
+
+        indexes = [
+            models.Index(fields=["titulo"]),
+            models.Index(fields=["sistema"]),
+            models.Index(fields=["sigla_sistema"]),
+            models.Index(fields=["numero_norma"]),
+            models.Index(fields=["tema"]),
+            models.Index(fields=["estado"]),
+        ]
+
+        ordering = [
+            "-data_atualizacao",
+            "titulo",
+            "numero_norma",
+            "versao",
+        ]
+
+    # ========================================================
+    # SAVE
+    # ========================================================
+    def save(self, *args, **kwargs):
+
+        try:
+            old = (
+                NormaProcedimento.objects
+                .get(pk=self.pk)
+            )
+
+        except NormaProcedimento.DoesNotExist:
+            old = None
+
+        super().save(*args, **kwargs)
+
+        # ====================================================
+        # REMOVE PDF ANTIGO
+        # ====================================================
+        if (
+            old
+            and old.documento_norma_procedimento
+            and old.documento_norma_procedimento
+            != self.documento_norma_procedimento
+        ):
+            if hasattr(
+                old.documento_norma_procedimento,
+                "path"
+            ):
+                old_path = (
+                    old
+                    .documento_norma_procedimento
+                    .path
+                )
+
+                if os.path.isfile(old_path):
+                    try:
+                        os.remove(old_path)
+
+                    except OSError:
+                        pass
+
+    # ========================================================
+    # STRING
+    # ========================================================
+    def __str__(self):
+
+        numero = (
+            self.numero_norma
+            or "---"
+        )
+
+        versao = (
+            self.versao
+            or "--"
+        )
+
+        return (
+            f"{self.titulo} | "
+            f"{self.sigla_sistema} | "
+            f"{numero} | "
+            f"{versao}"
+        )
 
 # ============================================================
 # Contatos Seger - Area Responsável
