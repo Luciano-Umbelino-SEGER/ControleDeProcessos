@@ -3142,10 +3142,175 @@ class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
 
 # Aqui 1
 # ============================================================
-# NORMAS DE PROCEDIMENTO
+# LISTAGEM DE NORMAS DE PROCEDIMENTO
 # ============================================================
-class NormasProcedimentoView(TemplateView):
-    template_name = "modelagemprocessos/normasprocedimento.html"
+class NormasProcedimentoView(LoginRequiredMixin, ListView):
+
+    model = NormaProcedimento
+    template_name = ("modelagemprocessos/normasprocedimento.html")
+    context_object_name = ("normas_procedimento")
+
+    def get_paginate_by(self, queryset):
+
+        page_size = self.request.GET.get("page_size")
+
+        try:
+            return int(page_size)
+
+        except (
+            TypeError,
+            ValueError
+        ):
+            return 10
+
+    def get_queryset(self):
+
+        req = self.request.GET
+
+        queryset = (
+            NormaProcedimento.objects
+            .select_related(
+                "usuario",
+                "usuario_elaboracao",
+                "usuario_revisao",
+                "usuario_aprovacao",
+                "usuario_atualizacao",
+            )
+        )
+
+        titulo = req.get(
+            "titulo",
+            ""
+        ).strip()
+
+        sistema = req.get(
+            "sistema",
+            ""
+        ).strip()
+
+        sigla = req.get(
+            "sigla",
+            ""
+        ).strip()
+
+        numero = req.get(
+            "numero",
+            ""
+        ).strip()
+
+        tema = req.get(
+            "tema",
+            ""
+        ).strip()
+
+        estado = req.get(
+            "estado",
+            ""
+        ).strip()
+
+        if titulo:
+            queryset = queryset.filter(
+                titulo__icontains=titulo
+            )
+
+        if sistema:
+            queryset = queryset.filter(
+                sistema__icontains=sistema
+            )
+
+        if sigla:
+            queryset = queryset.filter(
+                sigla_sistema__icontains=sigla
+            )
+
+        if numero:
+            queryset = queryset.filter(
+                numero_norma__icontains=numero
+            )
+
+        if tema:
+            queryset = queryset.filter(
+                tema__icontains=tema
+            )
+
+        if estado:
+            queryset = queryset.filter(
+                estado=estado
+            )
+
+        queryset = queryset.order_by(
+            "-data_atualizacao",
+            "-data_cadastro",
+        )
+
+        return queryset
+
+    def get_context_data(
+        self,
+        **kwargs
+    ):
+
+        context = (
+            super()
+            .get_context_data(**kwargs)
+        )
+
+        req = self.request.GET
+
+        context["titulo_busca"] = (
+            req.get("titulo", "")
+        )
+
+        context["sistema_busca"] = (
+            req.get("sistema", "")
+        )
+
+        context["sigla_busca"] = (
+            req.get("sigla", "")
+        )
+
+        context["numero_busca"] = (
+            req.get("numero", "")
+        )
+
+        context["tema_busca"] = (
+            req.get("tema", "")
+        )
+
+        context["estado_busca"] = (
+            req.get("estado", "")
+        )
+
+        context["status_choices"] = (
+            NormaProcedimento.STATUS_CHOICES
+        )
+
+        query_params = (
+            self.request.GET.copy()
+        )
+
+        query_params_no_page = (
+            query_params.copy()
+        )
+
+        if "page" in query_params_no_page:
+            query_params_no_page.pop("page")
+
+        context["query_string"] = (
+            query_params_no_page.urlencode()
+        )
+
+        context["query_string_full"] = (
+            query_params.urlencode()
+        )
+
+        context["total_registros"] = (
+            context["page_obj"]
+            .paginator
+            .count
+        )
+
+        return context
 
 # ============================================================
 # CRIAR NORMA DE PROCEDIMENTO
