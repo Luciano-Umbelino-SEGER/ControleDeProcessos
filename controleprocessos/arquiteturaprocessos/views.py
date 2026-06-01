@@ -42,7 +42,7 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
-    Perfil, ModeloProcesso,
+    Perfil, ModeloProcesso, NormaProcedimento,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -53,7 +53,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
-    Form_AreaResponsavelForm, Form_ModeloProcessoForm,
+    Form_AreaResponsavelForm, Form_ModeloProcessoForm, Form_NormaProcedimentoForm,
 )
 
 # ---------------------------------------------------
@@ -2470,7 +2470,6 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
         })
         return ctx
 
-# Aqui 1
 # ============================================================
 # LISTAGEM DE MODELOS DE PROCESSO
 # ===========================================================
@@ -2585,7 +2584,6 @@ class ModelosProcessoView(LoginRequiredMixin, ListView):
 
         return context
 
-# Aqui 2
 # ---------------------------------------------------
 # CRIAR
 # ---------------------------------------------------
@@ -3142,11 +3140,82 @@ class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
             'arquiteturaprocessos:modelosprocesso'
         )
 
+# Aqui 1
 # ============================================================
 # NORMAS DE PROCEDIMENTO
 # ============================================================
 class NormasProcedimentoView(TemplateView):
     template_name = "modelagemprocessos/normasprocedimento.html"
+
+# ============================================================
+# CRIAR NORMA DE PROCEDIMENTO
+# ============================================================
+class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
+
+    model = NormaProcedimento
+    template_name = ( "modelagemprocessos/form_normaprocedimento.html")
+    form_class = (Form_NormaProcedimentoForm)
+    success_url = reverse_lazy("arquiteturaprocessos:normasprocedimento")
+
+    # ========================================================
+    # FORM KWARGS
+    # ========================================================
+    def get_form_kwargs(self):
+
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"modo_inclusao": True,})
+
+        return kwargs
+
+    # ========================================================
+    # CONTEXTO
+    # ========================================================
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            "modo_inclusao": True,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    # ========================================================
+    # FORM VALID
+    # ========================================================
+    def form_valid(self, form):
+
+        form.instance.estado = (
+            NormaProcedimento.STATUS_ELABORADO
+        )
+
+        form.instance.usuario = (
+            self.request.user
+        )
+
+        form.instance.usuario_elaboracao = (
+            self.request.user
+        )
+
+        form.instance.usuario_atualizacao = (
+            self.request.user
+        )
+
+        response = super().form_valid(form)
+
+        messages.success(
+            self.request,
+            (
+                f"Norma de Procedimento "
+                f"'{self.object.titulo}' "
+                f"criada com sucesso!"
+            )
+        )
+
+        return response
 
 # ---------------------------------------------------
 # LISTAGEM MODELAGEM DE PROCESSOS

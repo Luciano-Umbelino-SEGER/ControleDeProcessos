@@ -9,7 +9,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
                     ModelosProcessoView, CriarModeloProcesso, VisualizarModeloProcesso, EditarModeloProcesso, ExcluirModeloProcesso,
-                    TemplateView, NormasProcedimentoView,
+                    CriarNormaProcedimento, NormasProcedimentoView,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
@@ -109,7 +109,7 @@ urlpatterns = [
     path('modelos-processo/<int:pk>/excluir/', ExcluirModeloProcesso.as_view(), name='excluir_modeloprocesso'),
     # NORMAS DE PROCEDIMENTO
     path('normas-procedimento/', NormasProcedimentoView.as_view(), name='normasprocedimento'),
-    path('normas-procedimento/novo/',TemplateView.as_view(template_name='modelagemprocessos/form_normaprocedimento.html'), name='form_normaprocedimento'),
+    path('normas-procedimento/novo/', CriarNormaProcedimento.as_view(),name='form_normaprocedimento'),
     # Exportação de Arquivos
     path('exportar/<str:resource>/<str:formato>/', exportar_generico, name='exportar_generico'),
     # Áreas Responsáveis

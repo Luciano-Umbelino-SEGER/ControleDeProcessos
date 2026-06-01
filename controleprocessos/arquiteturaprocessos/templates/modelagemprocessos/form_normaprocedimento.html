@@ -103,10 +103,7 @@
                                     Título
                                 </label>
 
-                                <input type="text"
-                                       placeholder="DIGITE O TÍTULO"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black uppercase">
+                                {{ form.titulo }}
                             </div>
 
                             <!-- Sistema -->
@@ -115,10 +112,7 @@
                                     Sistema
                                 </label>
 
-                                <input type="text"
-                                       placeholder="Sistema"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black">
+                                {{ form.sistema }}
                             </div>
 
                             <!-- Sigla -->
@@ -127,10 +121,7 @@
                                     Sigla Sistema
                                 </label>
 
-                                <input type="text"
-                                       placeholder="SIGLA"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black uppercase">
+                                {{ form.sigla_sistema }}
                             </div>
 
                             <!-- Nr Norma -->
@@ -139,10 +130,7 @@
                                     Nr. Norma
                                 </label>
 
-                                <input type="text"
-                                       placeholder="057"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black">
+                                {{ form.numero_norma }}
                             </div>
 
                             <!-- Versão -->
@@ -151,10 +139,7 @@
                                     Versão
                                 </label>
 
-                                <input type="text"
-                                       placeholder="0001"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black">
+                                {{ form.versao }}
                             </div>
 
                             <!-- Emitente -->
@@ -163,10 +148,7 @@
                                     Emitente
                                 </label>
 
-                                <input type="text"
-                                       placeholder="Emitente"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black">
+                                {{ form.emitente }}
                             </div>
 
                             <!-- Tema -->
@@ -175,10 +157,7 @@
                                     Tema
                                 </label>
 
-                                <input type="text"
-                                       placeholder="Tema"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black">
+                                {{ form.tema }}
                             </div>
 
                             <!-- Estado -->
@@ -187,14 +166,7 @@
                                     Estado
                                 </label>
 
-                                <div class="flex items-center h-[42px]">
-                                    <span class="inline-flex items-center justify-center w-full h-[42px]
-                                                 rounded-md bg-blue-100 text-blue-800 text-[12px]
-                                                 font-semibold border border-blue-300 uppercase tracking-wide">
-
-                                        ELABORADO
-                                    </span>
-                                </div>
+                                {{ form.estado }}
                             </div>
 
                         </div>
@@ -204,7 +176,7 @@
                 <!-- ===================================================== -->
                 <!-- VIGÊNCIA E APROVAÇÃO -->
                 <!-- ===================================================== -->
-                <div class="col-span-12">
+                <div class="col-span-12 mt-2">
 
                     <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
@@ -222,8 +194,7 @@
                                     Data Elaboração
                                 </label>
 
-                                <input type="date"
-                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                                {{ form.data_elaboracao }}
                             </div>
 
                             <!-- Data Aprovação -->
@@ -232,8 +203,7 @@
                                     Data Aprovação
                                 </label>
 
-                                <input type="date"
-                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                                {{ form.data_aprovacao }}
                             </div>
 
                             <!-- Portaria -->
@@ -242,9 +212,7 @@
                                     Portaria Aprovação
                                 </label>
 
-                                <input type="text"
-                                       placeholder="Portaria aprovação"
-                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white">
+                                {{ form.portaria_aprovacao }}
                             </div>
 
                             <!-- Vigência Início -->
@@ -253,8 +221,7 @@
                                     Vigência Início
                                 </label>
 
-                                <input type="date"
-                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                                {{ form.vigencia_inicio }}
                             </div>
 
                             <!-- Vigência Fim -->
@@ -263,8 +230,7 @@
                                     Vigência Fim
                                 </label>
 
-                                <input type="date"
-                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-500">
+                                {{ form.vigencia_fim }}
                             </div>
 
                         </div>
@@ -274,7 +240,7 @@
                 <!-- ===================================================== -->
                 <!-- DOCUMENTAÇÃO -->
                 <!-- ===================================================== -->
-                <div class="col-span-12">
+                <div class="col-span-12 mt-2">
 
                     <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
@@ -286,47 +252,410 @@
 
                         <div class="grid grid-cols-12 gap-3">
 
-                            <!-- PDF -->
+                            {% with file_name=form.instance.documento_norma_procedimento.name|default_if_none:"" %}
+
                             <div class="col-span-12 md:col-span-6">
 
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Documento Norma Procedimento (PDF)
-                                </label>
+                                    <label class="block text-sm font-medium text-blue-700 mb-1">
+                                        Documento Norma de Procedimento (PDF)
+                                    </label>
 
-                                <div class="border border-dashed border-gray-300 rounded px-3 py-2
-                                            bg-white flex items-center gap-2">
+                                    <div x-data="{
+                                        fileName: (function(){
+                                            const v = '{{ file_name|escapejs }}';
+                                            return v ? v.replace(/^.*[\\\/]/, '') : '';
+                                        })(),
 
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="h-5 w-5 text-gray-600"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke="currentColor">
+                                        fileObjectURL: (function(){
+                                            {% if form.instance.documento_norma_procedimento %}
+                                                return '{{ form.instance.documento_norma_procedimento.url|escapejs }}';
+                                            {% else %}
+                                                return null;
+                                            {% endif %}
+                                        })(),
 
-                                        <path stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 8l-4-4m0 0L8 8m4-4v12"/>
-                                    </svg>
+                                        error: '',
+                                        over: false,
 
-                                    <span class="text-black">
-                                        Click ou arraste para enviar o PDF
-                                    </span>
+                                        readonlyMode:
+                                            {% if modo_visualizacao or modo_exclusao %}
+                                                true
+                                            {% else %}
+                                                false
+                                            {% endif %},
+
+                                        init() {
+
+                                            const inp = this.$el.querySelector('input[type=file]');
+                                            const dz = this.$el.querySelector('.pdf-dropzone');
+
+                                            if (!inp) return;
+
+                                            inp.setAttribute(
+                                                'accept',
+                                                '.pdf,application/pdf'
+                                            );
+
+                                            if (this.readonlyMode) {
+                                                inp.style.display = 'none';
+                                                inp.disabled = true;
+                                                return;
+                                            }
+
+                                            inp.addEventListener('change', () => {
+
+                                                const f = inp.files?.[0];
+
+                                                if (!f) {
+                                                    this.fileName = '';
+                                                    this.fileObjectURL = '';
+                                                    return;
+                                                }
+
+                                                const ok = (
+                                                    f.type === 'application/pdf' ||
+                                                    f.type === 'application/x-pdf' ||
+                                                    f.name.toLowerCase().endsWith('.pdf')
+                                                );
+
+                                                if (!ok) {
+
+                                                    this.error =
+                                                        'Apenas arquivos PDF são aceitos.';
+
+                                                    inp.value = '';
+
+                                                    this.fileName = '';
+                                                    this.fileObjectURL = '';
+
+                                                    return;
+                                                }
+
+                                                this.error = '';
+
+                                                this.fileName = f.name;
+
+                                                if (this.fileObjectURL) {
+                                                    URL.revokeObjectURL(
+                                                        this.fileObjectURL
+                                                    );
+                                                }
+
+                                                try {
+
+                                                    this.fileObjectURL =
+                                                        URL.createObjectURL(f);
+
+                                                } catch (e) {
+
+                                                    this.fileObjectURL = '';
+                                                }
+                                            });
+
+                                            ['dragenter','dragover'].forEach(ev =>
+                                                dz.addEventListener(ev, e => {
+                                                    e.preventDefault();
+                                                    this.over = true;
+                                                })
+                                            );
+
+                                            ['dragleave','dragend'].forEach(ev =>
+                                                dz.addEventListener(ev, e => {
+                                                    e.preventDefault();
+                                                    this.over = false;
+                                                })
+                                            );
+
+                                            dz.addEventListener('drop', e => {
+
+                                                e.preventDefault();
+
+                                                this.over = false;
+
+                                                const file =
+                                                    e.dataTransfer?.files?.[0];
+
+                                                if (!file) return;
+
+                                                const dt = new DataTransfer();
+
+                                                dt.items.add(file);
+
+                                                inp.files = dt.files;
+
+                                                inp.dispatchEvent(
+                                                    new Event('change', {
+                                                        bubbles: true
+                                                    })
+                                                );
+                                            });
+                                        }
+                                    }">
+
+                                        <div class="flex items-center space-x-2 min-w-0">
+
+                                            <div class="relative pdf-dropzone flex-1 min-w-0">
+
+                                                <div class="file-display w-full overflow-hidden
+                                                            border border-dashed border-gray-300
+                                                            rounded-lg px-3 py-2
+                                                            min-h-[48px]
+                                                            flex items-center gap-2
+                                                            bg-white
+                                                            {% if modo_visualizacao or modo_exclusao %}
+                                                                bg-gray-100
+                                                            {% endif %}">
+
+                                                    <!-- Ícone -->
+                                                    <svg
+                                                        aria-hidden="true"
+                                                        class="h-5 w-5 flex-shrink-0 text-gray-600"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                        viewBox="0 0 24 24">
+
+                                                        <path
+                                                            d="M4 15a3 3 0 003 3h10a3 3 0 003-3"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round">
+                                                        </path>
+
+                                                        <path
+                                                            d="M12 7v8m0-8l-3 3m3-3l3 3"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round">
+                                                        </path>
+                                                    </svg>
+
+                                                    <!-- Nome -->
+                                                    <span
+                                                        class="file-name text-gray-500"
+                                                        x-text="
+                                                            fileName ||
+                                                            'Click ou arraste para enviar o PDF'
+                                                        ">
+                                                    </span>
+
+                                                </div>
+
+                                                <!-- INPUT -->
+                                                {% if not modo_visualizacao and not modo_exclusao %}
+                                                    <div class="absolute inset-0 z-10 opacity-0 cursor-pointer">
+                                                        {{ form.documento_norma_procedimento }}
+                                                    </div>
+                                                {% endif %}
+
+                                                <input type="hidden"
+                                                       name="remover_documento_norma_procedimento"
+                                                       value="0"
+                                                       x-ref="removerPdf">
+
+                                            </div>
+
+                                            <!-- OLHO -->
+                                            <template x-if="fileName && fileObjectURL">
+
+                                                <a
+                                                    @click="abrirModalDocumento(fileObjectURL, fileName)"
+                                                    class="text-blue-500 hover:text-blue-700 cursor-pointer"
+                                                    title="Visualizar">
+
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke-width="2"
+                                                        stroke="currentColor"
+                                                        class="w-5 h-5">
+
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    </svg>
+
+                                                </a>
+
+                                            </template>
+                                            <!-- ERASER -->
+                                            <template x-if="fileName && !readonlyMode">
+
+                                                <button
+                                                    type="button"
+                                                    @click="
+                                                        fileName = '';
+                                                        fileObjectURL = '';
+                                                        error = '';
+
+                                                        const inp =
+                                                            $el.querySelector('input[type=file]');
+
+                                                        if (inp) {
+                                                            inp.value = '';
+                                                        }
+
+                                                        $refs.removerPdf.value = '1';
+                                                    "
+                                                    class="text-red-500 hover:text-red-700 cursor-pointer"
+                                                    title="Remover documento">
+
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                         class="h-5 w-5"
+                                                         fill="none"
+                                                         viewBox="0 0 24 24"
+                                                         stroke="currentColor">
+
+                                                        <path stroke-linecap="round"
+                                                              stroke-linejoin="round"
+                                                              stroke-width="2"
+                                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21
+                                                                 H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6
+                                                                 m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9
+                                                                 a2 2 0 0 0-2 2h10z"/>
+                                                    </svg>
+
+                                                </button>
+
+                                            </template>
+
+                                        </div>
+
+                                        <!-- ERRO FRONT -->
+                                        <p
+                                            class="mt-1 text-sm text-red-600"
+                                            x-show="error"
+                                            x-text="error">
+                                        </p>
+
+                                        <!-- ERRO DJANGO -->
+                                        {% if form.documento_norma_procedimento.errors %}
+                                            <p class="mt-1 text-sm text-red-600">
+                                                {{ form.documento_norma_procedimento.errors|striptags }}
+                                            </p>
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                                {% endwith %}
+
+                                <!-- LINK DOCUMENTO EXTERNO -->
+                                <div class="col-span-12 md:col-span-6">
+                                    <label class="block text-sm font-medium text-blue-700 mb-1">
+                                        Documento Externo Norma (link)
+                                    </label>
+
+                                    <div x-data="{
+                                            link: `{{ form.initial.link_documento_externo|default:''|escapejs }}`,
+
+                                            readonlyMode:
+                                                {% if modo_visualizacao or modo_exclusao %}
+                                                    true
+                                                {% else %}
+                                                    false
+                                                {% endif %}
+                                         }"
+
+                                        class="flex items-center space-x-2 min-w-0">
+
+                                        <!-- INPUT -->
+                                        <div class="flex-1 min-w-0">
+
+                                            <input
+                                                type="text"
+                                                name="link_documento_externo"
+                                                id="{{ form.link_documento_externo.id_for_label }}"
+                                                x-model="link"
+                                                placeholder="https://exemplo.com/documento.pdf"
+                                                autocomplete="off"
+                                                class="w-full min-h-[48px]
+                                                       leading-normal
+                                                       border border-gray-300 rounded-lg
+                                                       px-3 py-2
+                                                       text-black
+                                                       bg-white
+                                                       placeholder-gray-400
+                                                       focus:outline-none
+                                                       focus:ring-2
+                                                       focus:ring-blue-500">
+
+                                            {% if form.link_documento_externo.errors %}
+                                                <p class="mt-1 text-sm text-red-600">
+                                                    {{ form.link_documento_externo.errors|striptags }}
+                                                </p>
+                                            {% endif %}
+
+                                        </div>
+
+                                        <!-- VISUALIZAR -->
+                                        <template x-if="link">
+
+                                            <a @click="abrirModalDocumento(link, 'Documento Externo')"
+                                               class="text-blue-500 hover:text-blue-700 cursor-pointer"
+                                               title="Visualizar">
+
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke-width="2"
+                                                    stroke="currentColor"
+                                                    class="w-5 h-5">
+
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+
+                                                </svg>
+
+                                            </a>
+
+                                        </template>
+
+                                        <!-- REMOVER -->
+                                        <template x-if="link && !readonlyMode">
+
+                                            <button
+                                                type="button"
+                                                @click="link = ''"
+                                                class="text-red-500 hover:text-red-700 cursor-pointer"
+                                                title="Limpar link">
+
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                     class="h-5 w-5"
+                                                     fill="none"
+                                                     viewBox="0 0 24 24"
+                                                     stroke="currentColor">
+
+                                                    <path stroke-linecap="round"
+                                                          stroke-linejoin="round"
+                                                          stroke-width="2"
+                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21
+                                                             H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6
+                                                             m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9
+                                                             a2 2 0 0 0-2 2h10z"/>
+                                                </svg>
+
+                                            </button>
+
+                                        </template>
+
+                                    </div>
                                 </div>
                             </div>
-
-                            <!-- Link -->
-                            <div class="col-span-12 md:col-span-6">
-
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Documento Externo Norma (link)
-                                </label>
-
-                                <input type="text"
-                                       placeholder="https://exemplo.com/documento.pdf"
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-white text-black">
-                            </div>
-
                         </div>
                     </div>
                 </div>
@@ -334,75 +663,138 @@
                 <!-- ===================================================== -->
                 <!-- AUDITORIA -->
                 <!-- ===================================================== -->
-                <div class="col-span-12">
+                <div class="col-span-12 mt-4">
 
                     <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
                         <div class="absolute -top-3 left-5 px-3 bg-blue-50">
                             <h2 class="text-base font-semibold text-blue-800 leading-none">
-                                Auditoria
+                                Responsáveis
                             </h2>
                         </div>
 
-                        <div class="grid grid-cols-12 gap-3">
+                        <!-- ============================================== -->
+                        <!-- ELABORAÇÃO / REVISÃO / APROVAÇÃO -->
+                        <!-- ============================================== -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                            <!-- Cadastro -->
-                            <div class="col-span-12 md:col-span-3">
+                            <!-- ELABORAÇÃO -->
+                            <div class="border border-gray-200 rounded-lg p-2">
 
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Cadastro
-                                </label>
+                                <h3 class="font-semibold text-blue-700 mb-1">
+                                    Elaboração
+                                </h3>
 
                                 <input type="text"
+                                       value="{{ normaprocedimento.usuario_elaboracao|default:'' }}"
                                        readonly
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                                       placeholder="Responsável"
+                                       class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.data_elaboracao|date:'d/m/Y H:i' }}"
+                                       readonly
+                                       placeholder="Data/Hora"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
                             </div>
 
-                            <!-- Responsável Cadastro -->
-                            <div class="col-span-12 md:col-span-3">
+                            <!-- REVISÃO -->
+                            <div class="border border-gray-200 rounded-lg p-2">
 
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Responsável Cadastro
-                                </label>
+                                <h3 class="font-semibold text-orange-600 mb-1">
+                                    Revisão
+                                </h3>
 
                                 <input type="text"
+                                       value="{{ normaprocedimento.usuario_revisao|default:'' }}"
                                        readonly
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                                       placeholder="Responsável"
+                                       class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.data_revisao|date:'d/m/Y H:i' }}"
+                                       readonly
+                                       placeholder="Data/Hora"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
                             </div>
 
-                            <!-- Atualização -->
-                            <div class="col-span-12 md:col-span-3">
+                            <!-- APROVAÇÃO -->
+                            <div class="border border-gray-200 rounded-lg p-2">
 
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Atualização
-                                </label>
-
-                                <input type="text"
-                                       readonly
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-gray-100 text-gray-600 cursor-not-allowed">
-                            </div>
-
-                            <!-- Responsável Atualização -->
-                            <div class="col-span-12 md:col-span-3">
-
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Responsável Atualização
-                                </label>
+                                <h3 class="font-semibold text-green-700 mb-1">
+                                    Aprovação
+                                </h3>
 
                                 <input type="text"
+                                       value="{{ normaprocedimento.usuario_aprovacao|default:'' }}"
                                        readonly
-                                       class="w-full border border-gray-300 rounded px-3 py-2
-                                              bg-gray-100 text-gray-600 cursor-not-allowed">
+                                       placeholder="Responsável"
+                                       class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.data_aprovacao|date:'d/m/Y H:i' }}"
+                                       readonly
+                                       placeholder="Data/Hora"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
                             </div>
 
                         </div>
-                    </div>
-                </div>
 
-            </div>
+                        <!-- ============================================== -->
+                        <!-- CADASTRO / ATUALIZAÇÃO -->
+                        <!-- ============================================== -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
+                            <!-- CADASTRO -->
+                            <div class="border border-gray-200 rounded-lg p-2">
+
+                                <h3 class="font-semibold text-blue-700 mb-1">
+                                    Cadastro
+                                </h3>
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.usuario|default:'' }}"
+                                       readonly
+                                       placeholder="Responsável"
+                                       class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.data_cadastro|date:'d/m/Y H:i' }}"
+                                       readonly
+                                       placeholder="Data/Hora"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                            </div>
+
+                            <!-- ATUALIZAÇÃO -->
+                            <div class="border border-gray-200 rounded-lg p-2">
+
+                                <h3 class="font-semibold text-gray-700 mb-1">
+                                    Atualização
+                                </h3>
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.usuario_atualizacao|default:'' }}"
+                                       readonly
+                                       placeholder="Responsável"
+                                       class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                                <input type="text"
+                                       value="{{ normaprocedimento.data_atualizacao|date:'d/m/Y H:i' }}"
+                                       readonly
+                                       placeholder="Data/Hora"
+                                       class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
         </fieldset>
 

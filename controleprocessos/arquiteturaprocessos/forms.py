@@ -646,27 +646,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
             "autocomplete": "off",
         })
 
-        # ====================================================
-        # EMITENTE
-        # ====================================================
-        self.fields["emitente"].widget.attrs.update({
-            "placeholder": "Órgão Emitente",
-        })
-
-        # ====================================================
-        # TEMA
-        # ====================================================
-        self.fields["tema"].widget.attrs.update({
-            "placeholder": "Tema",
-        })
-
-        # ====================================================
-        # PORTARIA
-        # ====================================================
-        self.fields["portaria_aprovacao"].widget.attrs.update({
-            "placeholder": "Portaria de Aprovação",
-        })
-
         # ESTADO
         self.fields["estado"].widget.attrs.update({
             "class": f"{base_class} {bg}",
