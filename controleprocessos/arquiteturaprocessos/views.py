@@ -2493,6 +2493,7 @@ class ModelosProcessoView(LoginRequiredMixin, ListView):
         queryset = (
             ModeloProcesso.objects
             .select_related(
+                "usuario_cadastro",
                 "usuario_elaboracao",
                 "usuario_revisao",
                 "usuario_aprovacao",
@@ -2616,16 +2617,22 @@ class CriarModeloProcesso(LoginRequiredMixin, CreateView):
             ModeloProcesso.STATUS_ELABORADO
         )
 
+        # AUDITORIA
+        form.instance.usuario_cadastro = (
+            self.request.user
+        )
+
+        form.instance.usuario_atualizacao = (
+            self.request.user
+        )
+
+        # ELABORAÇÃO
         form.instance.usuario_elaboracao = (
             self.request.user
         )
 
         form.instance.data_elaboracao = (
-            timezone.now()
-        )
-
-        form.instance.usuario_atualizacao = (
-            self.request.user
+            timezone.localdate()
         )
 
         response = super().form_valid(form)
@@ -2659,8 +2666,6 @@ class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
                 modo_visualizacao=True,
             )
         )
-
-        obj = self.get_object()
 
         usuario_elaboracao = obj.usuario_elaboracao
         usuario_revisao = obj.usuario_revisao
@@ -2699,7 +2704,7 @@ class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
 
             'data_elaboracao': (
                 obj.data_elaboracao.strftime(
-                    "%d/%m/%Y %H:%M"
+                    "%d/%m/%Y"
                 )
                 if obj.data_elaboracao else ""
             ),
@@ -2730,7 +2735,7 @@ class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
 
             'data_revisao': (
                 obj.data_revisao.strftime(
-                    "%d/%m/%Y %H:%M"
+                    "%d/%m/%Y"
                 )
                 if obj.data_revisao else ""
             ),
@@ -2761,7 +2766,7 @@ class VisualizarModeloProcesso(LoginRequiredMixin, DetailView):
 
             'data_aprovacao': (
                 obj.data_aprovacao.strftime(
-                    "%d/%m/%Y %H:%M"
+                    "%d/%m/%Y"
                 )
                 if obj.data_aprovacao else ""
             ),
@@ -2826,7 +2831,9 @@ class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
                     getattr(usuario, "setor", ""),
 
                 "data_elaboracao":
-                    obj.data_elaboracao.strftime("%d/%m/%Y %H:%M")
+                    obj.data_elaboracao.strftime(
+                        "%d/%m/%Y"
+                    )
                     if obj.data_elaboracao else "",
             })
 
@@ -2851,7 +2858,7 @@ class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
                     getattr(usuario, "setor", ""),
 
                 "data_revisao":
-                    obj.data_revisao.strftime("%d/%m/%Y %H:%M")
+                    obj.data_revisao.strftime("%d/%m/%Y")
                     if obj.data_revisao else "",
             })
 
@@ -2876,7 +2883,7 @@ class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
                     getattr(usuario, "setor", ""),
 
                 "data_aprovacao":
-                    obj.data_aprovacao.strftime("%d/%m/%Y %H:%M")
+                    obj.data_aprovacao.strftime("%d/%m/%Y")
                     if obj.data_aprovacao else "",
             })
 
@@ -2912,25 +2919,23 @@ class EditarModeloProcesso(LoginRequiredMixin, UpdateView):
         # ============================================
         obj.usuario_atualizacao = self.request.user
 
-        obj.data_atualizacao = timezone.now()
-
         # ============================================
         # REVISÃO
         # ============================================
         if obj.estado == "REVISADO":
 
-            obj.usuario_revisao = self.request.user
-
-            obj.data_revisao = timezone.now()
+            if not obj.data_revisao:
+                obj.usuario_revisao = self.request.user
+                obj.data_revisao = timezone.localdate()
 
         # ============================================
         # APROVAÇÃO
         # ============================================
         elif obj.estado == "APROVADO":
 
-            obj.usuario_aprovacao = self.request.user
-
-            obj.data_aprovacao = timezone.now()
+            if not obj.data_aprovacao:
+                obj.usuario_aprovacao = self.request.user
+                obj.data_aprovacao = timezone.localdate()
 
         response = super().form_valid(form)
 
@@ -3015,7 +3020,7 @@ class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
                 ),
 
                 "data": (
-                    data.strftime("%d/%m/%Y %H:%M")
+                    data.strftime("%d/%m/%Y")
                     if data else ""
                 )
             }
@@ -3140,7 +3145,6 @@ class ExcluirModeloProcesso(LoginRequiredMixin, DetailView):
             'arquiteturaprocessos:modelosprocesso'
         )
 
-# Aqui 1
 # ============================================================
 # LISTAGEM DE NORMAS DE PROCEDIMENTO
 # ============================================================
@@ -3170,7 +3174,7 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
         queryset = (
             NormaProcedimento.objects
             .select_related(
-                "usuario",
+                "usuario_cadastro",
                 "usuario_elaboracao",
                 "usuario_revisao",
                 "usuario_aprovacao",
@@ -3188,8 +3192,8 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             ""
         ).strip()
 
-        sigla = req.get(
-            "sigla",
+        emitente = req.get(
+            "emitente",
             ""
         ).strip()
 
@@ -3208,6 +3212,16 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             ""
         ).strip()
 
+        vigencia_de = req.get(
+            "vigencia_de",
+            ""
+        ).strip()
+
+        vigencia_ate = req.get(
+            "vigencia_ate",
+            ""
+        ).strip()
+
         if titulo:
             queryset = queryset.filter(
                 titulo__icontains=titulo
@@ -3218,9 +3232,9 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
                 sistema__icontains=sistema
             )
 
-        if sigla:
+        if emitente:
             queryset = queryset.filter(
-                sigla_sistema__icontains=sigla
+                emitente__icontains=emitente
             )
 
         if numero:
@@ -3236,6 +3250,16 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
         if estado:
             queryset = queryset.filter(
                 estado=estado
+            )
+
+        if vigencia_de:
+            queryset = queryset.filter(
+                vigencia_inicio__gte=vigencia_de
+            )
+
+        if vigencia_ate:
+            queryset = queryset.filter(
+                vigencia_fim__lte=vigencia_ate
             )
 
         queryset = queryset.order_by(
@@ -3265,8 +3289,8 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             req.get("sistema", "")
         )
 
-        context["sigla_busca"] = (
-            req.get("sigla", "")
+        context["emitente_busca"] = (
+            req.get("emitente", "")
         )
 
         context["numero_busca"] = (
@@ -3279,6 +3303,14 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
 
         context["estado_busca"] = (
             req.get("estado", "")
+        )
+
+        context["vigencia_de"] = (
+            req.get("vigencia_de", "")
+        )
+
+        context["vigencia_ate"] = (
+            req.get("vigencia_ate", "")
         )
 
         context["status_choices"] = (
@@ -3357,7 +3389,7 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
             NormaProcedimento.STATUS_ELABORADO
         )
 
-        form.instance.usuario = (
+        form.instance.usuario_cadastro = (
             self.request.user
         )
 
@@ -3381,6 +3413,308 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
         )
 
         return response
+
+# Aqui 1
+# ============================================================
+# VISUALIZAR NORMA DE PROCEDIMENTO
+# ============================================================
+class VisualizarNormaProcedimento(
+    LoginRequiredMixin,
+    DetailView
+):
+
+    model = NormaProcedimento
+
+    template_name = (
+        "modelagemprocessos/form_normaprocedimento.html"
+    )
+
+    context_object_name = (
+        "normaprocedimento"
+    )
+
+    def get_context_data(self, **kwargs):
+
+        context = (
+            super()
+            .get_context_data(**kwargs)
+        )
+
+        obj = self.get_object()
+
+        context["form"] = (
+            Form_NormaProcedimentoForm(
+                instance=obj,
+                modo_visualizacao=True,
+            )
+        )
+
+        context.update({
+
+            "modo_visualizacao": True,
+            "modo_inclusao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+
+            # ============================================
+            # ELABORAÇÃO
+            # ============================================
+            "usuario_elaboracao_nome":
+                str(obj.usuario_elaboracao)
+                if obj.usuario_elaboracao else "",
+
+            "data_elaboracao":
+                obj.data_elaboracao.strftime("%d/%m/%Y")
+                if obj.data_elaboracao else "",
+
+            # ============================================
+            # REVISÃO
+            # ============================================
+            "usuario_revisao_nome":
+                str(obj.usuario_revisao)
+                if obj.usuario_revisao else "",
+
+            "data_revisao":
+                obj.data_revisao.strftime("%d/%m/%Y")
+                if obj.data_revisao else "",
+
+            # ============================================
+            # APROVAÇÃO
+            # ============================================
+            "usuario_aprovacao_nome":
+                str(obj.usuario_aprovacao)
+                if obj.usuario_aprovacao else "",
+
+            "data_aprovacao":
+                obj.data_aprovacao.strftime("%d/%m/%Y")
+                if obj.data_aprovacao else "",
+
+            # ============================================
+            # CADASTRO
+            # ============================================
+            "usuario_cadastro_nome":
+                str(obj.usuario_cadastro)
+                if obj.usuario_cadastro else "",
+
+            "data_cadastro":
+                obj.data_cadastro.strftime(
+                    "%d/%m/%Y %H:%M"
+                )
+                if obj.data_cadastro else "",
+
+            # ============================================
+            # ATUALIZAÇÃO
+            # ============================================
+            "usuario_atualizacao_nome":
+                str(obj.usuario_atualizacao)
+                if obj.usuario_atualizacao else "",
+
+            "data_atualizacao":
+                obj.data_atualizacao.strftime(
+                    "%d/%m/%Y %H:%M"
+                )
+                if obj.data_atualizacao else "",
+        })
+
+        return context
+
+# ============================================================
+# EDITAR NORMA DE PROCEDIMENTO
+# ============================================================
+class EditarNormaProcedimento(
+    LoginRequiredMixin,
+    UpdateView
+):
+
+    model = NormaProcedimento
+
+    template_name = (
+        "modelagemprocessos/form_normaprocedimento.html"
+    )
+
+    context_object_name = (
+        "normaprocedimento"
+    )
+
+    form_class = (
+        Form_NormaProcedimentoForm
+    )
+
+    success_url = reverse_lazy(
+        "arquiteturaprocessos:normasprocedimento"
+    )
+
+    def get_form_kwargs(self):
+
+        kwargs = super().get_form_kwargs()
+
+        kwargs.update({
+            "usuario_logado": self.request.user,
+            "modo_edicao": True,
+        })
+
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            "modo_edicao": True,
+            "modo_visualizacao": False,
+            "modo_inclusao": False,
+            "modo_exclusao": False,
+        })
+
+        return context
+
+    def form_valid(self, form):
+
+        obj = form.instance
+
+        # ============================================
+        # REMOVER PDF
+        # ============================================
+        if self.request.POST.get(
+            "remover_documento_norma_procedimento"
+        ) == "1":
+
+            if obj.documento_norma_procedimento:
+
+                obj.documento_norma_procedimento.delete(
+                    save=False
+                )
+
+            obj.documento_norma_procedimento = None
+
+        # ============================================
+        # AUDITORIA
+        # ============================================
+        obj.usuario_atualizacao = (
+            self.request.user
+        )
+
+        # ============================================
+        # REVISÃO
+        # ============================================
+        if obj.estado == "REVISADO":
+
+            if not obj.data_revisao:
+
+                obj.usuario_revisao = (
+                    self.request.user
+                )
+
+                obj.data_revisao = (
+                    timezone.localdate()
+                )
+
+        # ============================================
+        # APROVAÇÃO
+        # ============================================
+        elif obj.estado == "APROVADO":
+
+            if not obj.data_aprovacao:
+
+                obj.usuario_aprovacao = (
+                    self.request.user
+                )
+
+                obj.data_aprovacao = (
+                    timezone.localdate()
+                )
+
+        response = super().form_valid(form)
+
+        messages.success(
+            self.request,
+            (
+                f"Norma de Procedimento "
+                f"'{self.object.titulo}' "
+                f"atualizada com sucesso!"
+            )
+        )
+
+        return response
+
+# ============================================================
+# EXCLUIR NORMA DE PROCEDIMENTO
+# ============================================================
+class ExcluirNormaProcedimento(
+    LoginRequiredMixin,
+    DetailView
+):
+
+    model = NormaProcedimento
+
+    template_name = (
+        "modelagemprocessos/form_normaprocedimento.html"
+    )
+
+    context_object_name = (
+        "normaprocedimento"
+    )
+
+    def get_context_data(self, **kwargs):
+
+        context = (
+            super()
+            .get_context_data(**kwargs)
+        )
+
+        obj = self.get_object()
+
+        context["form"] = (
+            Form_NormaProcedimentoForm(
+                instance=obj,
+                modo_exclusao=True,
+            )
+        )
+
+        context.update({
+
+            "modo_exclusao": True,
+            "modo_visualizacao": False,
+            "modo_inclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+
+        obj = self.get_object()
+
+        if obj.documento_norma_procedimento:
+
+            try:
+
+                if os.path.isfile(
+                    obj.documento_norma_procedimento.path
+                ):
+                    os.remove(
+                        obj.documento_norma_procedimento.path
+                    )
+
+            except Exception:
+                pass
+
+        titulo = obj.titulo
+
+        obj.delete()
+
+        messages.success(
+            request,
+            (
+                f"Norma de Procedimento "
+                f"'{titulo}' "
+                f"excluída com sucesso!"
+            )
+        )
+
+        return redirect(
+            "arquiteturaprocessos:normasprocedimento"
+        )
 
 # ---------------------------------------------------
 # LISTAGEM MODELAGEM DE PROCESSOS

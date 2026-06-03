@@ -530,8 +530,9 @@ class ModeloProcesso(models.Model):
     # ========================================================
     # ELABORAÇÃO
     # ========================================================
-    data_elaboracao = models.DateTimeField(
-        auto_now_add=True,
+    data_elaboracao = models.DateField(
+        null=True,
+        blank=True,
         verbose_name="Data de Elaboração",
     )
 
@@ -545,7 +546,7 @@ class ModeloProcesso(models.Model):
     # ========================================================
     # REVISÃO
     # ========================================================
-    data_revisao = models.DateTimeField(
+    data_revisao = models.DateField(
         null=True,
         blank=True,
         verbose_name="Data de Revisão",
@@ -563,7 +564,7 @@ class ModeloProcesso(models.Model):
     # ========================================================
     # APROVAÇÃO
     # ========================================================
-    data_aprovacao = models.DateTimeField(
+    data_aprovacao = models.DateField(
         null=True,
         blank=True,
         verbose_name="Data de Aprovação",
@@ -579,11 +580,23 @@ class ModeloProcesso(models.Model):
     )
 
     # ========================================================
-    # ATUALIZAÇÃO
+    # AUDITORIA
     # ========================================================
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data Cadastro",
+    )
+
+    usuario_cadastro = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="modelos_processo_cadastrados",
+        verbose_name="Usuário Cadastro",
+    )
+
     data_atualizacao = models.DateTimeField(
         auto_now=True,
-        verbose_name="Data de Atualização",
+        verbose_name="Data Atualização",
     )
 
     usuario_atualizacao = models.ForeignKey(
@@ -884,7 +897,7 @@ class NormaProcedimento(models.Model):
     # ========================================================
     # REVISÃO
     # ========================================================
-    data_revisao = models.DateTimeField(
+    data_revisao = models.DateField(
         null=True,
         blank=True,
         verbose_name="Data Revisão",
@@ -919,7 +932,7 @@ class NormaProcedimento(models.Model):
         verbose_name="Data Cadastro",
     )
 
-    usuario = models.ForeignKey(
+    usuario_cadastro = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="normas_criadas",

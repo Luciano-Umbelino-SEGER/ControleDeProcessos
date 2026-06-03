@@ -692,7 +692,7 @@
                                        class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
 
                                 <input type="text"
-                                       value="{{ normaprocedimento.data_elaboracao|date:'d/m/Y H:i' }}"
+                                       value="{{ normaprocedimento.data_elaboracao|date:'d-m-Y'  }}"
                                        readonly
                                        placeholder="Data/Hora"
                                        class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
@@ -734,9 +734,9 @@
                                        class="w-full mb-2 border border-gray-300 rounded px-3 py-2 bg-gray-100">
 
                                 <input type="text"
-                                       value="{{ normaprocedimento.data_aprovacao|date:'d/m/Y H:i' }}"
+                                       value="{{ normaprocedimento.data_aprovacao|date:'d/m/Y' }}"
                                        readonly
-                                       placeholder="Data/Hora"
+                                       placeholder="Data dd/mm/aaaa"
                                        class="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100">
 
                             </div>

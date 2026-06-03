@@ -332,7 +332,6 @@
                 </a>
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
-
                 <!-- EDITAR -->
                 <a href="{% url 'arquiteturaprocessos:editar_modeloprocesso' modelo.pk %}"
                    title="Editar"

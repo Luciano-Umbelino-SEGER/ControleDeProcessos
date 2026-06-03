@@ -717,145 +717,137 @@ textarea {
             </div>
 
             <!-- ===================================================== -->
-            <!-- RESPONSÁVEIS -->
+            <!-- CONTROLE DO DOCUMENTO -->
             <!-- ===================================================== -->
             <div class="relative border border-gray-300 rounded-lg px-4 pt-3 pb-4 mb-6">
 
                 <div class="absolute -top-4 left-4 bg-blue-50 px-2">
                     <h2 class="text-base font-semibold text-blue-800">
-                        Responsáveis
+                        Controle do Documento
                     </h2>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                <div class="overflow-x-auto mt-2">
 
-                    <!-- ELABORAÇÃO -->
-                    <div class="border border-gray-300 rounded-lg p-3 bg-white/50">
+                    <table class="w-full text-sm">
 
-                        <h3 class="text-blue-700 font-semibold mb-1">
-                            Elaboração
-                        </h3>
+                        <thead>
 
-                        <div class="space-y-2">
+                            <tr class="border-b border-gray-300">
 
-                            <input type="text"
-                                   value="{{ usuario_elaboracao_nome }}"
-                                   placeholder="Responsável"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <th class="text-left py-2 px-2 font-semibold text-blue-800">
+                                    Evento
+                                </th>
 
-                            <input type="text"
-                                   value="{{ usuario_elaboracao_cargo }}"
-                                   placeholder="Cargo"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <th class="text-left py-2 px-2 font-semibold text-blue-800">
+                                    Responsável
+                                </th>
 
-                            <input type="text"
-                                   value="{{ usuario_elaboracao_funcao }}"
-                                   placeholder="Função"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <th class="text-left py-2 px-2 font-semibold text-blue-800">
+                                    Cargo
+                                </th>
 
-                            <input type="text"
-                                   value="{{ usuario_elaboracao_setor }}"
-                                   placeholder="Setor"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <th class="text-left py-2 px-2 font-semibold text-blue-800">
+                                    Função
+                                </th>
 
-                            <input type="text"
-                                   value="{{ data_elaboracao }}"
-                                   placeholder="Data/Hora"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <th class="text-left py-2 px-2 font-semibold text-blue-800">
+                                    Setor
+                                </th>
 
-                        </div>
-                    </div>
+                                <th class="text-left py-2 px-2 font-semibold text-blue-800">
+                                    Data
+                                </th>
 
-                    <!-- REVISÃO -->
-                    <div class="border border-gray-300 rounded-lg p-3 bg-white/50">
+                            </tr>
 
-                        <h3 class="text-yellow-700 font-semibold mb-1">
-                            Revisão
-                        </h3>
+                        </thead>
 
-                        <div class="space-y-2">
+                        <tbody>
 
-                            <input type="text"
-                                   value="{{ usuario_revisao_nome }}"
-                                   placeholder="Responsável"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                            <!-- CADASTRO -->
+                            <tr class="border-b border-gray-200">
+                                <td class="py-2 px-2 font-medium text-blue-700">
+                                    Cadastro
+                                </td>
 
-                            <input type="text"
-                                   value="{{ usuario_revisao_cargo }}"
-                                   placeholder="Cargo"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <td class="py-2 px-2">
+                                    {{ usuario_cadastro_nome }}
+                                </td>
 
-                            <input type="text"
-                                   value="{{ usuario_revisao_funcao }}"
-                                   placeholder="Função"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <td></td>
+                                <td></td>
+                                <td></td>
 
-                            <input type="text"
-                                   value="{{ usuario_revisao_setor }}"
-                                   placeholder="Setor"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <td class="py-2 px-2">
+                                    {{ data_cadastro }}
+                                </td>
+                            </tr>
 
-                            <input type="text"
-                                   value="{{ data_revisao }}"
-                                   placeholder="Data/Hora"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                            <!-- ATUALIZAÇÃO -->
+                            <tr class="border-b border-gray-200">
+                                <td class="py-2 px-2 font-medium  text-gray-700">
+                                    Atualização
+                                </td>
 
-                        </div>
-                    </div>
+                                <td class="py-2 px-2">
+                                    {{ usuario_atualizacao_nome }}
+                                </td>
 
-                    <!-- APROVAÇÃO -->
-                    <div class="border border-gray-300 rounded-lg p-3 bg-white/50">
+                                <td></td>
+                                <td></td>
+                                <td></td>
 
-                        <h3 class="text-green-700 font-semibold mb-1">
-                            Aprovação
-                        </h3>
+                                <td class="py-2 px-2">
+                                    {{ data_atualizacao }}
+                                </td>
+                            </tr>
 
-                        <div class="space-y-2">
+                            <!-- ELABORAÇÃO -->
+                            <tr class="border-b border-gray-200">
+                                <td class="py-2 px-2 font-medium text-blue-700">
+                                    Elaboração
+                                </td>
 
-                            <input type="text"
-                                   value="{{ usuario_aprovacao_nome }}"
-                                   placeholder="Responsável"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <td>{{ usuario_elaboracao_nome }}</td>
+                                <td>{{ usuario_elaboracao_cargo }}</td>
+                                <td>{{ usuario_elaboracao_funcao }}</td>
+                                <td>{{ usuario_elaboracao_setor }}</td>
+                                <td>{{ data_elaboracao }}</td>
+                            </tr>
 
-                            <input type="text"
-                                   value="{{ usuario_aprovacao_cargo }}"
-                                   placeholder="Cargo"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                            <!-- REVISÃO -->
+                            <tr class="border-b border-gray-200">
+                                <td class="py-2 px-2 font-medium text-yellow-700">
+                                    Revisão
+                                </td>
 
-                            <input type="text"
-                                   value="{{ usuario_aprovacao_funcao }}"
-                                   placeholder="Função"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <td>{{ usuario_revisao_nome }}</td>
+                                <td>{{ usuario_revisao_cargo }}</td>
+                                <td>{{ usuario_revisao_funcao }}</td>
+                                <td>{{ usuario_revisao_setor }}</td>
+                                <td>{{ data_revisao }}</td>
+                            </tr>
 
-                            <input type="text"
-                                   value="{{ usuario_aprovacao_setor }}"
-                                   placeholder="Setor"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                            <!-- APROVAÇÃO -->
+                            <tr>
+                                <td class="py-2 px-2 font-medium text-green-700">
+                                    Aprovação
+                                </td>
 
-                            <input type="text"
-                                   value="{{ data_aprovacao }}"
-                                   placeholder="Data/Hora"
-                                   readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <td>{{ usuario_aprovacao_nome }}</td>
+                                <td>{{ usuario_aprovacao_cargo }}</td>
+                                <td>{{ usuario_aprovacao_funcao }}</td>
+                                <td>{{ usuario_aprovacao_setor }}</td>
+                                <td>{{ data_aprovacao }}</td>
+                            </tr>
 
-                        </div>
-                    </div>
+                        </tbody>
+
+                    </table>
 
                 </div>
+
             </div>
 
         </fieldset>

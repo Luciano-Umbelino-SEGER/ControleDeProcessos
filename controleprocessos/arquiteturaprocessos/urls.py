@@ -9,7 +9,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
                     ModelosProcessoView, CriarModeloProcesso, VisualizarModeloProcesso, EditarModeloProcesso, ExcluirModeloProcesso,
-                    CriarNormaProcedimento, NormasProcedimentoView,
+                    NormasProcedimentoView, CriarNormaProcedimento, VisualizarNormaProcedimento, EditarNormaProcedimento, ExcluirNormaProcedimento,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
@@ -108,8 +108,11 @@ urlpatterns = [
     path('modelos-processo/<int:pk>/editar/', EditarModeloProcesso.as_view(), name='editar_modeloprocesso'),
     path('modelos-processo/<int:pk>/excluir/', ExcluirModeloProcesso.as_view(), name='excluir_modeloprocesso'),
     # NORMAS DE PROCEDIMENTO
-    path('normas-procedimento/', NormasProcedimentoView.as_view(), name='normasprocedimento'),
-    path('normas-procedimento/novo/', CriarNormaProcedimento.as_view(),name='form_normaprocedimento'),
+    path('normas-procedimento/', NormasProcedimentoView.as_view(), name='normasprocedimento' ),
+    path('normas-procedimento/novo/', CriarNormaProcedimento.as_view(), name='criar_normaprocedimento'),
+    path('normas-procedimento/<int:pk>/visualizar/',  VisualizarNormaProcedimento.as_view(), name='visualizar_normaprocedimento'),
+    path('normas-procedimento/<int:pk>/editar/', EditarNormaProcedimento.as_view(), name='editar_normaprocedimento'),
+    path('normas-procedimento/<int:pk>/excluir/', ExcluirNormaProcedimento.as_view(), name='excluir_normaprocedimento'),
     # Exportação de Arquivos
     path('exportar/<str:resource>/<str:formato>/', exportar_generico, name='exportar_generico'),
     # Áreas Responsáveis
