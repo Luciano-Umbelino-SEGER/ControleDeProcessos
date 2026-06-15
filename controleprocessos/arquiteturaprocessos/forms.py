@@ -466,6 +466,51 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
             field.widget.attrs.setdefault("name", name)
 
 # ============================================================
+# Form_Sistema_UECIForm
+# ============================================================
+class Form_Sistema_UECIForm(forms.ModelForm):
+    class Meta:
+        model = TiposDocumento
+        fields = ['nome', 'descricao']
+
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        modo_exclusao = kwargs.pop('modo_exclusao', False)
+        super().__init__(*args, **kwargs)
+        if "descricao" in self.fields:
+            self.fields["descricao"].max_length = 3000
+            self.fields["descricao"].widget.attrs["maxlength"] = 3000
+            self.fields["descricao"].widget.attrs["rows"] = 4
+
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 focus:outline-none "
+            "focus:ring-2 focus:ring-blue-500"
+        )
+
+        for name, field in self.fields.items():
+            field.widget.attrs.setdefault(
+                'class',
+                base + (' bg-gray-100' if (modo_visualizacao or modo_exclusao) else ' bg-white')
+            )
+            field.widget.attrs.setdefault('placeholder', field.label)
+
+            # 🔠 Forçar digitação em CAIXA ALTA no campo nome
+            if name == 'nome':
+                field.widget.attrs['style'] = 'text-transform: uppercase;'
+                field.widget.attrs['oninput'] = 'this.value = this.value.toUpperCase();'
+
+        if modo_visualizacao or modo_exclusao:
+            for field in self.fields.values():
+                field.disabled = True
+
+    # 🔒 REGRA DE DOMÍNIO: Nome sempre em CAIXA ALTA
+    def clean_nome(self):
+        nome = self.cleaned_data.get('nome')
+        if nome:
+            nome = nome.strip().upper()
+        return nome
+# ============================================================
 # TIPOS DE DOCUMENTO
 # ============================================================
 class Form_TipoDocumentoForm(forms.ModelForm):
@@ -1062,7 +1107,7 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 
             # Auditoria
             "data_cadastro",
-            "usuario",
+            "usuario_cadastro",
 
             "data_atualizacao",
             "usuario_atualizacao",
@@ -1071,8 +1116,6 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
             "usuario_elaboracao",
             "usuario_revisao",
             "usuario_aprovacao",
-
-            "data_revisao",
         )
 
     # ========================================================
@@ -1156,6 +1199,7 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         # ====================================================
         campos_data = [
             "data_elaboracao",
+            "data_revisao",
             "data_aprovacao",
             "vigencia_inicio",
             "vigencia_fim",
@@ -1167,6 +1211,7 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
                 continue
 
             self.fields[campo].widget = forms.DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date",
                     "class": f"{base_class} {bg}",
@@ -1415,6 +1460,14 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 
         return data
 
+    def clean_data_revisao(self):
+
+        data = self.cleaned_data.get(
+            "data_revisao"
+        )
+
+        return data
+
     def clean_documento_norma_procedimento(self):
 
         f = self.cleaned_data.get(
@@ -1508,6 +1561,38 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
             raise ValidationError(
                 "Informe um PDF ou um Link Externo."
             )
+
+        data_elaboracao = cleaned_data.get(
+            "data_elaboracao"
+        )
+
+        data_revisao = cleaned_data.get(
+            "data_revisao"
+        )
+
+        data_aprovacao = cleaned_data.get(
+            "data_aprovacao"
+        )
+
+        if (
+                data_elaboracao
+                and data_revisao
+                and data_revisao < data_elaboracao
+        ):
+            raise ValidationError(
+                "A Data de Revisão não pode ser anterior à Data de Elaboração."
+            )
+
+        if (
+                data_revisao
+                and data_aprovacao
+                and data_aprovacao < data_revisao
+        ):
+            raise ValidationError(
+                "A Data de Aprovação não pode ser anterior à Data de Revisão."
+            )
+
+
 
         inicio = cleaned_data.get(
             "vigencia_inicio"

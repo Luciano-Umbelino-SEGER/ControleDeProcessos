@@ -6,7 +6,8 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
                     ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2, VisualizarMacroProcessoNivel2,
-                    EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, TipoDocumentoList, CriarTipoDocumento,
+                    EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, Sistemas_UECIList, CriarSistema_UECI, VisualizarSistema_UECI,
+                    EditarSistema_UECI, ExcluirSistema_UECI, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
                     ModelosProcessoView, CriarModeloProcesso, VisualizarModeloProcesso, EditarModeloProcesso, ExcluirModeloProcesso,
                     NormasProcedimentoView, CriarNormaProcedimento, VisualizarNormaProcedimento, EditarNormaProcedimento, ExcluirNormaProcedimento,
@@ -89,6 +90,12 @@ urlpatterns = [
     path('macroprocessonivel2/<int:pk>/editar/', EditarMacroProcessoNivel2.as_view(), name='editar_macroprocessonivel2'),
     path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
+    # Sistemas UECI
+    path('sistemasueci/', Sistemas_UECIList.as_view(), name='sistemas_ueci'),
+    path('sistemasueci/novo/', CriarSistema_UECI.as_view(), name='criar_sistema_UECI'),
+    path('sistemasueci/<int:pk>/', VisualizarSistema_UECI.as_view(), name='visualizar_sistema_ueci'),
+    path('sistemasueci/<int:pk>/editar/', EditarSistema_UECI.as_view(), name='editar_sistema_ueci'),
+    path('sistemasueci/<int:pk>/excluir/', ExcluirSistema_UECI.as_view(),name='excluir_sistema_ueci'),
     # Tipos de Documento
     path('tiposdocumento/', TipoDocumentoList.as_view(), name='tiposdocumento'),
     path('tiposdocumento/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),

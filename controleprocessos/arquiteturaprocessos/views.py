@@ -51,7 +51,7 @@ from auditoria.utils import registrar_tentativa, esta_bloqueado, resetar_tentati
 
 from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
-    Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
+    Form_Sistema_UECIForm, Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ModelagemProcessoForm, Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm,
     Form_AreaResponsavelForm, Form_ModeloProcessoForm, Form_NormaProcedimentoForm,
 )
@@ -2344,6 +2344,132 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
 
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
+
+# Aqui 1
+# ---------------------------
+# SISTEMAS UECI
+# ---------------------------
+class Sistemas_UECIList(LoginRequiredMixin, ListView):
+    model = TiposDocumento
+    template_name = 'estrutura/sistemas_ueci.html'
+    context_object_name = 'sistemas_ueci'
+    queryset = TiposDocumento.objects.order_by('nome')
+
+class CriarSistema_UECI(LoginRequiredMixin, CreateView):
+    model = TiposDocumento
+    form_class = Form_Sistema_UECIForm
+    template_name = 'estrutura/form_sistema_ueci.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
+        return ctx
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['modo_visualizacao'] = False
+        kwargs['modo_exclusao'] = False
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Sistema UECI '{self.object.nome}' cadastrado com sucesso!")
+        return response
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:sistemas_ueci')
+
+class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
+    model = TiposDocumento
+    template_name = 'estrutura/form_sistema_ueci.html'
+    context_object_name = 'sistemas_ueci'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['form'] = Form_Sistema_UECIForm(instance=self.get_object(), modo_visualizacao=True)
+        ctx.update({
+            'modo_visualizacao': True,
+            'modo_inclusao': False,
+            'modo_exclusao': False,
+            'modo_edicao': False,
+        })
+        return ctx
+
+class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
+    model = TiposDocumento
+    form_class = Form_Sistema_UECIForm
+    template_name = 'estrutura/form_sistema_ueci.html'
+    context_object_name = 'sistema_ueci'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update({
+            'modo_edicao': True,
+            'modo_inclusao': False,
+            'modo_visualizacao': False,
+            'modo_exclusao': False,
+        })
+        return ctx
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['modo_visualizacao'] = False
+        kwargs['modo_exclusao'] = False
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Sistema UECI '{self.object.nome}' atualizado com sucesso!")
+        return response
+
+    def get_success_url(self):
+        return reverse('arquiteturaprocessos:sistemas_ueci')
+
+class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
+    model = TiposDocumento
+    template_name = 'estrutura/form_sistema_ueci.html'
+    context_object_name = 'sistema_ueci'
+
+    def post(self, request, *args, **kwargs):
+        sistemaueci = self.get_object()
+
+        # 🔒 Regra de domínio: impedir exclusão se houver vínculos
+        existe_vinculo = ModelagemProcesso.objects.filter(
+            sistema_ueci=sistemaueci
+        ).exists()
+
+        if existe_vinculo:
+            messages.error(
+                request,
+                "Não é possível excluir este Sistema UECI porque ele está vinculado a uma ou mais Norma de Procedimento."
+            )
+            return redirect('arquiteturaprocessos:sistemas_ueci')
+
+        sistemaueci.delete()
+        messages.success(
+            request,
+            f"Sistema UECI - '{sistemaueci.nome}' excluído com sucesso!"
+        )
+        return redirect('arquiteturaprocessos:sistemas_ueci')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['form'] = Form_Sistema_UECIForm(
+            instance=self.object,
+            modo_exclusao=True
+        )
+        ctx.update({
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+        })
+        return ctx
 
 # ---------------------------
 # Tipos de Documento

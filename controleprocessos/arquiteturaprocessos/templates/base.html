@@ -191,6 +191,10 @@
                          x-transition
                          class="ml-14 space-y-1">
 
+                        <a href="{% url 'arquiteturaprocessos:sistemas_ueci' %}"
+                           class="block p-2 rounded hover:bg-[#00796B]"
+                           @click="closeSidebar()">Sistemas (UECI)</a>
+
                         <a href="{% url 'arquiteturaprocessos:classificacoes' %}"
                            class="block p-2 rounded hover:bg-[#00796B]"
                            @click="closeSidebar()">Classificação</a>
