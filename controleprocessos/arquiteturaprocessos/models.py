@@ -148,6 +148,52 @@ class MacroprocessoNivel2(models.Model):
     def __str__(self):
         return self.nome
 
+# Aqui 1
+# ============================================================
+# SISTEMAS UECI
+# ============================================================
+class SistemasUECI(models.Model):
+
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True
+    )
+
+    sigla_sistema = models.CharField(
+        max_length=10,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='Sigla'
+    )
+
+    nome_sistema = models.CharField(
+        max_length=200,
+        unique=True,
+        verbose_name='Nome do Sistema'
+    )
+
+    descricao = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Descrição'
+    )
+
+    class Meta:
+        verbose_name = 'Sistema UECI'
+        verbose_name_plural = 'Sistemas UECI'
+        ordering = ['sistema']
+
+    def __str__(self):
+        if self.sigla_sistema:
+            return (
+                f'{self.sigla_sistema} - '
+                f'{self.nome_sistema}'
+            )
+
+        return self.nome_sistema
+
 # ============================================================
 # TIPOS DE DOCUMENTOS
 # ============================================================

@@ -16,7 +16,7 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
     ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger,
-    ModeloProcesso, NormaProcedimento,
+    ModeloProcesso, NormaProcedimento, SistemasUECI,
 )
 from django.db.models import Q
 
@@ -465,22 +465,58 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                 field.widget.attrs["id"] = f"id_{name}"
             field.widget.attrs.setdefault("name", name)
 
+# Aqui 1
 # ============================================================
 # Form_Sistema_UECIForm
 # ============================================================
 class Form_Sistema_UECIForm(forms.ModelForm):
+
     class Meta:
-        model = TiposDocumento
-        fields = ['nome', 'descricao']
+        model = SistemasUECI
+
+        fields = [
+            'sigla_sistema',
+            'nome_sistema',
+            'descricao',
+        ]
 
     def __init__(self, *args, **kwargs):
-        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
-        modo_exclusao = kwargs.pop('modo_exclusao', False)
+
+        modo_visualizacao = kwargs.pop(
+            'modo_visualizacao',
+            False
+        )
+
+        modo_exclusao = kwargs.pop(
+            'modo_exclusao',
+            False
+        )
+
         super().__init__(*args, **kwargs)
-        if "descricao" in self.fields:
-            self.fields["descricao"].max_length = 3000
-            self.fields["descricao"].widget.attrs["maxlength"] = 3000
-            self.fields["descricao"].widget.attrs["rows"] = 4
+
+        # ====================================================
+        # CONFIGURAÇÕES DOS CAMPOS
+        # ====================================================
+
+        self.fields['sigla_sistema'].widget.attrs.update({
+            'maxlength': 10,
+            'placeholder': 'Ex.: SIGEMP'
+        })
+
+        self.fields['nome_sistema'].widget.attrs.update({
+            'maxlength': 200,
+            'placeholder': 'Nome do Sistema'
+        })
+
+        self.fields['descricao'].widget.attrs.update({
+            'maxlength': 3000,
+            'rows': 4,
+            'placeholder': 'Descrição'
+        })
+
+        # ====================================================
+        # CSS PADRÃO
+        # ====================================================
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -489,27 +525,99 @@ class Form_Sistema_UECIForm(forms.ModelForm):
         )
 
         for name, field in self.fields.items():
+
             field.widget.attrs.setdefault(
                 'class',
-                base + (' bg-gray-100' if (modo_visualizacao or modo_exclusao) else ' bg-white')
+                base + (
+                    ' bg-gray-100'
+                    if (
+                        modo_visualizacao
+                        or modo_exclusao
+                    )
+                    else
+                    ' bg-white'
+                )
             )
-            field.widget.attrs.setdefault('placeholder', field.label)
 
-            # 🔠 Forçar digitação em CAIXA ALTA no campo nome
-            if name == 'nome':
-                field.widget.attrs['style'] = 'text-transform: uppercase;'
-                field.widget.attrs['oninput'] = 'this.value = this.value.toUpperCase();'
+            # ================================================
+            # SIGLA EM CAIXA ALTA
+            # ================================================
+
+            if name == 'sigla_sistema':
+
+                field.widget.attrs['style'] = (
+                    'text-transform: uppercase;'
+                )
+
+                field.widget.attrs['oninput'] = (
+                    'this.value = this.value.toUpperCase();'
+                )
+
+        # ====================================================
+        # VISUALIZAÇÃO / EXCLUSÃO
+        # ====================================================
 
         if modo_visualizacao or modo_exclusao:
+
             for field in self.fields.values():
+
                 field.disabled = True
 
-    # 🔒 REGRA DE DOMÍNIO: Nome sempre em CAIXA ALTA
-    def clean_nome(self):
-        nome = self.cleaned_data.get('nome')
+    # ========================================================
+    # SIGLA DO SISTEMA
+    # ========================================================
+
+    def clean_sigla_sistema(self):
+
+        sigla = self.cleaned_data.get(
+            'sigla_sistema'
+        )
+
+        if not sigla:
+            return None
+
+        sigla = sigla.strip().upper()
+
+        if not re.fullmatch(
+            r'[A-Z]+',
+            sigla
+        ):
+            raise forms.ValidationError(
+                'A sigla deve conter apenas letras maiúsculas.'
+            )
+
+        return sigla
+
+    # ========================================================
+    # NOME DO SISTEMA
+    # ========================================================
+
+    def clean_nome_sistema(self):
+
+        nome = self.cleaned_data.get(
+            'nome_sistema'
+        )
+
         if nome:
-            nome = nome.strip().upper()
+            nome = nome.strip()
+
         return nome
+
+    # ========================================================
+    # DESCRIÇÃO
+    # ========================================================
+
+    def clean_descricao(self):
+
+        descricao = self.cleaned_data.get(
+            'descricao'
+        )
+
+        if descricao:
+            descricao = descricao.strip()
+
+        return descricao
+
 # ============================================================
 # TIPOS DE DOCUMENTO
 # ============================================================
@@ -1090,7 +1198,6 @@ class Form_ModeloProcessoForm(forms.ModelForm):
 
         return obj
 
-# Aqui 1
 # ============================================================
 # FORM NORMA DE PROCEDIMENTO
 # ============================================================
