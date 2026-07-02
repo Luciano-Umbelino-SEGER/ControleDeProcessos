@@ -470,7 +470,6 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
 # Form_Sistema_UECIForm
 # ============================================================
 class Form_Sistema_UECIForm(forms.ModelForm):
-
     class Meta:
         model = SistemasUECI
 
@@ -479,6 +478,14 @@ class Form_Sistema_UECIForm(forms.ModelForm):
             'nome_sistema',
             'descricao',
         ]
+
+        widgets = {
+            'descricao': forms.Textarea(
+                attrs={
+                    'rows': 4,
+                }
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
 
@@ -510,7 +517,6 @@ class Form_Sistema_UECIForm(forms.ModelForm):
 
         self.fields['descricao'].widget.attrs.update({
             'maxlength': 3000,
-            'rows': 4,
             'placeholder': 'Descrição'
         })
 
@@ -544,8 +550,8 @@ class Form_Sistema_UECIForm(forms.ModelForm):
             # ================================================
 
             if name == 'sigla_sistema':
-
-                field.widget.attrs['style'] = (
+                field.widget.attrs.setdefault(
+                    'style',
                     'text-transform: uppercase;'
                 )
 
@@ -576,7 +582,7 @@ class Form_Sistema_UECIForm(forms.ModelForm):
         if not sigla:
             return None
 
-        sigla = sigla.strip().upper()
+        sigla = "".join(sigla.split()).upper()
 
         if not re.fullmatch(
             r'[A-Z]+',
@@ -599,7 +605,7 @@ class Form_Sistema_UECIForm(forms.ModelForm):
         )
 
         if nome:
-            nome = nome.strip()
+            nome = " ".join(nome.split())
 
         return nome
 
@@ -650,7 +656,10 @@ class Form_TipoDocumentoForm(forms.ModelForm):
 
             # 🔠 Forçar digitação em CAIXA ALTA no campo nome
             if name == 'nome':
-                field.widget.attrs['style'] = 'text-transform: uppercase;'
+                field.widget.attrs.setdefault(
+                    'style',
+                    'text-transform: uppercase;'
+                )
                 field.widget.attrs['oninput'] = 'this.value = this.value.toUpperCase();'
 
         if modo_visualizacao or modo_exclusao:

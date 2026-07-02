@@ -41,7 +41,7 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
-    Classificacao, ModelagemProcesso, Processo, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
+    Classificacao, ModelagemProcesso, Processo, SistemasUECI, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
     Perfil, ModeloProcesso, NormaProcedimento,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
@@ -2345,18 +2345,25 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
 class SubProcessoView(TemplateView):
     template_name = 'arquitetura/estrutura/subprocesso.html'
 
-# Aqui 1
 # ---------------------------
 # SISTEMAS UECI
 # ---------------------------
 class Sistemas_UECIList(LoginRequiredMixin, ListView):
-    model = TiposDocumento
+
+    model = SistemasUECI
     template_name = 'estrutura/sistemas_ueci.html'
     context_object_name = 'sistemas_ueci'
-    queryset = TiposDocumento.objects.order_by('nome')
+
+    def get_queryset(self):
+
+        return (
+            SistemasUECI.objects
+            .all()
+            .order_by('nome_sistema')
+        )
 
 class CriarSistema_UECI(LoginRequiredMixin, CreateView):
-    model = TiposDocumento
+    model = SistemasUECI
     form_class = Form_Sistema_UECIForm
     template_name = 'estrutura/form_sistema_ueci.html'
 
@@ -2378,16 +2385,17 @@ class CriarSistema_UECI(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Sistema UECI '{self.object.nome}' cadastrado com sucesso!")
+        messages.success(self.request, f"Sistema UECI '{self.object.sistema_completo}' cadastrado com sucesso!")
         return response
 
-    def get_success_url(self):
-        return reverse('arquiteturaprocessos:sistemas_ueci')
+    success_url = reverse_lazy(
+        'arquiteturaprocessos:sistemas_ueci'
+    )
 
 class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
-    model = TiposDocumento
+    model = SistemasUECI
     template_name = 'estrutura/form_sistema_ueci.html'
-    context_object_name = 'sistemas_ueci'
+    context_object_name = 'sistema_ueci'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -2401,7 +2409,7 @@ class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
         return ctx
 
 class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
-    model = TiposDocumento
+    model = SistemasUECI
     form_class = Form_Sistema_UECIForm
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
@@ -2424,36 +2432,40 @@ class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Sistema UECI '{self.object.nome}' atualizado com sucesso!")
+        messages.success(self.request, f"Sistema UECI '{self.object.sistema_completo}' atualizado com sucesso!")
         return response
 
-    def get_success_url(self):
-        return reverse('arquiteturaprocessos:sistemas_ueci')
+    success_url = reverse_lazy(
+        'arquiteturaprocessos:sistemas_ueci'
+    )
 
 class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
-    model = TiposDocumento
+    model = SistemasUECI
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
 
     def post(self, request, *args, **kwargs):
-        sistemaueci = self.get_object()
+        sistema_ueci = self.get_object()
 
         # 🔒 Regra de domínio: impedir exclusão se houver vínculos
-        existe_vinculo = ModelagemProcesso.objects.filter(
-            sistema_ueci=sistemaueci
-        ).exists()
+        # TODO
+        # Verificar vínculo com NormaProcedimento
+        # após conclusão da refatoração da entidade.
+        #existe_vinculo = ModelagemProcesso.objects.filter(
+        #    sistema_ueci=sistemaueci
+        #).exists()
 
-        if existe_vinculo:
-            messages.error(
-                request,
-                "Não é possível excluir este Sistema UECI porque ele está vinculado a uma ou mais Norma de Procedimento."
-            )
-            return redirect('arquiteturaprocessos:sistemas_ueci')
+        #if existe_vinculo:
+        #    messages.error(
+        #        request,
+        #        "Não é possível excluir este Sistema UECI porque ele está vinculado a uma ou mais Norma de Procedimento."
+        #    )
+        #    return redirect('arquiteturaprocessos:sistemas_ueci')
 
-        sistemaueci.delete()
+        sistema_ueci.delete()
         messages.success(
             request,
-            f"Sistema UECI - '{sistemaueci.nome}' excluído com sucesso!"
+            f"Sistema UECI - '{sistema_ueci.sistema_completo}' excluído com sucesso!"
         )
         return redirect('arquiteturaprocessos:sistemas_ueci')
 

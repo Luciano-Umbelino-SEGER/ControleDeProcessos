@@ -91,11 +91,11 @@ urlpatterns = [
     path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
     path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
     # Sistemas UECI
-    path('sistemasueci/', Sistemas_UECIList.as_view(), name='sistemas_ueci'),
-    path('sistemasueci/novo/', CriarSistema_UECI.as_view(), name='criar_sistema_UECI'),
-    path('sistemasueci/<int:pk>/', VisualizarSistema_UECI.as_view(), name='visualizar_sistema_ueci'),
-    path('sistemasueci/<int:pk>/editar/', EditarSistema_UECI.as_view(), name='editar_sistema_ueci'),
-    path('sistemasueci/<int:pk>/excluir/', ExcluirSistema_UECI.as_view(),name='excluir_sistema_ueci'),
+    path('sistemas_ueci/', Sistemas_UECIList.as_view(), name='sistemas_ueci'),
+    path('sistemas_ueci/novo/', CriarSistema_UECI.as_view(), name='criar_sistema_ueci'),
+    path('sistemas_ueci/<int:pk>/visualizar/', VisualizarSistema_UECI.as_view(), name='visualizar_sistema_ueci'),
+    path('sistemas_ueci/<int:pk>/editar/', EditarSistema_UECI.as_view(), name='editar_sistema_ueci'),
+    path('sistemas_ueci/<int:pk>/excluir/', ExcluirSistema_UECI.as_view(),name='excluir_sistema_ueci'),
     # Tipos de Documento
     path('tiposdocumento/', TipoDocumentoList.as_view(), name='tiposdocumento'),
     path('tiposdocumento/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),

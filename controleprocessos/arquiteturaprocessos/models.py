@@ -183,16 +183,16 @@ class SistemasUECI(models.Model):
     class Meta:
         verbose_name = 'Sistema UECI'
         verbose_name_plural = 'Sistemas UECI'
-        ordering = ['sistema']
+        ordering = ['nome_sistema']
+
+    @property
+    def sistema_completo(self):
+        if self.sigla_sistema:
+            return f"{self.sigla_sistema} - {self.nome_sistema}"
+        return self.nome_sistema
 
     def __str__(self):
-        if self.sigla_sistema:
-            return (
-                f'{self.sigla_sistema} - '
-                f'{self.nome_sistema}'
-            )
-
-        return self.nome_sistema
+        return self.sistema_completo
 
 # ============================================================
 # TIPOS DE DOCUMENTOS
