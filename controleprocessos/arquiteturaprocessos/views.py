@@ -3552,7 +3552,6 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
 
         return response
 
-# Aqui 1
 # ============================================================
 # VISUALIZAR NORMA DE PROCEDIMENTO
 # ============================================================

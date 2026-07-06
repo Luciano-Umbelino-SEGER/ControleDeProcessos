@@ -148,7 +148,6 @@ class MacroprocessoNivel2(models.Model):
     def __str__(self):
         return self.nome
 
-# Aqui 1
 # ============================================================
 # SISTEMAS UECI
 # ============================================================
@@ -764,27 +763,11 @@ def norma_procedimento_upload_to(instance, filename):
         f"normaprocedimento/{novo_nome}"
     )
 
-
+# aqui 1
 # ============================================================
 # NORMA DE PROCEDIMENTO
 # ============================================================
 class NormaProcedimento(models.Model):
-
-    # ========================================================
-    # STATUS
-    # ========================================================
-    STATUS_ELABORADO = "ELABORADO"
-    STATUS_REVISADO = "REVISADO"
-    STATUS_APROVADO = "APROVADO"
-    STATUS_PRESCRITO = "PRESCRITO"
-
-    STATUS_CHOICES = [
-        (STATUS_ELABORADO, "Elaborado"),
-        (STATUS_REVISADO, "Revisado"),
-        (STATUS_APROVADO, "Aprovado"),
-        (STATUS_PRESCRITO, "Prescrito"),
-    ]
-
     # ========================================================
     # UUID
     # ========================================================
@@ -798,31 +781,16 @@ class NormaProcedimento(models.Model):
     # ========================================================
     # IDENTIFICAÇÃO
     # ========================================================
-    titulo = models.CharField(
+    nome_norma = models.CharField(
         max_length=255,
         db_index=True,
-        verbose_name="Título",
+        verbose_name="Nome da Norma",
     )
 
     sistema = models.CharField(
         max_length=100,
         db_index=True,
         verbose_name="Sistema",
-    )
-
-    sigla_sistema = models.CharField(
-        max_length=20,
-        db_index=True,
-        validators=[
-            RegexValidator(
-                regex=r"^[A-Z0-9.\-_/]+$",
-                message=(
-                    "Utilize apenas letras "
-                    "maiúsculas, números e . - _ /"
-                ),
-            )
-        ],
-        verbose_name="Sigla Sistema",
     )
 
     numero_norma = models.CharField(
@@ -854,20 +822,6 @@ class NormaProcedimento(models.Model):
         max_length=150,
         db_index=True,
         verbose_name="Emitente",
-    )
-
-    tema = models.CharField(
-        max_length=150,
-        db_index=True,
-        verbose_name="Tema",
-    )
-
-    estado = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_ELABORADO,
-        db_index=True,
-        verbose_name="Estado",
     )
 
     # ========================================================
@@ -931,46 +885,6 @@ class NormaProcedimento(models.Model):
     )
 
     # ========================================================
-    # ELABORAÇÃO
-    # ========================================================
-    usuario_elaboracao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="normas_elaboradas",
-        verbose_name="Usuário Elaboração",
-    )
-
-    # ========================================================
-    # REVISÃO
-    # ========================================================
-    data_revisao = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name="Data Revisão",
-    )
-
-    usuario_revisao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="normas_revisadas",
-        null=True,
-        blank=True,
-        verbose_name="Usuário Revisão",
-    )
-
-    # ========================================================
-    # APROVAÇÃO
-    # ========================================================
-    usuario_aprovacao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="normas_aprovadas",
-        null=True,
-        blank=True,
-        verbose_name="Usuário Aprovação",
-    )
-
-    # ========================================================
     # AUDITORIA
     # ========================================================
     data_cadastro = models.DateTimeField(
@@ -1017,17 +931,15 @@ class NormaProcedimento(models.Model):
         )
 
         indexes = [
-            models.Index(fields=["titulo"]),
+            models.Index(fields=["nome_norma"]),
             models.Index(fields=["sistema"]),
-            models.Index(fields=["sigla_sistema"]),
             models.Index(fields=["numero_norma"]),
-            models.Index(fields=["tema"]),
-            models.Index(fields=["estado"]),
+            models.Index(fields=["emitente"]),
         ]
 
         ordering = [
             "-data_atualizacao",
-            "titulo",
+            "nome_norma",
             "numero_norma",
             "versao",
         ]
@@ -1090,8 +1002,7 @@ class NormaProcedimento(models.Model):
         )
 
         return (
-            f"{self.titulo} | "
-            f"{self.sigla_sistema} | "
+            f"{self.nome_norma} | "
             f"{numero} | "
             f"{versao}"
         )
