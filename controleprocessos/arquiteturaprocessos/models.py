@@ -819,7 +819,7 @@ class NormaProcedimento(models.Model):
     )
 
     emitente = models.CharField(
-        max_length=150,
+        max_length=255,
         db_index=True,
         verbose_name="Emitente",
     )
