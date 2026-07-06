@@ -9,7 +9,6 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, Cus
                     EditarMacroProcessoNivel2, ExcluirMacroProcessoNivel2, Sistemas_UECIList, CriarSistema_UECI, VisualizarSistema_UECI,
                     EditarSistema_UECI, ExcluirSistema_UECI, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento, ModelagemProcessoView,
-                    ModelosProcessoView, CriarModeloProcesso, VisualizarModeloProcesso, EditarModeloProcesso, ExcluirModeloProcesso,
                     NormasProcedimentoView, CriarNormaProcedimento, VisualizarNormaProcedimento, EditarNormaProcedimento, ExcluirNormaProcedimento,
                     CriarModelagemProcesso, VisualizarModelagemProcesso, EditarModelagemProcesso, ExcluirModelagemProcesso,
                     ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
@@ -108,12 +107,6 @@ urlpatterns = [
     path('modelagemprocesso/<int:pk>/visualizar/', VisualizarModelagemProcesso.as_view(), name='visualizar_modelagemprocesso'),
     path('modelagemprocesso/<int:pk>/editar/', EditarModelagemProcesso.as_view(), name='editar_modelagemprocesso'),
     path('modelagemprocesso/<int:pk>/excluir/', ExcluirModelagemProcesso.as_view(), name='excluir_modelagemprocesso'),
-    # MODELOS DE PROCESSO
-    path('modelos-processo/', ModelosProcessoView.as_view(), name='modelosprocesso'),
-    path('modelos-processo/novo/',  CriarModeloProcesso.as_view(), name='criar_modeloprocesso'),
-    path('modelos-processo/<int:pk>/visualizar/', VisualizarModeloProcesso.as_view(), name='visualizar_modeloprocesso'),
-    path('modelos-processo/<int:pk>/editar/', EditarModeloProcesso.as_view(), name='editar_modeloprocesso'),
-    path('modelos-processo/<int:pk>/excluir/', ExcluirModeloProcesso.as_view(), name='excluir_modeloprocesso'),
     # NORMAS DE PROCEDIMENTO
     path('normas-procedimento/', NormasProcedimentoView.as_view(), name='normasprocedimento' ),
     path('normas-procedimento/novo/', CriarNormaProcedimento.as_view(), name='criar_normaprocedimento'),

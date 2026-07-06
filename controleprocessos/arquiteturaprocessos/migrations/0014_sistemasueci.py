@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('arquiteturaprocessos', '0019_rename_usuario_normaprocedimento_usuario_cadastro_and_more'),
+        ('arquiteturaprocessos', '0013_alter_macroprocessonivel1_ordering_nome'),
     ]
 
     operations = [

@@ -437,290 +437,6 @@ def modelo_processo_upload_to(instance, filename):
     )
 
 # ============================================================
-# MODELO DE PROCESSO
-# ============================================================
-class ModeloProcesso(models.Model):
-    # ============================================================
-    # STATUS
-    # ============================================================
-    STATUS_ELABORADO = "ELABORADO"
-    STATUS_REVISADO = "REVISADO"
-    STATUS_APROVADO = "APROVADO"
-
-    STATUS_CHOICES = [
-        ("ELABORADO", "Elaborado"),
-        ("REVISADO", "Revisado"),
-        ("APROVADO", "Aprovado"),
-    ]
-
-    uuid = models.UUIDField(
-        default=uuid.uuid4,
-        unique=True,
-        editable=False,
-        db_index=True,
-    )
-
-    # ========================================================
-    # IDENTIFICAÇÃO DO DOCUMENTO
-    # ========================================================
-    titulo = models.CharField(
-        max_length=255,
-        db_index=True,
-        verbose_name="Título",
-    )
-
-    codigo = models.CharField(
-        max_length=20,
-        db_index=True,
-        validators=[
-            RegexValidator(
-                regex=r"^[A-Z0-9.\-_/]+$",
-                message="Utilize apenas letras maiúsculas, números e . - _ /",
-            )
-        ],
-        verbose_name="Código",
-    )
-
-    numero_modelo = models.CharField(
-        max_length=8,
-        db_index=True,
-        validators=[
-            RegexValidator(
-                regex=r"^\d{3}/\d{4}$",
-                message="Informe no formato 001/2025.",
-            )
-        ],
-        verbose_name="Número do Modelo",
-    )
-
-    versao = models.CharField(
-        max_length=4,
-        db_index=True,
-        validators=[
-            RegexValidator(
-                regex=r"^(?!0000)\d{4}$",
-                message="Informe a versão no formato 0001.",
-            )
-        ],
-        default="0001",
-        verbose_name="Versão",
-    )
-
-    estado = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_ELABORADO,
-        db_index=True,
-        verbose_name="Estado",
-    )
-
-    # ========================================================
-    # DADOS DO PROCESSO
-    # ========================================================
-    setor = models.CharField(
-        max_length=150,
-        verbose_name="Setor",
-    )
-
-    unidades_envolvidas = models.TextField(
-        blank=True,
-        verbose_name="Unidades Envolvidas",
-    )
-
-    objetivo_processo = models.TextField(
-        verbose_name="Objetivo do Processo",
-    )
-
-    abrangencia = models.TextField(
-        blank=True,
-        verbose_name="Abrangência",
-    )
-
-    fundamentacao_definicoes = models.TextField(
-        blank=True,
-        verbose_name="Fundamentação / Definições",
-    )
-
-    envolvidos_externos = models.TextField(
-        blank=True,
-        verbose_name="Envolvidos Externos",
-    )
-
-    observacao = models.TextField(
-        blank=True,
-        verbose_name="Observação",
-    )
-
-    # ========================================================
-    # DOCUMENTAÇÃO
-    # ========================================================
-    documento_modelo_processo = models.FileField(
-        upload_to=modelo_processo_upload_to,
-        max_length=500,
-        null=True,
-        blank=True,
-        validators=[
-            FileExtensionValidator(["pdf"])
-        ],
-        verbose_name="Documento Modelo de Processo",
-    )
-
-    link_documento_externo = models.CharField(
-        max_length=500,
-        null=True,
-        blank=True,
-        verbose_name="Link Documento Externo",
-    )
-
-    # ========================================================
-    # ELABORAÇÃO
-    # ========================================================
-    data_elaboracao = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name="Data de Elaboração",
-    )
-
-    usuario_elaboracao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="modelos_processo_elaborados",
-        verbose_name="Usuário Elaboração",
-    )
-
-    # ========================================================
-    # REVISÃO
-    # ========================================================
-    data_revisao = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name="Data de Revisão",
-    )
-
-    usuario_revisao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="modelos_processo_revisados",
-        null=True,
-        blank=True,
-        verbose_name="Usuário Revisão",
-    )
-
-    # ========================================================
-    # APROVAÇÃO
-    # ========================================================
-    data_aprovacao = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name="Data de Aprovação",
-    )
-
-    usuario_aprovacao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="modelos_processo_aprovados",
-        null=True,
-        blank=True,
-        verbose_name="Usuário Aprovação",
-    )
-
-    # ========================================================
-    # AUDITORIA
-    # ========================================================
-    data_cadastro = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Data Cadastro",
-    )
-
-    usuario_cadastro = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="modelos_processo_cadastrados",
-        verbose_name="Usuário Cadastro",
-    )
-
-    data_atualizacao = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Data Atualização",
-    )
-
-    usuario_atualizacao = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="modelos_processo_atualizados",
-        null=True,
-        blank=True,
-        verbose_name="Usuário Atualização",
-    )
-
-    # ========================================================
-    # METADADOS
-    # ========================================================
-    class Meta:
-
-        db_table = "arquiteturaprocessos_modelo_processo"
-
-        verbose_name = "Modelo de Processo"
-
-        verbose_name_plural = "Modelos de Processo"
-
-        indexes = [
-            models.Index(fields=["titulo"]),
-            models.Index(fields=["codigo"]),
-            models.Index(fields=["numero_modelo"]),
-            models.Index(fields=["estado"]),
-        ]
-
-        ordering = [
-            "-data_atualizacao",
-            "titulo",
-            "numero_modelo",
-            "versao",
-        ]
-
-    # ========================================================
-    # SAVE
-    # ========================================================
-    def save(self, *args, **kwargs):
-
-        try:
-            old = ModeloProcesso.objects.get(pk=self.pk)
-
-        except ModeloProcesso.DoesNotExist:
-            old = None
-
-        super().save(*args, **kwargs)
-
-        # ====================================================
-        # REMOVE PDF ANTIGO
-        # ====================================================
-        if (
-                old
-                and old.documento_modelo_processo
-                and old.documento_modelo_processo != self.documento_modelo_processo
-        ):
-            if hasattr(old.documento_modelo_processo, "path"):
-                old_path = old.documento_modelo_processo.path
-                if os.path.isfile(old_path):
-                    try:
-                        os.remove(old_path)
-                    except OSError:
-                        pass
-
-    # ========================================================
-    # STRING
-    # ========================================================
-    def __str__(self):
-
-        codigo = self.codigo or "---"
-
-        numero = self.numero_modelo or "---"
-
-        versao = self.versao or "--"
-
-        return f"{self.titulo} | {codigo} | {numero} | {versao}"
-
-# ============================================================
 # UPLOAD DE ARQUIVO DE NORMA DE PROCEDIMENTO
 # ============================================================
 def norma_procedimento_upload_to(instance, filename):
@@ -787,8 +503,11 @@ class NormaProcedimento(models.Model):
         verbose_name="Nome da Norma",
     )
 
-    sistema = models.CharField(
-        max_length=100,
+    sistema = models.ForeignKey(
+        SistemasUECI,
+        on_delete=models.PROTECT,
+        related_name="normas_procedimento",
+        db_column="id_sistema",
         db_index=True,
         verbose_name="Sistema",
     )
@@ -825,7 +544,7 @@ class NormaProcedimento(models.Model):
     )
 
     # ========================================================
-    # ELABORAÇÃO
+    # Datas
     # ========================================================
     data_elaboracao = models.DateField(
         verbose_name="Data Elaboração",
@@ -836,6 +555,7 @@ class NormaProcedimento(models.Model):
     # ========================================================
     portaria_aprovacao = models.CharField(
         max_length=150,
+        null=True,
         blank=True,
         verbose_name="Portaria Aprovação",
     )
@@ -877,11 +597,11 @@ class NormaProcedimento(models.Model):
         verbose_name="Documento Norma de Procedimento",
     )
 
-    link_documento_externo = models.CharField(
+    link_documento_norma = models.CharField(
         max_length=500,
         null=True,
         blank=True,
-        verbose_name="Link Documento Externo",
+        verbose_name="Link Documento Norma de Procedimento",
     )
 
     # ========================================================
@@ -949,14 +669,17 @@ class NormaProcedimento(models.Model):
     # ========================================================
     def save(self, *args, **kwargs):
 
-        try:
-            old = (
-                NormaProcedimento.objects
-                .get(pk=self.pk)
-            )
+        old = None
 
-        except NormaProcedimento.DoesNotExist:
-            old = None
+        # ====================================================
+        # RECUPERA O REGISTRO ANTIGO APENAS NA EDIÇÃO
+        # ====================================================
+        if self.pk:
+            try:
+                old = NormaProcedimento.objects.get(pk=self.pk)
+
+            except NormaProcedimento.DoesNotExist:
+                pass
 
         super().save(*args, **kwargs)
 
@@ -964,14 +687,14 @@ class NormaProcedimento(models.Model):
         # REMOVE PDF ANTIGO
         # ====================================================
         if (
-            old
-            and old.documento_norma_procedimento
-            and old.documento_norma_procedimento
-            != self.documento_norma_procedimento
+                old
+                and old.documento_norma_procedimento
+                and old.documento_norma_procedimento
+                != self.documento_norma_procedimento
         ):
             if hasattr(
-                old.documento_norma_procedimento,
-                "path"
+                    old.documento_norma_procedimento,
+                    "path"
             ):
                 old_path = (
                     old
@@ -1003,6 +726,7 @@ class NormaProcedimento(models.Model):
 
         return (
             f"{self.nome_norma} | "
+            f"{self.sistema} | "
             f"{numero} | "
             f"{versao}"
         )
