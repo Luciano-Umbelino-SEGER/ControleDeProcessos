@@ -2637,16 +2637,14 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
         queryset = (
             NormaProcedimento.objects
             .select_related(
+                "sistema",
                 "usuario_cadastro",
-                "usuario_elaboracao",
-                "usuario_revisao",
-                "usuario_aprovacao",
                 "usuario_atualizacao",
             )
         )
 
-        titulo = req.get(
-            "titulo",
+        nome_norma = req.get(
+            "nome_norma",
             ""
         ).strip()
 
@@ -2660,18 +2658,8 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             ""
         ).strip()
 
-        numero = req.get(
-            "numero",
-            ""
-        ).strip()
-
-        tema = req.get(
-            "tema",
-            ""
-        ).strip()
-
-        estado = req.get(
-            "estado",
+        numero_norma = req.get(
+            "numero_norma",
             ""
         ).strip()
 
@@ -2685,14 +2673,14 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             ""
         ).strip()
 
-        if titulo:
+        if nome_norma:
             queryset = queryset.filter(
-                titulo__icontains=titulo
+                nome_norma__icontains=nome_norma
             )
 
         if sistema:
             queryset = queryset.filter(
-                sistema__icontains=sistema
+                sistema_id=sistema
             )
 
         if emitente:
@@ -2700,19 +2688,9 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
                 emitente__icontains=emitente
             )
 
-        if numero:
+        if numero_norma:
             queryset = queryset.filter(
-                numero_norma__icontains=numero
-            )
-
-        if tema:
-            queryset = queryset.filter(
-                tema__icontains=tema
-            )
-
-        if estado:
-            queryset = queryset.filter(
-                estado=estado
+                numero_norma__icontains=numero_norma
             )
 
         if vigencia_de:
@@ -2724,11 +2702,6 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 vigencia_fim__lte=vigencia_ate
             )
-
-        queryset = queryset.order_by(
-            "-data_atualizacao",
-            "-data_cadastro",
-        )
 
         return queryset
 
@@ -2744,28 +2717,26 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
 
         req = self.request.GET
 
-        context["titulo_busca"] = (
-            req.get("titulo", "")
+        context["nome_norma_busca"] = (
+            req.get("nome_norma", "")
         )
 
-        context["sistema_busca"] = (
-            req.get("sistema", "")
-        )
+        try:
+            context["sistema_busca"] = int(req.get("sistema"))
+        except (TypeError, ValueError):
+            context["sistema_busca"] = None
 
         context["emitente_busca"] = (
             req.get("emitente", "")
         )
 
-        context["numero_busca"] = (
-            req.get("numero", "")
+        context["numero_norma_busca"] = (
+            req.get("numero_norma", "")
         )
 
-        context["tema_busca"] = (
-            req.get("tema", "")
-        )
-
-        context["estado_busca"] = (
-            req.get("estado", "")
+        context["sistemas"] = (
+            SistemasUECI.objects
+            .order_by("nome_sistema")
         )
 
         context["vigencia_de"] = (
@@ -2774,10 +2745,6 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
 
         context["vigencia_ate"] = (
             req.get("vigencia_ate", "")
-        )
-
-        context["status_choices"] = (
-            NormaProcedimento.STATUS_CHOICES
         )
 
         query_params = (

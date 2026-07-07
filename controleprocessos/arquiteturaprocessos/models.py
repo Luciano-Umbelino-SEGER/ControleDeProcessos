@@ -391,52 +391,6 @@ class ModelagemProcesso(models.Model):
         return f"{self.titulo} - {codigo}-{sequencial} - V{versao}"
 
 # ============================================================
-# UPLOAD DE ARQUIVO DE MODELO DE PROCESSO
-# ============================================================
-def modelo_processo_upload_to(instance, filename):
-    """
-    Gera caminho seguro para upload de documentos de Modelo de Processo.
-
-    - Remove acentos
-    - Remove caracteres especiais
-    - Substitui espaços por _
-    - Mantém extensão minúscula
-    - Garante unicidade com UUID
-    """
-
-    nome, ext = os.path.splitext(filename)
-
-    ext = ext.lower()
-
-    # Remove acentos
-    nome = (
-        unicodedata
-        .normalize("NFKD", nome)
-        .encode("ascii", "ignore")
-        .decode("ascii")
-    )
-
-    # Remove caracteres inválidos
-    nome = re.sub(
-        r"[^\w\-_.]",
-        "_",
-        nome
-    )
-
-    # Evita nome vazio
-    if not nome:
-        nome = "modelo_processo"
-
-    # UUID curto
-    novo_nome = (
-        f"{nome}_{uuid4().hex[:8]}{ext}"
-    )
-
-    return (
-        f"modelosprocesso/{novo_nome}"
-    )
-
-# ============================================================
 # UPLOAD DE ARQUIVO DE NORMA DE PROCEDIMENTO
 # ============================================================
 def norma_procedimento_upload_to(instance, filename):

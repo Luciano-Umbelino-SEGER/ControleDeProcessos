@@ -30,49 +30,46 @@
           <!-- ESQUERDA -->
           <div class="flex flex-wrap items-end gap-3">
 
-            <!-- TÍTULO -->
+            <!-- NORMA -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Título
+                    Norma
               </label>
 
               <input type="text"
-                     name="titulo"
-                     value="{{ titulo_busca }}"
-                     placeholder="Digite o Título..."
+                     name="nome_norma"
+                     value="{{ nome_norma_busca }}"
+                     placeholder="Digite a Norma..."
                      class="w-56 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500
-                            text-black placeholder-gray-400">
-            </div>
-
-            <!-- TEMA -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Tema
-              </label>
-
-              <input type="text"
-                     name="tema"
-                     value="{{ tema_busca }}"
-                     placeholder="Tema..."
-                     class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500
                             text-black placeholder-gray-400">
             </div>
 
             <!-- SISTEMA -->
             <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Sistema
-              </label>
+                <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                    Sistema
+                </label>
 
-              <input type="text"
-                     name="sistema"
-                     value="{{ sistema_busca }}"
-                     placeholder="Sistema..."
-                     class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
-                            focus:ring-2 focus:ring-blue-500
-                            text-black placeholder-gray-400">
+                <select
+                    name="sistema"
+                    class="w-56 px-2 py-1.5 border border-gray-300 rounded-md
+                           bg-white focus:ring-2 focus:ring-blue-500 text-black">
+
+                    <option value="">
+                        Todos os Sistemas
+                    </option>
+
+                    {% for sistema in sistemas %}
+                        <option value="{{ sistema.id }}"
+                            {% if sistema.id == sistema_busca %}
+                                selected
+                            {% endif %}>
+                            {{ sistema.nome_sistema }}
+                        </option>
+                    {% endfor %}
+
+                </select>
             </div>
 
              <!-- NR. NORMA -->
@@ -82,8 +79,8 @@
               </label>
 
               <input type="text"
-                     name="numero"
-                     value="{{ numero_busca }}"
+                     name="numero_norma"
+                     value="{{ numero_norma_busca }}"
                      placeholder="0001"
                      class="w-24 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500
@@ -103,28 +100,6 @@
                      class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500
                             text-black placeholder-gray-400">
-            </div>
-
-            <!-- ESTADO -->
-            <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Estado
-              </label>
-
-              <select name="estado"
-                      class="w-40 px-2 py-1.5 border border-gray-300 rounded-md
-                             bg-white focus:ring-2 focus:ring-blue-500 text-black">
-
-                <option value="">Todos</option>
-
-                {% for value, label in status_choices %}
-                  <option value="{{ value }}"
-                    {% if estado_busca == value %}selected{% endif %}>
-                    {{ label }}
-                  </option>
-                {% endfor %}
-
-              </select>
             </div>
 
             <!-- VIGÊNCIA DE -->
@@ -242,15 +217,11 @@
         <!-- HEADER -->
         <thead class="bg-blue-100 text-blue-800">
             <tr>
-                <th class="py-3 pl-4 pr-2 text-left w-[16%]">Título</th>
-                <th class="py-3 px-2 text-left w-[10%]">Tema</th>
-                <th class="py-3 px-2 text-left w-[14%]">Sistema</th>
-                <th class="py-3 px-2 text-center w-[6%]">Nr. Norma</th>
+                <th class="py-3 pl-4 pr-2 text-left w-[16%]">Norma</th>
+                <th class="py-3 px-2 text-left w-[18%]">Sistema</th>
+                <th class="py-3 px-2 text-center w-[6%]">Número</th>
                 <th class="py-3 px-2 text-center w-[5%]">Versão</th>
                 <th class="py-3 px-2 text-left w-[14%]">Emitente</th>
-                <th class="py-3 px-2 text-center w-[7%]">Estado</th>
-                <th class="py-3 px-2 text-left w-[11%]">Documento PDF</th>
-                <th class="py-3 px-2 text-left w-[11%]">Documento Externo</th>
                 <th class="py-3 px-2 text-left w-[10%]">Portaria</th>
                 <th class="py-3 px-2 text-center w-[6%] leading-tight">
                     <div class="flex flex-col items-center">
@@ -270,6 +241,8 @@
                         <span>Vigência</span>
                     </div>
                 </th>
+                <th class="py-3 px-2 text-left w-[11%]">PDF</th>
+                <th class="py-3 px-2 text-left w-[11%]">Link</th>
                 <th class="py-3 px-2 text-center w-[7%]">Ações</th>
             </tr>
         </thead>
@@ -278,24 +251,17 @@
         <tbody class="text-[0.8rem] leading-snug">
           {% for norma in normas_procedimento %}
           <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %} hover:bg-blue-100 transition-colors">
-            <!-- TÍTULO -->
+            <!-- NORMA -->
             <td class="py-3 pl-4 pr-2 align-top">
                 <div class="line-clamp-3 break-words leading-snug">
-                    {{ norma.titulo }}
-                </div>
-            </td>
-
-            <!-- TEMA -->
-            <td class="py-3 px-2 align-top">
-                <div class="line-clamp-3 break-words leading-snug">
-                    {{ norma.tema }}
+                    {{ norma.nome_norma }}
                 </div>
             </td>
 
             <!-- SISTEMA -->
             <td class="py-3 px-2 align-top">
                 <div class="line-clamp-3 break-words leading-snug">
-                    {{ norma.sigla_sistema }}-{{ norma.sistema }}
+                    {{ norma.sistema }}
                 </div>
             </td>
 
@@ -314,67 +280,6 @@
                 <div class="line-clamp-3 break-words leading-snug">
                     {{ norma.emitente }}
                 </div>
-            </td>
-
-            <!-- ESTADO -->
-            <td class="py-3 px-2 align-middle text-center">
-            {% if norma.estado == "ELABORADO" %}
-                <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold bg-blue-100 text-blue-700">
-                    ELABORADO
-                </span>
-            {% elif norma.estado == "REVISADO" %}
-                <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold bg-yellow-100 text-yellow-700">
-                    REVISADO
-                </span>
-            {% elif norma.estado == "APROVADO" %}
-                <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold bg-green-100 text-green-700">
-                    APROVADO
-                </span>
-            {% elif norma.estado == "PRESCRITO" %}
-                <span class="inline-flex items-center justify-center px-2 py-1 rounded text-[11px] font-bold bg-red-100 text-red-700">
-                    PRESCRITO
-                </span>
-            {% endif %}
-        </td>
-
-            <!-- DOCUMENTO PDF -->
-            <td class="py-3 px-2 align-top">
-              {% if norma.documento_norma_procedimento %}
-                <button
-                  onclick="abrirModalDocumento(
-                    '{{ norma.documento_norma_procedimento.url }}',
-                    '{{ norma.documento_norma_procedimento|filename }}'
-                  )"
-                  title="{{ norma.documento_norma_procedimento|filename }}"
-                  class="block text-left text-blue-600 hover:underline
-                         cursor-pointer break-all leading-snug">
-
-                  {{ norma.documento_norma_procedimento|filename }}
-
-                </button>
-              {% else %}
-                ----
-              {% endif %}
-            </td>
-
-            <!-- DOCUMENTO EXTERNO -->
-            <td class="py-3 px-2 align-top">
-              {% if norma.link_documento_externo %}
-                <button
-                  onclick="abrirModalDocumento(
-                    '{{ norma.link_documento_externo }}',
-                    '{{ norma.link_documento_externo|filename }}'
-                  )"
-                  title="{{ norma.link_documento_externo|filename }}"
-                  class="block text-left text-blue-600 hover:underline
-                         cursor-pointer break-all leading-snug">
-
-                  {{ norma.link_documento_externo|filename }}
-
-                </button>
-              {% else %}
-                ----
-              {% endif %}
             </td>
 
             <!-- PORTARIA -->
@@ -406,6 +311,46 @@
             <td class="py-3 px-2 text-center align-top whitespace-nowrap">
               {% if norma.vigencia_fim %}
                 {{ norma.vigencia_fim|date:"d/m/Y" }}
+              {% else %}
+                ----
+              {% endif %}
+            </td>
+
+            <!-- DOCUMENTO PDF -->
+            <td class="py-3 px-2 align-top">
+              {% if norma.documento_norma_procedimento %}
+                <button
+                  onclick="abrirModalDocumento(
+                    '{{ norma.documento_norma_procedimento.url }}',
+                    '{{ norma.documento_norma_procedimento|filename }}'
+                  )"
+                  title="{{ norma.documento_norma_procedimento|filename }}"
+                  class="block text-left text-blue-600 hover:underline
+                         cursor-pointer break-all leading-snug">
+
+                  {{ norma.documento_norma_procedimento|filename }}
+
+                </button>
+              {% else %}
+                ----
+              {% endif %}
+            </td>
+
+            <!-- DOCUMENTO EXTERNO -->
+            <td class="py-3 px-2 align-top">
+              {% if norma.link_documento_norma %}
+                <button
+                  onclick="abrirModalDocumento(
+                    '{{ norma.link_documento_norma }}',
+                    '{{ norma.link_documento_norma|filename }}'
+                  )"
+                  title="{{ norma.link_documento_norma|filename }}"
+                  class="block text-left text-blue-600 hover:underline
+                         cursor-pointer break-all leading-snug">
+
+                  {{ norma.link_documento_norma|filename }}
+
+                </button>
               {% else %}
                 ----
               {% endif %}
@@ -487,7 +432,7 @@
 
           {% empty %}
           <tr>
-            <td colspan="14"
+            <td colspan="12"
                 class="py-4 px-4 text-center text-gray-500">
                 Nenhuma Norma de Procedimento encontrada.
             </td>
