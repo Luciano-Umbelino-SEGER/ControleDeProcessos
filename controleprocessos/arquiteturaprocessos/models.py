@@ -466,16 +466,10 @@ class NormaProcedimento(models.Model):
         verbose_name="Sistema",
     )
 
-    numero_norma = models.CharField(
-        max_length=4,
+    codigo_norma = models.CharField(
+        max_length=15,
         db_index=True,
-        validators=[
-            RegexValidator(
-                regex=r"^(?!0000)\d{4}$",
-                message="Informe no formato 0001.",
-            )
-        ],
-        verbose_name="Nr. Norma",
+        verbose_name="Código",
     )
 
     versao = models.CharField(
@@ -605,16 +599,16 @@ class NormaProcedimento(models.Model):
         )
 
         indexes = [
-            models.Index(fields=["nome_norma"]),
-            models.Index(fields=["sistema"]),
-            models.Index(fields=["numero_norma"]),
-            models.Index(fields=["emitente"]),
+            models.Index(fields=["nome_norma"],name="idx_norma_nome",),
+            models.Index(fields=["sistema"],name="idx_norma_sistema",),
+            models.Index(fields=["codigo_norma"],name="idx_norma_codigo",),
+            models.Index(fields=["emitente"],name="idx_norma_emitente",),
         ]
 
         ordering = [
             "-data_atualizacao",
             "nome_norma",
-            "numero_norma",
+            "codigo_norma",
             "versao",
         ]
 
@@ -669,7 +663,7 @@ class NormaProcedimento(models.Model):
     def __str__(self):
 
         numero = (
-            self.numero_norma
+            self.codigo_norma
             or "---"
         )
 

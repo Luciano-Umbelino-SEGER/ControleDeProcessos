@@ -2658,8 +2658,8 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             ""
         ).strip()
 
-        numero_norma = req.get(
-            "numero_norma",
+        codigo_norma = req.get(
+            "codigo_norma",
             ""
         ).strip()
 
@@ -2688,9 +2688,9 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
                 emitente__icontains=emitente
             )
 
-        if numero_norma:
+        if codigo_norma:
             queryset = queryset.filter(
-                numero_norma__icontains=numero_norma
+                codigo_norma__icontains=codigo_norma
             )
 
         if vigencia_de:
@@ -2730,8 +2730,8 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             req.get("emitente", "")
         )
 
-        context["numero_norma_busca"] = (
-            req.get("numero_norma", "")
+        context["codigo_norma_busca"] = (
+            req.get("codigo_norma", "")
         )
 
         context["sistemas"] = (
@@ -2780,9 +2780,11 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
 class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
 
     model = NormaProcedimento
-    template_name = ( "modelagemprocessos/form_normaprocedimento.html")
-    form_class = (Form_NormaProcedimentoForm)
-    success_url = reverse_lazy("arquiteturaprocessos:normasprocedimento")
+    template_name = "modelagemprocessos/form_normaprocedimento.html"
+    form_class = Form_NormaProcedimentoForm
+    success_url = reverse_lazy(
+        "arquiteturaprocessos:normasprocedimento"
+    )
 
     # ========================================================
     # FORM KWARGS
@@ -2790,7 +2792,10 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     def get_form_kwargs(self):
 
         kwargs = super().get_form_kwargs()
-        kwargs.update({"modo_inclusao": True,})
+
+        kwargs.update({
+            "modo_inclusao": True,
+        })
 
         return kwargs
 
@@ -2804,8 +2809,8 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
         context.update({
             "modo_inclusao": True,
             "modo_visualizacao": False,
-            "modo_exclusao": False,
             "modo_edicao": False,
+            "modo_exclusao": False,
         })
 
         return context
@@ -2815,15 +2820,7 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     # ========================================================
     def form_valid(self, form):
 
-        form.instance.estado = (
-            NormaProcedimento.STATUS_ELABORADO
-        )
-
         form.instance.usuario_cadastro = (
-            self.request.user
-        )
-
-        form.instance.usuario_elaboracao = (
             self.request.user
         )
 
@@ -2837,7 +2834,8 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
             self.request,
             (
                 f"Norma de Procedimento "
-                f"'{self.object.titulo}' "
+                f"'{self.object.nome_norma}' "
+                f"(Código {self.object.codigo_norma}) "
                 f"criada com sucesso!"
             )
         )

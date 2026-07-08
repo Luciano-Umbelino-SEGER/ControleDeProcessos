@@ -83,7 +83,7 @@
                             <!-- Tipo Documento -->
                             <div class="col-span-12 md:col-span-3">
                                 <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Tipo de Documento
+                                    Documento
                                 </label>
 
                                 <div class="flex items-center h-[42px]">
@@ -97,17 +97,8 @@
                                 </div>
                             </div>
 
-                            <!-- Título -->
-                            <div class="col-span-12 md:col-span-9">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Título
-                                </label>
-
-                                {{ form.titulo }}
-                            </div>
-
                             <!-- Sistema -->
-                            <div class="col-span-12 md:col-span-6">
+                            <div class="col-span-12 md:col-span-9">
                                 <label class="block text-sm font-semibold text-blue-700 mb-1">
                                     Sistema
                                 </label>
@@ -115,22 +106,31 @@
                                 {{ form.sistema }}
                             </div>
 
-                            <!-- Sigla -->
-                            <div class="col-span-12 md:col-span-2">
+                            <!-- Emitente -->
+                            <div class="col-span-12 md:col-span-12">
                                 <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Sigla Sistema
+                                    Emitente
                                 </label>
 
-                                {{ form.sigla_sistema }}
+                                {{ form.emitente }}
+                            </div>
+
+                            <!-- Nome da Norma -->
+                            <div class="col-span-12 md:col-span-8">
+                                <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                    Nome
+                                </label>
+
+                                {{ form.nome_norma }}
                             </div>
 
                             <!-- Nr Norma -->
                             <div class="col-span-12 md:col-span-2">
                                 <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Nr. Norma
+                                    Código
                                 </label>
 
-                                {{ form.numero_norma }}
+                                {{ form.codigo_norma }}
                             </div>
 
                             <!-- Versão -->
@@ -140,33 +140,6 @@
                                 </label>
 
                                 {{ form.versao }}
-                            </div>
-
-                            <!-- Emitente -->
-                            <div class="col-span-12 md:col-span-6">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Emitente
-                                </label>
-
-                                {{ form.emitente }}
-                            </div>
-
-                            <!-- Tema -->
-                            <div class="col-span-12 md:col-span-4">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Tema
-                                </label>
-
-                                {{ form.tema }}
-                            </div>
-
-                            <!-- Estado -->
-                            <div class="col-span-12 md:col-span-2">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Estado
-                                </label>
-
-                                {{ form.estado }}
                             </div>
 
                         </div>
@@ -197,15 +170,6 @@
                                 {{ form.data_elaboracao }}
                             </div>
 
-                            <!-- Data Revisão -->
-                            <div class="col-span-12 md:col-span-2">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Data Revisão
-                                </label>
-
-                                {{ form.data_revisao }}
-                            </div>
-
                             <!-- Data Aprovação -->
                             <div class="col-span-12 md:col-span-2">
                                 <label class="block text-sm font-semibold text-blue-700 mb-1">
@@ -216,7 +180,7 @@
                             </div>
 
                             <!-- Portaria -->
-                            <div class="col-span-12 md:col-span-2">
+                            <div class="col-span-12 md:col-span-4">
                                 <label class="block text-sm font-semibold text-blue-700 mb-1">
                                     Portaria Aprovação
                                 </label>
@@ -265,8 +229,8 @@
 
                             <div class="col-span-12 md:col-span-6">
 
-                                    <label class="block text-sm font-medium text-blue-700 mb-1">
-                                        Documento Norma de Procedimento (PDF)
+                                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                        Documento PDF
                                     </label>
 
                                     <div x-data="{
@@ -557,12 +521,12 @@
 
                                 <!-- LINK DOCUMENTO EXTERNO -->
                                 <div class="col-span-12 md:col-span-6">
-                                    <label class="block text-sm font-medium text-blue-700 mb-1">
-                                        Documento Externo Norma (link)
+                                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                        Link Documento
                                     </label>
 
                                     <div x-data="{
-                                            link: `{{ form.initial.link_documento_externo|default:''|escapejs }}`,
+                                            link: `{{ form.initial.link_documento_norma|default:''|escapejs }}`,
 
                                             readonlyMode:
                                                 {% if modo_visualizacao or modo_exclusao %}
@@ -579,8 +543,8 @@
 
                                             <input
                                                 type="text"
-                                                name="link_documento_externo"
-                                                id="{{ form.link_documento_externo.id_for_label }}"
+                                                name="link_documento_norma"
+                                                id="{{ form.link_documento_norma.id_for_label }}"
                                                 x-model="link"
                                                 placeholder="https://exemplo.com/documento.pdf"
                                                 autocomplete="off"
@@ -595,9 +559,9 @@
                                                        focus:ring-2
                                                        focus:ring-blue-500">
 
-                                            {% if form.link_documento_externo.errors %}
+                                            {% if form.link_documento_norma.errors %}
                                                 <p class="mt-1 text-sm text-red-600">
-                                                    {{ form.link_documento_externo.errors|striptags }}
+                                                    {{ form.link_documento_norma.errors|striptags }}
                                                 </p>
                                             {% endif %}
 
@@ -670,137 +634,69 @@
                 </div>
 
                 <!-- ===================================================== -->
-                <!-- Auditoria do Registro -->
+                <!-- REGISTROS DO SISTEMA                                  -->
                 <!-- ===================================================== -->
-                <div class="relative border border-gray-300 rounded-lg px-4 pt-3 pb-4 mt-6 mb-6">
+                <div class="col-span-12 mt-2">
 
-                    <div class="absolute -top-4 left-4 bg-blue-50 px-2">
-                        <h2 class="text-base font-semibold text-blue-800">
-                            Auditoria do Registro
-                        </h2>
+                    <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 mt-6 bg-white/30">
+                        <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                            <h2 class="text-base font-semibold text-blue-800 leading-none">
+                                Registros do Sistema
+                            </h2>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-6">
+
+                            <div>
+                                <label class="block text-sm font-semibold text-blue-700">
+                                    Cadastro
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value="{{ cadastro_data }}"
+                                    readonly
+                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black cursor-default">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-blue-700">
+                                    Responsável Cadastro
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value="{{ cadastro_user }}"
+                                    readonly
+                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black cursor-default">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-blue-700">
+                                    Atualização
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value="{{ atualizacao_data }}"
+                                    readonly
+                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black cursor-default">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-blue-700">
+                                    Responsável Atualização
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value="{{ atualizacao_user }}"
+                                    readonly
+                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black cursor-default">
+                            </div>
+
+                        </div>
                     </div>
-
-                    <div class="overflow-x-auto mt-2">
-
-                        <table class="w-full text-sm">
-
-                            <thead>
-
-                                <tr class="border-b border-gray-300">
-
-                                    <th class="text-left py-2 px-2 font-semibold text-blue-800">
-                                        Evento
-                                    </th>
-
-                                    <th class="text-left py-2 px-2 font-semibold text-blue-800">
-                                        Responsável
-                                    </th>
-
-                                    <th class="text-left py-2 px-2 font-semibold text-blue-800">
-                                        Cargo
-                                    </th>
-
-                                    <th class="text-left py-2 px-2 font-semibold text-blue-800">
-                                        Função
-                                    </th>
-
-                                    <th class="text-left py-2 px-2 font-semibold text-blue-800">
-                                        Setor
-                                    </th>
-
-                                    <th class="text-left py-2 px-2 font-semibold text-blue-800">
-                                        Data
-                                    </th>
-
-                                </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                                <!-- CADASTRO -->
-                                <tr class="border-b border-gray-200">
-                                    <td class="py-2 px-2 font-medium text-blue-700">
-                                        Cadastro
-                                    </td>
-
-                                    <td class="py-2 px-2">
-                                        {{ usuario_cadastro_nome }}
-                                    </td>
-
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-
-                                    <td class="py-2 px-2">
-                                        {{ data_cadastro }}
-                                    </td>
-                                </tr>
-
-                                <!-- ATUALIZAÇÃO -->
-                                <tr class="border-b border-gray-200">
-                                    <td class="py-2 px-2 font-medium  text-gray-700">
-                                        Atualização
-                                    </td>
-
-                                    <td class="py-2 px-2">
-                                        {{ usuario_atualizacao_nome }}
-                                    </td>
-
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-
-                                    <td class="py-2 px-2">
-                                        {{ data_atualizacao }}
-                                    </td>
-                                </tr>
-
-                                <!-- ELABORAÇÃO -->
-                                <tr class="border-b border-gray-200">
-                                    <td class="py-2 px-2 font-medium text-blue-700">
-                                        Elaboração
-                                    </td>
-
-                                    <td>{{ usuario_elaboracao_nome }}</td>
-                                    <td>{{ usuario_elaboracao_cargo }}</td>
-                                    <td>{{ usuario_elaboracao_funcao }}</td>
-                                    <td>{{ usuario_elaboracao_setor }}</td>
-                                    <td>{{ data_elaboracao }}</td>
-                                </tr>
-
-                                <!-- REVISÃO -->
-                                <tr class="border-b border-gray-200">
-                                    <td class="py-2 px-2 font-medium text-yellow-700">
-                                        Revisão
-                                    </td>
-
-                                    <td>{{ usuario_revisao_nome }}</td>
-                                    <td>{{ usuario_revisao_cargo }}</td>
-                                    <td>{{ usuario_revisao_funcao }}</td>
-                                    <td>{{ usuario_revisao_setor }}</td>
-                                    <td>{{ data_revisao }}</td>
-                                </tr>
-
-                                <!-- APROVAÇÃO -->
-                                <tr>
-                                    <td class="py-2 px-2 font-medium text-green-700">
-                                        Aprovação
-                                    </td>
-
-                                    <td>{{ usuario_aprovacao_nome }}</td>
-                                    <td>{{ usuario_aprovacao_cargo }}</td>
-                                    <td>{{ usuario_aprovacao_funcao }}</td>
-                                    <td>{{ usuario_aprovacao_setor }}</td>
-                                    <td>{{ data_aprovacao }}</td>
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
                 </div>
 
         </fieldset>
@@ -833,7 +729,7 @@
                     <button type="submit"
                             class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
 
-                        Adicionar Norma Procedimento
+                        Adicionar Norma
                     </button>
 
                 {% endif %}

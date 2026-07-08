@@ -570,31 +570,6 @@ class Form_Sistema_UECIForm(forms.ModelForm):
                 field.disabled = True
 
     # ========================================================
-    # SIGLA DO SISTEMA
-    # ========================================================
-
-    def clean_sigla_sistema(self):
-
-        sigla = self.cleaned_data.get(
-            'sigla_sistema'
-        )
-
-        if not sigla:
-            return None
-
-        sigla = "".join(sigla.split()).upper()
-
-        if not re.fullmatch(
-            r'[A-Z]+',
-            sigla
-        ):
-            raise forms.ValidationError(
-                'A sigla deve conter apenas letras maiúsculas.'
-            )
-
-        return sigla
-
-    # ========================================================
     # NOME DO SISTEMA
     # ========================================================
 
@@ -686,18 +661,10 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         model = NormaProcedimento
 
         exclude = (
-
-            # Auditoria
             "data_cadastro",
             "usuario_cadastro",
-
             "data_atualizacao",
             "usuario_atualizacao",
-
-            # Workflow
-            "usuario_elaboracao",
-            "usuario_revisao",
-            "usuario_aprovacao",
         )
 
     # ========================================================
@@ -756,13 +723,11 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         # CAMPOS TEXTO
         # ====================================================
         campos = [
-            "titulo",
+            "nome_norma",
             "sistema",
-            "sigla_sistema",
-            "numero_norma",
+            "codigo_norma",
             "versao",
             "emitente",
-            "tema",
             "portaria_aprovacao",
         ]
 
@@ -781,7 +746,6 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         # ====================================================
         campos_data = [
             "data_elaboracao",
-            "data_revisao",
             "data_aprovacao",
             "vigencia_inicio",
             "vigencia_fim",
@@ -801,36 +765,50 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
             )
 
         # ====================================================
-        # TÍTULO
-        # ====================================================
-        self.fields["titulo"].widget.attrs.update({
-            "placeholder": "DIGITE O TÍTULO",
-            "class": f"{base_class} {bg} uppercase",
-        })
-
-        # ====================================================
         # SISTEMA
         # ====================================================
+        self.fields["sistema"].queryset = (
+            SistemasUECI.objects.order_by("nome_sistema")
+        )
+
+        self.fields["sistema"].empty_label = "Selecione..."
+
         self.fields["sistema"].widget.attrs.update({
-            "placeholder": "Sistema",
+            "class": f"{base_class} {bg}",
         })
 
         # ====================================================
-        # SIGLA
+        # NORMA
         # ====================================================
-        self.fields["sigla_sistema"].widget.attrs.update({
-            "placeholder": "SIGLA",
-            "maxlength": "20",
-            "class": f"{base_class} {bg} uppercase",
+        self.fields["nome_norma"].widget.attrs.update({
+            "placeholder": "Digite o nome da Norma...",
+        })
+
+        self.fields["nome_norma"].label = "Norma"
+
+        # ====================================================
+        # EMITENTE
+        # ====================================================
+        self.fields["emitente"].widget.attrs.update({
+            "placeholder": "Emitente",
+        })
+
+        # ====================================================
+        # PORTARIA
+        # ====================================================
+        self.fields["portaria_aprovacao"].widget.attrs.update({
+            "placeholder": "Portaria",
         })
 
         # ====================================================
         # NR NORMA
         # ====================================================
-        self.fields["numero_norma"].widget.attrs.update({
-            "placeholder": "0001",
-            "maxlength": "4",
+        self.fields["codigo_norma"].widget.attrs.update({
+            "placeholder": "Digite o Código da Norma",
+            "maxlength": "15",
         })
+
+        self.fields["codigo_norma"].label = "Código"
 
         # ====================================================
         # VERSÃO
@@ -841,19 +819,12 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         })
 
         # ====================================================
-        # ESTADO
-        # ====================================================
-        self.fields["estado"].widget.attrs.update({
-            "class": f"{base_class} {bg}",
-        })
-
-        # ====================================================
         # LINK EXTERNO
         # ====================================================
-        if "link_documento_externo" in self.fields:
+        if "link_documento_norma" in self.fields:
 
             self.fields[
-                "link_documento_externo"
+                "link_documento_norma"
             ].widget.attrs.update({
 
                 "type": "text",
@@ -880,13 +851,13 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         # ====================================================
         if (
             self.instance
-            and self.instance.link_documento_externo
+            and self.instance.link_documento_norma
         ):
 
             self.initial[
-                "link_documento_externo"
+                "link_documento_norma"
             ] = unquote(
-                self.instance.link_documento_externo
+                self.instance.link_documento_norma
             )
 
         # ====================================================
@@ -964,48 +935,31 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
                     + " bg-gray-100"
                 )
 
-    def clean_titulo(self):
+    def clean_nome_norma(self):
 
-        titulo = (
-                self.cleaned_data.get("titulo") or ""
-        ).strip().upper()
-
-        if not titulo:
-            raise ValidationError(
-                "Informe o Título."
-            )
-
-        return titulo
-
-    def clean_sigla_sistema(self):
-
-        sigla = (
-                self.cleaned_data.get(
-                    "sigla_sistema"
-                ) or ""
-        ).strip().upper()
-
-        if not sigla:
-            raise ValidationError(
-                "Informe a Sigla do Sistema."
-            )
-
-        return sigla
-
-    def clean_numero_norma(self):
-
-        numero = (
-                self.cleaned_data.get(
-                    "numero_norma"
-                ) or ""
+        nome = (
+                self.cleaned_data.get("nome_norma") or ""
         ).strip()
 
-        if not numero.isdigit():
+        if not nome:
             raise ValidationError(
-                "Informe apenas números."
+                "Informe o Nome da Norma."
             )
 
-        return numero.zfill(4)
+        return nome
+
+    def clean_codigo_norma(self):
+
+        codigo = (
+                self.cleaned_data.get("codigo_norma") or ""
+        ).strip()
+
+        if not codigo:
+            raise ValidationError(
+                "Informe o Código."
+            )
+
+        return codigo
 
     def clean_versao(self):
 
@@ -1039,14 +993,6 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
             raise ValidationError(
                 "Informe a Data de Elaboração."
             )
-
-        return data
-
-    def clean_data_revisao(self):
-
-        data = self.cleaned_data.get(
-            "data_revisao"
-        )
 
         return data
 
@@ -1094,10 +1040,10 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 
         return f
 
-    def clean_link_documento_externo(self):
+    def clean_link_documento_norma(self):
 
         link = self.cleaned_data.get(
-            "link_documento_externo"
+            "link_documento_norma"
         )
 
         if not link:
@@ -1136,21 +1082,19 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         )
 
         link = cleaned_data.get(
-            "link_documento_externo"
+            "link_documento_norma"
         )
 
+        # Pelo menos um dos dois deve ser informado
         if not pdf and not link:
             raise ValidationError(
-                "Informe um PDF ou um Link Externo."
+                "Informe um PDF ou o Link do Documento da Norma."
             )
 
         data_elaboracao = cleaned_data.get(
             "data_elaboracao"
         )
 
-        data_revisao = cleaned_data.get(
-            "data_revisao"
-        )
 
         data_aprovacao = cleaned_data.get(
             "data_aprovacao"
@@ -1158,20 +1102,11 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 
         if (
                 data_elaboracao
-                and data_revisao
-                and data_revisao < data_elaboracao
-        ):
-            raise ValidationError(
-                "A Data de Revisão não pode ser anterior à Data de Elaboração."
-            )
-
-        if (
-                data_revisao
                 and data_aprovacao
-                and data_aprovacao < data_revisao
+                and data_aprovacao < data_elaboracao
         ):
             raise ValidationError(
-                "A Data de Aprovação não pode ser anterior à Data de Revisão."
+                "A Data de Aprovação não pode ser anterior à Data de Elaboração."
             )
 
 
@@ -1288,7 +1223,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.label_suffix = ""
-        self.fields["codigo"].label = "Sigla Sistema"
+        self.fields["nome_norma"].label = "Norma"
+        self.fields["numero_norma"].label = "Número"
 
         # ========================================================
         # CAMPOS OPCIONAIS
@@ -1500,16 +1436,16 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     # ============================================================
     # VALIDAÇÕES
     # ============================================================
-    def clean_titulo(self):
+    def clean_nome_norma(self):
 
-        titulo = (
-            self.cleaned_data.get("titulo") or ""
+        nome_norma = (
+            self.cleaned_data.get("nome_norma") or ""
         ).strip().upper()
 
-        if not titulo:
-            raise ValidationError("Informe o Título.")
+        if not nome_norma:
+            raise ValidationError("Informe o Nome da Norma.")
 
-        return titulo
+        return nome_norma
 
     def clean_sistema(self):
 
