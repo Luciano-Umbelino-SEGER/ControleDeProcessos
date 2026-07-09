@@ -711,8 +711,11 @@
                 {% if modo_exclusao %}
 
                     <button type="button"
-                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            @click="$dispatch('abrir-modal-confirmacao', {
+                                url: '{% url 'arquiteturaprocessos:excluir_normaprocedimento' normaprocedimento.id %}',
+                                mensagem: 'Confirma a exclusão da Norma de Procedimento <strong>{{ normaprocedimento.nome_norma }}</strong> (Código {{ normaprocedimento.codigo_norma }})?'
+                            })">
                         Confirmar Exclusão
                     </button>
 

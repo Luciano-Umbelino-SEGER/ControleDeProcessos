@@ -2824,10 +2824,6 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
             self.request.user
         )
 
-        form.instance.usuario_atualizacao = (
-            self.request.user
-        )
-
         response = super().form_valid(form)
 
         messages.success(
@@ -2851,96 +2847,53 @@ class VisualizarNormaProcedimento(
 ):
 
     model = NormaProcedimento
-
-    template_name = (
-        "modelagemprocessos/form_normaprocedimento.html"
-    )
-
-    context_object_name = (
-        "normaprocedimento"
-    )
+    template_name = "modelagemprocessos/form_normaprocedimento.html"
+    context_object_name = "normaprocedimento"
 
     def get_context_data(self, **kwargs):
 
-        context = (
-            super()
-            .get_context_data(**kwargs)
-        )
+        context = super().get_context_data(**kwargs)
 
         obj = self.get_object()
 
-        context["form"] = (
-            Form_NormaProcedimentoForm(
-                instance=obj,
-                modo_visualizacao=True,
-            )
+        context["form"] = Form_NormaProcedimentoForm(
+            instance=obj,
+            modo_visualizacao=True,
         )
 
         context.update({
 
             "modo_visualizacao": True,
             "modo_inclusao": False,
-            "modo_exclusao": False,
             "modo_edicao": False,
-
-            # ============================================
-            # ELABORAÇÃO
-            # ============================================
-            "usuario_elaboracao_nome":
-                str(obj.usuario_elaboracao)
-                if obj.usuario_elaboracao else "",
-
-            "data_elaboracao":
-                obj.data_elaboracao.strftime("%d/%m/%Y")
-                if obj.data_elaboracao else "",
-
-            # ============================================
-            # REVISÃO
-            # ============================================
-            "usuario_revisao_nome":
-                str(obj.usuario_revisao)
-                if obj.usuario_revisao else "",
-
-            "data_revisao":
-                obj.data_revisao.strftime("%d/%m/%Y")
-                if obj.data_revisao else "",
-
-            # ============================================
-            # APROVAÇÃO
-            # ============================================
-            "usuario_aprovacao_nome":
-                str(obj.usuario_aprovacao)
-                if obj.usuario_aprovacao else "",
-
-            "data_aprovacao":
-                obj.data_aprovacao.strftime("%d/%m/%Y")
-                if obj.data_aprovacao else "",
+            "modo_exclusao": False,
 
             # ============================================
             # CADASTRO
             # ============================================
-            "usuario_cadastro_nome":
+            "cadastro_data":
+                timezone.localtime(
+                    obj.data_cadastro
+                ).strftime("%d/%m/%Y %H:%M")
+                if obj.data_cadastro else "",
+
+            "cadastro_user":
                 str(obj.usuario_cadastro)
                 if obj.usuario_cadastro else "",
-
-            "data_cadastro":
-                obj.data_cadastro.strftime(
-                    "%d/%m/%Y %H:%M"
-                )
-                if obj.data_cadastro else "",
 
             # ============================================
             # ATUALIZAÇÃO
             # ============================================
-            "usuario_atualizacao_nome":
+            "atualizacao_data":
+                timezone.localtime(
+                    obj.data_atualizacao
+                ).strftime("%d/%m/%Y %H:%M")
+                if obj.data_atualizacao and obj.usuario_atualizacao else "",
+
+            "atualizacao_user":
                 str(obj.usuario_atualizacao)
                 if obj.usuario_atualizacao else "",
 
-            "data_atualizacao":
-                obj.data_atualizacao.strftime(
-                    "%d/%m/%Y %H:%M"
-                )
-                if obj.data_atualizacao else "",
         })
 
         return context
@@ -2976,7 +2929,6 @@ class EditarNormaProcedimento(
         kwargs = super().get_form_kwargs()
 
         kwargs.update({
-            "usuario_logado": self.request.user,
             "modo_edicao": True,
         })
 
@@ -2986,70 +2938,64 @@ class EditarNormaProcedimento(
 
         context = super().get_context_data(**kwargs)
 
+        obj = self.object
+
         context.update({
+
             "modo_edicao": True,
             "modo_visualizacao": False,
             "modo_inclusao": False,
             "modo_exclusao": False,
+
+            # ============================================
+            # CADASTRO
+            # ============================================
+            "cadastro_data":
+                timezone.localtime(
+                    obj.data_cadastro
+                ).strftime("%d/%m/%Y %H:%M")
+                if obj.data_cadastro else "",
+
+            "cadastro_user":
+                str(obj.usuario_cadastro)
+                if obj.usuario_cadastro else "",
+
+            # ============================================
+            # ATUALIZAÇÃO
+            # ============================================
+            "atualizacao_data":
+                timezone.localtime(
+                    obj.data_atualizacao
+                ).strftime("%d/%m/%Y %H:%M")
+                if obj.data_atualizacao and obj.usuario_atualizacao else "",
+
+            "atualizacao_user":
+                str(obj.usuario_atualizacao)
+                if obj.usuario_atualizacao else "",
         })
 
         return context
 
     def form_valid(self, form):
 
-        obj = form.instance
+        # ============================================
+        # AUDITORIA
+        # ============================================
+        form.instance.usuario_atualizacao = self.request.user
 
         # ============================================
         # REMOVER PDF
         # ============================================
         if self.request.POST.get(
-            "remover_documento_norma_procedimento"
+                "remover_documento_norma_procedimento"
         ) == "1":
 
-            if obj.documento_norma_procedimento:
-
-                obj.documento_norma_procedimento.delete(
+            if form.instance.documento_norma_procedimento:
+                form.instance.documento_norma_procedimento.delete(
                     save=False
                 )
 
-            obj.documento_norma_procedimento = None
-
-        # ============================================
-        # AUDITORIA
-        # ============================================
-        obj.usuario_atualizacao = (
-            self.request.user
-        )
-
-        # ============================================
-        # REVISÃO
-        # ============================================
-        if obj.estado == "REVISADO":
-
-            if not obj.data_revisao:
-
-                obj.usuario_revisao = (
-                    self.request.user
-                )
-
-                obj.data_revisao = (
-                    timezone.localdate()
-                )
-
-        # ============================================
-        # APROVAÇÃO
-        # ============================================
-        elif obj.estado == "APROVADO":
-
-            if not obj.data_aprovacao:
-
-                obj.usuario_aprovacao = (
-                    self.request.user
-                )
-
-                obj.data_aprovacao = (
-                    timezone.localdate()
-                )
+            form.instance.documento_norma_procedimento = None
 
         response = super().form_valid(form)
 
@@ -3057,7 +3003,8 @@ class EditarNormaProcedimento(
             self.request,
             (
                 f"Norma de Procedimento "
-                f"'{self.object.titulo}' "
+                f"'{self.object.nome_norma}' "
+                f"(Código {self.object.codigo_norma}) "
                 f"atualizada com sucesso!"
             )
         )
@@ -3084,26 +3031,53 @@ class ExcluirNormaProcedimento(
 
     def get_context_data(self, **kwargs):
 
-        context = (
-            super()
-            .get_context_data(**kwargs)
-        )
+        context = super().get_context_data(**kwargs)
 
-        obj = self.get_object()
+        obj = self.object
 
-        context["form"] = (
-            Form_NormaProcedimentoForm(
-                instance=obj,
-                modo_exclusao=True,
-            )
+        # ====================================================
+        # FORMULÁRIO
+        # ====================================================
+        context["form"] = Form_NormaProcedimentoForm(
+            instance=obj,
+            modo_exclusao=True,
         )
 
         context.update({
 
-            "modo_exclusao": True,
-            "modo_visualizacao": False,
             "modo_inclusao": False,
+            "modo_visualizacao": False,
             "modo_edicao": False,
+            "modo_exclusao": True,
+
+            # ============================================
+            # CADASTRO
+            # ============================================
+            "cadastro_data":
+                timezone.localtime(
+                    obj.data_cadastro
+                ).strftime("%d/%m/%Y %H:%M")
+                if obj.data_cadastro else "",
+
+            "cadastro_user":
+                str(obj.usuario_cadastro)
+                if obj.usuario_cadastro else "",
+
+            # ============================================
+            # ATUALIZAÇÃO
+            # ============================================
+            "atualizacao_data":
+                timezone.localtime(
+                    obj.data_atualizacao
+                ).strftime("%d/%m/%Y %H:%M")
+                if (
+                    obj.data_atualizacao
+                    and obj.usuario_atualizacao
+                ) else "",
+
+            "atualizacao_user":
+                str(obj.usuario_atualizacao)
+                if obj.usuario_atualizacao else "",
         })
 
         return context
@@ -3112,6 +3086,9 @@ class ExcluirNormaProcedimento(
 
         obj = self.get_object()
 
+        # ============================================
+        # REMOVE PDF FÍSICO
+        # ============================================
         if obj.documento_norma_procedimento:
 
             try:
@@ -3123,10 +3100,11 @@ class ExcluirNormaProcedimento(
                         obj.documento_norma_procedimento.path
                     )
 
-            except Exception:
+            except OSError:
                 pass
 
-        titulo = obj.titulo
+        nome_norma = obj.nome_norma
+        codigo_norma = obj.codigo_norma
 
         obj.delete()
 
@@ -3134,7 +3112,8 @@ class ExcluirNormaProcedimento(
             request,
             (
                 f"Norma de Procedimento "
-                f"'{titulo}' "
+                f"'{nome_norma}' "
+                f"(Código {codigo_norma}) "
                 f"excluída com sucesso!"
             )
         )

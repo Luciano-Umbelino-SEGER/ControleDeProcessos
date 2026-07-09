@@ -72,17 +72,17 @@
                 </select>
             </div>
 
-             <!-- NR. NORMA -->
+             <!-- CÓDIGO NORMA -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">
-                Nr. Norma
+                Código
               </label>
 
               <input type="text"
                      name="codigo_norma"
                      value="{{ codigo_norma_busca }}"
-                     placeholder="Código da Norma"
-                     class="w-24 px-2 py-1.5 border border-gray-300 rounded-md
+                     placeholder="Digite o Código..."
+                     class="w-44 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500
                             text-black placeholder-gray-400">
             </div>
@@ -219,10 +219,10 @@
             <tr>
                 <th class="py-3 pl-4 pr-2 text-left w-[16%]">Norma</th>
                 <th class="py-3 px-2 text-left w-[18%]">Sistema</th>
-                <th class="py-3 px-2 text-center w-[6%]">Número</th>
+                <th class="py-3 px-2 text-center w-[6%]">Código</th>
                 <th class="py-3 px-2 text-center w-[5%]">Versão</th>
                 <th class="py-3 px-2 text-left w-[14%]">Emitente</th>
-                <th class="py-3 px-2 text-left w-[10%]">Portaria</th>
+                <th class="py-3 px-2 text-left w-[7%]">Portaria</th>
                 <th class="py-3 px-2 text-center w-[6%] leading-tight">
                     <div class="flex flex-col items-center">
                         <span>Data</span>
@@ -241,8 +241,8 @@
                         <span>Vigência</span>
                     </div>
                 </th>
-                <th class="py-3 px-2 text-left w-[11%]">PDF</th>
-                <th class="py-3 px-2 text-left w-[11%]">Link</th>
+                <th class="py-3 px-2 text-left w-[13%]">PDF</th>
+                <th class="py-3 px-2 text-left min-w-[220px]">Link</th>
                 <th class="py-3 px-2 text-center w-[7%]">Ações</th>
             </tr>
         </thead>
@@ -265,7 +265,7 @@
                 </div>
             </td>
 
-            <!-- NR NORMA -->
+            <!-- CÓDIGO NORMA -->
             <td class="py-3 px-2 text-center align-top whitespace-nowrap">
                 {{ norma.codigo_norma }}
             </td>
@@ -326,18 +326,16 @@
                   )"
                   title="{{ norma.documento_norma_procedimento|filename }}"
                   class="block text-left text-blue-600 hover:underline
-                         cursor-pointer break-all leading-snug">
-
+                         cursor-pointer leading-snug text-[0.8rem] [overflow-wrap:anywhere]">
                   {{ norma.documento_norma_procedimento|filename }}
-
                 </button>
               {% else %}
                 ----
               {% endif %}
             </td>
 
-            <!-- DOCUMENTO EXTERNO -->
-            <td class="py-3 px-2 align-top">
+            <!-- LINK DOCUMENTO EXTERNO -->
+            <td class="py-3 px-2 align-top break-words">
               {% if norma.link_documento_norma %}
                 <button
                   onclick="abrirModalDocumento(
@@ -345,11 +343,9 @@
                     '{{ norma.link_documento_norma|filename }}'
                   )"
                   title="{{ norma.link_documento_norma|filename }}"
-                  class="block text-left text-blue-600 hover:underline
-                         cursor-pointer break-all leading-snug">
-
+                  class="block text-left text-blue-600 hover:underline cursor-pointer
+                         leading-snug text-[0.8rem] break-words">
                   {{ norma.link_documento_norma|filename }}
-
                 </button>
               {% else %}
                 ----

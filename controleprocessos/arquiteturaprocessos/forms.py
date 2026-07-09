@@ -1146,6 +1146,9 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 # ============================================================
 # Modelagem de Processos
 # ============================================================
+# ============================================================
+# Modelagem de Processos
+# ============================================================
 class Form_ModelagemProcessoForm(forms.ModelForm):
 
     # ============================================================
@@ -1215,6 +1218,8 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     # ============================================================
     def __init__(self, *args, **kwargs):
 
+        self.usuario_logado = kwargs.pop("usuario_logado", None)
+
         self.modo_inclusao = kwargs.pop("modo_inclusao", False)
         self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
         self.modo_exclusao = kwargs.pop("modo_exclusao", False)
@@ -1223,8 +1228,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.label_suffix = ""
-        self.fields["nome_norma"].label = "Norma"
-        self.fields["numero_norma"].label = "Número"
+        self.fields["codigo"].label = "Sigla Sistema"
 
         # ========================================================
         # CAMPOS OPCIONAIS
@@ -1336,28 +1340,27 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
                 ".pdf,application/pdf"
             )
 
-            if self.modo_edicao:
+            if (
+                self.modo_edicao
+                or self.modo_visualizacao
+                or self.modo_exclusao
+            ):
 
-                self.fields[
-                    "documento_modelo_processo"
-                ].widget = FileInput(
-                    attrs=fwidget.attrs
+                self.fields["documento_modelagem_processo"].widget = (
+                    FileInput(attrs=fwidget.attrs)
                 )
 
                 if (
-                        self.instance
-                        and self.instance.documento_modelo_processo
+                    self.instance
+                    and self.instance.documento_modelagem_processo
                 ):
                     nome_arq = os.path.basename(
-                        self.instance
-                        .documento_modelo_processo.name
+                        self.instance.documento_modelagem_processo.name
                     )
 
                     self.fields[
-                        "documento_modelo_processo"
-                    ].widget.attrs[
-                        "placeholder"
-                    ] = nome_arq
+                        "documento_modelagem_processo"
+                    ].widget.attrs["placeholder"] = nome_arq
 
         # ========================================================
         # ZEROS À ESQUERDA
@@ -1377,11 +1380,11 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
         # ========================================================
         # USUÁRIO
         # ========================================================
-        #if self.usuario_logado and not self.instance.pk:
-        #    self.instance.usuario = self.usuario_logado
+        if self.usuario_logado and not self.instance.pk:
+            self.instance.usuario = self.usuario_logado
 
-        #if self.usuario_logado and self.instance.pk:
-        #    self.instance.usuario_atualizacao = self.usuario_logado
+        if self.usuario_logado and self.instance.pk:
+            self.instance.usuario_atualizacao = self.usuario_logado
 
         # ========================================================
         # MODO SOMENTE LEITURA
@@ -1411,7 +1414,7 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
             self.fields[
                 "link_normaprocedimento"
             ].widget.attrs.update({
-                "type": "text",
+                "type": "url",
                 "placeholder": "https://exemplo.com/documento.pdf",
             })
 
@@ -1436,16 +1439,16 @@ class Form_ModelagemProcessoForm(forms.ModelForm):
     # ============================================================
     # VALIDAÇÕES
     # ============================================================
-    def clean_nome_norma(self):
+    def clean_titulo(self):
 
-        nome_norma = (
-            self.cleaned_data.get("nome_norma") or ""
+        titulo = (
+            self.cleaned_data.get("titulo") or ""
         ).strip().upper()
 
-        if not nome_norma:
-            raise ValidationError("Informe o Nome da Norma.")
+        if not titulo:
+            raise ValidationError("Informe o Título.")
 
-        return nome_norma
+        return titulo
 
     def clean_sistema(self):
 
