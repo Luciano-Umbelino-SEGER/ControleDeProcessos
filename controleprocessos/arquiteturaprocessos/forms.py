@@ -1077,18 +1077,48 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 
         cleaned_data = super().clean()
 
-        pdf = cleaned_data.get(
+        # ============================================
+        # NOVO PDF ENVIADO
+        # ============================================
+        pdf = self.files.get(
             "documento_norma_procedimento"
         )
 
-        link = cleaned_data.get(
-            "link_documento_norma"
+        link = (
+                cleaned_data.get(
+                    "link_documento_norma"
+                ) or ""
+        ).strip()
+
+        # ============================================
+        # PDF EXISTENTE
+        # ============================================
+        remover_pdf = (
+                self.data.get(
+                    "remover_documento_norma_procedimento"
+                ) == "1"
         )
 
-        # Pelo menos um dos dois deve ser informado
-        if not pdf and not link:
+        tem_pdf = (
+                bool(pdf)
+                or (
+                        self.instance.pk
+                        and self.instance.documento_norma_procedimento
+                        and not remover_pdf
+                )
+        )
+
+        # ============================================
+        # LINK EXISTENTE
+        # ============================================
+        tem_link = bool(link)
+
+        # ============================================
+        # VALIDAÇÃO
+        # ============================================
+        if not tem_pdf and not tem_link:
             raise ValidationError(
-                "Informe um PDF ou o Link do Documento da Norma."
+                "Informe pelo menos um Documento PDF ou um Link do Documento."
             )
 
         data_elaboracao = cleaned_data.get(
@@ -1142,10 +1172,6 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
 
         return obj
 
-
-# ============================================================
-# Modelagem de Processos
-# ============================================================
 # ============================================================
 # Modelagem de Processos
 # ============================================================

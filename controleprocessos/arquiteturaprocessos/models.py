@@ -395,20 +395,29 @@ class ModelagemProcesso(models.Model):
 # ============================================================
 def norma_procedimento_upload_to(instance, filename):
     """
-    Gera caminho seguro para upload de documentos
-    de Norma de Procedimento.
+    Gera caminho seguro para upload dos documentos de
+    Norma de Procedimento.
 
-    - Remove acentos
-    - Remove caracteres especiais
-    - Substitui espaços por _
-    - Mantém extensão minúscula
-    - Garante unicidade com UUID
+    Regras:
+    - Remove acentos;
+    - Remove caracteres especiais;
+    - Substitui espaços por "_";
+    - Mantém a extensão em minúsculas;
+    - Utiliza o UUID do próprio registro;
+    - Mantém o nome original do arquivo para facilitar
+      sua identificação pelo usuário.
     """
 
+    # ========================================================
+    # NOME E EXTENSÃO
+    # ========================================================
     nome, ext = os.path.splitext(filename)
 
     ext = ext.lower()
 
+    # ========================================================
+    # REMOVE ACENTOS
+    # ========================================================
     nome = (
         unicodedata
         .normalize("NFKD", nome)
@@ -416,6 +425,9 @@ def norma_procedimento_upload_to(instance, filename):
         .decode("ascii")
     )
 
+    # ========================================================
+    # REMOVE CARACTERES INVÁLIDOS
+    # ========================================================
     nome = re.sub(
         r"[^\w\-_.]",
         "_",
@@ -425,12 +437,18 @@ def norma_procedimento_upload_to(instance, filename):
     if not nome:
         nome = "norma_procedimento"
 
+    # ========================================================
+    # NOME FINAL
+    # ========================================================
     novo_nome = (
-        f"{nome}_{uuid4().hex[:8]}{ext}"
+         f"{nome}_{instance.uuid.hex[:12]}{ext}"
     )
 
+    # ========================================================
+    # CAMINHO
+    # ========================================================
     return (
-        f"normaprocedimento/{novo_nome}"
+        f"normasprocedimento/{novo_nome}"
     )
 
 # aqui 1
@@ -623,11 +641,12 @@ class NormaProcedimento(models.Model):
         # RECUPERA O REGISTRO ANTIGO APENAS NA EDIÇÃO
         # ====================================================
         if self.pk:
-            try:
-                old = NormaProcedimento.objects.get(pk=self.pk)
-
-            except NormaProcedimento.DoesNotExist:
-                pass
+            old = (
+                type(self)
+                .objects
+                .filter(pk=self.pk)
+                .first()
+            )
 
         super().save(*args, **kwargs)
 
@@ -637,25 +656,37 @@ class NormaProcedimento(models.Model):
         if (
                 old
                 and old.documento_norma_procedimento
-                and old.documento_norma_procedimento
-                != self.documento_norma_procedimento
+                and old.documento_norma_procedimento != self.documento_norma_procedimento
         ):
-            if hasattr(
-                    old.documento_norma_procedimento,
-                    "path"
-            ):
-                old_path = (
-                    old
-                    .documento_norma_procedimento
-                    .path
-                )
 
-                if os.path.isfile(old_path):
-                    try:
-                        os.remove(old_path)
+            old_path = old.documento_norma_procedimento.path
 
-                    except OSError:
-                        pass
+            if os.path.exists(old_path):
+
+                try:
+                    os.remove(old_path)
+
+                except OSError:
+                    pass
+
+    # ========================================================
+    # DELETE
+    # ========================================================
+    def delete(self, *args, **kwargs):
+
+        arquivo = self.documento_norma_procedimento
+
+        super().delete(*args, **kwargs)
+
+        if arquivo:
+
+            try:
+
+                if hasattr(arquivo, "path") and os.path.isfile(arquivo.path):
+                    os.remove(arquivo.path)
+
+            except OSError:
+                pass
 
     # ========================================================
     # STRING

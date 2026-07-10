@@ -2989,12 +2989,6 @@ class EditarNormaProcedimento(
         if self.request.POST.get(
                 "remover_documento_norma_procedimento"
         ) == "1":
-
-            if form.instance.documento_norma_procedimento:
-                form.instance.documento_norma_procedimento.delete(
-                    save=False
-                )
-
             form.instance.documento_norma_procedimento = None
 
         response = super().form_valid(form)
@@ -3085,23 +3079,6 @@ class ExcluirNormaProcedimento(
     def post(self, request, *args, **kwargs):
 
         obj = self.get_object()
-
-        # ============================================
-        # REMOVE PDF FÍSICO
-        # ============================================
-        if obj.documento_norma_procedimento:
-
-            try:
-
-                if os.path.isfile(
-                    obj.documento_norma_procedimento.path
-                ):
-                    os.remove(
-                        obj.documento_norma_procedimento.path
-                    )
-
-            except OSError:
-                pass
 
         nome_norma = obj.nome_norma
         codigo_norma = obj.codigo_norma
