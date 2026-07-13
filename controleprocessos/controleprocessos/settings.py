@@ -179,6 +179,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "arquiteturaprocessos.context_processors.configuracoes",
             ],
         },
     },
@@ -261,3 +262,8 @@ CACHES = {
         "LOCATION": "sigemp-cache",
     }
 }
+
+# ============================================================
+# FUNCIONALIDADES
+# ============================================================
+HABILITAR_MODELAGEM_PROCESSOS = False

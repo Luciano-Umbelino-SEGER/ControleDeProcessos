@@ -2447,27 +2447,43 @@ class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         sistema_ueci = self.get_object()
 
-        # 🔒 Regra de domínio: impedir exclusão se houver vínculos
-        # TODO
-        # Verificar vínculo com NormaProcedimento
-        # após conclusão da refatoração da entidade.
-        #existe_vinculo = ModelagemProcesso.objects.filter(
-        #    sistema_ueci=sistemaueci
-        #).exists()
+        # ==========================================
+        # REGRA DE DOMÍNIO
+        # ==========================================
+        existe_vinculo = (
+            sistema_ueci
+            .normas_procedimento
+            .exists()
+        )
 
-        #if existe_vinculo:
-        #    messages.error(
-        #        request,
-        #        "Não é possível excluir este Sistema UECI porque ele está vinculado a uma ou mais Norma de Procedimento."
-        #    )
-        #    return redirect('arquiteturaprocessos:sistemas_ueci')
+        if existe_vinculo:
+            messages.error(
+                request,
+                (
+                    "Não é possível excluir este Sistema UECI "
+                    "porque existem Normas de Procedimento vinculadas a ele.  "
+                    "Remova ou altere essas Normas antes de tentar excluir o Sistema."
+                )
+            )
+
+            return redirect(
+                "arquiteturaprocessos:sistemas_ueci"
+            )
 
         sistema_ueci.delete()
+
         messages.success(
             request,
-            f"Sistema UECI - '{sistema_ueci.sistema_completo}' excluído com sucesso!"
+            (
+                f"Sistema UECI "
+                f"'{sistema_ueci.sistema_completo}' "
+                f"excluído com sucesso!"
+            )
         )
-        return redirect('arquiteturaprocessos:sistemas_ueci')
+
+        return redirect(
+            "arquiteturaprocessos:sistemas_ueci"
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3023,6 +3039,9 @@ class ExcluirNormaProcedimento(
         "normaprocedimento"
     )
 
+    # ========================================================
+    # CONTEXTO
+    # ========================================================
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
@@ -3044,9 +3063,9 @@ class ExcluirNormaProcedimento(
             "modo_edicao": False,
             "modo_exclusao": True,
 
-            # ============================================
+            # ================================================
             # CADASTRO
-            # ============================================
+            # ================================================
             "cadastro_data":
                 timezone.localtime(
                     obj.data_cadastro
@@ -3057,9 +3076,9 @@ class ExcluirNormaProcedimento(
                 str(obj.usuario_cadastro)
                 if obj.usuario_cadastro else "",
 
-            # ============================================
+            # ================================================
             # ATUALIZAÇÃO
-            # ============================================
+            # ================================================
             "atualizacao_data":
                 timezone.localtime(
                     obj.data_atualizacao
@@ -3076,9 +3095,53 @@ class ExcluirNormaProcedimento(
 
         return context
 
+    # ========================================================
+    # EXCLUSÃO
+    # ========================================================
     def post(self, request, *args, **kwargs):
 
         obj = self.get_object()
+
+        # ====================================================
+        # 🔒 REGRA DE DOMÍNIO
+        # ====================================================
+        # TODO
+        #
+        # Após a refatoração da entidade Processo,
+        # impedir a exclusão da Norma de Procedimento
+        # quando existirem Processos vinculados.
+        #
+        # A tabela:
+        # arquiteturaprocessos_processodocumento
+        #
+        # atualmente utiliza:
+        #     modelagem_processo_id
+        #
+        # e passará a utilizar:
+        #     norma_procedimento_id
+        #
+        # Exemplo:
+        #
+        # existe_vinculo = ProcessoDocumento.objects.filter(
+        #     norma_procedimento=obj
+        # ).exists()
+        #
+        # if existe_vinculo:
+        #
+        #     messages.error(
+        #         request,
+        #         (
+        #             "Não é possível excluir esta Norma de "
+        #             "Procedimento porque existem Processos "
+        #             "vinculados a ela.\n\n"
+        #             "Remova ou altere esses Processos antes "
+        #             "de tentar excluir a Norma."
+        #         )
+        #     )
+        #
+        #     return redirect(
+        #         "arquiteturaprocessos:normasprocedimento"
+        #     )
 
         nome_norma = obj.nome_norma
         codigo_norma = obj.codigo_norma

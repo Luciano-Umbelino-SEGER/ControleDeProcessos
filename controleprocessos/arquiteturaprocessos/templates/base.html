@@ -211,15 +211,17 @@
                            class="block p-2 rounded hover:bg-[#00796B]"
                            @click="closeSidebar()">Macroprocesso N2</a>
 
-                        <!-- Separador -->
-                        <div class="border-t border-cyan-700 my-2"></div>
+                        {% if HABILITAR_MODELAGEM_PROCESSOS %}
+                            <!-- Separador -->
+                            <div class="border-t border-cyan-700 my-2"></div>
 
-                        <!-- MENU LEGADO -->
-                        <a href="{% url 'arquiteturaprocessos:modelagemprocessos' %}"
-                           class="block p-2 rounded hover:bg-[#00796B] opacity-70"
-                           @click="closeSidebar()">
-                            Modelagem Processos
-                        </a>
+                            <!-- MENU LEGADO -->
+                            <a href="{% url 'arquiteturaprocessos:modelagemprocessos' %}"
+                               class="block p-2 rounded hover:bg-[#00796B] opacity-70"
+                               @click="closeSidebar()">
+                                Modelagem Processos
+                            </a>
+                        {% endif %}
 
                         <a href="{% url 'arquiteturaprocessos:normasprocedimento' %}"
                            class="block p-2 rounded hover:bg-[#00796B]"
