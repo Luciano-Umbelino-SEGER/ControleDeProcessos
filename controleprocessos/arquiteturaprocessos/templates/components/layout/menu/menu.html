@@ -1,0 +1,231 @@
+<!-- ==========================================================
+
+MENU PRINCIPAL DO SIGEMP
+
+Este arquivo representa a estrutura lógica da navegação.
+
+A Sidebar apenas renderiza este componente.
+
+A organização da navegação é baseada nos módulos de negócio
+do sistema e não nas telas individuais.
+
+Documentação:
+docs/MENU_SIGEMP.md
+
+=========================================================== -->
+<nav class="flex-1 px-2 py-4 space-y-2" role="menu">
+    <!-- ===================================================== -->
+    <!-- MÓDULO ARQUITETURA -->
+    <!-- ===================================================== -->
+    <a href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}"
+       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+       @click="closeSidebar()"
+       :title="!sidebarOpen ? 'Arquitetura de Processos' : ''">
+
+        <div class="w-12 h-12 flex items-center justify-center">
+            <i class="fas fa-sitemap text-xl"></i>
+        </div>
+
+        <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+            Arquitetura de Processos
+        </div>
+    </a>
+
+    <!-- ===================================================== -->
+    <!-- MÓDULO PROCESSOS -->
+    <!-- ===================================================== -->
+    <a href="{% url 'arquiteturaprocessos:processosmapear' %}"
+       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+       @click="closeSidebar()"
+       :title="!sidebarOpen ? 'Processos a Mapear' : ''">
+
+        <div class="w-12 h-12 flex items-center justify-center">
+            <i class="fas fa-list-check text-xl"></i>
+        </div>
+
+        <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+            Processos a Mapear
+        </div>
+    </a>
+
+    <!-- Cadastro de Processos -->
+    <a href="{% url 'arquiteturaprocessos:processos' %}"
+       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+       @click="closeSidebar()"
+       :title="!sidebarOpen ? 'Cadastro de Processos' : ''">
+
+        <div class="w-12 h-12 flex items-center justify-center">
+            <i class="fas fa-folder-open text-xl"></i>
+        </div>
+
+        <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
+            Cadastro de Processos
+        </div>
+    </a>
+
+    <!-- ===================================================== -->
+    <!-- MÓDULO ESTATÍSTICAS -->
+    <!-- ===================================================== -->
+    <div>
+
+        <button
+            @click="sidebarOpen ? submenuEstatisticas = !submenuEstatisticas : (sidebarOpen = true, submenuEstatisticas = true)"
+            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
+            :title="!sidebarOpen ? 'Estatísticas' : ''">
+
+            <div class="w-12 h-12 flex items-center justify-center">
+                <i class="fas fa-chart-line text-xl"></i>
+            </div>
+
+            <div x-show="sidebarOpen" class="ml-2 flex-1 text-left">
+                Estatísticas
+            </div>
+
+            <i class="fas"
+               :class="submenuEstatisticas ? 'fa-chevron-down' : 'fa-chevron-right'"
+               x-show="sidebarOpen"></i>
+        </button>
+
+        <div x-show="submenuEstatisticas && sidebarOpen"
+             x-transition
+             class="ml-14 space-y-1">
+
+            <a href="{% url 'arquiteturaprocessos:estatisticas_dashboard' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">
+                <i class="fas fa-chart-pie mr-2"></i>
+                Dashboard
+            </a>
+
+            <a href="{% url 'arquiteturaprocessos:estatisticaprocessos_mapear' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">
+                <i class="fas fa-list-check mr-2"></i>
+                Processos a Mapear
+            </a>
+
+            <a href="{% url 'arquiteturaprocessos:estatisticas_processos' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">
+                <i class="fas fa-chart-column mr-2"></i>
+                Processos
+            </a>
+
+            <a href="{% url 'arquiteturaprocessos:estatisticas_comparativos' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">
+                <i class="fas fa-magnifying-glass-chart mr-2"></i>
+                Comparativos
+            </a>
+
+        </div>
+
+    </div>
+
+    {% if request.user.perfil.nome|lower == 'administrador' %}
+    <!-- ===================================================== -->
+    <!-- MÓDULO ESTRUTURA DE DOCUMENTOS -->
+    <!-- ===================================================== -->
+    <div>
+
+        <button
+            @click="sidebarOpen ? submenuEstrutura = !submenuEstrutura : (sidebarOpen = true, submenuEstrutura = true)"
+            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
+            :title="!sidebarOpen ? 'Estrutura de Processos' : ''">
+
+            <div class="w-12 h-12 flex items-center justify-center">
+                <i class="fas fa-cogs text-xl"></i>
+            </div>
+
+            <div x-show="sidebarOpen" class="ml-2 flex-1 text-left">
+                Estrutura de Documentos
+            </div>
+
+            <i class="fas"
+               :class="submenuEstrutura ? 'fa-chevron-down' : 'fa-chevron-right'"
+               x-show="sidebarOpen"></i>
+        </button>
+
+        <div x-show="submenuEstrutura && sidebarOpen"
+             x-transition
+             class="ml-14 space-y-1">
+
+            <a href="{% url 'arquiteturaprocessos:sistemas_ueci' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">Sistemas (UECI)</a>
+
+            <a href="{% url 'arquiteturaprocessos:classificacoes' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">Classificação</a>
+
+            <a href="{% url 'arquiteturaprocessos:tiposdocumento' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">Tipos de Documento</a>
+
+            <a href="{% url 'arquiteturaprocessos:macroprocessonivel1' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">Macroprocesso N1</a>
+
+            <a href="{% url 'arquiteturaprocessos:macroprocessonivel2' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">Macroprocesso N2</a>
+
+            {% if HABILITAR_MODELAGEM_PROCESSOS %}
+                <!-- Separador -->
+                <div class="border-t border-cyan-700 my-2"></div>
+
+                <!-- MENU LEGADO -->
+                <a href="{% url 'arquiteturaprocessos:modelagemprocessos' %}"
+                   class="block p-2 rounded hover:bg-[#00796B] opacity-70"
+                   @click="closeSidebar()">
+                    Modelagem Processos
+                </a>
+            {% endif %}
+
+            <a href="{% url 'arquiteturaprocessos:normasprocedimento' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">
+                Normas de Procedimento
+            </a>
+
+            <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}"
+               class="block p-2 rounded hover:bg-[#00796B]"
+               @click="closeSidebar()">Áreas Responsáveis</a>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- MÓDULO ADMINISTRAÇÃO -->
+    <!-- ===================================================== -->
+    <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
+       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+       @click="closeSidebar()">
+
+        <div class="w-12 h-12 flex items-center justify-center">
+            <i class="fas fa-users text-xl"></i>
+        </div>
+
+        <div x-show="sidebarOpen" class="ml-2">
+            Cadastro de Usuários
+        </div>
+    </a>
+
+    <!-- Log de Ações -->
+    <a href="{% url 'auditoria:log_list' %}"
+       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
+       @click="closeSidebar()">
+
+        <div class="w-12 h-12 flex items-center justify-center">
+            <i class="fas fa-clipboard-list text-xl"></i>
+        </div>
+
+        <div x-show="sidebarOpen" class="ml-2">
+            Log de Ações
+        </div>
+    </a>
+
+    {% endif %}
+
+</nav>

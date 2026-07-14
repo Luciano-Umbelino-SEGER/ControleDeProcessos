@@ -266,4 +266,4 @@ CACHES = {
 # ============================================================
 # FUNCIONALIDADES
 # ============================================================
-HABILITAR_MODELAGEM_PROCESSOS = False
+HABILITAR_MODELAGEM_PROCESSOS = True
