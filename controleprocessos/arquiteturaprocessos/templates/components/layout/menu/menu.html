@@ -39,57 +39,43 @@ docs/MENU_SIGEMP.md
     <!-- ===================================================== -->
     <!-- MÓDULO ESTATÍSTICAS -->
     <!-- ===================================================== -->
+
     <div>
 
         <button
-            @click="sidebarOpen ? submenuEstatisticas = !submenuEstatisticas : (sidebarOpen = true, submenuEstatisticas = true)"
-            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
-            :title="!sidebarOpen ? 'Estatísticas' : ''">
+            @click="submenuEstatisticas = !submenuEstatisticas"
+            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full">
 
             <div class="w-12 h-12 flex items-center justify-center">
                 <i class="fas fa-chart-line text-xl"></i>
             </div>
 
-            <div x-show="sidebarOpen" class="ml-2 flex-1 text-left">
+            <div class="ml-2 flex-1 text-left">
                 Estatísticas
             </div>
 
             <i class="fas"
-               :class="submenuEstatisticas ? 'fa-chevron-down' : 'fa-chevron-right'"
-               x-show="sidebarOpen"></i>
+               :class="submenuEstatisticas ? 'fa-chevron-down' : 'fa-chevron-right'">
+            </i>
+
         </button>
 
-        <div x-show="submenuEstatisticas && sidebarOpen"
-             x-transition
-             class="ml-14 space-y-1">
+        <div
+            x-show="submenuEstatisticas"
+            x-transition
+            class="ml-10 mt-0.5 space-y-0.5">
 
-            <a href="{% url 'arquiteturaprocessos:estatisticas_dashboard' %}"
-               class="block p-2 rounded hover:bg-[#00796B]"
-               @click="closeSidebar()">
-                <i class="fas fa-chart-pie mr-2"></i>
-                Dashboard
-            </a>
+            {% url 'arquiteturaprocessos:estatisticas_dashboard' as dashboard_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=dashboard_url title="Dashboard" icon="fa-chart-pie" %}
 
-            <a href="{% url 'arquiteturaprocessos:estatisticaprocessos_mapear' %}"
-               class="block p-2 rounded hover:bg-[#00796B]"
-               @click="closeSidebar()">
-                <i class="fas fa-list-check mr-2"></i>
-                Processos a Mapear
-            </a>
+            {% url 'arquiteturaprocessos:estatisticaprocessos_mapear' as mapear_est_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=mapear_est_url title="Processos a Mapear" icon="fa-list-check" %}
 
-            <a href="{% url 'arquiteturaprocessos:estatisticas_processos' %}"
-               class="block p-2 rounded hover:bg-[#00796B]"
-               @click="closeSidebar()">
-                <i class="fas fa-chart-column mr-2"></i>
-                Processos
-            </a>
+            {% url 'arquiteturaprocessos:estatisticas_processos' as estatisticas_processos_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=estatisticas_processos_url title="Processos" icon="fa-chart-column" %}
 
-            <a href="{% url 'arquiteturaprocessos:estatisticas_comparativos' %}"
-               class="block p-2 rounded hover:bg-[#00796B]"
-               @click="closeSidebar()">
-                <i class="fas fa-magnifying-glass-chart mr-2"></i>
-                Comparativos
-            </a>
+            {% url 'arquiteturaprocessos:estatisticas_comparativos' as comparativos_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=comparativos_url title="Comparativos" icon="fa-magnifying-glass-chart" %}
 
         </div>
 
@@ -172,32 +158,38 @@ docs/MENU_SIGEMP.md
     <!-- ===================================================== -->
     <!-- MÓDULO ADMINISTRAÇÃO -->
     <!-- ===================================================== -->
-    <a href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
-       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-       @click="closeSidebar()">
+    <div>
+        <button
+            @click="submenuAdministracao = !submenuAdministracao"
+            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full">
 
-        <div class="w-12 h-12 flex items-center justify-center">
-            <i class="fas fa-users text-xl"></i>
+            <div class="w-12 h-12 flex items-center justify-center">
+                <i class="fas fa-users text-xl"></i>
+            </div>
+
+            <div class="ml-2 flex-1 text-left">
+                Administração
+            </div>
+
+            <i class="fas"
+               :class="submenuAdministracao ? 'fa-chevron-down' : 'fa-chevron-right'">
+            </i>
+        </button>
+
+        <div
+            x-show="submenuAdministracao"
+            x-transition
+            class="ml-10 mt-0.5 space-y-0.5">
+
+            {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
+
+            {% url 'auditoria:log_list' as log_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}
+
         </div>
 
-        <div x-show="sidebarOpen" class="ml-2">
-            Cadastro de Usuários
-        </div>
-    </a>
-
-    <!-- Log de Ações -->
-    <a href="{% url 'auditoria:log_list' %}"
-       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-       @click="closeSidebar()">
-
-        <div class="w-12 h-12 flex items-center justify-center">
-            <i class="fas fa-clipboard-list text-xl"></i>
-        </div>
-
-        <div x-show="sidebarOpen" class="ml-2">
-            Log de Ações
-        </div>
-    </a>
+    </div>
 
     {% endif %}
 
