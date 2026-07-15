@@ -39,6 +39,7 @@
     sidebarOpen: localStorage.getItem('gpp_sidebar_open') === 'true' || localStorage.getItem('gpp_sidebar_open') === null,
     submenuEstrutura: false,
     submenuEstatisticas: false,
+    submenuProcessos: false,
 
     toggleSidebar() {
         this.sidebarOpen = !this.sidebarOpen
@@ -47,6 +48,7 @@
 
     closeSidebar() {
         this.sidebarOpen = false
+        this.submenuProcessos = false
         this.submenuEstrutura = false
         this.submenuEstatisticas = false
     }

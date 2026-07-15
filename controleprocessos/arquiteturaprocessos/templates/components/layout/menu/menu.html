@@ -17,51 +17,24 @@ docs/MENU_SIGEMP.md
     <!-- ===================================================== -->
     <!-- MÓDULO ARQUITETURA -->
     <!-- ===================================================== -->
-    <a href="{% url 'arquiteturaprocessos:arquiteturaprocessos' %}"
-       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-       @click="closeSidebar()"
-       :title="!sidebarOpen ? 'Arquitetura de Processos' : ''">
+    {% url 'arquiteturaprocessos:arquiteturaprocessos' as arquitetura_url %}
 
-        <div class="w-12 h-12 flex items-center justify-center">
-            <i class="fas fa-sitemap text-xl"></i>
-        </div>
-
-        <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
-            Arquitetura de Processos
-        </div>
-    </a>
+    {% include "components/layout/sidebar_item.html" with href=arquitetura_url title="Arquitetura de Processos" icon="fa-sitemap" %}
 
     <!-- ===================================================== -->
     <!-- MÓDULO PROCESSOS -->
     <!-- ===================================================== -->
-    <a href="{% url 'arquiteturaprocessos:processosmapear' %}"
-       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-       @click="closeSidebar()"
-       :title="!sidebarOpen ? 'Processos a Mapear' : ''">
+    {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
 
-        <div class="w-12 h-12 flex items-center justify-center">
-            <i class="fas fa-list-check text-xl"></i>
-        </div>
+    <div x-show="submenuProcessos" x-transition class="ml-10 mt-0.5 space-y-0.5">
 
-        <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
-            Processos a Mapear
-        </div>
-    </a>
+        {% url 'arquiteturaprocessos:processos' as processos_url %}
+        {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
 
-    <!-- Cadastro de Processos -->
-    <a href="{% url 'arquiteturaprocessos:processos' %}"
-       class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-       @click="closeSidebar()"
-       :title="!sidebarOpen ? 'Cadastro de Processos' : ''">
+        {% url 'arquiteturaprocessos:processosmapear' as mapear_url %}
+        {% include "components/layout/sidebar_subitem.html" with href=mapear_url title="A Mapear" icon="fa-list-check" %}
 
-        <div class="w-12 h-12 flex items-center justify-center">
-            <i class="fas fa-folder-open text-xl"></i>
-        </div>
-
-        <div x-show="sidebarOpen" x-transition.opacity.duration.300ms class="ml-2">
-            Cadastro de Processos
-        </div>
-    </a>
+    </div>
 
     <!-- ===================================================== -->
     <!-- MÓDULO ESTATÍSTICAS -->

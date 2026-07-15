@@ -34,28 +34,32 @@ A arquitetura funcional atualmente aprovada é a seguinte.
 ```text
 SIGEMP
 
-├── Arquitetura
-
-├── Processos
+├── 🏛 Arquitetura
+│
+├── 📂 Processos
 │     ├── Cadastro
 │     └── A Mapear
 │
-├── Estatísticas
-│
-├── Estrutura de Documentos
+├── 📊 Estatísticas
+│     ├── Dashboard
+│     ├── Processos a Mapear
 │     ├── Processos
+│     └── Comparativos
+│
+├── ⚙ Estrutura de Documentos
+│     ├── 📁 Processos
 │     │      ├── Definição
 │     │      ├── Classificação
 │     │      ├── Macroprocesso N1
 │     │      ├── Macroprocesso N2
 │     │      └── Áreas Responsáveis
 │     │
-│     └── Normas de Procedimento
+│     └── 📄 Normas de Procedimento
 │            ├── Definição
 │            ├── Sistemas
 │            └── Normas
 │
-└── Administração
+└── 👥 Administração
       ├── Usuários
       └── Logs
 ```
@@ -144,6 +148,13 @@ Durante o desenvolvimento deverão ser observadas as seguintes regras.
 - Toda refatoração deverá manter o comportamento existente.
 - Componentes deverão ser reutilizáveis sempre que possível.
 - A navegação deverá ser preparada para crescimento futuro.
+- Sempre que houver dúvida sobre uma abordagem técnica, um experimento simples deverá ser realizado antes de alterar a arquitetura ou abandonar uma solução.
+
+### Templates Django
+
+- As tags `{% include %}` que utilizam parâmetros (`with`) deverão ser escritas em uma única linha.
+- Evitar quebras de linha na instrução `{% include ... with ... %}`, mantendo um padrão único de escrita em todo o projeto.
+- Sempre que houver dúvida sobre o comportamento de um recurso do framework, deverá ser realizado um experimento simples antes de alterar a arquitetura ou abandonar uma solução.
 
 ---
 
