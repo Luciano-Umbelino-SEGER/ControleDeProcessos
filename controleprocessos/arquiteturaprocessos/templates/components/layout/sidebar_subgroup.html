@@ -1,0 +1,23 @@
+<button
+    @click="{{ submenu }} = !{{ submenu }}"
+    class="group flex items-center w-full px-2 py-0 rounded hover:bg-[#00838F]">
+
+    <div class="w-7 h-6 flex items-center justify-center">
+        <i class="fas {{ icon }} text-sm"></i>
+    </div>
+
+    <div
+        x-show="sidebarOpen"
+        x-transition.opacity.duration.300ms
+        class="ml-2 flex-1 text-left text-sm">
+
+        {{ title }}
+
+    </div>
+
+    <i
+        class="fas text-xs"
+        :class="{{ submenu }} ? 'fa-chevron-down' : 'fa-chevron-right'">
+    </i>
+
+</button>
