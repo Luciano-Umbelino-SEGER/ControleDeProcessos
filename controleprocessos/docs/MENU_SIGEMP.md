@@ -150,6 +150,23 @@ Durante o desenvolvimento deverão ser observadas as seguintes regras.
 - A navegação deverá ser preparada para crescimento futuro.
 - Sempre que houver dúvida sobre uma abordagem técnica, um experimento simples deverá ser realizado antes de alterar a arquitetura ou abandonar uma solução.
 
+## Comportamento da Sidebar
+
+A Sidebar do SIGEMP utiliza o padrão de painel sobreposto (overlay), não deslocando o conteúdo da aplicação.
+
+Regras:
+
+- Ao abrir a Sidebar, o conteúdo permanece fixo.
+- Um overlay semitransparente cobre a aplicação.
+- Clicar fora da Sidebar fecha o menu.
+- Clicar em qualquer item do menu fecha a Sidebar.
+- Ao fechar, permanece visível apenas a barra reduzida com os ícones.
+- No modo reduzido, o nome dos módulos é exibido por hover.
+
+### Persistência do estado da Sidebar
+
+Toda alteração no estado de abertura da Sidebar deverá atualizar imediatamente o `localStorage` (`gpp_sidebar_open`), garantindo consistência entre mudanças de página e recargas da aplicação.
+
 ### Templates Django
 
 - As tags `{% include %}` que utilizam parâmetros (`with`) deverão ser escritas em uma única linha.

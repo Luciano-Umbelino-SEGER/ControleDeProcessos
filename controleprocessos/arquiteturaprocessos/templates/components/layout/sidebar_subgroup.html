@@ -1,5 +1,6 @@
 <button
     @click="{{ submenu }} = !{{ submenu }}"
+    :title="!sidebarOpen ? '{{ title }}' : ''"
     class="group flex items-center w-full px-2 py-0 rounded hover:bg-[#00838F]">
 
     <div class="w-7 h-6 flex items-center justify-center">
@@ -15,9 +16,10 @@
 
     </div>
 
-    <i
-        class="fas text-xs"
-        :class="{{ submenu }} ? 'fa-chevron-down' : 'fa-chevron-right'">
+    <i x-show="sidebarOpen"
+       x-transition.opacity.duration.300ms
+       class="fas text-xs"
+       :class="{{ submenu }} ? 'fa-chevron-down' : 'fa-chevron-right'">
     </i>
 
 </button>

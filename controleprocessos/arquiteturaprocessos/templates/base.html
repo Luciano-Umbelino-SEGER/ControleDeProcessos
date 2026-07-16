@@ -51,6 +51,9 @@
 
     closeSidebar() {
         this.sidebarOpen = false
+
+        localStorage.setItem('gpp_sidebar_open', this.sidebarOpen)
+
         this.submenuProcessos = false
         this.submenuEstrutura = false
         this.submenuEstatisticas = false
@@ -58,6 +61,7 @@
         this.submenuEstruturaProcessos = false
         this.submenuEstruturaNormas = false
     }
+
 }" class="bg-[#F0FFFF] text-gray-100 font-sans min-h-screen flex flex-col">
 
     {% include 'navbar.html' %}
@@ -68,8 +72,13 @@
             {% include "components/layout/sidebar.html" %}
         {% endif %}
 
-        <main :class="sidebarOpen ? 'ml-[16rem]' : 'ml-[4rem]'"
-              class="flex-1 transition-all duration-300 bg-[#F0FFFF] px-1 py-6">
+        <div x-show="sidebarOpen"
+             x-transition.opacity
+             @click="closeSidebar()"
+             class="fixed inset-0 bg-black/30 z-30">
+        </div>
+
+        <main class="flex-1 bg-[#F0FFFF] px-1 py-6">
 
             {% include "components/layout/flash_messages.html" %}
 

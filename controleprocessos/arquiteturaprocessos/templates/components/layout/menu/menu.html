@@ -24,47 +24,25 @@ docs/MENU_SIGEMP.md
     <!-- ===================================================== -->
     <!-- MÓDULO PROCESSOS -->
     <!-- ===================================================== -->
-    {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
+    <div>
+        {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
 
-    <div x-show="submenuProcessos" x-transition class="ml-10 mt-0.5 space-y-0.5">
+        <div x-show="submenuProcessos" x-transition class="ml-10 mt-0.5 space-y-0.5">
+            {% url 'arquiteturaprocessos:processos' as processos_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
 
-        {% url 'arquiteturaprocessos:processos' as processos_url %}
-        {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
-
-        {% url 'arquiteturaprocessos:processosmapear' as mapear_url %}
-        {% include "components/layout/sidebar_subitem.html" with href=mapear_url title="A Mapear" icon="fa-list-check" %}
-
+            {% url 'arquiteturaprocessos:processosmapear' as mapear_url %}
+            {% include "components/layout/sidebar_subitem.html" with href=mapear_url title="A Mapear" icon="fa-list-check" %}
+        </div>
     </div>
 
     <!-- ===================================================== -->
     <!-- MÓDULO ESTATÍSTICAS -->
     <!-- ===================================================== -->
-
     <div>
+        {% include "components/layout/sidebar_group.html" with title="Estatísticas" icon="fa-chart-line" submenu="submenuEstatisticas"%}
 
-        <button
-            @click="submenuEstatisticas = !submenuEstatisticas"
-            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full">
-
-            <div class="w-12 h-12 flex items-center justify-center">
-                <i class="fas fa-chart-line text-xl"></i>
-            </div>
-
-            <div class="ml-2 flex-1 text-left">
-                Estatísticas
-            </div>
-
-            <i class="fas"
-               :class="submenuEstatisticas ? 'fa-chevron-down' : 'fa-chevron-right'">
-            </i>
-
-        </button>
-
-        <div
-            x-show="submenuEstatisticas"
-            x-transition
-            class="ml-10 mt-0.5 space-y-0.5">
-
+        <div x-show="submenuEstatisticas"  x-transition class="ml-10 mt-0.5 space-y-0.5">
             {% url 'arquiteturaprocessos:estatisticas_dashboard' as dashboard_url %}
             {% include "components/layout/sidebar_subitem.html" with href=dashboard_url title="Dashboard" icon="fa-chart-pie" %}
 
@@ -76,7 +54,6 @@ docs/MENU_SIGEMP.md
 
             {% url 'arquiteturaprocessos:estatisticas_comparativos' as comparativos_url %}
             {% include "components/layout/sidebar_subitem.html" with href=comparativos_url title="Comparativos" icon="fa-magnifying-glass-chart" %}
-
         </div>
 
     </div>
@@ -86,34 +63,14 @@ docs/MENU_SIGEMP.md
     <!-- MÓDULO ESTRUTURA DE DOCUMENTOS -->
     <!-- ===================================================== -->
     <div>
-        <button
-            @click="sidebarOpen ? submenuEstrutura = !submenuEstrutura : (sidebarOpen = true, submenuEstrutura = true)"
-            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full"
-            :title="!sidebarOpen ? 'Estrutura de Processos' : ''">
+        {% include "components/layout/sidebar_group.html" with title="Estrutura de Documentos" icon="fa-cogs" submenu="submenuEstrutura"%}
 
-            <div class="w-12 h-12 flex items-center justify-center">
-                <i class="fas fa-cogs text-xl"></i>
-            </div>
-
-            <div x-show="sidebarOpen" class="ml-2 flex-1 text-left">
-                Estrutura de Documentos
-            </div>
-
-            <i class="fas"
-               :class="submenuEstrutura ? 'fa-chevron-down' : 'fa-chevron-right'"
-               x-show="sidebarOpen"></i>
-        </button>
-
-        <div x-show="submenuEstrutura && sidebarOpen"
-             x-transition
-             class="ml-14 space-y-1">
+        <div x-show="submenuEstrutura" x-transition class="ml-14 space-y-1">
 
             <!-- Processos -->
             {% include "components/layout/sidebar_subgroup.html" with title="Processos" icon="fa-folder-open" submenu="submenuEstruturaProcessos"%}
-            <div x-show="submenuEstruturaProcessos"
-                 x-transition
-                 class="ml-8 mt-0.5 space-y-0.5">
 
+            <div x-show="submenuEstruturaProcessos" x-transition class="ml-8 mt-0.5 space-y-0.5">
                 {% url 'arquiteturaprocessos:tiposdocumento' as definicao_url %}
                 {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Definição" icon="fa-book" %}
 
@@ -132,10 +89,8 @@ docs/MENU_SIGEMP.md
 
             <!-- Normas de Procedimento -->
             {% include "components/layout/sidebar_subgroup.html" with title="Normas de Procedimento" icon="fa-file-lines" submenu="submenuEstruturaNormas"%}
-            <div x-show="submenuEstruturaNormas"
-                 x-transition
-                 class="ml-8 mt-0.5 space-y-0.5">
 
+            <div x-show="submenuEstruturaNormas" x-transition class="ml-8 mt-0.5 space-y-0.5">
                 {% url 'arquiteturaprocessos:tiposdocumento' as definicao_normas_url %}
                 {% include "components/layout/sidebar_subitem.html" with href=definicao_normas_url title="Definição" icon="fa-book"%}
 
@@ -155,27 +110,9 @@ docs/MENU_SIGEMP.md
     <!-- MÓDULO ADMINISTRAÇÃO -->
     <!-- ===================================================== -->
     <div>
-        <button
-            @click="submenuAdministracao = !submenuAdministracao"
-            class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full">
+        {% include "components/layout/sidebar_group.html" with title="Administração" icon="fa-users" submenu="submenuAdministracao"%}
 
-            <div class="w-12 h-12 flex items-center justify-center">
-                <i class="fas fa-users text-xl"></i>
-            </div>
-
-            <div class="ml-2 flex-1 text-left">
-                Administração
-            </div>
-
-            <i class="fas"
-               :class="submenuAdministracao ? 'fa-chevron-down' : 'fa-chevron-right'">
-            </i>
-        </button>
-
-        <div
-            x-show="submenuAdministracao"
-            x-transition
-            class="ml-10 mt-0.5 space-y-0.5">
+        <div x-show="submenuAdministracao" x-transition class="ml-10 mt-0.5 space-y-0.5">
 
             {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
             {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
