@@ -197,13 +197,35 @@ class SistemasUECI(models.Model):
 # TIPOS DE DOCUMENTOS
 # ============================================================
 class TiposDocumento(models.Model):
-    nome = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True, blank=True)
-    descricao = models.TextField(blank=True)
+    nome = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nome"
+    )
+
+    slug = models.SlugField(
+        max_length=100,
+        unique=True,
+        blank=True,
+        verbose_name="Slug"
+    )
+
+    contexto = models.CharField(
+        max_length=15,
+        db_index=True,
+        default="processo",
+        verbose_name="Contexto"
+    )
+
+    descricao = models.TextField(
+        blank=True,
+        verbose_name="Descrição"
+    )
 
     class Meta:
         db_table = "arquiteturaprocessos_tiposdocumento"
-        ordering = ["nome"]
+        verbose_name = "Tipo de Documento"
+        verbose_name_plural = "Tipos de Documento"
 
     def __str__(self):
         return self.nome
@@ -211,6 +233,7 @@ class TiposDocumento(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.nome)
+
         super().save(*args, **kwargs)
 
 # ==================================================================

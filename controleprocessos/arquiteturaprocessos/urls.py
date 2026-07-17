@@ -96,7 +96,7 @@ urlpatterns = [
     path('sistemas_ueci/<int:pk>/editar/', EditarSistema_UECI.as_view(), name='editar_sistema_ueci'),
     path('sistemas_ueci/<int:pk>/excluir/', ExcluirSistema_UECI.as_view(),name='excluir_sistema_ueci'),
     # Tipos de Documento
-    path('tiposdocumento/', TipoDocumentoList.as_view(), name='tiposdocumento'),
+    path('tiposdocumento/<str:contexto>/', TipoDocumentoList.as_view(), name='tiposdocumento'),
     path('tiposdocumento/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),
     path('tiposdocumento/<int:pk>/', VisualizarTipoDocumento.as_view(), name='visualizar_tipodocumento'),
     path('tiposdocumento/<int:pk>/editar/', EditarTipoDocumento.as_view(), name='editar_tipodocumento'),
