@@ -97,10 +97,10 @@ urlpatterns = [
     path('sistemas_ueci/<int:pk>/excluir/', ExcluirSistema_UECI.as_view(),name='excluir_sistema_ueci'),
     # Tipos de Documento
     path('tiposdocumento/<str:contexto>/', TipoDocumentoList.as_view(), name='tiposdocumento'),
-    path('tiposdocumento/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),
-    path('tiposdocumento/<int:pk>/', VisualizarTipoDocumento.as_view(), name='visualizar_tipodocumento'),
-    path('tiposdocumento/<int:pk>/editar/', EditarTipoDocumento.as_view(), name='editar_tipodocumento'),
-    path('tiposdocumento/<int:pk>/excluir/', ExcluirTipoDocumento.as_view(), name='excluir_tipodocumento'),
+    path('tiposdocumento/<str:contexto>/novo/', CriarTipoDocumento.as_view(), name='criar_tipodocumento'),
+    path('tiposdocumento/<str:contexto>/<int:pk>/', VisualizarTipoDocumento.as_view(), name='visualizar_tipodocumento'),
+    path('tiposdocumento/<str:contexto>/<int:pk>/editar/', EditarTipoDocumento.as_view(), name='editar_tipodocumento'),
+    path('tiposdocumento/<str:contexto>/<int:pk>/excluir/', ExcluirTipoDocumento.as_view(), name='excluir_tipodocumento'),
     # Modelagem Processos
     path('modelagemprocessos/', ModelagemProcessoView.as_view(), name='modelagemprocessos'),
     path('modelagemprocesso/novo/', CriarModelagemProcesso.as_view(), name='criar_modelagemprocesso'),

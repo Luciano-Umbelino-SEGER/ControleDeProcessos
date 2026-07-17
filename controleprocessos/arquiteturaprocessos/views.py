@@ -2499,28 +2499,81 @@ class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
         })
         return ctx
 
+# ============================================================
+# BASE - TIPOS DE DOCUMENTO
+# ============================================================
+class TipoDocumentoMixin:
+
+    def get_contexto(self):
+        return self.kwargs["contexto"]
+
+    def get_nome_contexto(self):
+        return (
+            "Modelo de Processo"
+            if self.get_contexto() == "processo"
+            else "Norma de Procedimento"
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["contexto"] = self.get_contexto()
+        ctx["titulo"] = self.get_nome_contexto()
+        return ctx
+
 # ---------------------------
 # Tipos de Documento
 # ---------------------------
-class TipoDocumentoList(LoginRequiredMixin, ListView):
+class TipoDocumentoList(LoginRequiredMixin, TipoDocumentoMixin, ListView):
     model = TiposDocumento
     template_name = 'estrutura/tiposdocumento.html'
     context_object_name = 'tiposdocumento'
-    queryset = TiposDocumento.objects.order_by('nome')
 
-class CriarTipoDocumento(LoginRequiredMixin, CreateView):
+    def get_queryset(self):
+        return TiposDocumento.objects.filter(
+            contexto=self.kwargs['contexto']
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        contexto = self.kwargs['contexto']
+
+        ctx.update({
+            'contexto': contexto,
+            'titulo': (
+                'Modelo de Processo'
+                if contexto == 'processo'
+                else 'Norma de Procedimento'
+            ),
+            'mostrar_botao_novo': not self.get_queryset().exists(),
+        })
+
+        return ctx
+
+
+class CriarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, CreateView):
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
+        contexto = self.kwargs['contexto']
+
         ctx.update({
+            'contexto': contexto,
+            'titulo': (
+                'Modelo de Processo'
+                if contexto == 'processo'
+                else 'Norma de Procedimento'
+            ),
             'modo_inclusao': True,
             'modo_visualizacao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
         })
+
         return ctx
 
     def get_form_kwargs(self):
@@ -2530,30 +2583,58 @@ class CriarTipoDocumento(LoginRequiredMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
+        form.instance.contexto = self.kwargs['contexto']
+
         response = super().form_valid(form)
-        messages.success(self.request, f"Tipo de Documento '{self.object.nome}' criado com sucesso!")
+
+        messages.success(
+            self.request,
+            f"Tipo de Documento '{self.object.nome}' criado com sucesso!"
+        )
+
         return response
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:tiposdocumento')
+        return reverse(
+            'arquiteturaprocessos:tiposdocumento',
+            kwargs={
+                'contexto': self.kwargs['contexto']
+            }
+        )
 
-class VisualizarTipoDocumento(LoginRequiredMixin, DetailView):
+
+class VisualizarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView):
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['form'] = Form_TipoDocumentoForm(instance=self.get_object(), modo_visualizacao=True)
+
+        contexto = self.kwargs['contexto']
+
+        ctx['form'] = Form_TipoDocumentoForm(
+            instance=self.get_object(),
+            modo_visualizacao=True
+        )
+
         ctx.update({
+            'contexto': contexto,
+            'titulo': (
+                'Modelo de Processo'
+                if contexto == 'processo'
+                else 'Norma de Procedimento'
+            ),
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
         })
+
         return ctx
 
-class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
+
+class EditarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, UpdateView):
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
@@ -2561,12 +2642,22 @@ class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
+        contexto = self.kwargs['contexto']
+
         ctx.update({
+            'contexto': contexto,
+            'titulo': (
+                'Modelo de Processo'
+                if contexto == 'processo'
+                else 'Norma de Procedimento'
+            ),
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
             'modo_exclusao': False,
         })
+
         return ctx
 
     def get_form_kwargs(self):
@@ -2576,14 +2667,27 @@ class EditarTipoDocumento(LoginRequiredMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
+        form.instance.contexto = self.kwargs['contexto']
+
         response = super().form_valid(form)
-        messages.success(self.request, f"Tipo de Documento '{self.object.nome}' atualizado com sucesso!")
+
+        messages.success(
+            self.request,
+            f"Tipo de Documento '{self.object.nome}' atualizado com sucesso!"
+        )
+
         return response
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:tiposdocumento')
+        return reverse(
+            'arquiteturaprocessos:tiposdocumento',
+            kwargs={
+                'contexto': self.kwargs['contexto']
+            }
+        )
 
-class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
+
+class ExcluirTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView):
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -2591,37 +2695,41 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DetailView):
     def post(self, request, *args, **kwargs):
         tipodocumento = self.get_object()
 
-        # 🔒 Regra de domínio: impedir exclusão se houver vínculos
-        existe_vinculo = ModelagemProcesso.objects.filter(
-            tipo_documento=tipodocumento
-        ).exists()
-
-        if existe_vinculo:
-            messages.error(
-                request,
-                "Não é possível excluir este Tipo de Documento porque ele está vinculado a uma ou mais Modelagens de Processo."
-            )
-            return redirect('arquiteturaprocessos:tiposdocumento')
-
         tipodocumento.delete()
+
         messages.success(
             request,
             f"Tipo de Documento '{tipodocumento.nome}' excluído com sucesso!"
         )
-        return redirect('arquiteturaprocessos:tiposdocumento')
+
+        return redirect(
+            'arquiteturaprocessos:tiposdocumento',
+            contexto=self.kwargs['contexto']
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
+        contexto = self.kwargs['contexto']
+
         ctx['form'] = Form_TipoDocumentoForm(
             instance=self.object,
             modo_exclusao=True
         )
+
         ctx.update({
+            'contexto': contexto,
+            'titulo': (
+                'Modelo de Processo'
+                if contexto == 'processo'
+                else 'Norma de Procedimento'
+            ),
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,
             'modo_edicao': False,
         })
+
         return ctx
 
 # ============================================================
