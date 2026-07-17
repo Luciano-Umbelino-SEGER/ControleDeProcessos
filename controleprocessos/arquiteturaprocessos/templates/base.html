@@ -36,7 +36,7 @@
 </head>
 
 <body x-data="{
-    sidebarOpen: localStorage.getItem('gpp_sidebar_open') === 'true' || localStorage.getItem('gpp_sidebar_open') === null,
+    menuOpen: localStorage.getItem('gpp_sidebar_open') === 'true' || localStorage.getItem('gpp_sidebar_open') === null,
     submenuEstrutura: false,
     submenuEstatisticas: false,
     submenuProcessos: false,
@@ -45,14 +45,14 @@
     submenuEstruturaNormas: false,
 
     toggleSidebar() {
-        this.sidebarOpen = !this.sidebarOpen
-        localStorage.setItem('gpp_sidebar_open', this.sidebarOpen)
+        this.menuOpen = !this.menuOpen
+        localStorage.setItem('gpp_sidebar_open', this.menuOpen)
     },
 
     closeSidebar() {
-        this.sidebarOpen = false
+        this.menuOpen = false
 
-        localStorage.setItem('gpp_sidebar_open', this.sidebarOpen)
+        localStorage.setItem('gpp_sidebar_open', this.menuOpen)
 
         this.submenuProcessos = false
         this.submenuEstrutura = false
@@ -72,7 +72,7 @@
             {% include "components/layout/sidebar.html" %}
         {% endif %}
 
-        <div x-show="sidebarOpen"
+        <div x-show="menuOpen"
              x-transition.opacity
              @click="closeSidebar()"
              class="fixed inset-0 bg-black/30 z-30">

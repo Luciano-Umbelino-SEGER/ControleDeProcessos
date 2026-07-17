@@ -1,14 +1,14 @@
 <a href="{{ href }}"
    class="group flex items-center space-x-2 px-2 py-0 rounded hover:bg-[#00838F]"
    @click="closeSidebar()"
-   :title="!sidebarOpen ? '{{ title }}' : ''">
+   :title="!menuOpen ? '{{ title }}' : ''">
 
     <div class="w-7 h-6 flex items-center justify-center">
         <i class="fas {{ icon }} text-sm"></i>
     </div>
 
     <div
-        x-show="sidebarOpen"
+        x-show="menuOpen"
         x-transition.opacity.duration.300ms
         class="ml-2 text-sm">
 

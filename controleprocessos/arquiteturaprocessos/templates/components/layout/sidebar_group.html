@@ -1,13 +1,13 @@
 <button
     @click="
-        if (!sidebarOpen) {
-            sidebarOpen = true;
+        if (!menuOpen) {
+            menuOpen = true;
             {{ submenu }} = true;
         } else {
             {{ submenu }} = !{{ submenu }};
         }
     "
-    :title="!sidebarOpen ? '{{ title }}' : ''"
+    :title="!menuOpen ? '{{ title }}' : ''"
     class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F] w-full">
 
     <div class="w-12 h-12 flex items-center justify-center">
@@ -15,7 +15,7 @@
     </div>
 
     <div
-        x-show="sidebarOpen"
+        x-show="menuOpen"
         x-transition.opacity.duration.300ms
         class="ml-2 flex-1 text-left">
 
@@ -24,7 +24,7 @@
     </div>
 
     <i
-        x-show="sidebarOpen"
+        x-show="menuOpen"
         x-transition.opacity.duration.300ms
         class="fas"
         :class="{{ submenu }} ? 'fa-chevron-down' : 'fa-chevron-right'">
