@@ -2500,58 +2500,56 @@ class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
         return ctx
 
 # ============================================================
-# BASE - TIPOS DE DOCUMENTO
+# BASE - DEFINIÇÃO DE DOCUMENTOS
 # ============================================================
-class TipoDocumentoMixin:
+class DefinicaoDocumentoMixin:
 
     def get_contexto(self):
         return self.kwargs["contexto"]
 
-    def get_nome_contexto(self):
+    def get_nome_documento(self):
         return (
             "Modelo de Processo"
             if self.get_contexto() == "processo"
             else "Norma de Procedimento"
         )
 
+    def get_titulo(self):
+        return f"Definição de {self.get_nome_documento()}"
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
         ctx["contexto"] = self.get_contexto()
-        ctx["titulo"] = self.get_nome_contexto()
+        ctx["titulo"] = self.get_titulo()
+        ctx["nome_documento"] = self.get_nome_documento()
+
         return ctx
 
 # ---------------------------
-# Tipos de Documento
+# Definição de Documento
 # ---------------------------
-class TipoDocumentoList(LoginRequiredMixin, TipoDocumentoMixin, ListView):
+class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, ListView):
     model = TiposDocumento
     template_name = 'estrutura/tiposdocumento.html'
     context_object_name = 'tiposdocumento'
 
     def get_queryset(self):
         return TiposDocumento.objects.filter(
-            contexto=self.kwargs['contexto']
+            contexto=self.get_contexto()
         )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        contexto = self.kwargs['contexto']
-
         ctx.update({
-            'contexto': contexto,
-            'titulo': (
-                'Modelo de Processo'
-                if contexto == 'processo'
-                else 'Norma de Procedimento'
-            ),
-            'mostrar_botao_novo': not self.get_queryset().exists(),
+            'permite_inclusao': not self.get_queryset().exists(),
         })
 
         return ctx
 
 
-class CriarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, CreateView):
+class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView):
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
@@ -2559,15 +2557,7 @@ class CriarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, CreateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        contexto = self.kwargs['contexto']
-
         ctx.update({
-            'contexto': contexto,
-            'titulo': (
-                'Modelo de Processo'
-                if contexto == 'processo'
-                else 'Norma de Procedimento'
-            ),
             'modo_inclusao': True,
             'modo_visualizacao': False,
             'modo_exclusao': False,
@@ -2583,13 +2573,13 @@ class CriarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance.contexto = self.kwargs['contexto']
+        form.instance.contexto = self.get_contexto()
 
         response = super().form_valid(form)
 
         messages.success(
             self.request,
-            f"Tipo de Documento '{self.object.nome}' criado com sucesso!"
+            f"Definição de {self.get_nome_documento()} incluída com sucesso!"
         )
 
         return response
@@ -2598,12 +2588,12 @@ class CriarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, CreateView):
         return reverse(
             'arquiteturaprocessos:tiposdocumento',
             kwargs={
-                'contexto': self.kwargs['contexto']
+                'contexto': self.get_contexto()
             }
         )
 
 
-class VisualizarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView):
+class VisualizarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, DetailView):
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -2611,20 +2601,12 @@ class VisualizarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        contexto = self.kwargs['contexto']
-
         ctx['form'] = Form_TipoDocumentoForm(
             instance=self.get_object(),
             modo_visualizacao=True
         )
 
         ctx.update({
-            'contexto': contexto,
-            'titulo': (
-                'Modelo de Processo'
-                if contexto == 'processo'
-                else 'Norma de Procedimento'
-            ),
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
@@ -2633,8 +2615,7 @@ class VisualizarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView
 
         return ctx
 
-
-class EditarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, UpdateView):
+class EditarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, UpdateView):
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
@@ -2643,15 +2624,7 @@ class EditarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, UpdateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        contexto = self.kwargs['contexto']
-
         ctx.update({
-            'contexto': contexto,
-            'titulo': (
-                'Modelo de Processo'
-                if contexto == 'processo'
-                else 'Norma de Procedimento'
-            ),
             'modo_edicao': True,
             'modo_inclusao': False,
             'modo_visualizacao': False,
@@ -2667,13 +2640,13 @@ class EditarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance.contexto = self.kwargs['contexto']
+        form.instance.contexto = self.get_contexto()
 
         response = super().form_valid(form)
 
         messages.success(
             self.request,
-            f"Tipo de Documento '{self.object.nome}' atualizado com sucesso!"
+            f"Definição de {self.get_nome_documento()} atualizada com sucesso!"
         )
 
         return response
@@ -2682,12 +2655,11 @@ class EditarTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, UpdateView):
         return reverse(
             'arquiteturaprocessos:tiposdocumento',
             kwargs={
-                'contexto': self.kwargs['contexto']
+                'contexto': self.get_contexto()
             }
         )
 
-
-class ExcluirTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView):
+class ExcluirTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, DetailView):
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -2699,18 +2671,16 @@ class ExcluirTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView):
 
         messages.success(
             request,
-            f"Tipo de Documento '{tipodocumento.nome}' excluído com sucesso!"
+            f"Definição de {self.get_nome_documento()} excluída com sucesso!"
         )
 
         return redirect(
             'arquiteturaprocessos:tiposdocumento',
-            contexto=self.kwargs['contexto']
+            contexto=self.get_contexto()
         )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-
-        contexto = self.kwargs['contexto']
 
         ctx['form'] = Form_TipoDocumentoForm(
             instance=self.object,
@@ -2718,12 +2688,6 @@ class ExcluirTipoDocumento(LoginRequiredMixin, TipoDocumentoMixin, DetailView):
         )
 
         ctx.update({
-            'contexto': contexto,
-            'titulo': (
-                'Modelo de Processo'
-                if contexto == 'processo'
-                else 'Norma de Procedimento'
-            ),
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,

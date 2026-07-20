@@ -3,28 +3,31 @@
 
 {% block titulo %}
     {% if modo_visualizacao %}
-        Visualização de Tipo de Documento
+        Visualização de {{ nome_documento }}
     {% elif modo_edicao %}
-        Edição de Tipo de Documento
+        Edição de {{ nome_documento }}
     {% elif modo_exclusao %}
-        Exclusão de Tipo de Documento
+        Exclusão de {{ nome_documento }}
     {% else %}
-        Inclusão de Tipo de Documento
+        Inclusão de {{ nome_documento }}
     {% endif %}
+
 {% endblock %}
 
 {% block body %}
 <div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
 <h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
+
     {% if modo_visualizacao %}
-        Visualização de Tipo de Documento
+        Visualizar Definição de {{ nome_documento }}
     {% elif modo_edicao %}
-        Edição de Tipo de Documento
+        Editar Definição de {{ nome_documento }}
     {% elif modo_exclusao %}
-        Exclusão de Tipo de Documento
+        Excluir Definição de {{ nome_documento }}
     {% else %}
-        Inclusão de Tipo de Documento
+        Incluir Definição de {{ nome_documento }}
     {% endif %}
+
 </h2>
 
 {% if form.non_field_errors %}
@@ -92,13 +95,13 @@
             {% else %}
                 <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                         type="submit">
-                    Adicionar Tipo de Documento
+                    Adicionar {{ nome_documento }}
                 </button>
             {% endif %}
         {% endif %}
 
         <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-           href="{% url 'arquiteturaprocessos:tiposdocumento' %}">
+           href="{% url 'arquiteturaprocessos:tiposdocumento' contexto %}">
             {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
         </a>
     </div>
@@ -110,14 +113,14 @@
 <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-[400px] mx-auto border border-gray-300">
         <h2 class="text-xl font-normal mb-4 text-black">
-            Confirma a exclusão do Tipo de Documento
+            Confirma a exclusão da definição de {{ nome_documento }} -
             <strong>{{ tipodocumento.nome }}</strong>?
         </h2>
         <div class="flex justify-center gap-4">
             <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
-            <a href="{% url 'arquiteturaprocessos:tiposdocumento' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">Não</a>
+            <a href="{% url 'arquiteturaprocessos:tiposdocumento' contexto %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">Não</a>
         </div>
-    </div>'
+    </div>
 </div>
 
 <script>

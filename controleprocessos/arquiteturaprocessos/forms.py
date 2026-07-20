@@ -600,21 +600,34 @@ class Form_Sistema_UECIForm(forms.ModelForm):
         return descricao
 
 # ============================================================
-# TIPOS DE DOCUMENTO
+# Definição de Documentos
 # ============================================================
 class Form_TipoDocumentoForm(forms.ModelForm):
     class Meta:
         model = TiposDocumento
         fields = ['nome', 'descricao']
 
+        labels = {
+            'nome': 'Documento',
+            'descricao': 'Definição',
+        }
+
+        widgets = {
+            'descricao': forms.Textarea(attrs={'rows': 4}),
+        }
+
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
         modo_exclusao = kwargs.pop('modo_exclusao', False)
+        somente_leitura = modo_visualizacao or modo_exclusao
+
         super().__init__(*args, **kwargs)
+
+        MAX_DESCRICAO = 3000
+
         if "descricao" in self.fields:
-            self.fields["descricao"].max_length = 3000
-            self.fields["descricao"].widget.attrs["maxlength"] = 3000
-            self.fields["descricao"].widget.attrs["rows"] = 4
+            self.fields["descricao"].max_length = MAX_DESCRICAO
+            self.fields["descricao"].widget.attrs["maxlength"] = MAX_DESCRICAO
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -625,11 +638,11 @@ class Form_TipoDocumentoForm(forms.ModelForm):
         for name, field in self.fields.items():
             field.widget.attrs.setdefault(
                 'class',
-                base + (' bg-gray-100' if (modo_visualizacao or modo_exclusao) else ' bg-white')
+                base + (' bg-gray-100' if somente_leitura else ' bg-white')
             )
             field.widget.attrs.setdefault('placeholder', field.label)
 
-            # 🔠 Forçar digitação em CAIXA ALTA no campo nome
+            # 🔠 Documento sempre armazenado em CAIXA ALTA
             if name == 'nome':
                 field.widget.attrs.setdefault(
                     'style',
@@ -637,15 +650,16 @@ class Form_TipoDocumentoForm(forms.ModelForm):
                 )
                 field.widget.attrs['oninput'] = 'this.value = this.value.toUpperCase();'
 
-        if modo_visualizacao or modo_exclusao:
+        if somente_leitura:
             for field in self.fields.values():
                 field.disabled = True
 
-    # 🔒 REGRA DE DOMÍNIO: Nome sempre em CAIXA ALTA
+    # 🔒 REGRA DE DOMÍNIO: Documento sempre armazenado em CAIXA ALTA
     def clean_nome(self):
         nome = self.cleaned_data.get('nome')
         if nome:
-            nome = nome.strip().upper()
+            return nome.strip().upper()
+
         return nome
 
 # ============================================================
