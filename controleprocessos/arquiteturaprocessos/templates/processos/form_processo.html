@@ -71,7 +71,7 @@
     <form method="post" id="form-processo">
         {% csrf_token %}
 
-        <div class="grid grid-cols-12 gap-3">
+        <div class="grid grid-cols-12 gap-3 mb-6">
 
             <div class="col-span-12">
 
@@ -238,981 +238,624 @@
             </div>      <!-- col-span-12 -->
         </div>          <!-- grid -->
 
-        <!-- LINHA 3 -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Objetivo</label>
+        <div class="grid grid-cols-12 gap-3 mb-6">
 
-                <div class="relative">
-                    {{ form.objetivo|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
-                    <div class="text-xs text-gray-500 text-right mt-1">
-                        <span id="contador_objetivo">0</span>/3000
-                    </div>
-                </div>
-            </div>
+            <div class="col-span-12">
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Observação</label>
+                <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
-                <div class="relative">
-                    {{ form.observacao|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
-                    <div class="text-xs text-gray-500 text-right mt-1">
-                        <span id="contador_observacao">0</span>/3000
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- LINHA 4 -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
-                {{ form.area_responsavel|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500"|add_attr:"id:id_area_responsavel" }}
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Gestor</label>
-                {{ form.gestor|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
-            </div>
-
-        </div>
-
-        <!-- LINHA 5 -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
-                {{ form.telefone|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-blue-700">E-mail</label>
-                {{ form.email|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
-            </div>
-
-        </div>
-
-        <!-- ========================================= -->
-        <!-- LINHA 6 – Modelo de Processo (Bloco base) -->
-        <!-- ========================================= -->
-
-        <!-- Container geral de blocos de Modelo -->
-        <div id="modelos_container">
-
-            <!-- BLOCO BASE (mantém ids originais e Alpine x-data que você já possui) -->
-            <!-- Este bloco não é removido (apenas limpo quando o usuário clicar no - no bloco-base) -->
-            <div class="modelo-block" data-uid="base" x-data="modeloProcessoData()">
-
-                <!-- LINHA 6 – Modelo de Processo -->
-                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                    <!-- Modelo (BLOCO BASE) -->
-                    <div>
-
-                        <!-- Label + Botão (alinhado e sem espaço extra) -->
-                        <div class="flex items-center gap-2 relative -top-[5px]">
-                            <label class="block text-sm font-medium text-blue-700">
-                                Modelo de Processo
-                            </label>
-
-                            <button type="button"
-                                    class="align-middle px-[2px]
-                                           transition
-                                           hover:text-blue-800
-                                           text-blue-600
-                                           cursor-pointer
-                                           disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
-                                    :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer':
-                                            selected && !window.BLOQUEIO_TOTAL_ATIVO,
-                                        'text-gray-400 cursor-not-allowed':
-                                            !selected || window.BLOQUEIO_TOTAL_ATIVO
-                                    }"
-                                    data-action="add"
-                                    title="Adicionar Modelo"
-                                    onclick="addModelo(this)">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="3"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M12 4.5v15m7.5-7.5h-15"/>
-                                </svg>
-                            </button>
-
-                            <!-- Botão Remover (no bloco-base: limpa, não remove) -->
-                            <button type="button"
-                                    class="align-middle px-[2px]
-                                           transition
-                                           text-red-600 hover:text-red-800
-                                           cursor-pointer
-                                           disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
-                                    :class="{
-                                        'text-red-600 hover:text-red-800 cursor-pointer':
-                                            selected && !window.BLOQUEIO_TOTAL_ATIVO,
-                                        'text-gray-400 cursor-not-allowed':
-                                            !selected || window.BLOQUEIO_TOTAL_ATIVO
-                                    }"
-                                    data-action="remove"
-                                    title="Remover Modelo"
-                                    onclick="removeModelo(this, true)">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="3"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M19.5 12h-15"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Select -->
-                        <div class="flex items-center space-x-2 mt-[1px]">
-                            <div class="flex-1 min-w-0">
-                                <select id="id_modelagem_processo"
-                                        name="modelagem_processo"
-                                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                                               focus:ring-2 focus:ring-blue-500 focus:outline-none
-                                               {% if desabilitar %} bg-gray-100 opacity-70 cursor-not-allowed {% endif %}"
-                                        @change="check($event); update($el)"
-                                        {% if desabilitar %} disabled {% endif %}>
-
-                                    <option value="">---------</option>
-
-                                    {% for m in modelos_processo %}
-                                        <option value="{{ m.id }}"
-                                                data-tema="{{ m.tema }}"
-                                                data-versao="{{ m.versao }}"
-                                                data-emitente="{{ m.emitente }}"
-                                                data-sistema="{{ m.sistema }}"
-                                                data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
-
-                                                data-path-modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
-                                                data-url-norma-procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}"
-
-                                                data-nome-modelo-processo="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                data-nome-norma-procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
-                                            {{ m.titulo }}
-                                        </option>
-                                    {% endfor %}
-
-
-                                </select>
-                            </div>
-                        </div>
+                    <!-- TÍTULO SOBREPOSTO -->
+                    <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                        <h2 class="text-base font-semibold text-blue-800 leading-none">
+                            Informações do Processo
+                        </h2>
                     </div>
 
-                    <!-- Tema -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Tema</label>
-                        <input id="tema_modelo" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.modelagem_processo.tema|default_if_none:'' }}"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
+                    <!-- LINHA 3 -->
+                    <div class="grid grid-cols-1 gap-6 mb-2">
 
-                    <!-- Versão -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Versão</label>
-                        <input id="versao_modelo" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.modelagem_processo.versao|default_if_none:'' }}"
-                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
-                </div>
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Objetivo</label>
 
-                <!-- LINHA 7 – Derivados (BLOCO BASE) -->
-                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                        <input id="emitente_modelo" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.modelagem_processo.emitente|default:'' }}"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none focus:outline-none text-black">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                        <input id="sistema_modelo" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.modelagem_processo.sistema|default:'' }}"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none focus:outline-none text-black">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                        <input id="vigencia_modelo" type="text" readonly tabindex="-1"
-                               value="{% if form.instance.modelagem_processo.vigencia_inicio %}{{ form.instance.modelagem_processo.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
-                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none focus:outline-none text-black">
-                    </div>
-                </div>
-
-                <!-- LINHA X – Artefatos do Documento (MODELO DE PROCESSO) -->
-                <div class="grid grid-cols-2 gap-6 mb-6">
-
-                    <!-- Documento Modelo de Processo (PDF) -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">
-                            Documento Modelo de Processo (PDF)
-                        </label>
-
-                        <div class="flex items-center gap-2">
-                            <input type="text"
-                                   readonly
-                                   x-ref="pdf"
-                                   :value="nomeModelo"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                          pointer-events-none text-black truncate">
-
-                            <button type="button"
-                                    class="icon-visualizar transition"
-                                    :disabled="!pathModelo"
-                                    :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
-                                        'text-gray-400 cursor-not-allowed': !pathModelo
-                                    }"
-                                    @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
-                                    title="Visualizar Documento">
-
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="2"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Norma de Procedimento (link) -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">
-                            Norma de Procedimento (link)
-                        </label>
-
-                        <div class="flex items-center gap-2">
-                            <input type="text"
-                                   readonly
-                                   x-ref="link"
-                                   :value="nomeNorma"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                          pointer-events-none text-black truncate">
-
-                            <button type="button"
-                                    class="icon-visualizar transition"
-                                    :disabled="!urlNorma"
-                                    :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
-                                        'text-gray-400 cursor-not-allowed': !urlNorma
-                                    }"
-                                    @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
-                                    title="Visualizar Documento">
-
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="2"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                    </div>
-
-                </div>
-            </div> <!-- fim modelo-block base -->
-
-            <!-- ======================================================= -->
-            <!-- TEMPLATE para blocos de Modelo adicionais (invisível) -->
-            <!-- ======================================================= -->
-            <template id="template-modelo">
-                <!-- bloco inteiro (LINHA 6 + LINHA 7) com placeholders __UID__ -->
-                <div class="modelo-block" data-uid="__UID__" x-data="modeloProcessoData()">
-                    <!-- LINHA 6 -->
-                    <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                        <div class="">
-
-                            <!-- Label + Botões (clonado) -->
-                            <div class="flex items-center gap-2 relative -top-[5px]">
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Modelo de Processo
-                                </label>
-                            </div>
-
-                            <!-- Select + visualizar (select name usa array para não conflitar com backend atual) -->
-                            <div class="flex items-center space-x-2 mt-[1px]">
-
-                                <div class="flex-1 min-w-0">
-                                    <select id="id_modelagem_processo___UID__" name="modelagem_processo_extra[]"
-                                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                            @change="check($event); update($el)">
-                                        <option value="">---------</option>
-
-                                        {% for m in modelos_processo %}
-                                            <option value="{{ m.id }}"
-                                                    data-tema="{{ m.tema }}"
-                                                    data-versao="{{ m.versao }}"
-                                                    data-emitente="{{ m.emitente }}"
-                                                    data-sistema="{{ m.sistema }}"
-                                                    data-vigencia="{{ m.vigencia_inicio|date:'Y-m-d' }}"
-
-                                                    data-path-modeloprocesso="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.url }}{% endif %}"
-                                                    data-url-norma-procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento }}{% endif %}"
-
-                                                    data-nome-modelo-processo="{% if m.documento_modelagem_processo %}{{ m.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                    data-nome-norma-procedimento="{% if m.link_normaprocedimento %}{{ m.link_normaprocedimento|filename }}{% endif %}">
-                                                {{ m.titulo }}
-                                            </option>
-                                        {% endfor %}
-
-                                    </select>
+                            <div class="relative">
+                                {{ form.objetivo|add_class:"focus:ring-2 focus:ring-blue-500"|add_attr:"style:resize:none;overflow-y:auto;" }}
+                                <div class="text-xs text-gray-500 text-right">
+                                    <span id="contador_objetivo">0</span>/3000
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tema -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Tema</label>
-                            <input id="tema_modelo___UID__" name="tema_modelo_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                        <!-- Versão -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Versão</label>
-                            <input id="versao_modelo___UID__" name="versao_modelo_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
                     </div>
 
-                    <!-- LINHA 7 – Derivados -->
-                    <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                            <input id="emitente_modelo___UID__" name="emitente_modelo_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                            <input id="sistema_modelo___UID__" name="sistema_modelo_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                            <input id="vigencia_modelo___UID__" name="vigencia_modelo_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                    </div>
-
-                    <!-- LINHA X – Artefatos do Documento (MODELO DE PROCESSO) -->
+                    <!-- LINHA 4 -->
                     <div class="grid grid-cols-2 gap-6 mb-6">
 
-                        <!-- Documento Modelo de Processo (PDF) -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Área Responsável</label>
+                            {{ form.area_responsavel|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500"|add_attr:"id:id_area_responsavel" }}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Gestor</label>
+                            {{ form.gestor|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
+                        </div>
+
+                    </div>
+
+                    <!-- LINHA 5 -->
+                    <div class="grid grid-cols-2 gap-6">
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Telefone / Ramal</label>
+                            {{ form.telefone|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">E-mail</label>
+                            {{ form.email|add_class:"w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500" }}
+                        </div>
+
+                    </div>
+                </div>  <!-- relative -->
+            </div>      <!-- col-span-12 -->
+        </div>          <!-- grid -->
+
+        <div class="grid grid-cols-12 gap-3 mb-6">
+
+            <div class="col-span-12">
+
+                <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
+
+                    <!-- TÍTULO SOBREPOSTO -->
+                    <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                        <h2 class="text-base font-semibold text-blue-800 leading-none">
+                            Documentação do Processo
+                        </h2>
+                    </div>
+
+                    <!-- ========================================= -->
+                    <!-- DOCUMENTAÇÃO DO PROCESSO                  -->
+                    <!-- ========================================= -->
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+
+                        <!-- DOCUMENTO PDF -->
                         <div>
                             <label class="block text-sm font-medium text-blue-700">
-                                Documento Modelo de Processo (PDF)
+                                Documento PDF
                             </label>
 
-                            <div class="flex items-center gap-2">
-                                <input type="text"
-                                       readonly
-                                       x-ref="pdf"
-                                       :value="nomeModelo"
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                              pointer-events-none text-black truncate">
-
-                                <button type="button"
-                                        class="icon-visualizar transition"
-                                        :disabled="!pathModelo"
-                                        :class="{
-                                            'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
-                                            'text-gray-400 cursor-not-allowed': !pathModelo
-                                        }"
-                                        @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
-                                        title="Visualizar Documento">
-
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="w-5 h-5"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke-width="2"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    </svg>
-
-                                </button>
-
+                            <div class="w-full h-12 border border-gray-300 rounded-lg
+                                        bg-white px-3 flex items-center text-gray-400">
+                                Click ou arraste para enviar o PDF
                             </div>
                         </div>
 
-                        <!-- Norma de Procedimento (link) – vazio no contexto de Modelo -->
+                        <!-- LINK DOCUMENTO -->
                         <div>
                             <label class="block text-sm font-medium text-blue-700">
-                                Norma de Procedimento (link)
+                                Link Documento
                             </label>
 
-                            <div class="flex items-center gap-2">
-                                <input type="text"
-                                       readonly
-                                       x-ref="link"
-                                       :value="nomeNorma"
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                              pointer-events-none text-black">
-
-                                <button type="button"
-                                        class="icon-visualizar transition"
-                                        :disabled="!urlNorma"
-                                        :class="{
-                                            'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
-                                            'text-gray-400 cursor-not-allowed': !urlNorma
-                                        }"
-                                        @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
-                                        title="Visualizar Documento">
-
-
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="w-5 h-5"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke-width="2"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    </svg>
-
-                                </button>
-
-                            </div>
+                            <input
+                                type="text"
+                                placeholder="https://exemplo.com/documento.pdf"
+                                class="w-full h-12 border border-gray-300 rounded-lg
+                                       px-3 focus:ring-2 focus:ring-blue-500">
                         </div>
 
                     </div>
 
-                </div>
-            </template>
-            <!-- fim template -->
-        </div> <!-- fim modelos_container -->
+                    <!-- ============================================ -->
+                    <!-- LINHA 8 – Norma de Procedimento (Bloco Base) -->
+                    <!-- ============================================ -->
 
-        <!-- ============================================ -->
-        <!-- LINHA 8 – Norma de Procedimento (Bloco Base) -->
-        <!-- ============================================ -->
+                    <!-- Container geral de blocos de Norma -->
+                    <div id="normas_container">
 
-        <!-- Container geral de blocos de Norma -->
-        <div id="normas_container">
+                        <!-- BLOCO BASE (mantém ids originais e Alpine x-data que você já possui) -->
+                        <!-- Este bloco não é removido (apenas limpo quando o usuário clicar no - no bloco-base) -->
+                        <div class="norma-block" data-uid="base" x-data="normaProcedimentoData()">
 
-            <!-- BLOCO BASE (mantém ids originais e Alpine x-data que você já possui) -->
-            <!-- Este bloco não é removido (apenas limpo quando o usuário clicar no - no bloco-base) -->
-            <div class="norma-block" data-uid="base" x-data="normaProcedimentoData()">
+                            <!-- LINHA 8 – Norma de Procedimento -->
+                            <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-                <!-- LINHA 8 – Norma de Procedimento -->
-                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+                                <!-- Norma (BLOCO BASE) -->
+                                <div>
 
-                    <!-- Norma (BLOCO BASE) -->
-                    <div>
+                                    <!-- Label + Botão ajustado -->
+                                    <div class="flex items-center gap-2 relative -top-[5px]">
+                                        <label class="block text-sm font-medium text-blue-700">
+                                            Normas de Procedimento
+                                        </label>
 
-                        <!-- Label + Botão ajustado -->
-                        <div class="flex items-center gap-2 relative -top-[5px]">
-                            <label class="block text-sm font-medium text-blue-700">
-                                Norma de Procedimento
-                            </label>
+                                        <button type="button"
+                                                class="align-middle px-[2px]
+                                                       transition
+                                                       hover:text-blue-800
+                                                       text-blue-600
+                                                       cursor-pointer
+                                                       disabled:text-gray-300 disabled:cursor-not-allowed"
+                                                :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
+                                                :class="{
+                                                    'text-blue-600 hover:text-blue-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
+                                                    'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
+                                                }"
+                                                data-action="add"
+                                                title="Adicionar Norma"
+                                                onclick="addNorma(this)">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="w-5 h-5"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="3"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M12 4.5v15m7.5-7.5h-15"/>
+                                            </svg>
 
-                            <button type="button"
-                                    class="align-middle px-[2px]
-                                           transition
-                                           hover:text-blue-800
-                                           text-blue-600
-                                           cursor-pointer
-                                           disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
-                                    :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
-                                        'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
-                                    }"
-                                    data-action="add"
-                                    title="Adicionar Norma"
-                                    onclick="addNorma(this)">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="3"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M12 4.5v15m7.5-7.5h-15"/>
-                                </svg>
+                                        </button>
+                                        <!-- Botão Remover (no bloco-base: limpa, não remove) -->
+                                        <button type="button"
+                                                class="align-middle px-[2px]
+                                                       transition
+                                                       text-red-600 hover:text-red-800
+                                                       cursor-pointer
+                                                       disabled:text-gray-300 disabled:cursor-not-allowed"
+                                                :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
+                                                :class="{
+                                                    'text-red-600 hover:text-red-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
+                                                    'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
+                                                }"
+                                                data-action="remove"
+                                                title="Remover Norma"
+                                                onclick="removeNorma(this, true)">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="w-5 h-5"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="3"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M19.5 12h-15"/>
+                                            </svg>
+                                        </button>
+                                    </div>
 
-                            </button>
-                            <!-- Botão Remover (no bloco-base: limpa, não remove) -->
-                            <button type="button"
-                                    class="align-middle px-[2px]
-                                           transition
-                                           text-red-600 hover:text-red-800
-                                           cursor-pointer
-                                           disabled:text-gray-300 disabled:cursor-not-allowed"
-                                    :disabled="!selected || window.BLOQUEIO_TOTAL_ATIVO"
-                                    :class="{
-                                        'text-red-600 hover:text-red-800 cursor-pointer': !(!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }}),
-                                        'text-gray-400 cursor-not-allowed': (!selected || {{ modo_visualizacao|yesno:'true,false' }} || {{ modo_exclusao|yesno:'true,false' }})
-                                    }"
-                                    data-action="remove"
-                                    title="Remover Norma"
-                                    onclick="removeNorma(this, true)">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="3"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M19.5 12h-15"/>
-                                </svg>
-                            </button>
-                        </div>
+                                    <!-- Select + Visualizar (BLOCO BASE usa sua função Alpine normaProcedimentoData) -->
+                                    <div class="flex items-center space-x-2 mt-[1px]">
 
-                        <!-- Select + Visualizar (BLOCO BASE usa sua função Alpine normaProcedimentoData) -->
-                        <div class="flex items-center space-x-2 mt-[1px]">
+                                        <div class="flex-1 min-w-0">
+                                            <select id="norma_procedimento" name="norma_procedimento"
+                                                    class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
+                                                           focus:ring-2 focus:ring-blue-500 focus:outline-none
+                                                           {% if desabilitar %} bg-gray-100 opacity-70 cursor-not-allowed {% endif %}"
+                                                    @change="check($event); update($el)"
+                                                    {% if desabilitar %} disabled {% endif %}>
 
-                            <div class="flex-1 min-w-0">
-                                <select id="norma_procedimento" name="norma_procedimento"
-                                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black
-                                               focus:ring-2 focus:ring-blue-500 focus:outline-none
-                                               {% if desabilitar %} bg-gray-100 opacity-70 cursor-not-allowed {% endif %}"
-                                        @change="check($event); update($el)"
-                                        {% if desabilitar %} disabled {% endif %}>
+                                                <option value="">---------</option>
 
-                                    <option value="">---------</option>
+                                                {% for n in normas_procedimento %}
+                                                    <option value="{{ n.id }}"
+                                                            data-tema="{{ n.tema }}"
+                                                            data-versao="{{ n.versao|stringformat:'02d' }}"
+                                                            data-emitente="{{ n.emitente }}"
+                                                            data-sistema="{{ n.sistema }}"
+                                                            data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
 
-                                    {% for n in normas_procedimento %}
-                                        <option value="{{ n.id }}"
-                                                data-tema="{{ n.tema }}"
-                                                data-versao="{{ n.versao|stringformat:'02d' }}"
-                                                data-emitente="{{ n.emitente }}"
-                                                data-sistema="{{ n.sistema }}"
-                                                data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
+                                                            data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
+                                                            data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
 
-                                                data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
-                                                data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
+                                                            data-nome-modelo-processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                            data-nome-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}"
 
-                                                data-nome-modelo-processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                data-nome-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}"
-
-                                                {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
-                                            {{ n.titulo }}
-                                        </option>
+                                                            {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
+                                                        {{ n.titulo }}
+                                                    </option>
 
 
-                                    {% endfor %}
+                                                {% endfor %}
 
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <!-- Tema -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Tema</label>
-                        <input id="tema_norma" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.norma_procedimento.tema|default_if_none:'' }}"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
+                                <!-- Tema -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">Tema</label>
+                                    <input id="tema_norma" type="text" readonly tabindex="-1"
+                                           value="{{ form.instance.norma_procedimento.tema|default_if_none:'' }}"
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                  pointer-events-none text-black">
+                                </div>
 
-                    <!-- Versão -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Versão</label>
-                        <input id="versao_norma" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}"
-                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
-
-                </div>
-
-                <!-- LINHA 9 – Derivados (BLOCO BASE) -->
-                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                        <input id="emitente_norma" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.norma_procedimento.emitente|default:'' }}"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                        <input id="sistema_norma" type="text" readonly tabindex="-1"
-                               value="{{ form.instance.norma_procedimento.sistema|default:'' }}"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                        <input id="vigencia_norma" type="text" readonly tabindex="-1"
-                               value="{% if form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
-                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                      pointer-events-none text-black">
-                    </div>
-
-                </div>
-
-                <div class="grid grid-cols-2 gap-6 mb-6">
-
-                    <!-- Documento Modelo de Processo (PDF) -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">
-                            Documento Modelo de Processo (PDF)
-                        </label>
-
-                        <div class="flex items-center gap-2">
-                            <input type="text"
-                                   readonly
-                                   x-ref="pdf"
-                                   :value="nomeModelo"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                          pointer-events-none text-black truncate">
-
-                            <button type="button"
-                                    class="icon-visualizar transition"
-                                    :disabled="!pathModelo"
-                                    :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
-                                        'text-gray-400 cursor-not-allowed': !pathModelo
-                                    }"
-                                    @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
-                                    title="Visualizar Documento">
-
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="2"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Norma de Procedimento (link) -->
-                    <div>
-                        <label class="block text-sm font-medium text-blue-700">
-                            Norma de Procedimento (link)
-                        </label>
-
-                        <div class="flex items-center gap-2">
-                            <input type="text"
-                                   readonly
-                                   x-ref="link"
-                                   :value="nomeNorma"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                          pointer-events-none text-black truncate">
-
-                            <button type="button"
-                                    class="icon-visualizar transition"
-                                    :disabled="!urlNorma"
-                                    :class="{
-                                        'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
-                                        'text-gray-400 cursor-not-allowed': !urlNorma
-                                    }"
-                                    @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
-                                    title="Visualizar Documento">
-
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="w-5 h-5"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="2"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-
-
-            </div> <!-- fim norma-block base -->
-
-            <!-- ======================================================= -->
-            <!-- TEMPLATE para blocos de Norma adicionais (invisível) -->
-            <!-- ======================================================= -->
-            <template id="template-norma">
-                <!-- bloco inteiro (LINHA 8 + LINHA 9) com placeholders __UID__ -->
-                <div class="norma-block" data-uid="__UID__" x-data="normaProcedimentoData()">
-
-                    <!-- LINHA 8 -->
-                    <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                        <div class="">
-
-                            <!-- Label + Botões (clonado) -->
-                            <div class="flex items-center gap-2 relative -top-[5px]">
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Norma de Procedimento
-                                </label>
-                            </div>
-
-                            <!-- Select + visualizar (select name usa array para não conflitar com backend atual) -->
-                            <div class="flex items-center space-x-2 mt-[1px]">
-
-                                <div class="flex-1 min-w-0">
-                                    <select id="norma_procedimento___UID__" name="norma_procedimento_extra[]"
-                                            @change="check($event); update($el)"
-                                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                        <option value="">---------</option>
-
-                                        {% for n in normas_procedimento %}
-                                            <option value="{{ n.id }}"
-                                                    data-tema="{{ n.tema }}"
-                                                    data-versao="{{ n.versao|stringformat:'02d' }}"
-                                                    data-emitente="{{ n.emitente }}"
-                                                    data-sistema="{{ n.sistema }}"
-                                                    data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
-
-                                                    data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
-                                                    data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
-
-                                                    data-nome-modelo-processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                    data-nome-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}">
-                                                {{ n.titulo }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                                <!-- Versão -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">Versão</label>
+                                    <input id="versao_norma" type="text" readonly tabindex="-1"
+                                           value="{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}"
+                                           class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                  pointer-events-none text-black">
                                 </div>
 
                             </div>
-                        </div>
 
-                        <!-- Tema -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Tema</label>
-                            <input id="tema_norma___UID__" name="tema_norma_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
+                            <!-- LINHA 9 – Derivados (BLOCO BASE) -->
+                            <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
 
-                        <!-- Versão -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Versão</label>
-                            <input id="versao_norma___UID__" name="versao_norma_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">Emitente</label>
+                                    <input id="emitente_norma" type="text" readonly tabindex="-1"
+                                           value="{{ form.instance.norma_procedimento.emitente|default:'' }}"
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                  pointer-events-none text-black">
+                                </div>
 
-                    </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">Sistema</label>
+                                    <input id="sistema_norma" type="text" readonly tabindex="-1"
+                                           value="{{ form.instance.norma_procedimento.sistema|default:'' }}"
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                  pointer-events-none text-black">
+                                </div>
 
-                    <!-- LINHA 9 – Derivados -->
-                    <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
-
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Emitente</label>
-                            <input id="emitente_norma___UID__" name="emitente_norma_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Sistema</label>
-                            <input id="sistema_norma___UID__" name="sistema_norma_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
-                            <input id="vigencia_norma___UID__" name="vigencia_norma_extra[]" type="text" readonly tabindex="-1"
-                                   class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
-                        </div>
-
-                    </div>
-
-                    <!-- LINHA X – Artefatos do Documento (NORMA DE PROCEDIMENTO) -->
-                    <div class="grid grid-cols-2 gap-6 mb-6">
-
-                        <!-- Documento Modelo de Processo (PDF) – vazio -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">
-                                Documento Modelo de Processo (PDF)
-                            </label>
-
-                            <div class="flex items-center gap-2">
-                                <input type="text"
-                                       readonly
-                                       x-ref="pdf"
-                                       :value="nomeModelo"
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                              pointer-events-none text-black truncate">
-
-                                <button type="button"
-                                        class="icon-visualizar transition"
-                                        :disabled="!pathModelo"
-                                        :class="{
-                                            'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
-                                            'text-gray-400 cursor-not-allowed': !pathModelo
-                                        }"
-                                        @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
-                                        title="Visualizar Documento">
-
-
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="w-5 h-5"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke-width="2"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    </svg>
-
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Norma de Procedimento (link) -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">
-                                Norma de Procedimento (link)
-                            </label>
-
-                            <div class="flex items-center gap-2">
-                                <input type="text"
-                                       readonly
-                                       x-ref="link"
-                                       :value="nomeNorma"
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
-                                              pointer-events-none text-black truncate">
-
-                                <button type="button"
-                                        class="icon-visualizar transition"
-                                        :disabled="!urlNorma"
-                                        :class="{
-                                            'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
-                                            'text-gray-400 cursor-not-allowed': !urlNorma
-                                        }"
-                                        @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
-                                        title="Visualizar Documento">
-
-
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="w-5 h-5"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke-width="2"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    </svg>
-
-                                </button>
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
+                                    <input id="vigencia_norma" type="text" readonly tabindex="-1"
+                                           value="{% if form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:'d/m/Y' }}{% endif %}"
+                                           class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                  pointer-events-none text-black">
+                                </div>
 
                             </div>
+
+                            <div class="grid grid-cols-2 gap-6">
+
+                                <!-- Documento Modelo de Processo (PDF) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Documento Norma de Procedimento (PDF)
+                                    </label>
+
+                                    <div class="flex items-center gap-2">
+                                        <input type="text"
+                                               readonly
+                                               x-ref="pdf"
+                                               :value="nomeModelo"
+                                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                      pointer-events-none text-black truncate">
+
+                                        <button type="button"
+                                                class="icon-visualizar transition"
+                                                :disabled="!pathModelo"
+                                                :class="{
+                                                    'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
+                                                    'text-gray-400 cursor-not-allowed': !pathModelo
+                                                }"
+                                                @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
+                                                title="Visualizar Documento">
+
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="w-5 h-5"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="2"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Norma de Procedimento (link) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Norma de Procedimento (link)
+                                    </label>
+
+                                    <div class="flex items-center gap-2">
+                                        <input type="text"
+                                               readonly
+                                               x-ref="link"
+                                               :value="nomeNorma"
+                                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                      pointer-events-none text-black truncate">
+
+                                        <button type="button"
+                                                class="icon-visualizar transition"
+                                                :disabled="!urlNorma"
+                                                :class="{
+                                                    'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
+                                                    'text-gray-400 cursor-not-allowed': !urlNorma
+                                                }"
+                                                @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
+                                                title="Visualizar Documento">
+
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="w-5 h-5"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="2"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+
+
+                        </div> <!-- fim norma-block base -->
+
+                        <!-- ======================================================= -->
+                        <!-- TEMPLATE para blocos de Norma adicionais (invisível) -->
+                        <!-- ======================================================= -->
+                        <template id="template-norma">
+                            <!-- bloco inteiro (LINHA 8 + LINHA 9) com placeholders __UID__ -->
+                            <div class="norma-block" data-uid="__UID__" x-data="normaProcedimentoData()">
+
+                                <!-- LINHA 8 -->
+                                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+
+                                    <div class="">
+
+                                        <!-- Label + Botões (clonado) -->
+                                        <div class="flex items-center gap-2 relative -top-[5px]">
+                                            <label class="block text-sm font-medium text-blue-700">
+                                                Normas de Procedimento
+                                            </label>
+                                        </div>
+
+                                        <!-- Select + visualizar (select name usa array para não conflitar com backend atual) -->
+                                        <div class="flex items-center space-x-2 mt-[1px]">
+
+                                            <div class="flex-1 min-w-0">
+                                                <select id="norma_procedimento___UID__" name="norma_procedimento_extra[]"
+                                                        @change="check($event); update($el)"
+                                                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-10 text-black focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                    <option value="">---------</option>
+
+                                                    {% for n in normas_procedimento %}
+                                                        <option value="{{ n.id }}"
+                                                                data-tema="{{ n.tema }}"
+                                                                data-versao="{{ n.versao|stringformat:'02d' }}"
+                                                                data-emitente="{{ n.emitente }}"
+                                                                data-sistema="{{ n.sistema }}"
+                                                                data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
+
+                                                                data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
+                                                                data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
+
+                                                                data-nome-modelo-processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
+                                                                data-nome-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}">
+                                                            {{ n.titulo }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                    <!-- Tema -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">Tema</label>
+                                        <input id="tema_norma___UID__" name="tema_norma_extra[]" type="text" readonly tabindex="-1"
+                                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                                    </div>
+
+                                    <!-- Versão -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">Versão</label>
+                                        <input id="versao_norma___UID__" name="versao_norma_extra[]" type="text" readonly tabindex="-1"
+                                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                                    </div>
+
+                                </div>
+
+                                <!-- LINHA 9 – Derivados -->
+                                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">Emitente</label>
+                                        <input id="emitente_norma___UID__" name="emitente_norma_extra[]" type="text" readonly tabindex="-1"
+                                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">Sistema</label>
+                                        <input id="sistema_norma___UID__" name="sistema_norma_extra[]" type="text" readonly tabindex="-1"
+                                               class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">Início de Vigência</label>
+                                        <input id="vigencia_norma___UID__" name="vigencia_norma_extra[]" type="text" readonly tabindex="-1"
+                                               class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                                    </div>
+
+                                </div>
+
+                                <!-- LINHA X – Artefatos do Documento (NORMA DE PROCEDIMENTO) -->
+                                <div class="grid grid-cols-2 gap-6 mb-6">
+
+                                    <!-- Documento Modelo de Processo (PDF) – vazio -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">
+                                            Documento Norma de Procedimento (PDF)
+                                        </label>
+
+                                        <div class="flex items-center gap-2">
+                                            <input type="text"
+                                                   readonly
+                                                   x-ref="pdf"
+                                                   :value="nomeModelo"
+                                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                          pointer-events-none text-black truncate">
+
+                                            <button type="button"
+                                                    class="icon-visualizar transition"
+                                                    :disabled="!pathModelo"
+                                                    :class="{
+                                                        'text-blue-600 hover:text-blue-800 cursor-pointer': pathModelo,
+                                                        'text-gray-400 cursor-not-allowed': !pathModelo
+                                                    }"
+                                                    @click="pathModelo && abrirModalDocumento(pathModelo, 'Modelo de Processo')"
+                                                    title="Visualizar Documento">
+
+
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                     class="w-5 h-5"
+                                                     fill="none"
+                                                     viewBox="0 0 24 24"
+                                                     stroke-width="2"
+                                                     stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Norma de Procedimento (link) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">
+                                            Norma de Procedimento (link)
+                                        </label>
+
+                                        <div class="flex items-center gap-2">
+                                            <input type="text"
+                                                   readonly
+                                                   x-ref="link"
+                                                   :value="nomeNorma"
+                                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
+                                                          pointer-events-none text-black truncate">
+
+                                            <button type="button"
+                                                    class="icon-visualizar transition"
+                                                    :disabled="!urlNorma"
+                                                    :class="{
+                                                        'text-blue-600 hover:text-blue-800 cursor-pointer': urlNorma,
+                                                        'text-gray-400 cursor-not-allowed': !urlNorma
+                                                    }"
+                                                    @click="urlNorma && abrirModalDocumento(urlNorma, 'Norma de Procedimento')"
+                                                    title="Visualizar Documento">
+
+
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                     class="w-5 h-5"
+                                                     fill="none"
+                                                     viewBox="0 0 24 24"
+                                                     stroke-width="2"
+                                                     stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                          d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+
+                                            </button>
+
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </template>
+                        <!-- fim template -->
+                    </div> <!-- fim normas_container -->
+
+                 </div>  <!-- relative -->
+            </div>      <!-- col-span-12 -->
+        </div>          <!-- grid -->
+
+        <div class="grid grid-cols-12 gap-3">
+
+            <div class="col-span-12">
+
+                <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
+
+                    <!-- TÍTULO SOBREPOSTO -->
+                    <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                        <h2 class="text-base font-semibold text-blue-800 leading-none">
+                            Registros do Sistema
+                        </h2>
+                    </div>
+
+                    <!-- LINHA 10 – Auditoria -->
+                    <div class="grid grid-cols-6 gap-6">
+
+                        <!-- Cadastro -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Cadastro</label>
+                            <input type="text"
+                                   value="{{ cadastro_data }}"
+                                   readonly
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                        </div>
+
+                        <!-- Responsável Cadastro -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Resp. Cadastro</label>
+                            <input type="text"
+                                   value="{{ cadastro_user }}"
+                                   readonly
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                        </div>
+
+                        <!-- Atualização -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Atualização</label>
+                            <input type="text"
+                                   value="{{ atualizacao_data }}"
+                                   readonly
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                        </div>
+
+                        <!-- Responsável Atualização -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Resp. Atualização</label>
+                            <input type="text"
+                                   value="{{ atualizacao_user }}"
+                                   readonly
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                        </div>
+
+                        <!-- Conclusão -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Conclusão</label>
+                            <input type="text"
+                                   value="{{ conclusao_data }}"
+                                   readonly
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                        </div>
+
+                        <!-- Responsável Conclusão -->
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Resp. Conclusão</label>
+                            <input type="text"
+                                   value="{{ conclusao_user }}"
+                                   readonly
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
                         </div>
 
                     </div>
+                </div>  <!-- relative -->
+            </div>      <!-- col-span-12 -->
+        </div>          <!-- grid -->
 
-                </div>
-            </template>
-            <!-- fim template -->
-        </div> <!-- fim normas_container -->
-
-        <!-- LINHA 10 – Auditoria -->
-        <div class="grid grid-cols-6 gap-6 mb-6">
-
-            <!-- Cadastro -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Cadastro</label>
-                <input type="text"
-                       value="{{ cadastro_data }}"
-                       readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <!-- Responsável Cadastro -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Resp. Cadastro</label>
-                <input type="text"
-                       value="{{ cadastro_user }}"
-                       readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <!-- Atualização -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Atualização</label>
-                <input type="text"
-                       value="{{ atualizacao_data }}"
-                       readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <!-- Responsável Atualização -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Resp. Atualização</label>
-                <input type="text"
-                       value="{{ atualizacao_user }}"
-                       readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <!-- Conclusão -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Conclusão</label>
-                <input type="text"
-                       value="{{ conclusao_data }}"
-                       readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-            <!-- Responsável Conclusão -->
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Resp. Conclusão</label>
-                <input type="text"
-                       value="{{ conclusao_user }}"
-                       readonly
-                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-            </div>
-
-        </div>
 
         <!-- BOTÕES -->
         <div class="flex justify-end mt-8 space-x-4">
