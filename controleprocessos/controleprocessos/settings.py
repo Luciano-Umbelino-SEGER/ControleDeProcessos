@@ -75,7 +75,17 @@ DEBUG = env_bool("DEBUG", default=(DJANGO_ENV == "dev"))
 SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-key")
 
 # URL base do sistema (inclui host e porta)
-DEFAULT_SITE_URL = "http://127.0.0.1:8000" if DJANGO_ENV == "dev" else "http://127.0.0.1:8001"
+DJANGO_ENV = os.getenv("DJANGO_ENV", "dev").strip().lower()
+
+# URL padrão do sistema (desenvolvimento e homologação oficial)
+DEFAULT_SITE_URL = "http://127.0.0.1:8000"
+
+# Na VM de desenvolvimento utilizamos uma instância de homologação
+# simulada na porta 8001 para testes.
+if DJANGO_ENV == "homolog":
+    DEFAULT_SITE_URL = "http://127.0.0.1:8001"
+
+# Permite sobrescrever a URL via variável de ambiente, se necessário.
 SITE_URL = os.getenv("SITE_URL", DEFAULT_SITE_URL)
 
 # ALLOWED_HOSTS: aceita CSV via env; se não vier, usa host do SITE_URL + localhost/127.0.0.1
@@ -266,4 +276,4 @@ CACHES = {
 # ============================================================
 # FUNCIONALIDADES
 # ============================================================
-HABILITAR_MODELAGEM_PROCESSOS = True
+HABILITAR_MODELAGEM_PROCESSOS = False

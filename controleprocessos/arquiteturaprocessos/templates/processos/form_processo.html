@@ -68,161 +68,175 @@
     </div>
     {% endif %}
 
-
     <form method="post" id="form-processo">
         {% csrf_token %}
 
-        <!-- LINHA 2 – PROCESSO / SUBPROCESSO + VERSÃO + ESTADO -->
-        <div class="grid grid-cols-3 gap-6 mb-6 items-end">
-            <!-- COLUNA 1 – PROCESSO / SUBPROCESSO -->
-            <div class="flex flex-col">
+        <div class="grid grid-cols-12 gap-3">
 
-                <!-- LABEL -->
-                <label class="text-sm font-medium text-blue-700">
-                    Selecione o Tipo
-                </label>
+            <div class="col-span-12">
 
-                <!-- RADIO GROUP -->
-                <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
+                <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
-                    <!-- PROCESSO -->
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio"
-                               id="rb_processo"
-                               name="tipo_processo_fake"
-                               value="processo"
-                               {% if not form.instance.parent_id %}checked{% endif %}
-                               {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
+                    <!-- TÍTULO SOBREPOSTO -->
+                    <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                        <h2 class="text-base font-semibold text-blue-800 leading-none">
+                            Identificação do Processo
+                        </h2>
+                    </div>
 
-                        <span id="lbl_processo"
-                              class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
-                            Processo
-                        </span>
-                    </label>
+                    <!-- LINHA 2 – PROCESSO / SUBPROCESSO + VERSÃO + ESTADO -->
+                    <div class="grid grid-cols-3 gap-6 mb-6 items-end">
+                        <!-- COLUNA 1 – PROCESSO / SUBPROCESSO -->
+                        <div class="flex flex-col">
 
-                    <!-- SUBPROCESSO -->
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio"
-                               id="rb_subprocesso"
-                               name="tipo_processo_fake"
-                               value="subprocesso"
-                               {% if form.instance.parent_id %}checked{% endif %}
-                               {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
+                            <!-- LABEL -->
+                            <label class="text-sm font-medium text-blue-700">
+                                Selecione o Tipo
+                            </label>
 
-                        <span id="lbl_subprocesso"
-                              class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
-                            Subprocesso
-                        </span>
-                    </label>
+                            <!-- RADIO GROUP -->
+                            <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
 
-                </div>
+                                <!-- PROCESSO -->
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio"
+                                           id="rb_processo"
+                                           name="tipo_processo_fake"
+                                           value="processo"
+                                           {% if not form.instance.parent_id %}checked{% endif %}
+                                           {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-            </div>
+                                    <span id="lbl_processo"
+                                          class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                                        Processo
+                                    </span>
+                                </label>
 
-            <!-- COLUNA 2 – VERSÃO -->
-            <div class="flex flex-col">
+                                <!-- SUBPROCESSO -->
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio"
+                                           id="rb_subprocesso"
+                                           name="tipo_processo_fake"
+                                           value="subprocesso"
+                                           {% if form.instance.parent_id %}checked{% endif %}
+                                           {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
-                <label class="text-sm font-medium text-blue-700">
-                    Versão do Processo
-                </label>
+                                    <span id="lbl_subprocesso"
+                                          class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                                        Subprocesso
+                                    </span>
+                                </label>
 
-                {{ form.versao_processo|add_class:"w-48 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-gray-700 placeholder-gray-400 text-center tracking-wide focus:ring-2 focus:ring-blue-500" }}
+                            </div>
 
-            </div>
+                        </div>
 
-            <!-- COLUNA 3 – ESTADO -->
-            <div class="flex flex-col">
+                        <!-- COLUNA 2 – VERSÃO -->
+                        <div class="flex flex-col">
 
-                <label class="text-sm font-medium text-blue-700">
-                    Estado
-                </label>
+                            <label class="text-sm font-medium text-blue-700">
+                                Versão do Processo
+                            </label>
 
-                <span id="status_processo"
-                      class="{{ processo.status_css }}
-                             px-3 py-2 rounded text-sm font-semibold text-center w-full">
-                    {{ processo.status_label }}
-                </span>
+                            {{ form.versao_processo|add_class:"w-48 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-gray-700 placeholder-gray-400 text-center tracking-wide focus:ring-2 focus:ring-blue-500" }}
 
-            </div>
+                        </div>
 
-        </div>
+                        <!-- COLUNA 3 – ESTADO -->
+                        <div class="flex flex-col">
 
-        <!-- CAMPOS DE PROCESSO / SUBPROCESSO -->
-        <div class="grid grid-cols-2 gap-6 mb-6">
+                            <label class="text-sm font-medium text-blue-700">
+                                Estado
+                            </label>
 
-            <!-- CAMPO PROCESSO -->
-            <div>
-                <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">
-                    Nome do Processo
-                </label>
+                            <span id="status_processo"
+                                  class="{{ processo.status_css }}
+                                         px-3 py-2 rounded text-sm font-semibold text-center w-full">
+                                {{ processo.status_label }}
+                            </span>
 
-                <!-- Campo visível para Processo -->
-                <input id="processo_input_visible"
-                       type="text"
-                       data-similarity-tables="Processo, ProcessoMapear"
-                       data-similarity-field="nome"
-                       data-similarity-id="{{ form.instance.id }}"
-                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white
-                              {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}"
-                       placeholder="Nome do Processo">
+                        </div>
 
-                <!-- Campo Django (parent_id) -->
-                <input type="hidden" id="id_parent" name="parent" value="{{ form.instance.parent_id|default_if_none:'' }}">
+                    </div>
 
-                <!-- Select (modo Subprocesso) -->
-                <div id="processo_select_container" class="hidden">
-                    <select id="processo_select_visible"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                                   focus:ring-2 focus:ring-blue-500 bg-white
-                                   {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}">
-                        <option value="">---------</option>
-                    </select>
-                </div>
-            </div>
+                    <!-- CAMPOS DE PROCESSO / SUBPROCESSO -->
+                    <div class="grid grid-cols-2 gap-6 mb-6">
 
-            <!-- CAMPO SUBPROCESSO -->
-            <div>
-                <label id="lbl_campo_subprocesso"
-                       class="block text-sm font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
-                    Nome do Subprocesso
-                </label>
+                        <!-- CAMPO PROCESSO -->
+                        <div>
+                            <label id="lbl_campo_processo" class="block text-sm font-medium text-blue-700">
+                                Nome do Processo
+                            </label>
 
-                <input id="subprocesso_input_visible"
-                       type="text"
-                       data-similarity-tables="Processo, ProcessoMapear"
-                       data-similarity-field="nome"
-                       data-similarity-id="{{ form.instance.id }}"
-                       class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
-                              focus:ring-2 focus:ring-blue-500 bg-gray-100"
-                       placeholder="Nome do Subprocesso"
-                       disabled>
+                            <!-- Campo visível para Processo -->
+                            <input id="processo_input_visible"
+                                   type="text"
+                                   data-similarity-tables="Processo, ProcessoMapear"
+                                   data-similarity-field="nome"
+                                   data-similarity-id="{{ form.instance.id }}"
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
+                                          focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white
+                                          {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}"
+                                   placeholder="Nome do Processo">
 
-                <!-- Hidden Django (nome) -->
-                <input type="hidden" id="id_nome" name="nome" value="{{ form.instance.nome }}">
-            </div>
+                            <!-- Campo Django (parent_id) -->
+                            <input type="hidden" id="id_parent" name="parent" value="{{ form.instance.parent_id|default_if_none:'' }}">
 
-        </div>
+                            <!-- Select (modo Subprocesso) -->
+                            <div id="processo_select_container" class="hidden">
+                                <select id="processo_select_visible"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
+                                               focus:ring-2 focus:ring-blue-500 bg-white
+                                               {% if desabilitar %} !bg-gray-50 opacity-70 cursor-not-allowed{% endif %}">
+                                    <option value="">---------</option>
+                                </select>
+                            </div>
+                        </div>
 
-        <!-- LINHA 1 -->
-        <div class="grid grid-cols-3 gap-6 mb-6">
+                        <!-- CAMPO SUBPROCESSO -->
+                        <div>
+                            <label id="lbl_campo_subprocesso"
+                                   class="block text-sm font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                                Nome do Subprocesso
+                            </label>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Classificação</label>
-                {{ form.classificacao }}
-            </div>
+                            <input id="subprocesso_input_visible"
+                                   type="text"
+                                   data-similarity-tables="Processo, ProcessoMapear"
+                                   data-similarity-field="nome"
+                                   data-similarity-id="{{ form.instance.id }}"
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black
+                                          focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                                   placeholder="Nome do Subprocesso"
+                                   disabled>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
-                {{ form.macroprocesso_nivel1 }}
-            </div>
+                            <!-- Hidden Django (nome) -->
+                            <input type="hidden" id="id_nome" name="nome" value="{{ form.instance.nome }}">
+                        </div>
 
-            <div>
-                <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
-                {{ form.macroprocesso_nivel2 }}
-            </div>
+                    </div>
 
-        </div>
+                    <!-- LINHA 1 -->
+                    <div class="grid grid-cols-3 gap-6">
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Classificação</label>
+                            {{ form.classificacao }}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 1</label>
+                            {{ form.macroprocesso_nivel1 }}
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700">Macroprocesso Nível 2</label>
+                            {{ form.macroprocesso_nivel2 }}
+                        </div>
+                    </div>
+                </div>  <!-- relative -->
+            </div>      <!-- col-span-12 -->
+        </div>          <!-- grid -->
 
         <!-- LINHA 3 -->
         <div class="grid grid-cols-2 gap-6 mb-6">
