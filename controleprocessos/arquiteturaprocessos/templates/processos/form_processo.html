@@ -84,21 +84,24 @@
                         </h2>
                     </div>
 
-                    <!-- LINHA 2 – PROCESSO / SUBPROCESSO + VERSÃO + ESTADO -->
-                    <div class="grid grid-cols-3 gap-6 mb-6 items-end">
-                        <!-- COLUNA 1 – PROCESSO / SUBPROCESSO -->
-                        <div class="flex flex-col">
+                    <!-- ===================================================== -->
+                    <!-- LINHA 1 – IDENTIFICAÇÃO -->
+                    <!-- ===================================================== -->
+                    <div class="flex items-end gap-3 mb-6 flex-nowrap">
 
-                            <!-- LABEL -->
-                            <label class="text-sm font-medium text-blue-700">
-                                Selecione o Tipo
+                        <!-- ===================================================== -->
+                        <!-- TIPO -->
+                        <!-- ===================================================== -->
+                        <div class="w-[290px] flex-shrink-0">
+
+                            <label class="block text-sm font-medium text-blue-700 mb-1">
+                                Tipo
                             </label>
 
-                            <!-- RADIO GROUP -->
-                            <div class="inline-flex items-center gap-6 border border-blue-300 rounded-lg px-4 py-2 bg-white shadow-sm">
+                            <div class="flex items-center gap-4 border border-blue-300 rounded-lg px-3 py-2 bg-white shadow-sm h-[42px]">
 
-                                <!-- PROCESSO -->
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+
                                     <input type="radio"
                                            id="rb_processo"
                                            name="tipo_processo_fake"
@@ -107,13 +110,14 @@
                                            {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
                                     <span id="lbl_processo"
-                                          class="font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                                          class="text-sm font-medium {% if not form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
                                         Processo
                                     </span>
+
                                 </label>
 
-                                <!-- SUBPROCESSO -->
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+
                                     <input type="radio"
                                            id="rb_subprocesso"
                                            name="tipo_processo_fake"
@@ -122,36 +126,129 @@
                                            {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
                                     <span id="lbl_subprocesso"
-                                          class="font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
+                                          class="text-sm font-medium {% if form.instance.parent_id %}text-blue-700{% else %}text-gray-400{% endif %}">
                                         Subprocesso
                                     </span>
+
                                 </label>
 
                             </div>
 
                         </div>
 
-                        <!-- COLUNA 2 – VERSÃO -->
-                        <div class="flex flex-col">
+                        <!-- ===================================================== -->
+                        <!-- ABRANGÊNCIA -->
+                        <!-- ===================================================== -->
+                        <div class="w-[290px] flex-shrink-0">
 
-                            <label class="text-sm font-medium text-blue-700">
-                                Versão do Processo
+                            <label class="block text-sm font-medium text-blue-700 mb-1">
+                                Abrangência
                             </label>
 
-                            {{ form.versao_processo|add_class:"w-48 border border-gray-300 rounded-md px-3 py-2 h-[42px] text-gray-700 placeholder-gray-400 text-center tracking-wide focus:ring-2 focus:ring-blue-500" }}
+                            <div class="flex items-center justify-between border border-blue-300 rounded-lg px-3 py-2 bg-white shadow-sm h-[42px]">
+
+                                <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+
+                                    <input type="radio"
+                                           name="abrangencia_fake"
+                                           value="GOVES"
+                                           checked>
+
+                                    <span class="text-sm font-medium text-blue-700">
+                                        GOVES
+                                    </span>
+
+                                </label>
+
+                                <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+
+                                    <input type="radio"
+                                           name="abrangencia_fake"
+                                           value="SEGER">
+
+                                    <span class="text-sm font-medium text-gray-400">
+                                        SEGER
+                                    </span>
+
+                                </label>
+
+                                <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+
+                                    <input type="radio"
+                                           name="abrangencia_fake"
+                                           value="OUTROS">
+
+                                    <span class="text-sm font-medium text-gray-400">
+                                        OUTROS
+                                    </span>
+
+                                </label>
+
+                            </div>
 
                         </div>
 
-                        <!-- COLUNA 3 – ESTADO -->
-                        <div class="flex flex-col">
+                        <!-- ===================================================== -->
+                        <!-- ELABORAÇÃO -->
+                        <!-- ===================================================== -->
+                        <div class="w-[120px] flex-shrink-0">
 
-                            <label class="text-sm font-medium text-blue-700">
-                                Estado
+                            <label class="block text-sm font-medium text-blue-700 mb-1">
+                                Elaboração
+                            </label>
+
+                            <input
+                                type="text"
+                                placeholder="dd/mm/aaaa"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]">
+
+                        </div>
+
+                        <!-- ===================================================== -->
+                        <!-- APROVAÇÃO -->
+                        <!-- ===================================================== -->
+                        <div class="w-[120px] flex-shrink-0">
+
+                            <label class="block text-sm font-medium text-blue-700 mb-1">
+                                Aprovação
+                            </label>
+
+                            <input
+                                type="text"
+                                placeholder="dd/mm/aaaa"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]">
+
+                        </div>
+
+                        <!-- ===================================================== -->
+                        <!-- VERSÃO -->
+                        <!-- ===================================================== -->
+                        <div class="w-[80px] flex-shrink-0">
+
+                            <label class="block text-sm font-medium text-blue-700 mb-1">
+                                Versão
+                            </label>
+
+                            {{ form.versao_processo|add_class:"w-full border border-gray-300 rounded-md px-2 py-2 h-[42px] text-center focus:ring-2 focus:ring-blue-500" }}
+
+                        </div>
+
+                        <!-- ===================================================== -->
+                        <!-- SITUAÇÃO -->
+                        <!-- ===================================================== -->
+                        <div class="flex-1 flex flex-col">
+
+                            <label class="block text-sm font-medium text-blue-700 mb-1">
+                                Situação
                             </label>
 
                             <span id="status_processo"
                                   class="{{ processo.status_css }}
-                                         px-3 py-2 rounded text-sm font-semibold text-center w-full">
+                                         flex items-center justify-center
+                                         h-[42px]
+                                         rounded
+                                         text-sm
+                                         font-semibold">
                                 {{ processo.status_label }}
                             </span>
 
@@ -159,8 +256,9 @@
 
                     </div>
 
+                    <!-- LINHA 2 -->
                     <!-- CAMPOS DE PROCESSO / SUBPROCESSO -->
-                    <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 gap-4 mb-6">
 
                         <!-- CAMPO PROCESSO -->
                         <div>
@@ -216,7 +314,7 @@
 
                     </div>
 
-                    <!-- LINHA 1 -->
+                    <!-- LINHA 3 -->
                     <div class="grid grid-cols-3 gap-6">
 
                         <div>
@@ -253,7 +351,7 @@
                     </div>
 
                     <!-- LINHA 3 -->
-                    <div class="grid grid-cols-1 gap-6 mb-2">
+                    <div class="grid grid-cols-1 gap-6 mb-1">
 
                         <div>
                             <label class="block text-sm font-medium text-blue-700">Objetivo</label>
@@ -366,7 +464,7 @@
                                     <!-- Label + Botão ajustado -->
                                     <div class="flex items-center gap-2 relative -top-[5px]">
                                         <label class="block text-sm font-medium text-blue-700">
-                                            Normas de Procedimento
+                                            Norma de Procedimento
                                         </label>
 
                                         <button type="button"
@@ -515,7 +613,7 @@
                                 <!-- Documento Modelo de Processo (PDF) -->
                                 <div>
                                     <label class="block text-sm font-medium text-blue-700">
-                                        Documento Norma de Procedimento (PDF)
+                                        Documento (PDF)
                                     </label>
 
                                     <div class="flex items-center gap-2">
@@ -554,7 +652,7 @@
                                 <!-- Norma de Procedimento (link) -->
                                 <div>
                                     <label class="block text-sm font-medium text-blue-700">
-                                        Norma de Procedimento (link)
+                                        Link Documento
                                     </label>
 
                                     <div class="flex items-center gap-2">
