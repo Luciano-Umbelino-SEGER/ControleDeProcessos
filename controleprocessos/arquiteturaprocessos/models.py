@@ -471,10 +471,9 @@ def norma_procedimento_upload_to(instance, filename):
     # CAMINHO
     # ========================================================
     return (
-        f"normasprocedimento/{novo_nome}"
+        f"normas_procedimento/{novo_nome}"
     )
 
-# aqui 1
 # ============================================================
 # NORMA DE PROCEDIMENTO
 # ============================================================
@@ -946,19 +945,113 @@ class ProcessoMapear(models.Model):
         return self.nome
 
 # ============================================================
+# UPLOAD DE ARQUIVO DE MODELO DE PROCESSO
+# ============================================================
+def modelo_processo_upload_to(instance, filename):
+    """
+    Gera caminho seguro para upload dos documentos de
+    Modelos de Processo.
+
+    Regras:
+    - Remove acentos;
+    - Remove caracteres especiais;
+    - Substitui espaços por "_";
+    - Mantém a extensão em minúsculas;
+    - Utiliza o UUID do próprio registro;
+    - Mantém o nome original do arquivo para facilitar
+      sua identificação pelo usuário.
+    """
+
+    # ========================================================
+    # NOME E EXTENSÃO
+    # ========================================================
+    nome, ext = os.path.splitext(filename)
+
+    ext = ext.lower()
+
+    # ========================================================
+    # REMOVE ACENTOS
+    # ========================================================
+    nome = (
+        unicodedata
+        .normalize("NFKD", nome)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+
+    # ========================================================
+    # REMOVE CARACTERES INVÁLIDOS
+    # ========================================================
+    nome = re.sub(
+        r"[^\w\-_.]",
+        "_",
+        nome
+    )
+
+    if not nome:
+        nome = "modelo_processo"
+
+    # ========================================================
+    # NOME FINAL
+    # ========================================================
+    novo_nome = (
+         f"{nome}_{instance.uuid.hex[:12]}{ext}"
+    )
+
+    # ========================================================
+    # CAMINHO
+    # ========================================================
+    return (
+        f"modelos_processo/{novo_nome}"
+    )
+
+# ============================================================
+# ABRANGÊNCIA
+# ============================================================
+class AbrangenciaChoices(models.TextChoices):
+    GOVES = "GOVES", "GOVES"
+    SEGER = "SEGER", "SEGER"
+    OUTROS = "OUTROS", "OUTROS"
+
+# ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================
 class Processo(models.Model):
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+        db_index=True,
+        verbose_name="UUID",
+    )
 
-    nome = models.CharField(max_length=500)
-    gestor = models.CharField(max_length=150)
-    email = models.EmailField(max_length=200, null=True, blank=True)
-    telefone = models.CharField(max_length=100, blank=True)
-    objetivo = models.TextField()
-    observacao = models.TextField(null=True, blank=True)
+    nome = models.CharField(max_length=500, verbose_name="Nome")
+    gestor = models.CharField(max_length=150, verbose_name="Gestor")
+    email = models.EmailField(max_length=200, null=True, blank=True, verbose_name="Email")
+    telefone = models.CharField(max_length=100, blank=True, verbose_name="Telefone")
+    objetivo = models.TextField(verbose_name="Objetivo")
 
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    data_atualizacao = models.DateTimeField(null=True, blank=True)
+    abrangencia = models.CharField(
+        max_length=10,
+        choices=AbrangenciaChoices.choices,
+        default=AbrangenciaChoices.GOVES,
+        verbose_name="Abrangência"
+    )
+
+    data_elaboracao = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Data de Elaboração"
+    )
+
+    data_aprovacao = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Data de Aprovação"
+    )
+
+    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Cadastro")
+    data_atualizacao = models.DateTimeField(null=True, blank=True, verbose_name="Data de Atualização")
 
     classificacao = models.ForeignKey(
         "Classificacao",
@@ -987,13 +1080,43 @@ class Processo(models.Model):
         related_name="subprocessos"
     )
 
-    # 🔥 FK USANDO COLUNA EXISTENTE
+    # ========================================================
+    # ÁREA RESPONSÁVEL
+    # ========================================================
     area_responsavel = models.ForeignKey(
         ContatoAreaSeger,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="processos"
+    )
+
+    versao_processo = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(9999)],
+        blank=True,
+        null=True,
+        verbose_name="Versão"
+    )
+
+    # ========================================================
+    # DOCUMENTAÇÃO
+    # ========================================================
+    documento_modelo_processo = models.FileField(
+        upload_to=modelo_processo_upload_to,
+        max_length=500,
+        null=True,
+        blank=True,
+        validators=[
+            FileExtensionValidator(["pdf"])
+        ],
+        verbose_name="Documento Modelo de Processo",
+    )
+
+    link_documento_modelo_processo = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Link Documento Modelo de Processo",
     )
 
     usuario_cadastro = models.ForeignKey(
@@ -1008,12 +1131,6 @@ class Processo(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name="processos_atualizados"
-    )
-
-    versao_processo = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(9999)],
-        blank=True,
-        null=True
     )
 
     data_conclusao = models.DateTimeField(blank=True, null=True)
@@ -1031,7 +1148,10 @@ class Processo(models.Model):
         if self.data_conclusao:
             return "concluido"
 
-        if self.documentos.exists():
+        if (
+                self.documento_modelo_processo
+                or self.link_documento_modelo_processo
+        ):
             return "ativo"
 
         return "iniciado"
@@ -1055,6 +1175,38 @@ class Processo(models.Model):
     def __str__(self):
         return self.nome
 
+    # ========================================================
+    # META
+    # ========================================================
+    class Meta:
+
+        db_table = (
+            "arquiteturaprocessos_processo"
+        )
+        verbose_name = (
+            "Processo"
+        )
+
+        verbose_name_plural = (
+            "Processos"
+        )
+
+        indexes = [
+            models.Index(
+                fields=["nome"],
+                name="idx_processo_nome",
+            ),
+            models.Index(
+                fields=["gestor"],
+                name="idx_processo_gestor",
+            ),
+        ]
+
+        ordering = [
+            "-data_atualizacao",
+            "nome",
+        ]
+
     def clean(self):
         # 🔥 ÁREA
         if self.area_responsavel and not self.area_responsavel.ativo:
@@ -1074,40 +1226,75 @@ class Processo(models.Model):
                 raise ValidationError("Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1.")
 
     def save(self, *args, **kwargs):
+
+        old = None
+
+        if self.pk:
+            old = Processo.objects.filter(pk=self.pk).first()
+
         self.full_clean()
         super().save(*args, **kwargs)
 
+        # ====================================================
+        # REMOVE PDF ANTIGO
+        # ====================================================
+        if (
+                old
+                and old.documento_modelo_processo
+                and old.documento_modelo_processo != self.documento_modelo_processo
+        ):
+
+            old_path = old.documento_modelo_processo.path
+
+            if os.path.exists(old_path):
+
+                try:
+                    os.remove(old_path)
+
+                except OSError:
+                    pass
+
 # ============================================================
-# PROCESSO – DOCUMENTO (1 Processo → N Modelagens)
+# PROCESSO – NORMA DE PROCEDIMENTO
+# (Relaciona um Processo a uma ou mais Normas de Procedimento)
 # ============================================================
+
 class ProcessoDocumento(models.Model):
+
     processo = models.ForeignKey(
         "Processo",
         on_delete=models.CASCADE,
         related_name="documentos",
-        verbose_name="Processo"
+        verbose_name="Processo",
     )
 
-    modelagem_processo = models.ForeignKey(
-        "ModelagemProcesso",
+    norma_procedimento = models.ForeignKey(
+        "NormaProcedimento",
         on_delete=models.PROTECT,
-        related_name="processo_documentos",
-        verbose_name="Modelagem de Processo"
+        related_name="processos",
+        verbose_name="Norma de Procedimento",
     )
 
     class Meta:
+
         db_table = "arquiteturaprocessos_processodocumento"
-        verbose_name = "Documento do Processo"
-        verbose_name_plural = "Documentos do Processo"
-        ordering = ["modelagem_processo__tipo_documento", "modelagem_processo__titulo"]
+
+        verbose_name = "Norma de Procedimento do Processo"
+
+        verbose_name_plural = "Normas de Procedimento do Processo"
+
         constraints = [
             models.UniqueConstraint(
-                fields=["processo", "modelagem_processo"],
-                name="unique_modelagem_por_processo"
+                fields=[
+                    "processo",
+                    "norma_procedimento",
+                ],
+                name="unique_norma_por_processo",
             )
         ]
 
     def __str__(self):
-        mp = self.modelagem_processo
-        return f"{mp.tipo_documento.nome if mp else 'Documento'} – {mp.titulo if mp else ''}"
+        return (
+            f"{self.processo} - {self.norma_procedimento}"
+        )
 
