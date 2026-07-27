@@ -1204,6 +1204,7 @@ class Processo(models.Model):
 
         ordering = [
             "-data_atualizacao",
+            "-data_criacao",
             "nome",
         ]
 
@@ -1258,7 +1259,6 @@ class Processo(models.Model):
 # PROCESSO – NORMA DE PROCEDIMENTO
 # (Relaciona um Processo a uma ou mais Normas de Procedimento)
 # ============================================================
-
 class ProcessoDocumento(models.Model):
 
     processo = models.ForeignKey(
