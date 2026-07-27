@@ -1013,6 +1013,7 @@ class AbrangenciaChoices(models.TextChoices):
     SEGER = "SEGER", "SEGER"
     OUTROS = "OUTROS", "OUTROS"
 
+# Aqui 1
 # ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================

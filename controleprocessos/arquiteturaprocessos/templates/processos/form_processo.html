@@ -147,38 +147,52 @@
 
                             <div class="flex items-center justify-between border border-blue-300 rounded-lg px-3 py-2 bg-white shadow-sm h-[42px]">
 
+                                <!-- GOVES -->
                                 <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
 
                                     <input type="radio"
-                                           name="abrangencia_fake"
+                                           id="rb_goves"
+                                           name="abrangencia"
                                            value="GOVES"
-                                           checked>
+                                           {% if form.abrangencia.value == "GOVES" or not form.instance.pk %}checked{% endif %}
+                                           {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
-                                    <span class="text-sm font-medium text-blue-700">
+                                    <span id="lbl_goves"
+                                          class="text-sm font-medium {% if form.abrangencia.value == 'GOVES' or not form.instance.pk %}text-blue-700{% else %}text-gray-400{% endif %}">
                                         GOVES
                                     </span>
 
                                 </label>
 
+                                <!-- SEGER -->
                                 <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
 
                                     <input type="radio"
-                                           name="abrangencia_fake"
-                                           value="SEGER">
+                                           id="rb_seger"
+                                           name="abrangencia"
+                                           value="SEGER"
+                                           {% if form.abrangencia.value == "SEGER" %}checked{% endif %}
+                                           {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
-                                    <span class="text-sm font-medium text-gray-400">
+                                    <span id="lbl_seger"
+                                          class="text-sm font-medium {% if form.abrangencia.value == 'SEGER' %}text-blue-700{% else %}text-gray-400{% endif %}">
                                         SEGER
                                     </span>
 
                                 </label>
 
+                                <!-- OUTROS -->
                                 <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
 
                                     <input type="radio"
-                                           name="abrangencia_fake"
-                                           value="OUTROS">
+                                           id="rb_outros"
+                                           name="abrangencia"
+                                           value="OUTROS"
+                                           {% if form.abrangencia.value == "OUTROS" %}checked{% endif %}
+                                           {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
-                                    <span class="text-sm font-medium text-gray-400">
+                                    <span id="lbl_outros"
+                                          class="text-sm font-medium {% if form.abrangencia.value == 'OUTROS' %}text-blue-700{% else %}text-gray-400{% endif %}">
                                         OUTROS
                                     </span>
 
@@ -197,10 +211,7 @@
                                 Elaboração
                             </label>
 
-                            <input
-                                type="text"
-                                placeholder="dd/mm/aaaa"
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]">
+                            {{ form.data_elaboracao }}
 
                         </div>
 
@@ -213,10 +224,7 @@
                                 Aprovação
                             </label>
 
-                            <input
-                                type="text"
-                                placeholder="dd/mm/aaaa"
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px]">
+                            {{ form.data_aprovacao }}
 
                         </div>
 
@@ -406,42 +414,427 @@
                 <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
                     <!-- TÍTULO SOBREPOSTO -->
-                    <div class="absolute -top-3 left-5 px-3 bg-blue-50">
-                        <h2 class="text-base font-semibold text-blue-800 leading-none">
-                            Documentação do Processo
-                        </h2>
-                    </div>
+                    <!-- ===================================================== -->
+                    <!-- DOCUMENTAÇÃO -->
+                    <!-- ===================================================== -->
+                    <div class="col-span-12 mt-2">
 
-                    <!-- ========================================= -->
-                    <!-- DOCUMENTAÇÃO DO PROCESSO                  -->
-                    <!-- ========================================= -->
-                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
-                        <!-- DOCUMENTO PDF -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">
-                                Documento PDF
-                            </label>
+                            <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                                <h2 class="text-base font-semibold text-blue-800 leading-none">
+                                    Documentação
+                                </h2>
+                            </div>
 
-                            <div class="w-full h-12 border border-gray-300 rounded-lg
-                                        bg-white px-3 flex items-center text-gray-400">
-                                Click ou arraste para enviar o PDF
+                            <div class="grid grid-cols-12 gap-3">
+
+                                {% with file_name=form.instance.documento_modelo_processo.name|default_if_none:"" %}
+
+                                <div class="col-span-12 md:col-span-6">
+
+                                        <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                            Documento PDF
+                                        </label>
+
+                                        <div x-data="{
+                                            fileName: (function(){
+                                                const v = '{{ file_name|escapejs }}';
+                                                return v ? v.replace(/^.*[\\\/]/, '') : '';
+                                            })(),
+
+                                            fileObjectURL: (function(){
+                                                {% if form.instance.documento_modelo_processo %}
+                                                    return '{{ form.instance.documento_modelo_processo.url|escapejs }}';
+                                                {% else %}
+                                                    return null;
+                                                {% endif %}
+                                            })(),
+
+                                            error: '',
+                                            over: false,
+
+                                            readonlyMode:
+                                                {% if modo_visualizacao or modo_exclusao %}
+                                                    true
+                                                {% else %}
+                                                    false
+                                                {% endif %},
+
+                                            init() {
+
+                                                const inp = this.$el.querySelector('input[type=file]');
+                                                const dz = this.$el.querySelector('.pdf-dropzone');
+
+                                                if (!inp) return;
+
+                                                inp.setAttribute(
+                                                    'accept',
+                                                    '.pdf,application/pdf'
+                                                );
+
+                                                if (this.readonlyMode) {
+                                                    inp.style.display = 'none';
+                                                    inp.disabled = true;
+                                                    return;
+                                                }
+
+                                                inp.addEventListener('change', () => {
+
+                                                    const f = inp.files?.[0];
+
+                                                    if (!f) {
+                                                        this.fileName = '';
+                                                        this.fileObjectURL = '';
+                                                        return;
+                                                    }
+
+                                                    const ok = (
+                                                        f.type === 'application/pdf' ||
+                                                        f.type === 'application/x-pdf' ||
+                                                        f.name.toLowerCase().endsWith('.pdf')
+                                                    );
+
+                                                    if (!ok) {
+
+                                                        this.error =
+                                                            'Apenas arquivos PDF são aceitos.';
+
+                                                        inp.value = '';
+
+                                                        this.fileName = '';
+                                                        this.fileObjectURL = '';
+
+                                                        return;
+                                                    }
+
+                                                    this.error = '';
+
+                                                    this.fileName = f.name;
+
+                                                    if (this.fileObjectURL) {
+                                                        URL.revokeObjectURL(
+                                                            this.fileObjectURL
+                                                        );
+                                                    }
+
+                                                    try {
+
+                                                        this.fileObjectURL =
+                                                            URL.createObjectURL(f);
+
+                                                    } catch (e) {
+
+                                                        this.fileObjectURL = '';
+                                                    }
+                                                });
+
+                                                ['dragenter','dragover'].forEach(ev =>
+                                                    dz.addEventListener(ev, e => {
+                                                        e.preventDefault();
+                                                        this.over = true;
+                                                    })
+                                                );
+
+                                                ['dragleave','dragend'].forEach(ev =>
+                                                    dz.addEventListener(ev, e => {
+                                                        e.preventDefault();
+                                                        this.over = false;
+                                                    })
+                                                );
+
+                                                dz.addEventListener('drop', e => {
+
+                                                    e.preventDefault();
+
+                                                    this.over = false;
+
+                                                    const file =
+                                                        e.dataTransfer?.files?.[0];
+
+                                                    if (!file) return;
+
+                                                    const dt = new DataTransfer();
+
+                                                    dt.items.add(file);
+
+                                                    inp.files = dt.files;
+
+                                                    inp.dispatchEvent(
+                                                        new Event('change', {
+                                                            bubbles: true
+                                                        })
+                                                    );
+                                                });
+                                            }
+                                        }">
+
+                                            <div class="flex items-center space-x-2 min-w-0">
+
+                                                <div class="relative pdf-dropzone flex-1 min-w-0">
+
+                                                    <div class="file-display w-full overflow-hidden
+                                                                border border-dashed border-gray-300
+                                                                rounded-lg px-3 py-2
+                                                                min-h-[48px]
+                                                                flex items-center gap-2
+                                                                bg-white
+                                                                {% if modo_visualizacao or modo_exclusao %}
+                                                                    bg-gray-100
+                                                                {% endif %}">
+
+                                                        <!-- Ícone -->
+                                                        <svg
+                                                            aria-hidden="true"
+                                                            class="h-5 w-5 flex-shrink-0 text-gray-600"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            stroke-width="2"
+                                                            viewBox="0 0 24 24">
+
+                                                            <path
+                                                                d="M4 15a3 3 0 003 3h10a3 3 0 003-3"
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round">
+                                                            </path>
+
+                                                            <path
+                                                                d="M12 7v8m0-8l-3 3m3-3l3 3"
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round">
+                                                            </path>
+                                                        </svg>
+
+                                                        <!-- Nome -->
+                                                        <span
+                                                            class="file-name text-gray-500"
+                                                            x-text="
+                                                                fileName ||
+                                                                'Click ou arraste para enviar o PDF'
+                                                            ">
+                                                        </span>
+
+                                                    </div>
+
+                                                    <!-- INPUT -->
+                                                    {% if not modo_visualizacao and not modo_exclusao %}
+                                                        <div class="absolute inset-0 z-10 opacity-0 cursor-pointer">
+                                                            {{ form.documento_modelo_processo }}
+                                                        </div>
+                                                    {% endif %}
+
+                                                    <input type="hidden"
+                                                           name="remover_documento_modelo_processo"
+                                                           value="0"
+                                                           x-ref="removerPdf">
+
+                                                </div>
+
+                                                <!-- OLHO -->
+                                                <template x-if="fileName && fileObjectURL">
+
+                                                    <a
+                                                        @click="abrirModalDocumento(fileObjectURL, fileName)"
+                                                        class="text-blue-500 hover:text-blue-700 cursor-pointer"
+                                                        title="Visualizar">
+
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke-width="2"
+                                                            stroke="currentColor"
+                                                            class="w-5 h-5">
+
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        </svg>
+
+                                                    </a>
+
+                                                </template>
+                                                <!-- ERASER -->
+                                                <template x-if="fileName && !readonlyMode">
+
+                                                    <button
+                                                        type="button"
+                                                        @click="
+                                                            fileName = '';
+                                                            fileObjectURL = '';
+                                                            error = '';
+
+                                                            const inp =
+                                                                $el.querySelector('input[type=file]');
+
+                                                            if (inp) {
+                                                                inp.value = '';
+                                                            }
+
+                                                            $refs.removerPdf.value = '1';
+                                                        "
+                                                        class="text-red-500 hover:text-red-700 cursor-pointer"
+                                                        title="Remover documento">
+
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                             class="h-5 w-5"
+                                                             fill="none"
+                                                             viewBox="0 0 24 24"
+                                                             stroke="currentColor">
+
+                                                            <path stroke-linecap="round"
+                                                                  stroke-linejoin="round"
+                                                                  stroke-width="2"
+                                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21
+                                                                     H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6
+                                                                     m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9
+                                                                     a2 2 0 0 0-2 2h10z"/>
+                                                        </svg>
+
+                                                    </button>
+
+                                                </template>
+
+                                            </div>
+
+                                            <!-- ERRO FRONT -->
+                                            <p
+                                                class="mt-1 text-sm text-red-600"
+                                                x-show="error"
+                                                x-text="error">
+                                            </p>
+
+                                            <!-- ERRO DJANGO -->
+                                            {% if form.documento_modelo_processo.errors %}
+                                                <p class="mt-1 text-sm text-red-600">
+                                                    {{ form.documento_modelo_processo.errors|striptags }}
+                                                </p>
+                                            {% endif %}
+
+                                        </div>
+
+                                    </div>
+
+                                    {% endwith %}
+
+                                    <!-- LINK DOCUMENTO EXTERNO -->
+                                    <div class="col-span-12 md:col-span-6">
+                                        <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                            Link Documento
+                                        </label>
+
+                                        <div x-data="{
+                                                link: `{{ form.initial.link_documento_modelo_processo|default:''|escapejs }}`,
+
+                                                readonlyMode:
+                                                    {% if modo_visualizacao or modo_exclusao %}
+                                                        true
+                                                    {% else %}
+                                                        false
+                                                    {% endif %}
+                                             }"
+
+                                            class="flex items-center space-x-2 min-w-0">
+
+                                            <!-- INPUT -->
+                                            <div class="flex-1 min-w-0">
+
+                                                <input
+                                                    type="text"
+                                                    name="link_documento_modelo_processo"
+                                                    id="{{ form.link_documento_modelo_processo.id_for_label }}"
+                                                    x-model="link"
+                                                    placeholder="https://exemplo.com/documento.pdf"
+                                                    autocomplete="off"
+                                                    class="w-full min-h-[48px]
+                                                           leading-normal
+                                                           border border-gray-300 rounded-lg
+                                                           px-3 py-2
+                                                           text-black
+                                                           bg-white
+                                                           placeholder-gray-400
+                                                           focus:outline-none
+                                                           focus:ring-2
+                                                           focus:ring-blue-500">
+
+                                                {% if form.link_documento_modelo_processo.errors %}
+                                                    <p class="mt-1 text-sm text-red-600">
+                                                        {{ form.link_documento_modelo_processo.errors|striptags }}
+                                                    </p>
+                                                {% endif %}
+
+                                            </div>
+
+                                            <!-- VISUALIZAR -->
+                                            <template x-if="link">
+
+                                                <a @click="abrirModalDocumento(link, 'Documento Externo')"
+                                                   class="text-blue-500 hover:text-blue-700 cursor-pointer"
+                                                   title="Visualizar">
+
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke-width="2"
+                                                        stroke="currentColor"
+                                                        class="w-5 h-5">
+
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+
+                                                    </svg>
+
+                                                </a>
+
+                                            </template>
+
+                                            <!-- REMOVER -->
+                                            <template x-if="link && !readonlyMode">
+
+                                                <button
+                                                    type="button"
+                                                    @click="link = ''"
+                                                    class="text-red-500 hover:text-red-700 cursor-pointer"
+                                                    title="Limpar link">
+
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                         class="h-5 w-5"
+                                                         fill="none"
+                                                         viewBox="0 0 24 24"
+                                                         stroke="currentColor">
+
+                                                        <path stroke-linecap="round"
+                                                              stroke-linejoin="round"
+                                                              stroke-width="2"
+                                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21
+                                                                 H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6
+                                                                 m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9
+                                                                 a2 2 0 0 0-2 2h10z"/>
+                                                    </svg>
+
+                                                </button>
+
+                                            </template>
+
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- LINK DOCUMENTO -->
-                        <div>
-                            <label class="block text-sm font-medium text-blue-700">
-                                Link Documento
-                            </label>
-
-                            <input
-                                type="text"
-                                placeholder="https://exemplo.com/documento.pdf"
-                                class="w-full h-12 border border-gray-300 rounded-lg
-                                       px-3 focus:ring-2 focus:ring-blue-500">
-                        </div>
-
                     </div>
 
                     <!-- ============================================ -->
@@ -1400,6 +1793,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const rbProcesso = document.getElementById("rb_processo")
     const rbSubprocesso = document.getElementById("rb_subprocesso")
 
+    const rbGoves = document.getElementById("rb_goves");
+    const rbSeger = document.getElementById("rb_seger");
+    const rbOutros = document.getElementById("rb_outros");
+
     const lblCampoProcesso = document.getElementById("lbl_campo_processo")
     const lblCampoSubprocesso = document.getElementById("lbl_campo_subprocesso")
 
@@ -1424,6 +1821,25 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function atualizarGrupoRadios(grupo) {
+
+        grupo.forEach(item => {
+
+            const radio = document.getElementById(item.radio);
+            const label = document.getElementById(item.label);
+
+            if (!radio || !label) return;
+
+            if (radio.checked) {
+                label.classList.remove("text-gray-400");
+                label.classList.add("text-blue-700");
+            } else {
+                label.classList.remove("text-blue-700");
+                label.classList.add("text-gray-400");
+            }
+        });
+    }
+
     window.atualizarVisualTipo = function(limparAoLiberar = true) {
 
         const CAMPOS_HERANCA = [
@@ -1439,65 +1855,88 @@ document.addEventListener("DOMContentLoaded", function () {
         if (processoInput) removerAvisoSimilaridade(processoInput);
         if (subprocessoInput) removerAvisoSimilaridade(subprocessoInput);
 
-        // 🔥 só limpa se for interação do usuário (não no load)
+        // 🔥 Só limpa se for interação do usuário (não no load)
         if (limparAoLiberar) {
-            if (processoInput) processoInput.value = ""
-            if (subprocessoInput) subprocessoInput.value = ""
-            if (hiddenNome) hiddenNome.value = ""
+            if (processoInput) processoInput.value = "";
+            if (subprocessoInput) subprocessoInput.value = "";
+            if (hiddenNome) hiddenNome.value = "";
         }
+
+        // =====================================================
+        // Atualiza somente as cores dos rádios
+        // =====================================================
+        atualizarGrupoRadios([
+            {
+                radio: "rb_processo",
+                label: "lbl_processo"
+            },
+            {
+                radio: "rb_subprocesso",
+                label: "lbl_subprocesso"
+            },
+            {
+                radio: "rb_goves",
+                label: "lbl_goves"
+            },
+            {
+                radio: "rb_seger",
+                label: "lbl_seger"
+            },
+            {
+                radio: "rb_outros",
+                label: "lbl_outros"
+            }
+        ]);
 
         if (rbSubprocesso && rbSubprocesso.checked) {
 
-            if (lblCampoProcesso) lblCampoProcesso.textContent = "Selecionar Processo para associar";
+            if (lblCampoProcesso)
+                lblCampoProcesso.textContent = "Selecionar Processo para associar";
 
-            if (lblCampoProcesso) lblCampoProcesso.classList.add("text-blue-700");
+            if (lblCampoProcesso)
+                lblCampoProcesso.classList.add("text-blue-700");
 
             if (lblCampoSubprocesso) {
                 lblCampoSubprocesso.classList.remove("text-gray-400");
                 lblCampoSubprocesso.classList.add("text-blue-700");
             }
 
-            if (lblProcesso) {
-                lblProcesso.classList.remove("text-blue-700");
-                lblProcesso.classList.add("text-gray-400");
-            }
-
-            if (lblSubprocesso) {
-                lblSubprocesso.classList.remove("text-gray-400");
-                lblSubprocesso.classList.add("text-blue-700");
-            }
-
-            CAMPOS_HERANCA.forEach(id => HerancaProcesso.bloquearCampo(id));
+            CAMPOS_HERANCA.forEach(id =>
+                HerancaProcesso.bloquearCampo(id)
+            );
 
         } else {
 
-            if (lblCampoProcesso) lblCampoProcesso.textContent = "Nome do Processo";
+            if (lblCampoProcesso)
+                lblCampoProcesso.textContent = "Nome do Processo";
 
             if (lblCampoSubprocesso) {
                 lblCampoSubprocesso.classList.remove("text-blue-700");
                 lblCampoSubprocesso.classList.add("text-gray-400");
             }
 
-            if (lblProcesso) {
-                lblProcesso.classList.remove("text-gray-400");
-                lblProcesso.classList.add("text-blue-700");
-            }
-
-            if (lblSubprocesso) {
-                lblSubprocesso.classList.remove("text-blue-700");
-                lblSubprocesso.classList.add("text-gray-400");
-            }
-
             if (limparAoLiberar) {
+
                 HerancaProcesso.limpar();
+
             } else {
-                CAMPOS_HERANCA.forEach(id => HerancaProcesso.desbloquearCampo(id));
+
+                CAMPOS_HERANCA.forEach(id =>
+                    HerancaProcesso.desbloquearCampo(id)
+                );
+
             }
+
         }
+
     }
 
     if (rbProcesso) rbProcesso.addEventListener("change", () => atualizarVisualTipo(true))
     if (rbSubprocesso) rbSubprocesso.addEventListener("change", () => atualizarVisualTipo(true))
+    if (rbGoves) rbGoves.addEventListener("change", () => atualizarVisualTipo(false));
+    if (rbSeger) rbSeger.addEventListener("change", () => atualizarVisualTipo(false));
+    if (rbOutros) rbOutros.addEventListener("change", () => atualizarVisualTipo(false));
+
 
     /* sincroniza nome do processo */
     if (processoInput) {

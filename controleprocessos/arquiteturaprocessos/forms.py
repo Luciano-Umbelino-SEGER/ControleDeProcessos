@@ -1779,6 +1779,7 @@ class Form_ProcessoForm(forms.ModelForm):
             attrs={
                 "placeholder": "dd/mm/aaaa",
                 "autocomplete": "off",
+                "maxlength": "10",
             }
         ),
     )
@@ -1791,6 +1792,7 @@ class Form_ProcessoForm(forms.ModelForm):
             attrs={
                 "placeholder": "dd/mm/aaaa",
                 "autocomplete": "off",
+                "maxlength": "10",
             }
         ),
     )
