@@ -16,7 +16,7 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2,
     ModelagemProcesso, Processo, TiposDocumento, ProcessoMapear, ContatoAreaSeger,
-    NormaProcedimento, SistemasUECI,
+    NormaProcedimento, SistemasUECI, AbrangenciaChoices,
 )
 from django.db.models import Q
 
@@ -465,7 +465,6 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
                 field.widget.attrs["id"] = f"id_{name}"
             field.widget.attrs.setdefault("name", name)
 
-# Aqui 1
 # ============================================================
 # Form_Sistema_UECIForm
 # ============================================================
@@ -1735,7 +1734,7 @@ class MacroN2Select(forms.Select):
                 pass
 
         return option
-
+# Aqui 1
 # ----------------------------
 # Processos - Formulário
 # ----------------------------
@@ -1764,6 +1763,36 @@ class Form_ProcessoForm(forms.ModelForm):
         required=False,
         label="Área Responsável",
         empty_label="Selecione uma área"
+    )
+
+    abrangencia = forms.ChoiceField(
+        choices=AbrangenciaChoices.choices,
+        label="Abrangência",
+        widget=forms.RadioSelect,
+    )
+
+    data_elaboracao = forms.DateField(
+        required=True,
+        label="Data de Elaboração",
+        input_formats=["%d/%m/%Y"],
+        widget=forms.DateInput(
+            attrs={
+                "placeholder": "dd/mm/aaaa",
+                "autocomplete": "off",
+            }
+        ),
+    )
+
+    data_aprovacao = forms.DateField(
+        required=False,
+        label="Data de Aprovação",
+        input_formats=["%d/%m/%Y"],
+        widget=forms.DateInput(
+            attrs={
+                "placeholder": "dd/mm/aaaa",
+                "autocomplete": "off",
+            }
+        ),
     )
 
     modelagem_processo = forms.ModelChoiceField(
@@ -1886,6 +1915,8 @@ class Form_ProcessoForm(forms.ModelForm):
 
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
+        data_elaboracao = cleaned.get("data_elaboracao")
+        data_aprovacao = cleaned.get("data_aprovacao")
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")
         area = cleaned.get("area_responsavel")
@@ -1908,6 +1939,23 @@ class Form_ProcessoForm(forms.ModelForm):
 
             if self.instance and parent == self.instance:
                 self.add_error("parent", "Processo não pode ser pai de si mesmo.")
+
+        # Data de Elaboração
+        if not data_elaboracao:
+            self.add_error(
+                "data_elaboracao",
+                "Data de Elaboração é obrigatória."
+            )
+
+        if (
+                data_aprovacao
+                and data_elaboracao
+                and data_aprovacao < data_elaboracao
+        ):
+            self.add_error(
+                "data_aprovacao",
+                "A Data de Aprovação não pode ser anterior à Data de Elaboração."
+            )
 
         # 4️⃣ Macroprocesso
         if macro2 and macro1:
