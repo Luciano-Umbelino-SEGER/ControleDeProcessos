@@ -414,18 +414,15 @@
                 <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
 
                     <!-- TÍTULO SOBREPOSTO -->
+                    <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+                        <h2 class="text-base font-semibold text-blue-800 leading-none">
+                            Documentação
+                        </h2>
+                    </div>
                     <!-- ===================================================== -->
-                    <!-- DOCUMENTAÇÃO -->
+                    <!-- DOCUMENTAÇÃO                                          -->
                     <!-- ===================================================== -->
-                    <div class="col-span-12 mt-2">
-
-                        <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
-
-                            <div class="absolute -top-3 left-5 px-3 bg-blue-50">
-                                <h2 class="text-base font-semibold text-blue-800 leading-none">
-                                    Documentação
-                                </h2>
-                            </div>
+                    <div class="col-span-12 mt-1 mb-6">
 
                             <div class="grid grid-cols-12 gap-3">
 
@@ -433,7 +430,7 @@
 
                                 <div class="col-span-12 md:col-span-6">
 
-                                        <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                        <label class="block text-sm font-medium text-blue-700 mb-1">
                                             Documento PDF
                                         </label>
 
@@ -725,7 +722,7 @@
 
                                     <!-- LINK DOCUMENTO EXTERNO -->
                                     <div class="col-span-12 md:col-span-6">
-                                        <label class="block text-sm font-semibold text-blue-700 mb-1">
+                                        <label class="block text-sm font-medium text-blue-700 mb-1">
                                             Link Documento
                                         </label>
 
@@ -834,8 +831,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
                     <!-- ============================================ -->
                     <!-- LINHA 8 – Norma de Procedimento (Bloco Base) -->
@@ -1272,6 +1267,9 @@
             </div>      <!-- col-span-12 -->
         </div>          <!-- grid -->
 
+       <!-- ===================================================== -->
+       <!-- REGISTROS DO SISTEMA                                  -->
+       <!-- ===================================================== -->
         <div class="grid grid-cols-12 gap-3">
 
             <div class="col-span-12">
@@ -1286,7 +1284,7 @@
                     </div>
 
                     <!-- LINHA 10 – Auditoria -->
-                    <div class="grid grid-cols-6 gap-6">
+                    <div class="grid grid-cols-6 gap-6 mb-1">
 
                         <!-- Cadastro -->
                         <div>
@@ -1294,7 +1292,7 @@
                             <input type="text"
                                    value="{{ cadastro_data }}"
                                    readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 h-10 text-black">
                         </div>
 
                         <!-- Responsável Cadastro -->
@@ -1303,7 +1301,7 @@
                             <input type="text"
                                    value="{{ cadastro_user }}"
                                    readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 h-10 text-black">
                         </div>
 
                         <!-- Atualização -->
@@ -1312,7 +1310,7 @@
                             <input type="text"
                                    value="{{ atualizacao_data }}"
                                    readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 h-10 text-black">
                         </div>
 
                         <!-- Responsável Atualização -->
@@ -1321,7 +1319,7 @@
                             <input type="text"
                                    value="{{ atualizacao_user }}"
                                    readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 h-10 text-black">
                         </div>
 
                         <!-- Conclusão -->
@@ -1330,7 +1328,7 @@
                             <input type="text"
                                    value="{{ conclusao_data }}"
                                    readonly
-                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                   class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 h-10 text-black">
                         </div>
 
                         <!-- Responsável Conclusão -->
