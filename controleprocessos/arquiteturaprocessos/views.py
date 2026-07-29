@@ -89,124 +89,101 @@ def visualizar_pdf(request, path):
     return response
 
 # ------------------------------------------------
-# Modelagem filtrada helper por tipo de documento
+# Obtem Normas de Procedimento Ativas
 # ------------------------------------------------
-def get_modelagem_filtrada():
+def get_normas_procedimento_ativas():
+
     hoje = timezone.now().date()
 
-    base_qs = (
-        ModelagemProcesso.objects
+    return (
+        NormaProcedimento.objects
         .filter(
-            Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje)
+            Q(vigencia_fim__isnull=True)
+            | Q(vigencia_fim__gte=hoje)
         )
-        .select_related("tipo_documento")
-        .order_by("titulo")
+        .select_related("sistema")
+        .order_by(
+            "nome_norma",
+            "codigo_norma",
+            "versao",
+        )
     )
 
-    modelos = base_qs.filter(
-        tipo_documento__nome__icontains="modelo"
+# -----------------------------------------------
+# Recuperar Normas de Procedimento dos Processos
+# -----------------------------------------------
+def get_normas_por_processo(processo):
+
+    return (
+        NormaProcedimento.objects
+        .filter(
+            processos__processo=processo
+        )
+        .select_related("sistema")
+        .order_by(
+            "nome_norma",
+            "codigo_norma",
+        )
     )
-
-    normas = base_qs.filter(
-        tipo_documento__nome__icontains="norma"
-    )
-
-    return modelos, normas
-
-
-# -------------------------------
-# Extrair Modelagens - Processos
-# -------------------------------
-def extrair_modelagens_do_post(request):
-    ids = set()
-
-    # base
-    if request.POST.get("modelagem_processo"):
-        ids.add(request.POST.get("modelagem_processo"))
-
-    if request.POST.get("norma_procedimento"):
-        ids.add(request.POST.get("norma_procedimento"))
-
-    # extras
-    ids.update(request.POST.getlist("modelagem_processo_extra[]"))
-    ids.update(request.POST.getlist("norma_procedimento_extra[]"))
-
-    # limpa vazios
-    ids = {i for i in ids if i}
-
-    return ModelagemProcesso.objects.filter(id__in=ids)
-
-# ----------------------------------
-# Recuperar Documentos - Processos
-# ----------------------------------
-def get_documentos_por_processo(processo):
-    modelos = []
-    normas = []
-
-    relacoes = (
-        ProcessoDocumento.objects
-        .select_related("modelagem_processo__tipo_documento")
-        .filter(processo=processo)
-    )
-
-    for rel in relacoes:
-        doc = rel.modelagem_processo
-        tipo_nome = doc.tipo_documento.nome.upper().strip()
-
-        if tipo_nome == "MODELO DE PROCESSO":
-            modelos.append(doc)
-        elif tipo_nome == "NORMA DE PROCEDIMENTO":
-            normas.append(doc)
-
-    return modelos, normas
 
 # =========================================
-# UTIL – Persistência de Documentos (1 → N)
+# UTIL – Persistência de Normas do Processo
 # =========================================
-def salvar_documentos_processo(request, processo):
+def salvar_normas_processo(request, processo):
     """
-    Salva (recria) todos os documentos associados a um processo,
-    tanto para inclusão quanto para edição.
+    Recria os vínculos entre Processo e Normas de Procedimento.
+
+    A documentação do Processo (PDF e Link) pertence ao próprio
+    Processo e é salva automaticamente pelo ModelForm.
+    Esta rotina trata exclusivamente as Normas associadas.
     """
 
-    # 1️⃣ Remove todos os vínculos existentes (edição segura)
-    ProcessoDocumento.objects.filter(processo=processo).delete()
+    # ----------------------------------------------------
+    # Remove vínculos antigos
+    # ----------------------------------------------------
+    ProcessoDocumento.objects.filter(
+        processo=processo
+    ).delete()
 
-    documentos_ids = []
+    normas_ids = []
 
-    # 🔹 Modelo de Processo (base)
-    modelo_principal = request.POST.get("modelagem_processo")
-    if modelo_principal:
-        documentos_ids.append(modelo_principal)
-
-    # 🔹 Modelos de Processo (extras)
-    documentos_ids.extend(
-        request.POST.getlist("modelagem_processo_extra[]")
+    # ----------------------------------------------------
+    # Norma principal
+    # ----------------------------------------------------
+    norma_principal = request.POST.get(
+        "norma_procedimento"
     )
 
-    # 🔹 Norma de Procedimento (base)
-    norma_principal = request.POST.get("norma_procedimento")
     if norma_principal:
-        documentos_ids.append(norma_principal)
+        normas_ids.append(norma_principal)
 
-    # 🔹 Normas de Procedimento (extras)
-    documentos_ids.extend(
-        request.POST.getlist("norma_procedimento_extra[]")
-    )
-
-    # 2️⃣ Remove vazios e duplicados
-    documentos_ids = list(
-        set(filter(None, documentos_ids))
-    )
-
-    # 3️⃣ Cria os vínculos Processo ↔ Documento
-    ProcessoDocumento.objects.bulk_create([
-        ProcessoDocumento(
-            processo=processo,
-            modelagem_processo_id=doc_id
+    # ----------------------------------------------------
+    # Normas adicionais
+    # ----------------------------------------------------
+    normas_ids.extend(
+        request.POST.getlist(
+            "norma_procedimento_extra[]"
         )
-        for doc_id in documentos_ids
-    ])
+    )
+
+    # ----------------------------------------------------
+    # Remove vazios e duplicados
+    # ----------------------------------------------------
+    normas_ids = list(
+        set(filter(None, normas_ids))
+    )
+
+    # ----------------------------------------------------
+    # Recria os vínculos Processo × Norma
+    # ----------------------------------------------------
+    if normas_ids:
+        ProcessoDocumento.objects.bulk_create([
+            ProcessoDocumento(
+                processo=processo,
+                norma_procedimento_id=norma_id,
+            )
+            for norma_id in normas_ids
+        ])
 
 # --------------------------------------
 # Obter Responsável Contatos Area SEGER
@@ -4159,17 +4136,25 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("arquiteturaprocessos:processos")
 
     # -------------------------------------------------
+    # FORM KWARGS
+    # -------------------------------------------------
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"modo_inclusao": True,})
+
+        return kwargs
+
+    # -------------------------------------------------
     # Contexto do template
     # -------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         agora_local = timezone.localtime()
-        modelos, normas = get_modelagem_filtrada()
+        normas = get_normas_procedimento_ativas()
 
         context.update({
             # listas para selects dinâmicos
-            "modelos_processo": modelos,
             "normas_procedimento": normas,
 
             # controle de modos
@@ -4203,9 +4188,13 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             processo.usuario_cadastro = self.request.user
             processo.usuario_atualizacao = None
             processo.data_atualizacao = None
+
             processo.save()
 
-            salvar_documentos_processo(self.request, processo)
+            salvar_normas_processo(
+                self.request,
+                processo
+            )
 
         messages.success(
             self.request,
@@ -4213,7 +4202,10 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         )
 
         self.object = processo
-        return HttpResponseRedirect(self.get_success_url())
+
+        return HttpResponseRedirect(
+            self.get_success_url()
+        )
 
     # -------------------------------------------------
     # Erro de validação
@@ -4238,7 +4230,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 
-    def get_queryset(self):  # 👈 AQUI
+    def get_queryset(self):
         return (
             Processo.objects
             .select_related(
@@ -4259,9 +4251,9 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         # -------------------------------------------------
         # Listas para os selects
         # -------------------------------------------------
-        modelos, normas = get_modelagem_filtrada()
-        context["modelos_processo"] = modelos
-        context["normas_procedimento"] = normas
+        context["normas_procedimento"] = (
+            get_normas_procedimento_ativas()
+        )
 
         # -------------------------------------------------
         # Form em modo visualização
@@ -4276,59 +4268,38 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
         # -------------------------------------------------
         documentos_qs = (
             ProcessoDocumento.objects
-            .select_related(
-                "modelagem_processo",
-                "modelagem_processo__tipo_documento"
-            )
+            .select_related("norma_procedimento")
             .filter(processo=processo)
         )
 
-        modelos_hidratados = []
         normas_hidratadas = []
 
         for doc in documentos_qs:
-            mp = doc.modelagem_processo
-            tipo_nome = (mp.tipo_documento.nome or "").lower()
+            norma = doc.norma_procedimento
 
-            dados = {
-                "id": mp.id,
-                "titulo": mp.titulo,
-                "tema": mp.tema,
-                "versao": mp.versao,
-                "emitente": mp.emitente,
-                "sistema": mp.sistema,
+            normas_hidratadas.append({
+                "id": norma.id,
+                "nome_norma": norma.nome_norma,
+                "codigo_norma": norma.codigo_norma,
+                "versao": norma.versao,
+                "emitente": norma.emitente,
+                "sistema": str(norma.sistema),
                 "vigencia": (
-                    mp.vigencia_inicio.strftime("%Y-%m-%d")
-                    if mp.vigencia_inicio else ""
+                    norma.vigencia_inicio.strftime("%Y-%m-%d")
+                    if norma.vigencia_inicio else ""
                 ),
-            }
+                "pdf": (
+                    norma.documento_norma_procedimento.url
+                    if norma.documento_norma_procedimento
+                    else ""
+                ),
+                "link": (
+                    norma.link_documento_norma
+                    or ""
+                ),
+            })
 
-            # -------------------------------------------------
-            # PDF e LINK (sempre presentes, mesmo que vazios)
-            # -------------------------------------------------
-            dados["pdf"] = (
-                mp.documento_modelagem_processo.url
-                if mp.documento_modelagem_processo
-                else ""
-            )
-
-            dados["link"] = mp.link_normaprocedimento or ""
-
-            # -------------------------------------------------
-            # Separação por tipo de documento
-            # -------------------------------------------------
-            if "modelo" in tipo_nome:
-                modelos_hidratados.append(dados)
-            else:
-                normas_hidratadas.append(dados)
-
-        # -------------------------------------------------
-        # Envio para hidratação via JS
-        # -------------------------------------------------
-        context.update({
-            "modelos_hidratados": modelos_hidratados,
-            "normas_hidratadas": normas_hidratadas,
-        })
+        context["normas_hidratadas"] = normas_hidratadas
 
         # -------------------------------------------------
         # Controle de modo + auditoria
@@ -4369,8 +4340,6 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 
         return context
 
-from django.http import HttpResponseRedirect
-
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
@@ -4379,6 +4348,15 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     template_name = 'processos/form_processo.html'
     form_class = Form_ProcessoForm
     success_url = reverse_lazy('arquiteturaprocessos:processos')
+
+    # -------------------------------------------------
+    # FORM KWARGS
+    # -------------------------------------------------
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"modo_edicao": True,})
+
+        return kwargs
 
     # -------------------------------------------------
     # 🔥 OTIMIZAÇÃO (IMPORTANTE)
@@ -4401,7 +4379,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     # 🔥 CONTROLE DE EDIÇÃO
     # -------------------------------------------------
     def dispatch(self, request, *args, **kwargs):
-        self.object = self.get_object()  # 🔥 evita dupla query
+        self.object = self.get_object()  # Carrega o processo para validar o status antes da edição
 
         if self.object.status == "concluido":
             messages.error(
@@ -4419,9 +4397,9 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         processo = self.object
 
-        modelos, normas = get_modelagem_filtrada()
-        context["modelos_processo"] = modelos
-        context["normas_procedimento"] = normas
+        context["normas_procedimento"] = (
+            get_normas_procedimento_ativas()
+        )
 
         # SELECTS DEPENDENTES
         context["macroprocesso_nivel1_list"] = (
@@ -4436,47 +4414,41 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
         )
 
-        # DOCUMENTOS
+        # NORMAS DE PROCEDIMENTO
         documentos_qs = (
             ProcessoDocumento.objects
-            .select_related(
-                "modelagem_processo",
-                "modelagem_processo__tipo_documento"
-            )
+            .select_related("norma_procedimento")
             .filter(processo=processo)
         )
 
-        modelos_hidratados = []
         normas_hidratadas = []
 
         for doc in documentos_qs:
-            mp = doc.modelagem_processo
-            tipo_nome = (mp.tipo_documento.nome or "").lower()
+            norma = doc.norma_procedimento
 
-            dados = {
-                "id": mp.id,
-                "titulo": mp.titulo,
-                "tema": mp.tema,
-                "versao": mp.versao,
-                "emitente": mp.emitente,
-                "sistema": mp.sistema,
+            normas_hidratadas.append({
+                "id": norma.id,
+                "nome_norma": norma.nome_norma,
+                "codigo_norma": norma.codigo_norma,
+                "versao": norma.versao,
+                "emitente": norma.emitente,
+                "sistema": str(norma.sistema),
                 "vigencia": (
-                    mp.vigencia_inicio.strftime("%Y-%m-%d")
-                    if mp.vigencia_inicio else ""
+                    norma.vigencia_inicio.strftime("%Y-%m-%d")
+                    if norma.vigencia_inicio else ""
                 ),
-                "pdf": mp.documento_modelagem_processo.url if mp.documento_modelagem_processo else "",
-                "link": mp.link_normaprocedimento or "",
-            }
+                "pdf": (
+                    norma.documento_norma_procedimento.url
+                    if norma.documento_norma_procedimento
+                    else ""
+                ),
+                "link": (
+                    norma.link_documento_norma
+                    or ""
+                ),
+            })
 
-            if "modelo" in tipo_nome:
-                modelos_hidratados.append(dados)
-            else:
-                normas_hidratadas.append(dados)
-
-        context.update({
-            "modelos_hidratados": modelos_hidratados,
-            "normas_hidratadas": normas_hidratadas,
-        })
+        context["normas_hidratadas"] = normas_hidratadas
 
         # AUDITORIA
         context.update({
@@ -4518,30 +4490,41 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         with transaction.atomic():
 
             processo_original = self.object  # 🔥 evita nova query
-            processo_antigo = processo_original
 
             dados_antes = {
-                "nome": processo_antigo.nome,
-                "status": processo_antigo.status,
-                "classificacao": processo_antigo.classificacao_id,
-                "macro_nivel1": processo_antigo.macroprocesso_nivel1_id,
-                "macro_nivel2": processo_antigo.macroprocesso_nivel2_id,
+                "nome": processo_original.nome,
+                "status": processo_original.status,
+                "classificacao": processo_original.classificacao_id,
+                "macro_nivel1": processo_original.macroprocesso_nivel1_id,
+                "macro_nivel2": processo_original.macroprocesso_nivel2_id,
             }
 
             docs_antes = set(
                 ProcessoDocumento.objects
                 .filter(processo=processo_original)
-                .values_list("modelagem_processo__titulo", flat=True)
+                .values_list(
+                    "norma_procedimento__nome_norma",
+                    flat=True
+                )
             )
 
             # SALVAR PROCESSO
             processo = form.save(commit=False)
+            # ---------------------------------------------
+            # REMOVER DOCUMENTO PDF
+            # ---------------------------------------------
+            if (
+                    self.request.POST.get(
+                        "remover_documento_modelo_processo"
+                    ) == "1"
+            ):
+                processo.documento_modelo_processo = None
             processo.usuario_atualizacao = self.request.user
             processo.data_atualizacao = timezone.now()
             processo.save()
 
             # SALVAR DOCUMENTOS
-            salvar_documentos_processo(self.request, processo)
+            salvar_normas_processo(self.request, processo)
 
             dados_depois = {
                 "nome": processo.nome,
@@ -4554,7 +4537,10 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             docs_depois = set(
                 ProcessoDocumento.objects
                 .filter(processo=processo)
-                .values_list("modelagem_processo__titulo", flat=True)
+                .values_list(
+                    "norma_procedimento__nome_norma",
+                    flat=True
+                )
             )
 
             adicionados = docs_depois - docs_antes
@@ -4618,7 +4604,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                 "usuario_atualizacao",
                 "usuario_conclusao",
             )
-            .prefetch_related("subprocessos")  # 🔥 importante aqui
+            .prefetch_related("subprocessos")  # usado na validação da exclusão
         )
 
     def get_context_data(self, **kwargs):
@@ -4628,9 +4614,9 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         # -------------------------------------------------
         # Listas para os selects
         # -------------------------------------------------
-        modelos, normas = get_modelagem_filtrada()
-        context["modelos_processo"] = modelos
-        context["normas_procedimento"] = normas
+        context["normas_procedimento"] = (
+            get_normas_procedimento_ativas()
+        )
 
         # -------------------------------------------------
         # Form em modo exclusão
@@ -4645,58 +4631,38 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         # -------------------------------------------------
         documentos_qs = (
             ProcessoDocumento.objects
-            .select_related(
-                "modelagem_processo",
-                "modelagem_processo__tipo_documento"
-            )
+            .select_related("norma_procedimento")
             .filter(processo=processo)
         )
 
-        modelos_hidratados = []
         normas_hidratadas = []
 
         for doc in documentos_qs:
-            mp = doc.modelagem_processo
-            tipo_nome = (mp.tipo_documento.nome or "").lower()
+            norma = doc.norma_procedimento
 
-            dados = {
-                "id": mp.id,
-                "titulo": mp.titulo,
-                "tema": mp.tema,
-                "versao": mp.versao,
-                "emitente": mp.emitente,
-                "sistema": mp.sistema,
+            normas_hidratadas.append({
+                "id": norma.id,
+                "nome_norma": norma.nome_norma,
+                "codigo_norma": norma.codigo_norma,
+                "versao": norma.versao,
+                "emitente": norma.emitente,
+                "sistema": str(norma.sistema),
                 "vigencia": (
-                    mp.vigencia_inicio.strftime("%Y-%m-%d")
-                    if mp.vigencia_inicio else ""
+                    norma.vigencia_inicio.strftime("%Y-%m-%d")
+                    if norma.vigencia_inicio else ""
                 ),
-            }
-
-            # ------------------------------
-            # MODELO DE PROCESSO (arquivo local)
-            # ------------------------------
-            if "modelo" in tipo_nome:
-                dados["pdf"] = (
-                    mp.documento_modelagem_processo.url
-                    if mp.documento_modelagem_processo
+                "pdf": (
+                    norma.documento_norma_procedimento.url
+                    if norma.documento_norma_procedimento
                     else ""
-                )
-                modelos_hidratados.append(dados)
+                ),
+                "link": (
+                    norma.link_documento_norma
+                    or ""
+                ),
+            })
 
-            # ------------------------------
-            # NORMA DE PROCEDIMENTO (URL externa)
-            # ------------------------------
-            else:
-                dados["link"] = mp.link_normaprocedimento or ""
-                normas_hidratadas.append(dados)
-
-        # -------------------------------------------------
-        # Envio para hidratação via JS
-        # -------------------------------------------------
-        context.update({
-            "modelos_hidratados": modelos_hidratados,
-            "normas_hidratadas": normas_hidratadas,
-        })
+        context["normas_hidratadas"] = normas_hidratadas
 
         # -------------------------------------------------
         # Subprocessos associados
@@ -4763,7 +4729,26 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             return redirect(request.path)
 
         # -------------------------------------------------
-        # 2️⃣ Exclusão definitiva
+        # Efetua o Registro do Log antes da Exclusão
+        # -------------------------------------------------
+        registrar_log(
+            request=request,
+            acao="DELETE",
+            modelo="Processo",
+            objeto_id=str(processo.id),
+            descricao=f"Processo '{processo.nome}' excluído",
+            dados_antes={
+                "nome": processo.nome,
+                "status": processo.status,
+                "classificacao": processo.classificacao_id,
+                "macro_nivel1": processo.macroprocesso_nivel1_id,
+                "macro_nivel2": processo.macroprocesso_nivel2_id,
+            },
+            dados_depois={},
+        )
+
+        # -------------------------------------------------
+        # Efetua a exclusão definitiva do Processo
         # -------------------------------------------------
         processo.delete()
         messages.success(
@@ -4777,8 +4762,10 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 @login_required
 def concluir_processo(request, pk):
-
-    processo = get_object_or_404(Processo, pk=pk)
+    processo = get_object_or_404(
+        Processo.objects.prefetch_related("subprocessos"),
+        pk=pk,
+    )
 
     # ---------------------------------
     # Segurança: só POST pode concluir
@@ -4791,14 +4778,14 @@ def concluir_processo(request, pk):
     # ---------------------------------
     if not processo.pode_concluir:
 
-        subprocessos_nao_iniciados = [
+        subprocessos_iniciados = [
             sub.nome for sub in processo.subprocessos.all()
             if sub.status == "iniciado"
         ]
 
         lista_html = "<br>".join(
             f"<strong>{nome}</strong>"
-            for nome in subprocessos_nao_iniciados
+            for nome in subprocessos_iniciados
         )
 
         messages.error(
@@ -4826,18 +4813,33 @@ def concluir_processo(request, pk):
     with transaction.atomic():
 
         # conclui subprocessos ativos
-        for sub in processo.subprocessos.filter(data_conclusao__isnull=True):
-
-            if sub.status == "ativo":
-
-                sub.data_conclusao = agora
-                sub.usuario_conclusao = request.user
-                sub.save()
+        for sub in processo.subprocessos.filter(
+                status="ativo",
+                data_conclusao__isnull=True,
+        ):
+            sub.data_conclusao = agora
+            sub.usuario_conclusao = request.user
+            sub.save()
 
         # conclui processo pai
+        status_antes = processo.status
         processo.data_conclusao = agora
         processo.usuario_conclusao = request.user
         processo.save()
+
+        registrar_log(
+            request=request,
+            acao="CONCLUIR",
+            modelo="Processo",
+            objeto_id=str(processo.id),
+            descricao=f"Processo '{processo.nome}' concluído",
+            dados_antes={
+                "status": status_antes,
+            },
+            dados_depois={
+                "status": processo.status,
+            },
+        )
 
     messages.success(
         request,

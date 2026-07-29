@@ -1797,18 +1797,6 @@ class Form_ProcessoForm(forms.ModelForm):
         ),
     )
 
-    modelagem_processo = forms.ModelChoiceField(
-        queryset=ModelagemProcesso.objects.all(),
-        required=False,
-        label="Modelo de Processo"
-    )
-
-    norma_procedimento = forms.ModelChoiceField(
-        queryset=ModelagemProcesso.objects.all(),
-        required=False,
-        label="Norma de Procedimento"
-    )
-
     class Meta:
         model = Processo
         exclude = (
@@ -1820,16 +1808,16 @@ class Form_ProcessoForm(forms.ModelForm):
 
         widgets = {
             "objetivo": forms.Textarea(attrs={"rows": "2"}),
-            "observacao": forms.Textarea(attrs={"rows": "2"}),
         }
 
     # ------------------------------------------------
     # INIT – estilo base, bloqueios por modo
     # ------------------------------------------------
     def __init__(self, *args, **kwargs):
-        modo_visualizacao = kwargs.pop("modo_visualizacao", False)
-        modo_exclusao = kwargs.pop("modo_exclusao", False)
-        modo_edicao = kwargs.pop("modo_edicao", False)
+        self.modo_inclusao = kwargs.pop("modo_inclusao", False)
+        self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
+        self.modo_exclusao = kwargs.pop("modo_exclusao", False)
+        self.modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
 
@@ -1843,16 +1831,8 @@ class Form_ProcessoForm(forms.ModelForm):
         if "macroprocesso_nivel2" in self.fields:
             self.fields["macroprocesso_nivel2"].widget.attrs["id"] = "id_macroprocesso_nivel2"
 
-
         if "objetivo" in self.fields:
-            self.fields["objetivo"].max_length = 3000
-            self.fields["objetivo"].widget.attrs["maxlength"] = 3000
             self.fields["objetivo"].widget.attrs["rows"] = 4
-
-        if "observacao" in self.fields:
-            self.fields["observacao"].max_length = 3000
-            self.fields["observacao"].widget.attrs["maxlength"] = 3000
-            self.fields["observacao"].widget.attrs["rows"] = 4
 
         # 🔥 SELECT2 + EDIÇÃO (CORREÇÃO PRINCIPAL)
         if self.instance and self.instance.pk:
@@ -1882,7 +1862,7 @@ class Form_ProcessoForm(forms.ModelForm):
             if name == "nome":
                 continue
 
-            bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            bg = ("bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white")
             field.widget.attrs["class"] = f"{base} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
@@ -1900,12 +1880,12 @@ class Form_ProcessoForm(forms.ModelForm):
 
             # padding quando estiver editando
             if self.instance and self.instance.pk and self.instance.versao_processo:
-                self.initial["versao_processo"] = f"{int(self.instance.versao_processo):02d}"
+                self.initial["versao_processo"] = f"{int(self.instance.versao_processo):04d}"
 
         # --------------------------------------------------------------------
         # Modo VISUALIZAÇÃO / EXCLUSÃO — trava tudo
         # --------------------------------------------------------------------
-        if modo_visualizacao or modo_exclusao:
+        if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
 
@@ -1917,21 +1897,27 @@ class Form_ProcessoForm(forms.ModelForm):
 
         parent = cleaned.get("parent")
         nome = cleaned.get("nome")
+
         data_elaboracao = cleaned.get("data_elaboracao")
         data_aprovacao = cleaned.get("data_aprovacao")
+
         macro1 = cleaned.get("macroprocesso_nivel1")
         macro2 = cleaned.get("macroprocesso_nivel2")
+
         area = cleaned.get("area_responsavel")
 
-        # 1️⃣ Nome obrigatório
-        if not nome or nome.strip() == "":
-            self.add_error("nome", "Informe o nome do Processo ou Subprocesso.")
+        # =====================================================
+        # 1. PROCESSO / SUBPROCESSO
+        # =====================================================
+        if not nome or not nome.strip():
+            self.add_error(
+                "nome",
+                "Informe o nome do Processo ou Subprocesso."
+            )
 
-        # 2️⃣ Regra principal (SUA REGRA)
         if not parent:
-            cleaned["parent"] = None  # Processo
+            cleaned["parent"] = None
 
-        # 3️⃣ Hierarquia
         if parent:
             if parent.parent_id:
                 self.add_error(
@@ -1940,9 +1926,14 @@ class Form_ProcessoForm(forms.ModelForm):
                 )
 
             if self.instance and parent == self.instance:
-                self.add_error("parent", "Processo não pode ser pai de si mesmo.")
+                self.add_error(
+                    "parent",
+                    "Processo não pode ser pai de si mesmo."
+                )
 
-        # Data de Elaboração
+        # =====================================================
+        # 2. DATAS
+        # =====================================================
         if not data_elaboracao:
             self.add_error(
                 "data_elaboracao",
@@ -1950,8 +1941,8 @@ class Form_ProcessoForm(forms.ModelForm):
             )
 
         if (
-                data_aprovacao
-                and data_elaboracao
+                data_elaboracao
+                and data_aprovacao
                 and data_aprovacao < data_elaboracao
         ):
             self.add_error(
@@ -1959,36 +1950,65 @@ class Form_ProcessoForm(forms.ModelForm):
                 "A Data de Aprovação não pode ser anterior à Data de Elaboração."
             )
 
-        # 4️⃣ Macroprocesso
-        if macro2 and macro1:
-            if macro2.macroprocesso_nivel1_id != macro1.id:
-                self.add_error(
-                    "macroprocesso_nivel2",
-                    "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
-                )
+        # =====================================================
+        # 3. MACROPROCESSO
+        # =====================================================
+        if (
+                macro1
+                and macro2
+                and macro2.macroprocesso_nivel1_id != macro1.id
+        ):
+            self.add_error(
+                "macroprocesso_nivel2",
+                "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
+            )
 
-        # 🔥 5️⃣ Área obrigatória
+        # =====================================================
+        # 4. ÁREA RESPONSÁVEL
+        # =====================================================
         if not area:
-            self.add_error("area_responsavel", "Área Responsável é obrigatória.")
+            self.add_error(
+                "area_responsavel",
+                "Área Responsável é obrigatória."
+            )
 
-        # 🔥 6️⃣ Gestor obrigatório
+        # =====================================================
+        # 5. GESTOR
+        # =====================================================
         if not (cleaned.get("gestor") or "").strip():
-            self.add_error("gestor", "Gestor é obrigatório.")
+            self.add_error(
+                "gestor",
+                "Gestor é obrigatório."
+            )
 
-        # 🔥 7️⃣ Telefone obrigatório
+        # =====================================================
+        # 6. TELEFONE
+        # =====================================================
         if not (cleaned.get("telefone") or "").strip():
-            self.add_error("telefone", "Telefone é obrigatório.")
+            self.add_error(
+                "telefone",
+                "Telefone é obrigatório."
+            )
 
-        # 🔥 8️⃣ Email obrigatório + válido
+        # =====================================================
+        # 7. E-MAIL
+        # =====================================================
         email = (cleaned.get("email") or "").strip()
 
         if not email:
-            self.add_error("email", "E-mail é obrigatório.")
+            self.add_error(
+                "email",
+                "E-mail é obrigatório."
+            )
+
         else:
             try:
                 validate_email(email)
             except ValidationError:
-                self.add_error("email", "E-mail inválido.")
+                self.add_error(
+                    "email",
+                    "E-mail inválido."
+                )
 
         return cleaned
 
@@ -2042,16 +2062,16 @@ class Form_ProcessoMapearForm(forms.ModelForm):
 
         widgets = {
             "objetivo": forms.Textarea(attrs={"rows": "2"}),
-            "observacao": forms.Textarea(attrs={"rows": "2"}),
         }
 
     # ------------------------------------------------
     # INIT – Estilização + ajuste Select2 (CRÍTICO)
     # ------------------------------------------------
     def __init__(self, *args, **kwargs):
-        modo_visualizacao = kwargs.pop("modo_visualizacao", False)
-        modo_exclusao = kwargs.pop("modo_exclusao", False)
-        modo_edicao = kwargs.pop("modo_edicao", False)
+        self.modo_inclusao = kwargs.pop("modo_inclusao", False)
+        self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
+        self.modo_exclusao = kwargs.pop("modo_exclusao", False)
+        self.modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
 
@@ -2060,11 +2080,6 @@ class Form_ProcessoMapearForm(forms.ModelForm):
             self.fields["objetivo"].max_length = 3000
             self.fields["objetivo"].widget.attrs["maxlength"] = 3000
             self.fields["objetivo"].widget.attrs["rows"] = 4
-
-        if "observacao" in self.fields:
-            self.fields["observacao"].max_length = 3000
-            self.fields["observacao"].widget.attrs["maxlength"] = 3000
-            self.fields["observacao"].widget.attrs["rows"] = 4
 
         # 🔥 SELECT2 + EDIÇÃO (CORREÇÃO PRINCIPAL)
         if self.instance and self.instance.area_responsavel:
@@ -2094,14 +2109,14 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         )
 
         for name, field in self.fields.items():
-            bg = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
+            bg = ("bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white")
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} {base} {bg}".strip()
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 
         # 🔒 BLOQUEIO
-        if modo_visualizacao or modo_exclusao:
+        if self.modo_visualizacao or self.modo_exclusao:
             for field in self.fields.values():
                 field.disabled = True
 

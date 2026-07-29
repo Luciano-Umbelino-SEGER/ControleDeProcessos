@@ -923,20 +923,20 @@
 
                                                 {% for n in normas_procedimento %}
                                                     <option value="{{ n.id }}"
-                                                            data-tema="{{ n.tema }}"
-                                                            data-versao="{{ n.versao|stringformat:'02d' }}"
+                                                            data-codigo="{{ n.codigo_norma }}"
+                                                            data-versao="{{ n.versao }}"
                                                             data-emitente="{{ n.emitente }}"
                                                             data-sistema="{{ n.sistema }}"
                                                             data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
 
-                                                            data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
-                                                            data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
+                                                            data-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
+                                                            data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma|filename }}{% endif %}"
 
-                                                            data-nome-modelo-processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                            data-nome-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}"
+                                                            data-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.url }}{% endif %}"
+                                                            data-nome-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.name|filename }}{% endif %}"
 
                                                             {% if form.instance.norma_procedimento and form.instance.norma_procedimento.id == n.id %} selected {% endif %}>
-                                                        {{ n.titulo }}
+                                                        {{ n.nome_norma }}
                                                     </option>
 
 
@@ -949,9 +949,9 @@
 
                                 <!-- Tema -->
                                 <div>
-                                    <label class="block text-sm font-medium text-blue-700">Tema</label>
-                                    <input id="tema_norma" type="text" readonly tabindex="-1"
-                                           value="{{ form.instance.norma_procedimento.tema|default_if_none:'' }}"
+                                    <label class="block text-sm font-medium text-blue-700">Código</label>
+                                    <input id="codigo_norma" type="text" readonly tabindex="-1"
+                                           value=""
                                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                   pointer-events-none text-black">
                                 </div>
@@ -1008,7 +1008,7 @@
                                         <input type="text"
                                                readonly
                                                x-ref="pdf"
-                                               :value="nomeModelo"
+                                               :value="nomeDocumentoNorma"
                                                class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                       pointer-events-none text-black truncate">
 
@@ -1047,7 +1047,7 @@
                                         <input type="text"
                                                readonly
                                                x-ref="link"
-                                               :value="nomeNorma"
+                                               :value="nomeLinkNorma"
                                                class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                       pointer-events-none text-black truncate">
 
@@ -1111,18 +1111,19 @@
 
                                                     {% for n in normas_procedimento %}
                                                         <option value="{{ n.id }}"
-                                                                data-tema="{{ n.tema }}"
-                                                                data-versao="{{ n.versao|stringformat:'02d' }}"
+                                                                data-codigo="{{ n.codigo_norma }}"
+                                                                data-versao="{{ n.versao }}"
                                                                 data-emitente="{{ n.emitente }}"
                                                                 data-sistema="{{ n.sistema }}"
                                                                 data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
 
-                                                                data-path-modeloprocesso="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.url }}{% endif %}"
-                                                                data-url-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento }}{% endif %}"
+                                                                data-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
+                                                                data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma|filename }}{% endif %}"
 
-                                                                data-nome-modelo-processo="{% if n.documento_modelagem_processo %}{{ n.documento_modelagem_processo.name|filename }}{% endif %}"
-                                                                data-nome-norma-procedimento="{% if n.link_normaprocedimento %}{{ n.link_normaprocedimento|filename }}{% endif %}">
-                                                            {{ n.titulo }}
+                                                                data-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.url }}{% endif %}"
+                                                                data-nome-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.name|filename }}{% endif %}">
+
+                                                            {{ n.nome_norma }}
                                                         </option>
                                                     {% endfor %}
                                                 </select>
@@ -1131,10 +1132,10 @@
                                         </div>
                                     </div>
 
-                                    <!-- Tema -->
+                                    <!-- Código -->
                                     <div>
-                                        <label class="block text-sm font-medium text-blue-700">Tema</label>
-                                        <input id="tema_norma___UID__" name="tema_norma_extra[]" type="text" readonly tabindex="-1"
+                                        <label class="block text-sm font-medium text-blue-700">Código</label>
+                                        <input id="codigo_norma___UID__" name="codigo_norma_extra[]" type="text" readonly tabindex="-1"
                                                class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
                                     </div>
 
@@ -1183,7 +1184,7 @@
                                             <input type="text"
                                                    readonly
                                                    x-ref="pdf"
-                                                   :value="nomeModelo"
+                                                   :value="nomeDocumentoNorma"
                                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                           pointer-events-none text-black truncate">
 
@@ -1224,7 +1225,7 @@
                                             <input type="text"
                                                    readonly
                                                    x-ref="link"
-                                                   :value="nomeNorma"
+                                                   :value="nomeLinkNorma"
                                                    class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                           pointer-events-none text-black truncate">
 
@@ -1457,7 +1458,6 @@ window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
 
   document.addEventListener('DOMContentLoaded', function () {
     contadorColorido('id_objetivo', 'contador_objetivo');
-    contadorColorido('id_observacao', 'contador_observacao');
   });
 </script>
 
@@ -1468,17 +1468,10 @@ function atualizarStatus() {
     const status = document.getElementById("status_processo")
     if (!status) return
 
-    /* verifica TODOS os selects de modelo */
-    const modelos = document.querySelectorAll('[id^="id_modelagem_processo"]')
-
     /* verifica TODOS os selects de norma */
     const normas = document.querySelectorAll('[id^="norma_procedimento"]')
 
-    let temDocumento = false
-
-    modelos.forEach(select => {
-        if (select.value) temDocumento = true
-    })
+    let temDocumento = false;
 
     normas.forEach(select => {
         if (select.value) temDocumento = true
@@ -1511,11 +1504,8 @@ document.addEventListener("change", function(e){
 
     if (modoVisualizacao || modoExclusao) return
 
-    if (
-        e.target.id?.startsWith("id_modelagem_processo") ||
-        e.target.id?.startsWith("norma_procedimento")
-    ) {
-        atualizarStatus()
+    if (e.target.id?.startsWith("norma_procedimento")) {
+        atualizarStatus();
     }
 
 })
@@ -1539,112 +1529,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script>
 /* =========================================================
-   x-data — Modelo de Processo (BLOCO BASE)
-   ========================================================= */
-function modeloProcessoData() {
-    return {
-        /* =========================
-           Estado de controle
-           ========================= */
-        selected: "{{ form.instance.modelagem_processo_id|yesno:'true,false' }}" === "true",
-
-        /* =========================
-           Artefatos (fontes reais)
-           ========================= */
-        pathModelo: "",   // path do PDF do modelo (modal)
-        urlNorma: "",     // URL da norma de procedimento (modal)
-
-        /* =========================
-           Nomes amigáveis (exibição)
-           ========================= */
-        nomeModelo: "",
-        nomeNorma: "",
-
-        /* =========================
-           Metadados
-           ========================= */
-        tema: "{{ form.instance.modelagem_processo.tema|default_if_none:''|escapejs }}",
-        versao: "{{ form.instance.modelagem_processo.versao|default_if_none:''|escapejs }}",
-        emitente: "{{ form.instance.modelagem_processo.emitente|default_if_none:''|escapejs }}",
-        sistema: "{{ form.instance.modelagem_processo.sistema|default_if_none:''|escapejs }}",
-        vigencia: "{{ form.instance.modelagem_processo.vigencia_inicio|date:'Y-m-d'|default:'' }}",
-
-        /* =========================
-           Controle de seleção
-           ========================= */
-        check(e) {
-            this.selected = e.target.value !== "";
-        },
-
-        /* =========================
-           Atualização ao trocar select
-           ========================= */
-        update(selectEl) {
-            const opt = selectEl.options[selectEl.selectedIndex];
-            if (!opt) return;
-
-            // ==========================================
-            // ARTEFATOS — FONTES REAIS (MODELO DE PROCESSO)
-            // ==========================================
-            this.pathModelo = opt.dataset.pathModeloprocesso || "";
-            this.urlNorma   = opt.dataset.urlNormaProcedimento || "";
-
-
-            /* ===== nomes amigáveis ===== */
-            this.nomeModelo = opt.dataset.nomeModeloProcesso || "";
-            this.nomeNorma  = opt.dataset.nomeNormaProcedimento || "";
-
-            /* ===== metadados ===== */
-            this.tema     = opt.dataset.tema || "";
-
-            const v = opt.dataset.versao || "";
-            this.versao = v ? String(v).padStart(2, "0") : "";
-
-            this.emitente = opt.dataset.emitente || "";
-            this.sistema  = opt.dataset.sistema || "";
-
-            const iso = opt.dataset.vigencia || "";
-            if (iso) {
-                const [y, m, d] = iso.split("-");
-                this.vigencia = `${d}/${m}/${y}`;
-            } else {
-                this.vigencia = "";
-            }
-
-            /* ==================================
-               Campos derivados (escopo do bloco)
-            ===================================== */
-            const bloco = selectEl.closest('.modelo-block');
-            if (bloco) {
-                const setValInBlock = (selector, val) => {
-                    const el = bloco.querySelector(selector);
-                    if (el) el.value = val || "";
-                };
-
-                setValInBlock('[id^="tema_modelo"]', this.tema);
-                setValInBlock('[id^="versao_modelo"]', this.versao);
-                setValInBlock('[id^="emitente_modelo"]', this.emitente);
-                setValInBlock('[id^="sistema_modelo"]', this.sistema);
-                setValInBlock('[id^="vigencia_modelo"]', this.vigencia);
-            }
-
-            /* =========================
-               Campos visuais (x-ref)
-               ========================= */
-            if (this.$refs.pdf) {
-                this.$refs.pdf.value = this.nomeModelo;
-            }
-
-            if (this.$refs.link) {
-                this.$refs.link.value = this.nomeNorma;
-            }
-        }
-    };
-}
-</script>
-
-<script>
-/* =========================================================
    x-data — Norma de Procedimento (BLOCO BASE)
    ========================================================= */
 function normaProcedimentoData() {
@@ -1652,56 +1536,55 @@ function normaProcedimentoData() {
          /* =========================
            Estado de controle
            ========================= */
-        selected: "{{ form.instance.norma_procedimento_id|yesno:'true,false' }}" === "true",
+        selected: false,
 
         /* =========================
            Artefatos (fontes reais)
            ========================= */
-        pathModelo: "",   // PDF do modelo (se existir)
-        urlNorma: "",     // URL da norma
+        documentoNorma: "",   // PDF do documento da norma (se existir)
+        linkNorma: "",     // URL da norma
 
-        /* =========================
+        /* ===========================
            Nomes amigáveis (exibição)
-           ========================= */
-        nomeModelo: "",
-        nomeNorma: "",
+        =========================== */
+        nomeDocumentoNorma: "",
+        nomeLinkNorma: "",
 
         /* =========================
            Metadados
-           ========================= */
-        tema: "{{ form.instance.norma_procedimento.tema|default_if_none:''|escapejs }}",
-        versao: "{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}",
-        emitente: "{{ form.instance.norma_procedimento.emitente|default:''|escapejs }}",
-        sistema: "{{ form.instance.norma_procedimento.sistema|default:''|escapejs }}",
-        vigencia: "{% if form.instance.norma_procedimento.vigencia_inicio %}{{ form.instance.norma_procedimento.vigencia_inicio|date:'Y-m-d' }}{% endif %}",
+        ========================= */
+        codigo: "",
+        versao: "",
+        emitente: "",
+        sistema: "",
+        vigencia: "",
 
         /* =========================
            Controle de seleção
-           ========================= */
+        ========================= */
         check(e) {
             this.selected = e.target.value !== "";
         },
 
-        /* =========================
+        /* =============================
            Atualização ao trocar select
-           ========================= */
+        ============================= */
         update(selectEl) {
             const opt = selectEl.options[selectEl.selectedIndex];
             if (!opt) return;
 
             /* ===== fontes reais ===== */
-            this.pathModelo = opt.dataset.pathModeloprocesso || "";
-            this.urlNorma   = opt.dataset.urlNormaProcedimento || "";
+            this.documentoNorma = opt.dataset.documentoNorma || "";
+            this.linkNorma = opt.dataset.linkNorma || "";
 
             /* ===== nomes amigáveis ===== */
-            this.nomeModelo = opt.dataset.nomeModeloProcesso || "";
-            this.nomeNorma  = opt.dataset.nomeNormaProcedimento || "";
+            this.nomeDocumentoNorma = opt.dataset.nomeDocumentoNorma || "";
+            this.nomeLinkNorma = opt.dataset.nomeLinkNorma || "";
 
             /* ===== metadados ===== */
-            this.tema     = opt.dataset.tema || "";
+            this.codigo     = opt.dataset.codigo || "";
 
-            const v = opt.dataset.versao || "";
-            this.versao = v ? String(v).padStart(2, "0") : "";
+            this.versao = opt.dataset.versao || "";
 
             this.emitente = opt.dataset.emitente || "";
             this.sistema  = opt.dataset.sistema || "";
@@ -1713,7 +1596,6 @@ function normaProcedimentoData() {
             } else {
                 this.vigencia = "";
             }
-
 
             /* ==================================
                Campos derivados (escopo do bloco)
@@ -1725,7 +1607,7 @@ function normaProcedimentoData() {
                     if (el) el.value = val || "";
                 };
 
-                setValInBlock('[id^="tema_norma"]', this.tema);
+                setValInBlock('[id^="codigo_norma"]', this.codigo);
                 setValInBlock('[id^="versao_norma"]', this.versao);
                 setValInBlock('[id^="emitente_norma"]', this.emitente);
                 setValInBlock('[id^="sistema_norma"]', this.sistema);
@@ -1741,11 +1623,9 @@ function normaProcedimentoData() {
 /* =========================================================
    DADOS HIDRATADOS (DEBUG / USO FUTURO)
    ========================================================= */
-const MODELOS_HIDRATADOS = {{ modelos_hidratados|default:"[]"|safe }};
 const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
 
 console.log("MODO:", window.MODO);
-console.log("MODELOS_HIDRATADOS:", MODELOS_HIDRATADOS);
 console.log("NORMAS_HIDRATADAS:", NORMAS_HIDRATADAS);
 </script>
 
