@@ -945,7 +945,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Tema -->
+                                <!-- Código -->
                                 <div>
                                     <label class="block text-sm font-medium text-blue-700">Código</label>
                                     <input id="codigo_norma" type="text" readonly tabindex="-1"
@@ -958,7 +958,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-blue-700">Versão</label>
                                     <input id="versao_norma" type="text" readonly tabindex="-1"
-                                           value="{{ form.instance.norma_procedimento.versao|stringformat:'02d' }}"
+                                           value="{{ form.instance.norma_procedimento.versao|default:'' }}"
                                            class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                   pointer-events-none text-black">
                                 </div>
@@ -1287,7 +1287,7 @@
 
                         <!-- Cadastro -->
                         <div>
-                            <label class="block text-sm font-medium text-blue-700">Cadastro</label>
+                            <label class="block text-sm font-medium text-blue-700">Data Cadastro</label>
                             <input type="text"
                                    value="{{ cadastro_data }}"
                                    readonly
@@ -1305,7 +1305,7 @@
 
                         <!-- Atualização -->
                         <div>
-                            <label class="block text-sm font-medium text-blue-700">Atualização</label>
+                            <label class="block text-sm font-medium text-blue-700">Data Atualização</label>
                             <input type="text"
                                    value="{{ atualizacao_data }}"
                                    readonly
@@ -1323,7 +1323,7 @@
 
                         <!-- Conclusão -->
                         <div>
-                            <label class="block text-sm font-medium text-blue-700">Conclusão</label>
+                            <label class="block text-sm font-medium text-blue-700">Data Conclusão</label>
                             <input type="text"
                                    value="{{ conclusao_data }}"
                                    readonly
@@ -1617,16 +1617,6 @@ function normaProcedimentoData() {
 }
 </script>
 
-<script>
-/* =========================================================
-   DADOS HIDRATADOS (DEBUG / USO FUTURO)
-   ========================================================= */
-const NORMAS_HIDRATADAS  = {{ normas_hidratadas|default:"[]"|safe }};
-
-console.log("MODO:", window.MODO);
-console.log("NORMAS_HIDRATADAS:", NORMAS_HIDRATADAS);
-</script>
-
 <!-- JS CENTRALIZADO -->
 <script src="{% static 'js/utils.js' %}"></script>
 
@@ -1716,6 +1706,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // Exposta globalmente para reutilização por outros scripts do formulário
     window.atualizarVisualTipo = function(limparAoLiberar = true) {
 
         const CAMPOS_HERANCA = [

@@ -1847,11 +1847,48 @@ class Form_ProcessoForm(forms.ModelForm):
 
         self.label_suffix = ""
 
-        base = (
-            "w-full border border-gray-300 rounded-md px-3 py-2 "
-            "text-black placeholder-gray-500 "
-            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        # ====================================================
+        # CLASSE PADRÃO
+        # ====================================================
+        base_class = (
+            "w-full h-[42px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500"
         )
+
+        bg = (
+            "bg-gray-100"
+            if (
+                    self.modo_visualizacao
+                    or self.modo_exclusao
+            )
+            else "bg-white"
+        )
+
+        # ====================================================
+        # CAMPOS DATA
+        # ====================================================
+        campos_data = [
+            "data_elaboracao",
+            "data_aprovacao",
+        ]
+
+        for campo in campos_data:
+            if campo not in self.fields:
+                continue
+
+            self.fields[campo].widget = forms.DateInput(
+                format="%Y-%m-%d",
+                attrs={
+                    "type": "date",
+                    "class": f"{base_class} {bg}",
+                }
+            )
 
         # --------------------------------------------------------------------
         # Estilização e preenchimento dos campos
@@ -1862,8 +1899,7 @@ class Form_ProcessoForm(forms.ModelForm):
             if name == "nome":
                 continue
 
-            bg = ("bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white")
-            field.widget.attrs["class"] = f"{base} {bg}"
+            field.widget.attrs["class"] = f"{base_class} {bg}"
             field.widget.attrs.setdefault("placeholder", field.label)
             field.widget.attrs["autocomplete"] = "off"
 

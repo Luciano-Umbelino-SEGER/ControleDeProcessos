@@ -374,17 +374,6 @@ document.addEventListener("DOMContentLoaded", function () {
             hiddenNomeField.value = nomeValor;
             parentField.value = parentValor;
 
-            if (!nomeValor) {
-                if (isTipoSubprocesso()) {
-                    subprocessoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
-                    subprocessoInputVisible.focus();
-                } else {
-                    processoInputVisible.classList.add('border-red-500','ring-2','ring-red-300');
-                    processoInputVisible.focus();
-                }
-                alert("Preencha o nome antes de enviar.");
-                ev.preventDefault();
-            }
         });
     })();
 
