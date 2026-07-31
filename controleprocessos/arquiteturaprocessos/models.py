@@ -1173,6 +1173,14 @@ class Processo(models.Model):
             "concluido": "bg-red-200 text-red-900"
         }.get(self.status, "")
 
+    @property
+    def eh_processo(self):
+        return self.parent_id is None
+
+    @property
+    def eh_subprocesso(self):
+        return self.parent_id is not None
+
     def __str__(self):
         return self.nome
 
@@ -1226,6 +1234,238 @@ class Processo(models.Model):
         if self.macroprocesso_nivel2 and self.macroprocesso_nivel1:
             if self.macroprocesso_nivel2.macroprocesso_nivel1_id != self.macroprocesso_nivel1_id:
                 raise ValidationError("Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1.")
+
+    # ========================================================
+    # AUXILIAR – Estrutura padronizada de erros
+    # ========================================================
+    def _erro(self, campo, label, mensagem):
+        return {
+            "campo": campo,
+            "label": label,
+            "mensagem": mensagem,
+        }
+
+    # ========================================================
+    # VALIDAÇÃO PARA INICIAR
+    # ========================================================
+    def validar_para_iniciar(self):
+
+        erros = []
+
+        erros.extend(
+            self._validar_identificacao()
+        )
+
+        erros.extend(
+            self._validar_informacoes_processo()
+        )
+
+        return erros
+
+    # ========================================================
+    # IDENTIFICAÇÃO DO PROCESSO
+    # ========================================================
+    def _validar_identificacao(self):
+
+        erros = []
+
+        # =====================================================
+        # PROCESSO / SUBPROCESSO
+        # =====================================================
+        if self.tipo == "subprocesso":
+
+            # Processo Pai obrigatório
+            if not self.parent_id:
+                erros.append(
+                    self._erro(
+                        "parent",
+                        "Processo Pai",
+                        "Selecione o Processo ao qual este Subprocesso pertence."
+                    )
+                )
+
+            # Processo Pai deve ser um Processo
+            elif self.parent.parent_id:
+                erros.append(
+                    self._erro(
+                        "parent",
+                        "Processo Pai",
+                        "Um Subprocesso somente pode possuir um Processo como pai."
+                    )
+                )
+
+            # Nome do Subprocesso obrigatório
+            if not (self.nome or "").strip():
+                erros.append(
+                    self._erro(
+                        "nome",
+                        "Nome do Subprocesso",
+                        "Informe o nome do Subprocesso."
+                    )
+                )
+
+        elif self.tipo == "processo":
+
+            # Nome do Processo obrigatório
+            if not (self.nome or "").strip():
+                erros.append(
+                    self._erro(
+                        "nome",
+                        "Nome do Processo",
+                        "Informe o nome do Processo."
+                    )
+                )
+
+        # =====================================================
+        # DATA DE APROVAÇÃO
+        # =====================================================
+        if (self.data_elaboracao
+            and self.data_aprovacao
+            and self.data_aprovacao < self.data_elaboracao):
+            erros.append(
+                self._erro(
+                    "data_aprovacao",
+                    "Data de Aprovação",
+                    "A Data de Aprovação não pode ser anterior à Data de Elaboração."
+                )
+            )
+
+
+        # =====================================================
+        # VERSÃO
+        # =====================================================
+        if self.versao_processo is None:
+            erros.append(
+                self._erro(
+                    "versao_processo",
+                    "Versão",
+                    "Informe a versão do Processo."
+                )
+            )
+
+        # =====================================================
+        # CLASSIFICAÇÃO
+        # =====================================================
+        if not self.classificacao_id:
+            erros.append(
+                self._erro(
+                    "classificacao",
+                    "Classificação",
+                    "Selecione a Classificação."
+                )
+            )
+
+        # =====================================================
+        # MACROPROCESSO NÍVEL 1
+        # =====================================================
+        if not self.macroprocesso_nivel1_id:
+            erros.append(
+                self._erro(
+                    "macroprocesso_nivel1",
+                    "Macroprocesso Nível 1",
+                    "Selecione o Macroprocesso Nível 1."
+                )
+            )
+
+        # =====================================================
+        # MACROPROCESSO NÍVEL 2
+        # =====================================================
+        if (
+                self.macroprocesso_nivel1
+                and self.macroprocesso_nivel2
+                and self.macroprocesso_nivel2.macroprocesso_nivel1_id != self.macroprocesso_nivel1_id
+        ):
+            erros.append(
+                self._erro(
+                    "macroprocesso_nivel2",
+                    "Macroprocesso Nível 2",
+                    "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 informado."
+                )
+            )
+
+        return erros
+
+    # ========================================================
+    # INFORMAÇÕES DO PROCESSO
+    # ========================================================
+    def _validar_informacoes_processo(self):
+
+        erros = []
+
+        # =====================================================
+        # OBJETIVO
+        # =====================================================
+        if not (self.objetivo or "").strip():
+            erros.append(
+                self._erro(
+                    "objetivo",
+                    "Objetivo",
+                    "Informe o Objetivo do Processo."
+                )
+            )
+
+        # =====================================================
+        # ÁREA RESPONSÁVEL
+        # =====================================================
+        if not self.area_responsavel_id:
+            erros.append(
+                self._erro(
+                    "area_responsavel",
+                    "Área Responsável",
+                    "Selecione a Área Responsável."
+                )
+            )
+
+        # =====================================================
+        # GESTOR
+        # =====================================================
+        if not (self.gestor or "").strip():
+            erros.append(
+                self._erro(
+                    "gestor",
+                    "Gestor",
+                    "Informe o Gestor."
+                )
+            )
+
+        # =====================================================
+        # TELEFONE
+        # =====================================================
+        if not (self.telefone or "").strip():
+            erros.append(
+                self._erro(
+                    "telefone",
+                    "Telefone",
+                    "Informe o Telefone."
+                )
+            )
+
+        # =====================================================
+        # E-MAIL
+        # =====================================================
+        email = (self.email or "").strip()
+
+        if not email:
+            erros.append(
+                self._erro(
+                    "email",
+                    "E-mail",
+                    "Informe o E-mail."
+                )
+            )
+        else:
+            try:
+                validate_email(email)
+            except ValidationError:
+                erros.append(
+                    self._erro(
+                        "email",
+                        "E-mail",
+                        "Informe um E-mail válido."
+                    )
+                )
+
+        return erros
 
     def save(self, *args, **kwargs):
 

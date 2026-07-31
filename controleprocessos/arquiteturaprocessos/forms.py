@@ -9,8 +9,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.utils.encoding import iri_to_uri
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
-from datetime import date
 from urllib.parse import (urlparse, unquote,)
 
 from .models import (
@@ -1740,6 +1738,11 @@ class MacroN2Select(forms.Select):
 # ----------------------------
 class Form_ProcessoForm(forms.ModelForm):
 
+    tipo_processo_fake = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput()
+    )
+
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),
         label="Classificação"
@@ -1774,7 +1777,10 @@ class Form_ProcessoForm(forms.ModelForm):
     data_elaboracao = forms.DateField(
         required=True,
         label="Data de Elaboração",
-        input_formats=["%d/%m/%Y"],
+        input_formats=[
+            "%Y-%m-%d",
+            "%d/%m/%Y",
+        ],
         widget=forms.DateInput(
             attrs={
                 "placeholder": "dd/mm/aaaa",
@@ -1787,7 +1793,10 @@ class Form_ProcessoForm(forms.ModelForm):
     data_aprovacao = forms.DateField(
         required=False,
         label="Data de Aprovação",
-        input_formats=["%d/%m/%Y"],
+        input_formats=[
+            "%Y-%m-%d",
+            "%d/%m/%Y",
+        ],
         widget=forms.DateInput(
             attrs={
                 "placeholder": "dd/mm/aaaa",
@@ -1820,6 +1829,14 @@ class Form_ProcessoForm(forms.ModelForm):
         self.modo_edicao = kwargs.pop("modo_edicao", False)
 
         super().__init__(*args, **kwargs)
+
+        # Obrigatoriedade tratada pela validação de negócio
+        self.fields["nome"].required = False
+        self.fields["objetivo"].required = False
+        self.fields["area_responsavel"].required = False
+        self.fields["gestor"].required = False
+        self.fields["telefone"].required = False
+        self.fields["email"].required = False
 
         # 🔑 GARANTIA DOS IDS PARA O TRIPLE FILTER (SEM QUEBRAR O LAYOUT)
         if "classificacao" in self.fields:
@@ -1932,25 +1949,10 @@ class Form_ProcessoForm(forms.ModelForm):
         cleaned = super().clean()
 
         parent = cleaned.get("parent")
-        nome = cleaned.get("nome")
-
-        data_elaboracao = cleaned.get("data_elaboracao")
-        data_aprovacao = cleaned.get("data_aprovacao")
-
-        macro1 = cleaned.get("macroprocesso_nivel1")
-        macro2 = cleaned.get("macroprocesso_nivel2")
-
-        area = cleaned.get("area_responsavel")
 
         # =====================================================
         # 1. PROCESSO / SUBPROCESSO
         # =====================================================
-        if not nome or not nome.strip():
-            self.add_error(
-                "nome",
-                "Informe o nome do Processo ou Subprocesso."
-            )
-
         if not parent:
             cleaned["parent"] = None
 
@@ -1968,83 +1970,22 @@ class Form_ProcessoForm(forms.ModelForm):
                 )
 
         # =====================================================
-        # 2. DATAS
+        # VALIDAÇÕES DE NEGÓCIO (MODEL)
         # =====================================================
-        if not data_elaboracao:
+        processo = Processo()
+        processo.tipo = cleaned.get("tipo_processo_fake")
+
+        for campo, valor in cleaned.items():
+            if hasattr(processo, campo):
+                setattr(processo, campo, valor)
+
+        erros = processo.validar_para_iniciar()
+
+        for erro in erros:
             self.add_error(
-                "data_elaboracao",
-                "Data de Elaboração é obrigatória."
+                erro["campo"],
+                erro["mensagem"]
             )
-
-        if (
-                data_elaboracao
-                and data_aprovacao
-                and data_aprovacao < data_elaboracao
-        ):
-            self.add_error(
-                "data_aprovacao",
-                "A Data de Aprovação não pode ser anterior à Data de Elaboração."
-            )
-
-        # =====================================================
-        # 3. MACROPROCESSO
-        # =====================================================
-        if (
-                macro1
-                and macro2
-                and macro2.macroprocesso_nivel1_id != macro1.id
-        ):
-            self.add_error(
-                "macroprocesso_nivel2",
-                "O Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 selecionado."
-            )
-
-        # =====================================================
-        # 4. ÁREA RESPONSÁVEL
-        # =====================================================
-        if not area:
-            self.add_error(
-                "area_responsavel",
-                "Área Responsável é obrigatória."
-            )
-
-        # =====================================================
-        # 5. GESTOR
-        # =====================================================
-        if not (cleaned.get("gestor") or "").strip():
-            self.add_error(
-                "gestor",
-                "Gestor é obrigatório."
-            )
-
-        # =====================================================
-        # 6. TELEFONE
-        # =====================================================
-        if not (cleaned.get("telefone") or "").strip():
-            self.add_error(
-                "telefone",
-                "Telefone é obrigatório."
-            )
-
-        # =====================================================
-        # 7. E-MAIL
-        # =====================================================
-        email = (cleaned.get("email") or "").strip()
-
-        if not email:
-            self.add_error(
-                "email",
-                "E-mail é obrigatório."
-            )
-
-        else:
-            try:
-                validate_email(email)
-            except ValidationError:
-                self.add_error(
-                    "email",
-                    "E-mail inválido."
-                )
 
         return cleaned
 

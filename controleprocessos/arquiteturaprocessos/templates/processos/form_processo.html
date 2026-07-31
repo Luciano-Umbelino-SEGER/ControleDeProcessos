@@ -68,8 +68,10 @@
     </div>
     {% endif %}
 
-    <form method="post" id="form-processo">
+    <form method="post" id="form-processo" novalidate>
         {% csrf_token %}
+
+        {{ form.tipo_processo_fake }}
 
         <div class="grid grid-cols-12 gap-3 mb-6">
 
@@ -106,7 +108,7 @@
                                            id="rb_processo"
                                            name="tipo_processo_fake"
                                            value="processo"
-                                           {% if not form.instance.parent_id %}checked{% endif %}
+                                           {% if tipo_selecionado == "processo" or not tipo_selecionado %}checked{% endif %}
                                            {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
                                     <span id="lbl_processo"
@@ -122,7 +124,7 @@
                                            id="rb_subprocesso"
                                            name="tipo_processo_fake"
                                            value="subprocesso"
-                                           {% if form.instance.parent_id %}checked{% endif %}
+                                           {% if form.tipo_processo_fake.value == "subprocesso" %}checked{% endif %}
                                            {% if not modo_inclusao %}style="pointer-events:none;"{% endif %}>
 
                                     <span id="lbl_subprocesso"
@@ -208,7 +210,7 @@
                         <div class="w-[120px] flex-shrink-0">
 
                             <label class="block text-sm font-medium text-blue-700 mb-1">
-                                Elaboração
+                                Data Elaboração
                             </label>
 
                             {{ form.data_elaboracao }}
@@ -221,7 +223,7 @@
                         <div class="w-[120px] flex-shrink-0">
 
                             <label class="block text-sm font-medium text-blue-700 mb-1">
-                                Aprovação
+                                Data Aprovação
                             </label>
 
                             {{ form.data_aprovacao }}
@@ -1455,7 +1457,38 @@ window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+
     contadorColorido('id_objetivo', 'contador_objetivo');
+
+    // =====================================================
+    // SINCRONIZA TIPO (PROCESSO / SUBPROCESSO)
+    // =====================================================
+    const hiddenTipo = document.getElementById("id_tipo_processo_fake");
+
+    if (hiddenTipo) {
+
+        const radioSelecionado = document.querySelector(
+            "input[name='tipo_processo_fake']:checked"
+        );
+
+        if (radioSelecionado) {
+            hiddenTipo.value = radioSelecionado.value;
+        }
+
+        document
+            .querySelectorAll("input[name='tipo_processo_fake']")
+            .forEach(radio => {
+
+                radio.addEventListener("change", function () {
+
+                    hiddenTipo.value = this.value;
+
+                });
+
+            });
+
+    }
+
   });
 </script>
 

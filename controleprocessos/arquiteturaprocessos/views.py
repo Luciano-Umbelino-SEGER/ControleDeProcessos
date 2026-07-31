@@ -4207,16 +4207,6 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             self.get_success_url()
         )
 
-    # -------------------------------------------------
-    # Erro de validação
-    # -------------------------------------------------
-    def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Há erros no formulário. Verifique os campos destacados."
-        )
-        return super().form_invalid(form)
-
 # --------------------------------#
 # Visualizar Processo             #
 # --------------------------------#
