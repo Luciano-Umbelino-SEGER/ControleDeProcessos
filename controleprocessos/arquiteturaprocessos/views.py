@@ -1211,6 +1211,7 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
         })
 
         return context
+
 # --------------------------------#
 # Editar Processo a Mapear        #
 # --------------------------------#

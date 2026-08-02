@@ -1816,7 +1816,11 @@ class Form_ProcessoForm(forms.ModelForm):
         )
 
         widgets = {
-            "objetivo": forms.Textarea(attrs={"rows": "2"}),
+            "objetivo": forms.Textarea(
+                attrs={
+                    "style": "height:140px;resize:none;overflow-y:auto;",
+                }
+            ),
         }
 
     # ------------------------------------------------

@@ -692,9 +692,6 @@ function removeModelo(botao) {
         return;
     }
 
-
-
-
     // 🔹 remove o último bloco clonado (nunca o base)
     const ultimo = blocos[blocos.length - 1];
     ultimo.remove();

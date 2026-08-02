@@ -109,3 +109,12 @@
 .filtro-compacto .filtro-label {
     font-size: 12px;       /* antes 10px */
 }
+
+/* =========================================
+   TEXTAREA PADRÃO
+========================================= */
+.textarea-padrao {
+    height: 140px;
+    resize: none;
+    overflow-y: auto;
+}
