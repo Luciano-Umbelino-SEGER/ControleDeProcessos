@@ -113,8 +113,9 @@
 /* =========================================
    TEXTAREA PADRÃO
 ========================================= */
+
 .textarea-padrao {
-    height: 140px;
+    min-height: 140px;
     resize: none;
     overflow-y: auto;
 }
