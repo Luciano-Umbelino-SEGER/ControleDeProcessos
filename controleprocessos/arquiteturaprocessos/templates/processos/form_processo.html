@@ -279,6 +279,7 @@
                             <!-- Campo visível para Processo -->
                             <input id="processo_input_visible"
                                    type="text"
+                                   value="{{ form.nome.value|default_if_none:'' }}"
                                    data-similarity-tables="Processo, ProcessoMapear"
                                    data-similarity-field="nome"
                                    data-similarity-id="{{ form.instance.id }}"
@@ -319,7 +320,7 @@
                                    disabled>
 
                             <!-- Hidden Django (nome) -->
-                            <input type="hidden" id="id_nome" name="nome" value="{{ form.instance.nome }}">
+                            <input type="hidden" id="id_nome" name="nome"  value="{{ form.nome.value|default_if_none:'' }}">
                         </div>
 
                     </div>

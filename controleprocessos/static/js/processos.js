@@ -1,33 +1,33 @@
-// ===============================
+// ===========================================
 // processos.js – VERSÃO FINAL 100% REVISADA
-// ===============================
+// ===========================================
 document.addEventListener("DOMContentLoaded", function () {
 
     // =========================
-        // Config / modos (FONTE ÚNICA)
-        // =========================
-        const MODO = (typeof window !== "undefined" && window.MODO)
-            ? window.MODO
-            : {
-                inclusao: document.body.dataset.modoInclusao === "true",
-                edicao: document.body.dataset.modoEdicao === "true",
-                visualizacao: document.body.dataset.modoVisualizacao === "true",
-                exclusao: document.body.dataset.modoExclusao === "true",
-                parentId: document.body.dataset.parentId || ""
-            };
+    // Config / modos (FONTE ÚNICA)
+    // =========================
+    const MODO = (typeof window !== "undefined" && window.MODO)
+        ? window.MODO
+        : {
+            inclusao: document.body.dataset.modoInclusao === "true",
+            edicao: document.body.dataset.modoEdicao === "true",
+            visualizacao: document.body.dataset.modoVisualizacao === "true",
+            exclusao: document.body.dataset.modoExclusao === "true",
+            parentId: document.body.dataset.parentId || ""
+        };
 
-        // Flags normalizadas
-        const modoInclusao = Boolean(MODO.inclusao);
-        const modoEdicao = Boolean(MODO.edicao);
-        const modoVisualizacao = Boolean(MODO.visualizacao);
-        const modoExclusao = Boolean(MODO.exclusao);
+    // Flags normalizadas
+    const modoInclusao = Boolean(MODO.inclusao);
+    const modoEdicao = Boolean(MODO.edicao);
+    const modoVisualizacao = Boolean(MODO.visualizacao);
+    const modoExclusao = Boolean(MODO.exclusao);
 
-        // 👉 VERDADE ÚNICA (ainda não usada em todo lugar)
-        window.modoBloqueado = modoVisualizacao || modoExclusao;
+    // 👉 VERDADE ÚNICA (ainda não usada em todo lugar)
+    window.modoBloqueado = modoVisualizacao || modoExclusao;
 
-        // Outros
-        const parentIdFromServer = (MODO.parentId || "").toString();
-        const ENABLE_REVERSE_UPDATE = false;
+    // Outros
+    const parentIdFromServer = (MODO.parentId || "").toString();
+    const ENABLE_REVERSE_UPDATE = false;
 
     function safeGet(id) {
         try { return document.getElementById(id); } catch { return null; }
@@ -136,7 +136,9 @@ document.addEventListener("DOMContentLoaded", function () {
         parentField.disabled = true;
         parentField.value = "";
 
-        limparVisiveis();
+        if (!hiddenNomeField?.value) {
+            limparVisiveis();
+        }
     }
 
     async function setModeSubprocesso_inclusao() {
@@ -152,7 +154,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         parentField.disabled = false;
 
-        limparVisiveis();
+        if (!hiddenNomeField?.value) {
+            limparVisiveis();
+        }
 
         if (processoSelectVisible) {
             const processos = await carregarProcessosPai();
@@ -171,6 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             selectListenerAdded = true;
         }
+
     }
 
     // ===============================
@@ -351,9 +356,9 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ===============================
+    // ============================================
     // Antes do submit – sincronizar nome e parent
-    // ===============================
+    // ============================================
     (function syncBeforeSubmit() {
         const form = document.getElementById("form-processo") || document.getElementById("form-processomapear");
         if (!form) return;
