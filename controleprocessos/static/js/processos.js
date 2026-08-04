@@ -27,7 +27,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Outros
     const parentIdFromServer = (MODO.parentId || "").toString();
-    const ENABLE_REVERSE_UPDATE = false;
 
     function safeGet(id) {
         try { return document.getElementById(id); } catch { return null; }
@@ -60,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // campos backend
     const parentField = safeGet("id_parent");
     const hiddenNomeField = safeGet("id_nome");
-    const hiddenTipoProcField = document.querySelector('input[name="tipo_processo"]');
+    const hiddenTipoProcField = document.querySelector('input[name="tipo_processo_fake"]');
 
     // ===============================
     // Funções auxiliares
@@ -274,8 +273,7 @@ document.addEventListener("DOMContentLoaded", function () {
             await inicializacaoNaoInclusao();
 
             // 🔥 HIDRATAÇÃO (somente fora da inclusão)
-            if (typeof MODELOS_HIDRATADOS !== "undefined") {
-                hidratarModelos();
+            if (typeof NORMAS_HIDRATADAS !== "undefined") {
                 hidratarNormas();
             }
 
@@ -283,7 +281,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (modoVisualizacao || modoExclusao) {
                 document
                     .querySelectorAll(
-                        '#modelos_container input, #modelos_container select,' +
                         '#normas_container input, #normas_container select'
                     )
                     .forEach(el => {
@@ -299,35 +296,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 0);
 
     })();
-
-    // ===============================
-    // MODELAGEM E NORMA — não alterado
-    // ===============================
-    const modeloSelect = safeGet("id_modelagem_processo");
-    const temaModelo = safeGet("tema_modelo");
-    const versaoModelo = safeGet("versao_modelo");
-    const emitenteModelo = safeGet("emitente_modelo");
-    const sistemaModelo = safeGet("sistema_modelo");
-    const vigenciaModelo = safeGet("vigencia_modelo");
-
-    if (modeloSelect) {
-        modeloSelect.addEventListener("change", function() {
-            const opt = this.options[this.selectedIndex];
-            if (!opt || opt.value === "") {
-                temaModelo.value = "";
-                versaoModelo.value = "";
-                emitenteModelo.value = "";
-                sistemaModelo.value = "";
-                vigenciaModelo.value = "";
-                return;
-            }
-            temaModelo.value = opt.dataset.tema || "";
-            versaoModelo.value = formatarVersao(opt.dataset.versao);
-            emitenteModelo.value = opt.dataset.emitente || "";
-            sistemaModelo.value = opt.dataset.sistema || "";
-            vigenciaModelo.value = formatarDataISO_para_BR(opt.dataset.vigencia);
-        });
-    }
 
     // NORMA
     const normaSelect = safeGet("norma_procedimento");
@@ -424,7 +392,7 @@ function formatarVersao(v) {
 }
 
 // ==========================================
-// VISUALIZAR DOCUMENTO — BLOCOS CLONADOS
+// VISUALIZAR NORMA DE PROCEDIMENTO
 // ==========================================
 document.addEventListener("click", function (e) {
     const botao = e.target.closest('button[data-action="visualizar"]');
@@ -461,17 +429,6 @@ function hidratarSelect(selectEl, dados) {
     selectEl.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-function preencherCamposModelo(block, dados) {
-    block.querySelector('[id^="tema_modelo"]').value = dados.tema || "";
-    //block.querySelector('[id^="versao_modelo"]').value = dados.versao || "";
-    block.querySelector('[id^="versao_modelo"]').value = formatarVersao(dados.versao);
-    block.querySelector('[id^="emitente_modelo"]').value = dados.emitente || "";
-    block.querySelector('[id^="sistema_modelo"]').value = dados.sistema || "";
-    //block.querySelector('[id^="vigencia_modelo"]').value = dados.vigencia || "";
-    block.querySelector('[id^="vigencia_modelo"]').value = formatarDataISO_para_BR(dados.vigencia);
-
-}
-
 function preencherCamposNorma(block, dados) {
     block.querySelector('[id^="tema_norma"]').value = dados.tema || "";
     //block.querySelector('[id^="versao_norma"]').value = dados.versao || "";
@@ -495,42 +452,6 @@ function atualizarBlocoAlpine(bloco, select) {
             alpineData.update(select);
         }
     });
-}
-
-function hidratarModelos() {
-    if (!Array.isArray(MODELOS_HIDRATADOS) || MODELOS_HIDRATADOS.length === 0) return;
-
-    const container = document.getElementById("modelos_container");
-    const baseBlock = container.querySelector('.modelo-block[data-uid="base"]');
-
-    // 🔹 BLOCO BASE
-    hidratarSelect(
-        baseBlock.querySelector('select[name="modelagem_processo"]'),
-        MODELOS_HIDRATADOS[0]
-    );
-    preencherCamposModelo(baseBlock, MODELOS_HIDRATADOS[0]);
-
-    // 🔹 BLOCOS EXTRAS (sem botão +)
-    // ==========================================
-    // HIDRATAÇÃO — BLOCOS CLONADOS (MODELO)
-    // Usa $nextTick para garantir Alpine pronto
-    // ==========================================
-    MODELOS_HIDRATADOS.slice(1).forEach((dados, idx) => {
-        const uid = `hidratado_${idx}_${Date.now()}`;
-        const bloco = clonarTemplate("template-modelo", container, uid);
-        if (!bloco) return;
-
-        const select = bloco.querySelector('select[name="modelagem_processo_extra[]"]');
-        if (!select) return;
-
-        // Seleciona o modelo correto
-        select.value = dados.id;
-
-        // 🔥 AGORA SIM: espera Alpine finalizar completamente
-        atualizarBlocoAlpine(bloco, select);
-
-    });
-
 }
 
 function hidratarNormas() {
@@ -663,51 +584,6 @@ function atualizarEstadoBotoes(container) {
     btnRemove.disabled = !existeAlgumDocumento;
 }
 
-// ==========================================
-// AÇÕES GLOBAIS — BOTÕES + / -
-// ==========================================
-function addModelo(botao) {
-    const container = document.getElementById("modelos_container");
-    if (!container) return;
-
-    const uid = `modelo_${Date.now()}`;
-    clonarTemplate("template-modelo", container, uid);
-
-    atualizarEstadoBotoes(container);
-}
-
-function removeModelo(botao) {
-    const container = document.getElementById("modelos_container");
-    if (!container) return;
-
-    const blocos = Array.from(
-        container.querySelectorAll('.modelo-block')
-    );
-
-    // 🔹 só existe o bloco base → limpar
-    if (blocos.length <= 1) {
-        limparBlocoModelo(blocos[0]);
-
-        // 🔥 AJUSTE ESSENCIAL
-        atualizarEstadoBotoes(container);
-
-        // 🔥 recalcula estado
-        atualizarStatus();
-
-        return;
-    }
-
-    // 🔹 remove o último bloco clonado (nunca o base)
-    const ultimo = blocos[blocos.length - 1];
-    ultimo.remove();
-
-    // 🔥 após remover, reavaliar botões
-    atualizarEstadoBotoes(container);
-
-    // 🔥 Atualiza o Estado do Processo
-    setTimeout(atualizarStatus, 50)
-}
-
 function addNorma(botao) {
     const container = document.getElementById("normas_container");
     if (!container) return;
@@ -753,18 +629,6 @@ function removeNorma(botao) {
 // ==========================================
 // LIMPEZA DE BLOCOS BASE
 // ==========================================
-
-function limparBlocoModelo(bloco) {
-    const select = bloco.querySelector("select");
-    if (select) select.selectedIndex = 0;
-
-    bloco.querySelectorAll("input[type='text']").forEach(input => {
-        input.value = "";
-    });
-
-    atualizarEstadoBotoes(bloco);
-}
-
 function limparBlocoNorma(bloco) {
     const select = bloco.querySelector("select");
     if (select) select.selectedIndex = 0;
@@ -780,11 +644,11 @@ function limparBlocoNorma(bloco) {
 // REAÇÃO AO CHANGE DO SELECT
 // ==========================================
 document.addEventListener("change", function (e) {
-    if (!e.target.matches("#modelos_container select, #normas_container select")) {
+    if (!e.target.matches("#normas_container select")) {
         return;
     }
 
-    const container = e.target.closest("#modelos_container, #normas_container");
+    const container = e.target.closest("#normas_container");
     atualizarEstadoBotoes(container);
 });
 
