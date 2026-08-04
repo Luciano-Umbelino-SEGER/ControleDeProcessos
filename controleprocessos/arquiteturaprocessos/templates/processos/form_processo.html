@@ -330,7 +330,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-blue-700">Classificação</label>
-                            {{ form.classificacao }}
+                            {{ form.classificacao|add_attr:"disabled:disabled" }}
                         </div>
 
                         <div>
@@ -1957,6 +1957,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
+
+<!--
+// =====================================================
+// WORKAROUND
+// Alguns selects são reabilitados durante a inicialização
+// da página. Reforçamos o disabled nos modos
+// Visualização e Exclusão.
+// Revisar futuramente após estabilização do CRUD.
+// =====================================================
+-->
+{% if modo_visualizacao or modo_exclusao %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    [
+        "id_classificacao",
+        "id_macroprocesso_nivel1",
+        "id_macroprocesso_nivel2",
+        "id_area_responsavel"
+    ].forEach(function(id) {
+        const campo = document.getElementById(id);
+        if (campo) {
+            campo.disabled = true;
+        }
+    });
+
+});
+</script>
+{% endif %}
 
 {% endblock %}
 
