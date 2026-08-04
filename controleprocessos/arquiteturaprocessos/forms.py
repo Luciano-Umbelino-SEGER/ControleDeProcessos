@@ -1980,8 +1980,7 @@ class Form_ProcessoForm(forms.ModelForm):
         processo.tipo = cleaned.get("tipo_processo_fake")
 
         for campo, valor in cleaned.items():
-            if hasattr(processo, campo):
-                setattr(processo, campo, valor)
+            setattr(processo, campo, valor)
 
         erros = processo.validar_para_iniciar()
 
