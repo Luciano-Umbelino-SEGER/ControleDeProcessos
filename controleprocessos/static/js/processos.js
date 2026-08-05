@@ -422,8 +422,8 @@ document.addEventListener("click", function (e) {
 // ==================================================
 // HIDRATAÇÃO DE DOCUMENTOS (1 → N)
 // ==================================================
-
 function hidratarSelect(selectEl, dados) {
+
     if (!selectEl || !dados) return;
     selectEl.value = dados.id;
     selectEl.dispatchEvent(new Event("change", { bubbles: true }));

@@ -1724,6 +1724,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 
+{{ normas_hidratadas|json_script:"normas-hidratadas" }}
+
+<script>
+window.NORMAS_HIDRATADAS = JSON.parse(
+    document.getElementById("normas-hidratadas").textContent
+);
+</script>
+
 <script src="{% static 'js/processos.js' %}"></script>
 {% include 'components/modal_documento_processo.html' %}
 
