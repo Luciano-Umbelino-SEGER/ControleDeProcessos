@@ -68,7 +68,20 @@
     </div>
     {% endif %}
 
-    <form method="post" id="form-processo" novalidate>
+    <!--
+    =====================================================
+    IMPORTANTE
+    Este formulário realiza upload de documentos PDF.
+    O enctype="multipart/form-data" é obrigatório para
+    que o navegador envie arquivos ao Django.
+    Não remover.
+    =====================================================
+    -->
+    <form method="post"
+      enctype="multipart/form-data"
+      autocomplete="off"
+      id="form-processo"
+      novalidate>
         {% csrf_token %}
 
         {{ form.tipo_processo_fake }}
@@ -1494,35 +1507,63 @@ window.BLOQUEIO_TOTAL_ATIVO = modoBloqueado;
 </script>
 
 <script>
-
+// =========================================================
+// Situação do Processo
+// Esta lógica deve permanecer sincronizada com o
+// @property status do Model Processo.
+// =========================================================
 function atualizarStatus() {
 
-    const status = document.getElementById("status_processo")
-    if (!status) return
-
-    /* verifica TODOS os selects de norma */
-    const normas = document.querySelectorAll('[id^="norma_procedimento"]')
+    const status = document.getElementById("status_processo");
+    if (!status) return;
 
     let temDocumento = false;
 
-    normas.forEach(select => {
-        if (select.value) temDocumento = true
-    })
+    // -----------------------------
+    // Documento PDF
+    // -----------------------------
+    const nomeArquivo = document.querySelector(".file-name");
+
+    if (
+        nomeArquivo &&
+        nomeArquivo.textContent.trim() &&
+        nomeArquivo.textContent.trim() !== "Click ou arraste para enviar o PDF"
+    ) {
+        temDocumento = true;
+    }
+
+    // -----------------------------
+    // Link Documento
+    // -----------------------------
+    const link = document.getElementById("id_link_documento_modelo_processo");
+
+    if (link && link.value.trim()) {
+        temDocumento = true;
+    }
+
+    // -----------------------------
+    // Norma de Procedimento
+    // -----------------------------
+    document
+        .querySelectorAll('[id^="norma_procedimento"]')
+        .forEach(select => {
+            if (select.value) {
+                temDocumento = true;
+            }
+        });
 
     if (temDocumento) {
 
-        status.textContent = "Ativo"
+        status.textContent = "Ativo";
         status.className =
-            "bg-green-200 text-green-900 px-3 py-2 rounded text-sm font-semibold text-center w-full"
+            "bg-green-200 text-green-900 px-3 py-2 rounded text-sm font-semibold text-center w-full";
 
     } else {
 
-        status.textContent = "Iniciado"
+        status.textContent = "Iniciado";
         status.className =
-            "bg-orange-100 text-orange-800 px-3 py-2 rounded text-sm font-semibold text-center w-full"
-
+            "bg-orange-100 text-orange-800 px-3 py-2 rounded text-sm font-semibold text-center w-full";
     }
-
 }
 
 /* =====================================
