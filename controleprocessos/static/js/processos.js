@@ -259,6 +259,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Inicialização geral
     // ===============================
     (async function init() {
+
         if (modoInclusao) {
             rbProcesso.disabled = false;
             rbSubprocesso.disabled = false;
@@ -316,7 +317,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 vigenciaNorma.value = "";
                 return;
             }
-            temaNorma.value = opt.dataset.tema || "";
             versaoNorma.value = formatarVersao(opt.dataset.versao);
             emitenteNorma.value = opt.dataset.emitente || "";
             sistemaNorma.value = opt.dataset.sistema || "";
@@ -430,14 +430,21 @@ function hidratarSelect(selectEl, dados) {
 }
 
 function preencherCamposNorma(block, dados) {
-    block.querySelector('[id^="tema_norma"]').value = dados.tema || "";
-    //block.querySelector('[id^="versao_norma"]').value = dados.versao || "";
-    block.querySelector('[id^="versao_norma"]').value = formatarVersao(dados.versao);
-    block.querySelector('[id^="emitente_norma"]').value = dados.emitente || "";
-    block.querySelector('[id^="sistema_norma"]').value = dados.sistema || "";
-    //block.querySelector('[id^="vigencia_norma"]').value = dados.vigencia || "";
-    block.querySelector('[id^="vigencia_norma"]').value = formatarDataISO_para_BR(dados.vigencia);
 
+    if (!block || !dados) return;
+
+    const setValue = (selector, value) => {
+        const campo = block.querySelector(selector);
+        if (campo) {
+            campo.value = value ?? "";
+        }
+    };
+
+    setValue('[id^="codigo_norma"]', dados.codigo_norma);
+    setValue('[id^="versao_norma"]', formatarVersao(dados.versao));
+    setValue('[id^="emitente_norma"]', dados.emitente);
+    setValue('[id^="sistema_norma"]', dados.sistema);
+    setValue('[id^="vigencia_norma"]', formatarDataISO_para_BR(dados.vigencia));
 }
 
 // ==========================================
@@ -468,13 +475,14 @@ function hidratarNormas() {
     preencherCamposNorma(baseBlock, NORMAS_HIDRATADAS[0]);
 
     // 🔹 BLOCOS EXTRAS
-    // ==========================================
+    // ================================================
     // HIDRATAÇÃO — BLOCOS CLONADOS (NORMA)
     // Usa Alpine.nextTick para garantir x-data pronto
-    // ==========================================
+    // ================================================
     NORMAS_HIDRATADAS.slice(1).forEach((dados, idx) => {
         const uid = `hidratado_norma_${idx}_${Date.now()}`;
         const bloco = clonarTemplate("template-norma", container, uid);
+
         if (!bloco) return;
 
         const select = bloco.querySelector('select[name="norma_procedimento_extra[]"]');
@@ -482,6 +490,8 @@ function hidratarNormas() {
 
         // 1️⃣ Seleciona a norma correta
         select.value = dados.id;
+
+
 
         // 2️⃣ Aguarda Alpine finalizar completamente
         atualizarBlocoAlpine(bloco, select);
