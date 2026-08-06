@@ -533,52 +533,85 @@ class ArquiteruraProcessos(ListView):
     # -----------------------------------------
     # Montagem de documentos (reutilizável)
     # -----------------------------------------
-    def montar_docs(self, documentos_qs):
+    def montar_docs(self, processo):
+
         modelos = []
         normas = []
 
-        for pd in documentos_qs:
-            mp = pd.modelagem_processo
-            if not mp:
-                continue
+        # =====================================================
+        # DOCUMENTO MODELO DO PROCESSO
+        # =====================================================
+        modelo = None
 
-            modelo_pdf = None
-            norma_link = None
+        if processo.documento_modelo_processo:
 
-            # 📄 PDF – Modelo de Processo
-            if mp.documento_modelagem_processo:
-                nome_pdf = os.path.basename(mp.documento_modelagem_processo.name)
-                modelo_pdf = {
-                    "displayname": nome_pdf,
-                    "url": mp.documento_modelagem_processo.url,
-                }
+            nome_pdf = os.path.basename(
+                processo.documento_modelo_processo.name
+            )
 
-            # 🔗 LINK – Norma de Procedimento
-            if mp.link_normaprocedimento:
-                nome_link = os.path.basename(unquote(mp.link_normaprocedimento))
-                norma_link = {
-                    "displayname": nome_link,
-                    "url": mp.link_normaprocedimento,
-                }
-
-            doc = {
-                "titulo": mp.titulo or "",
-                "tema": mp.tema or "",
-                "versao": mp.versao or "",
-                "emitente": mp.emitente or "",
-                "vigencia": (
-                    mp.vigencia_inicio.strftime("%d/%m/%Y")
-                    if mp.vigencia_inicio else ""
-                ),
-                "modelo": modelo_pdf,  # 👈 PDF
-                "norma": norma_link,  # 👈 LINK
+            modelo = {
+                "displayname": nome_pdf,
+                "url": processo.documento_modelo_processo.url,
             }
 
-            # separação por tipo de documento
-            if mp.tipo_documento_id == 1:
-                modelos.append(doc)
-            elif mp.tipo_documento_id == 2:
-                normas.append(doc)
+        elif processo.link_documento_modelo_processo:
+
+            nome_link = os.path.basename(
+                unquote(processo.link_documento_modelo_processo)
+            )
+
+            modelo = {
+                "displayname": nome_link,
+                "url": processo.link_documento_modelo_processo,
+            }
+
+        if modelo:
+            modelos.append(modelo)
+
+        # =====================================================
+        # NORMAS DE PROCEDIMENTO
+        # =====================================================
+        for rel in processo.documentos.all():
+
+            norma = rel.norma_procedimento
+
+            norma_doc = None
+
+            if norma.documento_norma_procedimento:
+
+                nome_pdf = os.path.basename(
+                    norma.documento_norma_procedimento.name
+                )
+
+                norma_doc = {
+                    "displayname": nome_pdf,
+                    "url": norma.documento_norma_procedimento.url,
+                }
+
+            elif norma.link_documento_norma:
+
+                nome_link = os.path.basename(
+                    unquote(norma.link_documento_norma)
+                )
+
+                norma_doc = {
+                    "displayname": nome_link,
+                    "url": norma.link_documento_norma,
+                }
+
+            normas.append({
+                "titulo": norma.nome_norma,
+                "codigo": norma.codigo_norma,
+                "versao": norma.versao,
+                "emitente": norma.emitente,
+                "sistema": str(norma.sistema),
+                "vigencia": (
+                    norma.vigencia_inicio.strftime("%d/%m/%Y")
+                    if norma.vigencia_inicio
+                    else ""
+                ),
+                "documento": norma_doc,
+            })
 
         return {
             "modelos": modelos,
@@ -618,10 +651,9 @@ class ArquiteruraProcessos(ListView):
                 "usuario_atualizacao",
             )
             .prefetch_related(
-                "documentos__modelagem_processo__tipo_documento",
-                "subprocessos__documentos__modelagem_processo__tipo_documento",
+                "documentos__norma_procedimento",
+                "subprocessos__documentos__norma_procedimento",
             )
-            .order_by("id")
         )
 
         # --------------------
@@ -640,7 +672,7 @@ class ArquiteruraProcessos(ListView):
             qs = qs.filter(macroprocesso_nivel2__nome__icontains=macro2)
 
         if area:
-            qs = qs.filter(area_responsavel__icontains=area)
+            qs = qs.filter(area_responsavel__ativo=True, area_responsavel__nome_area__icontains=area)
 
         if cri_de:
             qs = qs.filter(data_criacao__gte=cri_de)
@@ -676,7 +708,7 @@ class ArquiteruraProcessos(ListView):
 
         for proc in processos:
             # -------- PROCESSO --------
-            docs = self.montar_docs(proc.documentos.all())
+            docs = self.montar_docs(proc)
 
             proc.docs_modelos = docs["modelos"]
             proc.docs_normas = docs["normas"]
@@ -689,7 +721,7 @@ class ArquiteruraProcessos(ListView):
 
             # -------- SUBPROCESSOS --------
             for sub in proc.subprocessos.all():
-                sub_docs = self.montar_docs(sub.documentos.all())
+                sub_docs = self.montar_docs(sub)
 
                 sub.docs_modelos = sub_docs["modelos"]
                 sub.docs_normas = sub_docs["normas"]
