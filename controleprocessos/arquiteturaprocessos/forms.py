@@ -17,6 +17,7 @@ from .models import (
     NormaProcedimento, SistemasUECI, AbrangenciaChoices,
 )
 from django.db.models import Q
+from arquiteturaprocessos.utils.processos import validar_normas_processo
 
 UserModel = get_user_model()
 
@@ -1816,11 +1817,25 @@ class Form_ProcessoForm(forms.ModelForm):
         )
 
         widgets = {
+
             "objetivo": forms.Textarea(
                 attrs={
                     "style": "height:140px;resize:none;overflow-y:auto;",
                 }
             ),
+
+            "documento_modelo_processo": forms.FileInput(
+                attrs={
+                    "class": (
+                        "w-full h-[42px] border border-gray-300 rounded-md "
+                        "px-3 py-2 text-black placeholder-gray-400 "
+                        "focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    ),
+                    "accept": ".pdf,application/pdf",
+                    "autocomplete": "off",
+                }
+            ),
+
         }
 
     # ------------------------------------------------
@@ -1989,6 +2004,14 @@ class Form_ProcessoForm(forms.ModelForm):
                 erro["campo"],
                 erro["mensagem"]
             )
+
+        # =====================================================
+        # VALIDAÇÃO DAS NORMAS DE PROCEDIMENTO
+        # =====================================================
+        try:
+            cleaned["normas_ids"] = validar_normas_processo(self.data)
+        except ValidationError as e:
+            self.add_error(None, e.message)
 
         return cleaned
 

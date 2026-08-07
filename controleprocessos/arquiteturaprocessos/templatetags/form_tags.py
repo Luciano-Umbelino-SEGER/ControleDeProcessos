@@ -72,3 +72,8 @@ def quebra_telefone(valor):
     return mark_safe(
         valor.replace('|', '<br>')
     )
+
+@register.filter
+def get_label(form, field_name):
+    field = form.fields.get(field_name)
+    return field.label if field else field_name

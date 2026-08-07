@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ===============================
     (function destaqueCamposErro() {
         document.querySelectorAll('.alert ul li strong').forEach(err => {
-            const fieldName = err.textContent.replace(':', '').trim();
+            const fieldName = err.dataset.field || err.textContent.replace(':', '').trim();
             const field = document.querySelector(`[name="${fieldName}"]`);
 
             if (field) {

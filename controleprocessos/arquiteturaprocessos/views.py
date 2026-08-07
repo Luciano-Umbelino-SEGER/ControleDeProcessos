@@ -4,7 +4,7 @@ import os
 import json
 import re
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
@@ -129,61 +129,48 @@ def get_normas_por_processo(processo):
 # =========================================
 # UTIL – Persistência de Normas do Processo
 # =========================================
-def salvar_normas_processo(request, processo):
-    """
-    Recria os vínculos entre Processo e Normas de Procedimento.
+def salvar_normas_processo(
+    processo,
+    normas_ids,
+):
 
-    A documentação do Processo (PDF e Link) pertence ao próprio
-    Processo e é salva automaticamente pelo ModelForm.
-    Esta rotina trata exclusivamente as Normas associadas.
-    """
-
-    # ----------------------------------------------------
-    # Remove vínculos antigos
-    # ----------------------------------------------------
     ProcessoDocumento.objects.filter(
         processo=processo
     ).delete()
 
-    normas_ids = []
-
-    # ----------------------------------------------------
-    # Norma principal
-    # ----------------------------------------------------
-    norma_principal = request.POST.get(
-        "norma_procedimento"
-    )
-
-    if norma_principal:
-        normas_ids.append(norma_principal)
-
-    # ----------------------------------------------------
-    # Normas adicionais
-    # ----------------------------------------------------
-    normas_ids.extend(
-        request.POST.getlist(
-            "norma_procedimento_extra[]"
-        )
-    )
-
-    # ----------------------------------------------------
-    # Remove vazios e duplicados
-    # ----------------------------------------------------
-    normas_ids = list(
-        set(filter(None, normas_ids))
-    )
-
-    # ----------------------------------------------------
-    # Recria os vínculos Processo × Norma
-    # ----------------------------------------------------
     if normas_ids:
+
         ProcessoDocumento.objects.bulk_create([
+
             ProcessoDocumento(
                 processo=processo,
                 norma_procedimento_id=norma_id,
             )
+
             for norma_id in normas_ids
+
         ])
+
+# =========================================
+# UTIL – Extrair Normas do POST
+# =========================================
+def extrair_normas_processo(post_data):
+    """
+    Extrai todas as normas enviadas pelo formulário
+    preservando a ordem informada pelo usuário.
+    """
+
+    normas_ids = []
+
+    norma_principal = post_data.get("norma_procedimento")
+    if norma_principal:
+        normas_ids.append(norma_principal)
+
+    normas_ids.extend(
+        post_data.getlist("norma_procedimento_extra[]")
+    )
+
+    return list(filter(None, normas_ids))
 
 # --------------------------------------
 # Obter Responsável Contatos Area SEGER
@@ -4437,18 +4424,60 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
         )
 
+        # =====================================================
         # NORMAS DE PROCEDIMENTO
-        documentos_qs = (
-            ProcessoDocumento.objects
-            .select_related("norma_procedimento")
-            .filter(processo=processo)
-        )
-
+        # =====================================================
         normas_hidratadas = []
 
-        for doc in documentos_qs:
-            norma = doc.norma_procedimento
+        # -----------------------------------------
+        # Origem dos dados
+        # GET  -> Banco
+        # POST -> Dados enviados pelo usuário
+        # -----------------------------------------
+        if self.request.method == "POST":
 
+            normas_ids = []
+            norma_principal = self.request.POST.get(
+                "norma_procedimento"
+            )
+
+            if norma_principal:
+                normas_ids.append(norma_principal)
+
+            normas_ids.extend(
+                self.request.POST.getlist(
+                    "norma_procedimento_extra[]"
+                )
+            )
+
+            normas_ids = list(
+                filter(None, normas_ids)
+            )
+
+            normas = []
+            for norma_id in normas_ids:
+                try:
+                    normas.append(
+                        NormaProcedimento.objects.get(
+                            pk=norma_id
+                        )
+                    )
+                except NormaProcedimento.DoesNotExist:
+                    continue
+        else:
+            normas = [
+                doc.norma_procedimento
+                for doc in (
+                    ProcessoDocumento.objects
+                    .select_related("norma_procedimento")
+                    .filter(processo=processo)
+                )
+            ]
+
+        # -----------------------------------------
+        # Montagem da hidratação
+        # -----------------------------------------
+        for norma in normas:
             normas_hidratadas.append({
                 "id": norma.id,
                 "nome_norma": norma.nome_norma,
@@ -4466,8 +4495,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                     else ""
                 ),
                 "link": (
-                    norma.link_documento_norma
-                    or ""
+                        norma.link_documento_norma or ""
                 ),
             })
 
@@ -4544,10 +4572,20 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 processo.documento_modelo_processo = None
             processo.usuario_atualizacao = self.request.user
             processo.data_atualizacao = timezone.now()
+
             processo.save()
 
-            # SALVAR DOCUMENTOS
-            salvar_normas_processo(self.request, processo)
+            # ---------------------------------------------
+            # SALVAR NORMAS DE PROCEDIMENTO
+            # ---------------------------------------------
+            normas_ids = extrair_normas_processo(
+                self.request.POST
+            )
+
+            salvar_normas_processo(
+                processo,
+                normas_ids
+            )
 
             dados_depois = {
                 "nome": processo.nome,
