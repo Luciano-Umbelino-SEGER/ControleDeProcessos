@@ -1992,14 +1992,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ✅ AQUI entra a correção
         $select.on('select2:select', function (e) {
-
             const selectedId = e.params.data.id;
             $('#id_parent').val(selectedId);
 
             HerancaProcesso.aplicar(selectedId, {
                 url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"
-            });
 
+            })
         });
 
         $select.on('select2:clear', function () {
@@ -2008,6 +2007,22 @@ document.addEventListener("DOMContentLoaded", function () {
             HerancaProcesso.limpar();
 
         });
+
+        // =====================================================
+        // Reaplica a herança quando o formulário retorna
+        // com erro de validação (POST inválido).
+        // =====================================================
+        const parentId = $('#id_parent').val();
+
+        if (parentId) {
+
+             console.log("REAPLICANDO HERANÇA:", parentId);
+
+            HerancaProcesso.aplicar(parentId, {
+                url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"
+            });
+
+        }
 
     }
 

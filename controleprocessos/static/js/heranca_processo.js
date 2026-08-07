@@ -53,20 +53,25 @@ window.HerancaProcesso = (function () {
        BLOQUEIO (compatível com select2)
     ========================= */
     function bloquearCampo(id) {
-        const el = document.getElementById(id)
-        if (!el) return
 
-        if (el.tagName === "SELECT") {
-            el.disabled = true
-        } else {
-            el.readOnly = true
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // Inputs continuam readonly
+        if (el.tagName !== "SELECT") {
+            el.readOnly = true;
         }
 
-        el.classList.add("campo-herdado")
+        // Nunca desabilitar SELECTs.
+        // Eles precisam continuar sendo enviados no POST.
+        el.classList.add("campo-herdado");
 
-        // select2 continua funcionando
+        // Select2
         if (window.$ && $(el).hasClass("select2-hidden-accessible")) {
-            $(el).next('.select2-container').addClass("campo-herdado")
+            $(el)
+                .next(".select2-container")
+                .addClass("campo-herdado")
+                .css("pointer-events", "none");
         }
     }
 
@@ -74,19 +79,21 @@ window.HerancaProcesso = (function () {
        DESBLOQUEIO
     ========================= */
     function desbloquearCampo(id) {
-        const el = document.getElementById(id)
-        if (!el) return
 
-        if (el.tagName === "SELECT") {
-            el.disabled = false
-        } else {
-            el.readOnly = false
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        if (el.tagName !== "SELECT") {
+            el.readOnly = false;
         }
 
-        el.classList.remove("campo-herdado")
+        el.classList.remove("campo-herdado");
 
         if (window.$ && $(el).hasClass("select2-hidden-accessible")) {
-            $(el).next('.select2-container').removeClass("campo-herdado")
+            $(el)
+                .next(".select2-container")
+                .removeClass("campo-herdado")
+                .css("pointer-events", "");
         }
     }
 
@@ -126,7 +133,7 @@ window.HerancaProcesso = (function () {
         fetch(endpoint)
             .then(r => r.json())
             .then(data => {
-
+                console.log("HERANÇA:", data);
                 setSelect("id_classificacao", data.classificacao)
                 setSelect("id_macroprocesso_nivel1", data.macro1)
                 setSelect("id_macroprocesso_nivel2", data.macro2)

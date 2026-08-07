@@ -77,10 +77,12 @@ textarea.campo-herdado:focus {
     box-shadow: none !important;
 }
 .campo-herdado {
-    background-color: #f3f4f6 !important; /* bg-gray-100 */
-    color: #374151 !important;            /* text-gray-700 */
+    background-color: #f3f4f6 !important;
+    color: #374151 !important;
     cursor: not-allowed;
-    opacity: 1 !important;                /* 🔥 evita efeito "apagado" do disabled */
+    opacity: 1 !important;
+
+    pointer-events: none;
 }
 
 /* =========================================================

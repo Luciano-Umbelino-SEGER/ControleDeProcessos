@@ -4173,7 +4173,54 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         agora_local = timezone.localtime()
         normas = get_normas_procedimento_ativas()
 
+        context["normas_procedimento"] = normas
+
+        # =====================================================
+        # HERANÇA DO PROCESSO PAI (quando voltar de um POST inválido)
+        # =====================================================
+        if self.request.method == "POST":
+
+            parent_id = self.request.POST.get("parent")
+
+            if parent_id:
+                try:
+
+                    parent = (
+                        Processo.objects
+                        .select_related(
+                            "classificacao",
+                            "macroprocesso_nivel1",
+                            "macroprocesso_nivel2",
+                        )
+                        .get(pk=parent_id)
+                    )
+
+                    # listas dos combos dependentes
+                    context["macroprocesso_nivel1_list"] = (
+                        MacroprocessoNivel1.objects.filter(
+                            classificacao=parent.classificacao
+                        )
+                    )
+
+                    context["macroprocesso_nivel2_list"] = (
+                        MacroprocessoNivel2.objects.filter(
+                            macroprocesso_nivel1=parent.macroprocesso_nivel1
+                        )
+                    )
+
+                    # mantém os valores selecionados
+                    form = context["form"]
+
+                    form.initial["parent"] = parent.id
+                    form.initial["classificacao"] = parent.classificacao_id
+                    form.initial["macroprocesso_nivel1"] = parent.macroprocesso_nivel1_id
+                    form.initial["macroprocesso_nivel2"] = parent.macroprocesso_nivel2_id
+
+                except Processo.DoesNotExist:
+                    pass
+
         context.update({
+
             # listas para selects dinâmicos
             "normas_procedimento": normas,
 
@@ -4185,25 +4232,44 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
             # auditoria — inclusão
             "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
-            "cadastro_user": self.request.user.get_full_name() or self.request.user.username,
+            "cadastro_user": (
+                    self.request.user.get_full_name()
+                    or self.request.user.username
+            ),
 
-            # auditoria — atualização (vazia)
+            # auditoria — atualização
             "atualizacao_data": "",
             "atualizacao_user": "",
 
-            # auditoria — conclusão (vazia)
+            # auditoria — conclusão
             "conclusao_data": "",
             "conclusao_user": "",
         })
 
         return context
 
-    # -------------------------------------------------
-    # Persistência correta (Processo + N Documentos)
-    # -------------------------------------------------
+    def post(self, request, *args, **kwargs):
+
+        print("=" * 80)
+        for k, v in request.POST.items():
+            print(k, "=", v)
+        print("=" * 80)
+
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
+
         with transaction.atomic():
+
             processo = form.save(commit=False)
+
+            # ------------------------------------------
+            # Herança do Processo Pai
+            # ------------------------------------------
+            if processo.parent:
+                processo.classificacao = processo.parent.classificacao
+                processo.macroprocesso_nivel1 = processo.parent.macroprocesso_nivel1
+                processo.macroprocesso_nivel2 = processo.parent.macroprocesso_nivel2
 
             processo.usuario_cadastro = self.request.user
             processo.usuario_atualizacao = None
@@ -4211,10 +4277,22 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
             processo.save()
 
-            salvar_normas_processo(
-                self.request,
-                processo
-            )
+            try:
+
+                normas_ids = validar_normas_processo(
+                    self.request
+                )
+
+                salvar_normas_processo(
+                    processo,
+                    normas_ids
+                )
+
+            except ValidationError as e:
+
+                form.add_error(None, e.message)
+
+                return self.form_invalid(form)
 
         messages.success(
             self.request,

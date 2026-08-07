@@ -86,7 +86,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (processoInputVisible) processoInputVisible.value = "";
         if (subprocessoInputVisible) subprocessoInputVisible.value = "";
         if (hiddenNomeField) hiddenNomeField.value = "";
-        if (parentField) parentField.value = "";
+        // NÃO limpar o parent.
+        // O valor pode ter vindo de um POST inválido e será reutilizado.
+        //if (parentField) parentField.value = "";
         if (processoSelectVisible) processoSelectVisible.selectedIndex = 0;
     }
 
