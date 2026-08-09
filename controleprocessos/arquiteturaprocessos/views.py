@@ -4260,7 +4260,6 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
 
         with transaction.atomic():
-
             processo = form.save(commit=False)
 
             # ------------------------------------------
@@ -4277,22 +4276,18 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
             processo.save()
 
-            try:
+            # ------------------------------------------
+            # Normas de Procedimento
+            # ------------------------------------------
+            normas_ids = form.cleaned_data.get(
+                "normas_ids",
+                []
+            )
 
-                normas_ids = validar_normas_processo(
-                    self.request
-                )
-
-                salvar_normas_processo(
-                    processo,
-                    normas_ids
-                )
-
-            except ValidationError as e:
-
-                form.add_error(None, e.message)
-
-                return self.form_invalid(form)
+            salvar_normas_processo(
+                processo,
+                normas_ids
+            )
 
         messages.success(
             self.request,

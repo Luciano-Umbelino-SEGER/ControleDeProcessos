@@ -159,24 +159,54 @@ document.addEventListener("DOMContentLoaded", function () {
             limparVisiveis();
         }
 
+        // Load parent processes and restore the selected parent after an invalid POST
         if (processoSelectVisible) {
+
             const processos = await carregarProcessosPai();
+
             processoSelectVisible.innerHTML = `<option value="">---------</option>`;
+
             processos.forEach(p => {
                 const opt = document.createElement("option");
                 opt.value = p.id;
                 opt.textContent = p.nome;
                 processoSelectVisible.appendChild(opt);
             });
+
+            // Restore the parent process sent in the POST
+            if (parentField?.value) {
+
+                const parentId = parentField.value;
+
+                const parentOption = Array.from(
+                    processoSelectVisible.options
+                ).find(
+                    option => String(option.value) === String(parentId)
+                );
+
+                if (parentOption) {
+
+                    processoSelectVisible.value = parentId;
+
+                    // Synchronize Select2, when initialized
+                    if (
+                        window.$ &&
+                        $(processoSelectVisible).hasClass("select2-hidden-accessible")
+                    ) {
+                        $(processoSelectVisible).trigger("change");
+                    }
+                }
+            }
         }
 
         if (!selectListenerAdded && processoSelectVisible) {
+
             processoSelectVisible.addEventListener("change", function () {
                 parentField.value = this.value;
             });
+
             selectListenerAdded = true;
         }
-
     }
 
     // ===============================

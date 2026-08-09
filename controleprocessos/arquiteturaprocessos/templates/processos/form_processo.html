@@ -354,7 +354,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-blue-700">Classificação</label>
-                            {{ form.classificacao|add_attr:"disabled:disabled" }}
+                            {{ form.classificacao }}
                         </div>
 
                         <div>
@@ -1940,7 +1940,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (el.length) {
         el.select2({
             placeholder: "Selecione ou digite a área...",
-            allowClear: true,
+            allowClear: false,
             width: '100%'
         });
 
@@ -2009,19 +2009,47 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         // =====================================================
-        // Reaplica a herança quando o formulário retorna
+        // Reaplica o Processo Pai quando o formulário retorna
         // com erro de validação (POST inválido).
         // =====================================================
         const parentId = $('#id_parent').val();
 
         if (parentId) {
 
-             console.log("REAPLICANDO HERANÇA:", parentId);
+            console.log("REAPLICANDO HERANÇA:", parentId);
 
+            // Recria a opção do Processo Pai no Select2
+            // para que ela volte a aparecer selecionada.
+            $.ajax({
+                url: "{% url 'arquiteturaprocessos:buscar_processos' %}",
+                data: {
+                    q: ""
+                },
+                dataType: "json",
+                success: function (data) {
+
+                    const processoPai = data.find(
+                        processo => String(processo.id) === String(parentId)
+                    );
+
+                    if (processoPai) {
+
+                        const option = new Option(
+                            processoPai.text || processoPai.nome,
+                            processoPai.id,
+                            true,
+                            true
+                        );
+
+                        $select.append(option).trigger("change");
+                    }
+                }
+            });
+
+            // Reaplica os dados herdados
             HerancaProcesso.aplicar(parentId, {
                 url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"
             });
-
         }
 
     }
