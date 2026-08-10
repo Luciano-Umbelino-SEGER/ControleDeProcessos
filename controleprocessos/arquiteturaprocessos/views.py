@@ -5,6 +5,7 @@ import json
 import re
 
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
@@ -33,6 +34,7 @@ from pathlib import Path
 from urllib.parse import unquote
 from django.http import HttpResponseRedirect
 import mimetypes
+
 from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
@@ -4822,13 +4824,16 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         )
 
 # --------------------------------#
-# Excluir Processo                #
+# Excluir Processo                 #
 # --------------------------------#
 class ExcluirProcesso(LoginRequiredMixin, DetailView):
     model = Processo
     template_name = 'processos/form_processo.html'
     context_object_name = 'processo'
 
+    # -------------------------------------------------
+    # QUERYSET
+    # -------------------------------------------------
     def get_queryset(self):
         return (
             Processo.objects
@@ -4841,9 +4846,12 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                 "usuario_atualizacao",
                 "usuario_conclusao",
             )
-            .prefetch_related("subprocessos")  # usado na validação da exclusão
+            .prefetch_related("subprocessos")
         )
 
+    # -------------------------------------------------
+    # CONTEXTO
+    # -------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processo = self.object
@@ -4864,7 +4872,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         )
 
         # -------------------------------------------------
-        # 🔥 Documentos associados (1 → N) — IGUAL AO VISUALIZAR
+        # Documentos associados ao Processo
         # -------------------------------------------------
         documentos_qs = (
             ProcessoDocumento.objects
@@ -4886,7 +4894,8 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                 "sistema": str(norma.sistema),
                 "vigencia": (
                     norma.vigencia_inicio.strftime("%Y-%m-%d")
-                    if norma.vigencia_inicio else ""
+                    if norma.vigencia_inicio
+                    else ""
                 ),
                 "pdf": (
                     norma.documento_norma_procedimento.url
@@ -4894,8 +4903,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                     else ""
                 ),
                 "link": (
-                    norma.link_documento_norma
-                    or ""
+                    norma.link_documento_norma or ""
                 ),
             })
 
@@ -4919,80 +4927,166 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             "subprocessos_existentes": subprocessos,
 
             "cadastro_data": (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_criacao else ""
+                timezone.localtime(
+                    processo.data_criacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao
+                else ""
             ),
+
             "cadastro_user": (
-                processo.usuario_cadastro.get_full_name() or processo.usuario_cadastro.username
-                if processo.usuario_cadastro else ""
+                processo.usuario_cadastro.get_full_name()
+                or processo.usuario_cadastro.username
+                if processo.usuario_cadastro
+                else ""
             ),
+
             "atualizacao_data": (
-                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_atualizacao else ""
+                timezone.localtime(
+                    processo.data_atualizacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_atualizacao
+                else ""
             ),
+
             "atualizacao_user": (
                 processo.usuario_atualizacao.get_full_name()
-                if processo.usuario_atualizacao else ""
+                if processo.usuario_atualizacao
+                else ""
             ),
-            # auditoria — conclusao
+
             "conclusao_data": (
-                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_conclusao else ""
+                timezone.localtime(
+                    processo.data_conclusao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_conclusao
+                else ""
             ),
+
             "conclusao_user": (
                 processo.usuario_conclusao.get_full_name()
                 or processo.usuario_conclusao.username
-                if processo.usuario_conclusao else ""
+                if processo.usuario_conclusao
+                else ""
             ),
         })
 
         return context
 
+    # -------------------------------------------------
+    # EXCLUSÃO
+    # -------------------------------------------------
     def post(self, request, *args, **kwargs):
+
         processo = self.get_object()
 
-        # -------------------------------------------------
-        # 1️⃣ Verifica se existem subprocessos
-        # -------------------------------------------------
-        subprocessos = processo.subprocessos.all()
+        # =================================================
+        # 1. IMPEDIR EXCLUSÃO DE PROCESSO PAI
+        #    COM SUBPROCESSOS ASSOCIADOS
+        # =================================================
+        subprocessos = list(
+            processo.subprocessos.all()
+        )
 
-        if subprocessos.exists():
-            lista = ", ".join([s.nome for s in subprocessos])
+        if subprocessos:
+
+            lista = ", ".join(
+                subprocesso.nome
+                for subprocesso in subprocessos
+            )
+
             messages.error(
                 request,
-                f"Não é possível excluir o processo '{processo.nome}'. "
+                f"Não é possível excluir o processo "
+                f"'{processo.nome}'. "
                 f"Existem subprocessos associados: {lista}"
             )
+
             return redirect(request.path)
 
-        # -------------------------------------------------
-        # Efetua o Registro do Log antes da Exclusão
-        # -------------------------------------------------
-        registrar_log(
-            request=request,
-            acao="DELETE",
-            modelo="Processo",
-            objeto_id=str(processo.id),
-            descricao=f"Processo '{processo.nome}' excluído",
-            dados_antes={
-                "nome": processo.nome,
-                "status": processo.status,
-                "classificacao": processo.classificacao_id,
-                "macro_nivel1": processo.macroprocesso_nivel1_id,
-                "macro_nivel2": processo.macroprocesso_nivel2_id,
-            },
-            dados_depois={},
-        )
+        # =================================================
+        # 2. GUARDAR INFORMAÇÕES DO PROCESSO
+        #    ANTES DA EXCLUSÃO
+        # =================================================
+        nome_processo = processo.nome
 
         # -------------------------------------------------
-        # Efetua a exclusão definitiva do Processo
+        # Guarda somente o caminho do PDF.
+        # Não apagamos ainda.
         # -------------------------------------------------
-        processo.delete()
+        arquivo_pdf = None
+
+        if processo.documento_modelo_processo:
+            arquivo_pdf = (
+                processo.documento_modelo_processo.name
+            )
+
+        # =================================================
+        # 3. EXCLUSÃO DEFINITIVA
+        # =================================================
+        with transaction.atomic():
+
+            # -------------------------------------------------
+            # LOG ANTES DA EXCLUSÃO
+            # -------------------------------------------------
+            registrar_log(
+                request=request,
+                acao="DELETE",
+                modelo="Processo",
+                objeto_id=str(processo.id),
+                descricao=(
+                    f"Processo '{nome_processo}' excluído"
+                ),
+                dados_antes={
+                    "nome": nome_processo,
+                    "status": processo.status,
+                    "classificacao": (
+                        processo.classificacao_id
+                    ),
+                    "macro_nivel1": (
+                        processo.macroprocesso_nivel1_id
+                    ),
+                    "macro_nivel2": (
+                        processo.macroprocesso_nivel2_id
+                    ),
+                },
+                dados_depois={},
+            )
+
+            # -------------------------------------------------
+            # EXCLUSÃO DO PROCESSO
+            #
+            # Aqui também serão removidos os registros
+            # ProcessoDocumento relacionados ao processo,
+            # conforme o comportamento CASCADE da relação.
+            # -------------------------------------------------
+            processo.delete()
+
+            # -------------------------------------------------
+            # PDF FÍSICO
+            #
+            # Só será apagado DEPOIS que a transação
+            # do banco for efetivamente confirmada.
+            # -------------------------------------------------
+            if arquivo_pdf:
+                def remover_pdf():
+                    default_storage.delete(arquivo_pdf)
+
+                transaction.on_commit(
+                    remover_pdf
+                )
+
+        # =================================================
+        # 4. MENSAGEM DE SUCESSO
+        # =================================================
         messages.success(
             request,
-            f"Processo '{processo.nome}' excluído com sucesso!"
+            f"Processo '{nome_processo}' excluído com sucesso!"
         )
-        return redirect('arquiteturaprocessos:processos')
+
+        return redirect(
+            "arquiteturaprocessos:processos"
+        )
 
 # --------------------------------#
 # Concluir Processo               #
