@@ -5091,8 +5091,10 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Concluir Processo               #
 # --------------------------------#
+
 @login_required
 def concluir_processo(request, pk):
+
     processo = get_object_or_404(
         Processo.objects.prefetch_related("subprocessos"),
         pk=pk,
@@ -5102,7 +5104,10 @@ def concluir_processo(request, pk):
     # Segurança: só POST pode concluir
     # ---------------------------------
     if request.method != "POST":
-        return redirect("arquiteturaprocessos:editar_processo", pk=pk)
+        return redirect(
+            "arquiteturaprocessos:editar_processo",
+            pk=pk
+        )
 
     # ---------------------------------
     # Verifica se pode concluir
@@ -5110,7 +5115,8 @@ def concluir_processo(request, pk):
     if not processo.pode_concluir:
 
         subprocessos_iniciados = [
-            sub.nome for sub in processo.subprocessos.all()
+            sub.nome
+            for sub in processo.subprocessos.all()
             if sub.status == "iniciado"
         ]
 
@@ -5123,18 +5129,24 @@ def concluir_processo(request, pk):
             request,
             mark_safe(
                 f"""
-                Não é possível concluir o processo '<strong>{processo.nome}</strong>'.
+                Não é possível concluir o processo
+                '<strong>{processo.nome}</strong>'.
                 <br><br>
-                Existem subprocessos que ainda estão no estado de 'Iniciado':
+                Existem subprocessos que ainda estão no estado de
+                'Iniciado':
                 <br>
                 {lista_html}
                 <br><br>
-                Ative, conclua ou exclua os subprocessos que não são necessários.
+                Ative, conclua ou exclua os subprocessos que não são
+                necessários.
                 """
             )
         )
 
-        return redirect("arquiteturaprocessos:editar_processo", pk=pk)
+        return redirect(
+            "arquiteturaprocessos:editar_processo",
+            pk=pk
+        )
 
     # ---------------------------------
     # Conclusão em cascata
@@ -5143,41 +5155,95 @@ def concluir_processo(request, pk):
 
     with transaction.atomic():
 
-        # conclui subprocessos ativos
-        for sub in processo.subprocessos.filter(
+        # ---------------------------------------------
+        # Status do processo antes da conclusão
+        # ---------------------------------------------
+        status_antes = processo.status
+
+        # ---------------------------------------------
+        # Subprocessos que serão concluídos em cascata
+        # ---------------------------------------------
+        subprocessos_ativos = list(
+            processo.subprocessos.filter(
                 status="ativo",
                 data_conclusao__isnull=True,
-        ):
+            )
+        )
+
+        # ---------------------------------------------
+        # Guarda o estado anterior dos subprocessos
+        # ---------------------------------------------
+        subprocessos_antes = [
+            {
+                "id": str(sub.id),
+                "nome": sub.nome,
+                "status": sub.status,
+            }
+            for sub in subprocessos_ativos
+        ]
+
+        # ---------------------------------------------
+        # Conclui subprocessos ativos
+        # ---------------------------------------------
+        for sub in subprocessos_ativos:
+
             sub.data_conclusao = agora
             sub.usuario_conclusao = request.user
+
             sub.save()
 
-        # conclui processo pai
-        status_antes = processo.status
+        # ---------------------------------------------
+        # Conclui processo pai
+        # ---------------------------------------------
         processo.data_conclusao = agora
         processo.usuario_conclusao = request.user
+
         processo.save()
 
+        # ---------------------------------------------
+        # Estado dos subprocessos após a conclusão
+        # ---------------------------------------------
+        subprocessos_depois = [
+            {
+                "id": str(sub.id),
+                "nome": sub.nome,
+                "status": sub.status,
+            }
+            for sub in subprocessos_ativos
+        ]
+
+        # ---------------------------------------------
+        # LOG DA CONCLUSÃO
+        # ---------------------------------------------
         registrar_log(
             request=request,
             acao="CONCLUIR",
             modelo="Processo",
             objeto_id=str(processo.id),
-            descricao=f"Processo '{processo.nome}' concluído",
+            descricao=(
+                f"Processo '{processo.nome}' concluído"
+            ),
             dados_antes={
                 "status": status_antes,
+                "subprocessos": subprocessos_antes,
             },
             dados_depois={
                 "status": processo.status,
+                "subprocessos": subprocessos_depois,
             },
         )
 
+    # ---------------------------------
+    # Mensagem de sucesso
+    # ---------------------------------
     messages.success(
         request,
         f"Processo '{processo.nome}' concluído com sucesso!"
     )
 
-    return redirect("arquiteturaprocessos:processos")
+    return redirect(
+        "arquiteturaprocessos:processos"
+    )
 
 # -------------------------------------
 # View customizada para Reset de Senha

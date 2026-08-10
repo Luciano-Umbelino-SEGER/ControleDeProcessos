@@ -1184,6 +1184,15 @@ class Processo(models.Model):
     def __str__(self):
         return self.nome
 
+    @property
+    def pode_concluir(self):
+
+        for sub in self.subprocessos.all():
+            if sub.status == "iniciado":
+                return False
+
+        return True
+
     # ========================================================
     # META
     # ========================================================
