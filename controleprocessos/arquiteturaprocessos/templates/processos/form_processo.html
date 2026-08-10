@@ -568,22 +568,13 @@
                                                 );
 
                                                 dz.addEventListener('drop', e => {
-
                                                     e.preventDefault();
-
                                                     this.over = false;
-
-                                                    const file =
-                                                        e.dataTransfer?.files?.[0];
-
+                                                    const file = e.dataTransfer?.files?.[0];
                                                     if (!file) return;
-
                                                     const dt = new DataTransfer();
-
                                                     dt.items.add(file);
-
                                                     inp.files = dt.files;
-
                                                     inp.dispatchEvent(
                                                         new Event('change', {
                                                             bubbles: true
@@ -693,15 +684,13 @@
                                                             fileName = '';
                                                             fileObjectURL = '';
                                                             error = '';
-
                                                             const inp =
                                                                 $el.querySelector('input[type=file]');
-
                                                             if (inp) {
                                                                 inp.value = '';
                                                             }
 
-                                                            $refs.removerPdf.value = '0';
+                                                            $refs.removerPdf.value = '1';
                                                         "
                                                         class="text-red-500 hover:text-red-700 cursor-pointer"
                                                         title="Remover documento">

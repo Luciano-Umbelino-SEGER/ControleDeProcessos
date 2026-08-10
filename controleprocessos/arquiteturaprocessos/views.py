@@ -3071,9 +3071,7 @@ class EditarNormaProcedimento(
         # ============================================
         # REMOVER PDF
         # ============================================
-        if self.request.POST.get(
-                "remover_documento_norma_procedimento"
-        ) == "1":
+        if self.request.POST.get("remover_documento_norma_procedimento") == "1":
             form.instance.documento_norma_procedimento = None
 
         response = super().form_valid(form)
@@ -4250,11 +4248,6 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 
     def post(self, request, *args, **kwargs):
 
-        print("=" * 80)
-        for k, v in request.POST.items():
-            print(k, "=", v)
-        print("=" * 80)
-
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -4428,21 +4421,23 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 class EditarProcesso(LoginRequiredMixin, UpdateView):
     model = Processo
-    template_name = 'processos/form_processo.html'
+    template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
-    success_url = reverse_lazy('arquiteturaprocessos:processos')
+    success_url = reverse_lazy("arquiteturaprocessos:processos")
 
     # -------------------------------------------------
     # FORM KWARGS
     # -------------------------------------------------
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({"modo_edicao": True,})
+        kwargs.update({
+            "modo_edicao": True,
+        })
 
         return kwargs
 
     # -------------------------------------------------
-    # 🔥 OTIMIZAÇÃO (IMPORTANTE)
+    # OTIMIZAÇÃO
     # -------------------------------------------------
     def get_queryset(self):
         return (
@@ -4459,15 +4454,16 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         )
 
     # -------------------------------------------------
-    # 🔥 CONTROLE DE EDIÇÃO
+    # CONTROLE DE EDIÇÃO
     # -------------------------------------------------
     def dispatch(self, request, *args, **kwargs):
-        self.object = self.get_object()  # Carrega o processo para validar o status antes da edição
+        self.object = self.get_object()
 
         if self.object.status == "concluido":
             messages.error(
                 request,
-                f"O processo '{self.object.nome}' já está concluído e não pode ser editado."
+                f"O processo '{self.object.nome}' já está concluído "
+                "e não pode ser editado."
             )
             return redirect("arquiteturaprocessos:processos")
 
@@ -4484,32 +4480,38 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             get_normas_procedimento_ativas()
         )
 
+        # =================================================
         # SELECTS DEPENDENTES
+        # =================================================
         context["macroprocesso_nivel1_list"] = (
-            MacroprocessoNivel1.objects.filter(classificacao=processo.classificacao)
-            if processo.classificacao_id else MacroprocessoNivel1.objects.none()
+            MacroprocessoNivel1.objects.filter(
+                classificacao=processo.classificacao
+            )
+            if processo.classificacao_id
+            else MacroprocessoNivel1.objects.none()
         )
 
         context["macroprocesso_nivel2_list"] = (
             MacroprocessoNivel2.objects.filter(
                 macroprocesso_nivel1=processo.macroprocesso_nivel1
             )
-            if processo.macroprocesso_nivel1_id else MacroprocessoNivel2.objects.none()
+            if processo.macroprocesso_nivel1_id
+            else MacroprocessoNivel2.objects.none()
         )
 
-        # =====================================================
+        # =================================================
         # NORMAS DE PROCEDIMENTO
-        # =====================================================
+        # =================================================
         normas_hidratadas = []
 
         # -----------------------------------------
-        # Origem dos dados
         # GET  -> Banco
         # POST -> Dados enviados pelo usuário
         # -----------------------------------------
         if self.request.method == "POST":
 
             normas_ids = []
+
             norma_principal = self.request.POST.get(
                 "norma_procedimento"
             )
@@ -4528,6 +4530,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             )
 
             normas = []
+
             for norma_id in normas_ids:
                 try:
                     normas.append(
@@ -4537,6 +4540,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                     )
                 except NormaProcedimento.DoesNotExist:
                     continue
+
         else:
             normas = [
                 doc.norma_procedimento
@@ -4551,6 +4555,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
         # Montagem da hidratação
         # -----------------------------------------
         for norma in normas:
+
             normas_hidratadas.append({
                 "id": norma.id,
                 "nome_norma": norma.nome_norma,
@@ -4560,7 +4565,8 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 "sistema": str(norma.sistema),
                 "vigencia": (
                     norma.vigencia_inicio.strftime("%Y-%m-%d")
-                    if norma.vigencia_inicio else ""
+                    if norma.vigencia_inicio
+                    else ""
                 ),
                 "pdf": (
                     norma.documento_norma_procedimento.url
@@ -4568,40 +4574,61 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                     else ""
                 ),
                 "link": (
-                        norma.link_documento_norma or ""
+                    norma.link_documento_norma or ""
                 ),
             })
 
         context["normas_hidratadas"] = normas_hidratadas
 
+        # =================================================
         # AUDITORIA
+        # =================================================
         context.update({
+
             "modo_edicao": True,
             "modo_inclusao": False,
             "modo_visualizacao": False,
             "modo_exclusao": False,
 
             "cadastro_data": (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_criacao else ""
-            ),
-            "cadastro_user": (
-                processo.usuario_cadastro.get_full_name() or processo.usuario_cadastro.username
-                if processo.usuario_cadastro else ""
+                timezone.localtime(
+                    processo.data_criacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_criacao
+                else ""
             ),
 
-            "atualizacao_data": timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M:%S"),
+            "cadastro_user": (
+                processo.usuario_cadastro.get_full_name()
+                or processo.usuario_cadastro.username
+                if processo.usuario_cadastro
+                else ""
+            ),
+
+            "atualizacao_data": (
+                timezone.localtime(
+                    timezone.now()
+                ).strftime("%d/%m/%Y %H:%M:%S")
+            ),
+
             "atualizacao_user": (
-                self.request.user.get_full_name() or self.request.user.username
+                self.request.user.get_full_name()
+                or self.request.user.username
             ),
 
             "conclusao_data": (
-                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
-                if processo.data_conclusao else ""
+                timezone.localtime(
+                    processo.data_conclusao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processo.data_conclusao
+                else ""
             ),
+
             "conclusao_user": (
-                processo.usuario_conclusao.get_full_name() or processo.usuario_conclusao.username
-                if processo.usuario_conclusao else ""
+                processo.usuario_conclusao.get_full_name()
+                or processo.usuario_conclusao.username
+                if processo.usuario_conclusao
+                else ""
             ),
         })
 
@@ -4611,18 +4638,29 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
     # GRAVAÇÃO FINAL
     # -------------------------------------------------
     def form_valid(self, form):
+
         with transaction.atomic():
 
-            processo_original = self.object  # 🔥 evita nova query
+            processo_original = self.object
 
+            # =================================================
+            # DADOS ANTES
+            # =================================================
             dados_antes = {
                 "nome": processo_original.nome,
                 "status": processo_original.status,
                 "classificacao": processo_original.classificacao_id,
-                "macro_nivel1": processo_original.macroprocesso_nivel1_id,
-                "macro_nivel2": processo_original.macroprocesso_nivel2_id,
+                "macro_nivel1": (
+                    processo_original.macroprocesso_nivel1_id
+                ),
+                "macro_nivel2": (
+                    processo_original.macroprocesso_nivel2_id
+                ),
             }
 
+            # =================================================
+            # NORMAS ANTES
+            # =================================================
             docs_antes = set(
                 ProcessoDocumento.objects
                 .filter(processo=processo_original)
@@ -4632,25 +4670,45 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 )
             )
 
-            # SALVAR PROCESSO
-            processo = form.save(commit=False)
-            # ---------------------------------------------
-            # REMOVER DOCUMENTO PDF
-            # ---------------------------------------------
+            # =================================================
+            # PDF ANTIGO
+            # =================================================
+            arquivo_pdf_antigo = None
+
+            remover_pdf = (
+                self.request.POST.get(
+                    "remover_documento_modelo_processo"
+                ) == "1"
+            )
+
             if (
-                    self.request.POST.get(
-                        "remover_documento_modelo_processo"
-                    ) == "1"
+                remover_pdf
+                and processo_original.documento_modelo_processo
             ):
+                arquivo_pdf_antigo = (
+                    processo_original.documento_modelo_processo
+                )
+
+            # =================================================
+            # SALVAR PROCESSO
+            # =================================================
+            processo = form.save(commit=False)
+
+            # ---------------------------------------------
+            # Se o usuário solicitou remoção do PDF,
+            # o campo do modelo deve ser efetivamente limpo.
+            # ---------------------------------------------
+            if remover_pdf:
                 processo.documento_modelo_processo = None
+
             processo.usuario_atualizacao = self.request.user
             processo.data_atualizacao = timezone.now()
 
             processo.save()
 
-            # ---------------------------------------------
+            # =================================================
             # SALVAR NORMAS DE PROCEDIMENTO
-            # ---------------------------------------------
+            # =================================================
             normas_ids = extrair_normas_processo(
                 self.request.POST
             )
@@ -4660,14 +4718,24 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 normas_ids
             )
 
+            # =================================================
+            # DADOS DEPOIS
+            # =================================================
             dados_depois = {
                 "nome": processo.nome,
                 "status": processo.status,
                 "classificacao": processo.classificacao_id,
-                "macro_nivel1": processo.macroprocesso_nivel1_id,
-                "macro_nivel2": processo.macroprocesso_nivel2_id,
+                "macro_nivel1": (
+                    processo.macroprocesso_nivel1_id
+                ),
+                "macro_nivel2": (
+                    processo.macroprocesso_nivel2_id
+                ),
             }
 
+            # =================================================
+            # NORMAS DEPOIS
+            # =================================================
             docs_depois = set(
                 ProcessoDocumento.objects
                 .filter(processo=processo)
@@ -4680,26 +4748,37 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             adicionados = docs_depois - docs_antes
             removidos = docs_antes - docs_depois
 
+            # =================================================
             # LOG PROCESSO
+            # =================================================
             registrar_log(
                 request=self.request,
                 acao="UPDATE",
                 modelo="Processo",
                 objeto_id=str(processo.id),
-                descricao=f"Processo '{processo.nome}' atualizado",
+                descricao=(
+                    f"Processo '{processo.nome}' atualizado"
+                ),
                 dados_antes=dados_antes,
                 dados_depois=dados_depois,
             )
 
-            # LOG DOCUMENTOS
+            # =================================================
+            # LOG DOCUMENTOS / NORMAS
+            # =================================================
             if adicionados or removidos:
+
                 descricao_docs = []
 
                 if adicionados:
-                    descricao_docs.append(f"Adicionados: {', '.join(adicionados)}")
+                    descricao_docs.append(
+                        f"Adicionados: {', '.join(adicionados)}"
+                    )
 
                 if removidos:
-                    descricao_docs.append(f"Removidos: {', '.join(removidos)}")
+                    descricao_docs.append(
+                        f"Removidos: {', '.join(removidos)}"
+                    )
 
                 registrar_log(
                     request=self.request,
@@ -4707,16 +4786,40 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                     modelo="ProcessoDocumento",
                     objeto_id=str(processo.id),
                     descricao=" | ".join(descricao_docs),
-                    dados_antes={"documentos": list(docs_antes)},
-                    dados_depois={"documentos": list(docs_depois)},
+                    dados_antes={
+                        "documentos": list(docs_antes)
+                    },
+                    dados_depois={
+                        "documentos": list(docs_depois)
+                    },
                 )
 
+            # =================================================
+            # REMOÇÃO FÍSICA DO PDF
+            #
+            # Somente depois que a transação for confirmada.
+            # =================================================
+            if arquivo_pdf_antigo:
+
+                transaction.on_commit(
+                    lambda arquivo=arquivo_pdf_antigo: (
+                        arquivo.delete(save=False)
+                    )
+                )
+
+        # =================================================
+        # MENSAGEM DE SUCESSO
+        # =================================================
         messages.success(
             self.request,
             f"Processo '{processo.nome}' atualizado com sucesso!"
         )
 
-        return HttpResponseRedirect(self.get_success_url())
+        self.object = processo
+
+        return HttpResponseRedirect(
+            self.get_success_url()
+        )
 
 # --------------------------------#
 # Excluir Processo                #
