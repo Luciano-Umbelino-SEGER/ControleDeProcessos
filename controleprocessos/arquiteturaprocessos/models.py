@@ -1152,6 +1152,7 @@ class Processo(models.Model):
         if (
                 self.documento_modelo_processo
                 or self.link_documento_modelo_processo
+                or ProcessoDocumento.objects.filter(processo=self).exists()
         ):
             return "ativo"
 

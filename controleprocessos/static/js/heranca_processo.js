@@ -133,7 +133,6 @@ window.HerancaProcesso = (function () {
         fetch(endpoint)
             .then(r => r.json())
             .then(data => {
-                console.log("HERANÇA:", data);
                 setSelect("id_classificacao", data.classificacao)
                 setSelect("id_macroprocesso_nivel1", data.macro1)
                 setSelect("id_macroprocesso_nivel2", data.macro2)

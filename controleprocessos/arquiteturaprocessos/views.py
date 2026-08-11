@@ -4005,7 +4005,6 @@ class ProcessoView(LoginRequiredMixin, ListView):
     model = Processo
     template_name = 'processos/processos.html'
     context_object_name = 'processos'
-    ordering = ['id']
 
     # 🔥 PAGINAÇÃO DINÂMICA - PADRÃO
     def get_paginate_by(self, queryset):
@@ -5163,12 +5162,12 @@ def concluir_processo(request, pk):
         # ---------------------------------------------
         # Subprocessos que serão concluídos em cascata
         # ---------------------------------------------
-        subprocessos_ativos = list(
-            processo.subprocessos.filter(
-                status="ativo",
-                data_conclusao__isnull=True,
-            )
-        )
+        subprocessos_ativos = [
+            sub
+            for sub in processo.subprocessos.all()
+            if sub.status == "ativo"
+               and sub.data_conclusao is None
+        ]
 
         # ---------------------------------------------
         # Guarda o estado anterior dos subprocessos
