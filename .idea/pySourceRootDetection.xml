@@ -4,6 +4,7 @@
     <option name="sourcePathsSet">
       <set>
         <option value="$PROJECT_DIR$" />
+        <option value="$PROJECT_DIR$/controleprocessos/venv/Lib/site-packages/pip/_vendor" />
       </set>
     </option>
   </component>

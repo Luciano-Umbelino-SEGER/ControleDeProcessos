@@ -6,7 +6,6 @@ const MAPA_TABELAS = {
 
     ProcessoMapear: "Processos a Mapear",
     Processo: "Processos",
-    ModelagemProcesso: "Modelagem de Processos",
     MacroprocessoNivel1: "Macroprocesso Nível 1",
     MacroprocessoNivel2: "Macroprocesso Nível 2"
 

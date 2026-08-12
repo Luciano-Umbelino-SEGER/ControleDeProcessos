@@ -3,8 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
-from .models import (Perfil, Telefone, Usuario, MacroprocessoNivel1, MacroprocessoNivel2,
-                     ModelagemProcesso, ContatoAreaSeger)
+from .models import (Perfil, Telefone, Usuario, MacroprocessoNivel1, MacroprocessoNivel2, ContatoAreaSeger)
 
 # -------------------- Inline de Telefones --------------------
 class TelefoneInline(admin.TabularInline):
@@ -36,79 +35,6 @@ class UsuarioAdmin(BaseUserAdmin):
             for t in qs
         ]))
     telefones.short_description = "Telefones"
-
-
-# -------------------- Admin de Normas de Procedimento --------------------
-@admin.register(ModelagemProcesso)
-class ModelagemProcessoAdmin(admin.ModelAdmin):
-    list_display = (
-        "sequencial_formatado",
-        "versao_formatada",
-        "identificacao",
-        "emitente",
-        "sistema",
-        "data_cadastro",
-        "usuario",
-    )
-    list_display_links = ("identificacao",)
-    ordering = ("sequencial", "versao", "titulo", "codigo", "tema")
-    list_per_page = 25
-    date_hierarchy = "data_cadastro"
-
-    list_filter = ("tema", "emitente", "sistema")
-    search_fields = (
-        "titulo",
-        "codigo",
-        "tema",
-        "emitente",
-        "sistema",
-        "=sequencial",
-        "=versao",
-        "uuid",
-    )
-
-    readonly_fields = (
-        "uuid",
-        "data_cadastro",
-        "data_atualizacao",
-        "usuario",
-        "usuario_atualizacao",
-    )
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        qs = qs.select_related("usuario", "usuario_atualizacao")
-        return qs.annotate(
-            sequencial_num=Cast("sequencial", IntegerField()),
-            versao_num=Cast("versao", IntegerField()),
-        )
-
-    def sequencial_formatado(self, obj):
-        try:
-            return f"{int(obj.sequencial):03d}"
-        except (ValueError, TypeError):
-            return obj.sequencial or "-"
-    sequencial_formatado.short_description = "Sequencial"
-    sequencial_formatado.admin_order_field = "sequencial_num"
-
-    def versao_formatada(self, obj):
-        try:
-            return f"{int(obj.versao):02d}"
-        except (ValueError, TypeError):
-            return obj.versao or "-"
-    versao_formatada.short_description = "Versão"
-    versao_formatada.admin_order_field = "versao_num"
-
-    def identificacao(self, obj):
-        return f"{obj.titulo} - {obj.codigo}-{self.sequencial_formatado(obj)} V{self.versao_formatada(obj)}"
-    identificacao.short_description = "Identificação"
-    identificacao.admin_order_field = "titulo"
-
-    def save_model(self, request, obj, form, change):
-        if not obj.usuario_id:
-            obj.usuario = request.user
-        obj.usuario_atualizacao = request.user
-        super().save_model(request, obj, form, change)
 
 @admin.register(ContatoAreaSeger)
 class ContatoAreaSegerAdmin(admin.ModelAdmin):
