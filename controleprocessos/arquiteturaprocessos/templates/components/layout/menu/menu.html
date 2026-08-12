@@ -15,6 +15,11 @@ docs/MENU_SIGEMP.md
 =========================================================== -->
 <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
     <!-- ===================================================== -->
+    <!-- MÓDULO CADEIA DE VALOR -->
+    <!-- ===================================================== -->
+    {% include "components/layout/sidebar_item.html" with title="Cadeia de Valor" icon="fa-image" disabled=True %}
+
+    <!-- ===================================================== -->
     <!-- MÓDULO ARQUITETURA -->
     <!-- ===================================================== -->
     {% url 'arquiteturaprocessos:arquiteturaprocessos' as arquitetura_url %}

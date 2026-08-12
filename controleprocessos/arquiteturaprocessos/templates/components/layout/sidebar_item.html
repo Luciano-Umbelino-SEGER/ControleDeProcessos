@@ -1,6 +1,11 @@
-<a href="{{ href }}"
-   class="group flex items-center space-x-2 p-2 rounded hover:bg-[#00838F]"
-   @click="closeSidebar()"
+<a href="{{ href|default:'#' }}"
+   class="group flex items-center space-x-2 p-2 rounded
+          {% if disabled %}
+              text-gray-300 cursor-not-allowed hover:text-gray-200
+          {% else %}
+              hover:bg-[#00838F]
+          {% endif %}"
+   {% if not disabled %}@click="closeSidebar()"{% endif %}
    :title="!menuOpen ? '{{ title }}' : ''">
 
     <div class="w-12 h-12 flex items-center justify-center">
