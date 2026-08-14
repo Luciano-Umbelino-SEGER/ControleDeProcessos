@@ -1259,8 +1259,9 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
+        if request.user.perfil.nome.lower() != "administrador":
             raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -1275,8 +1276,10 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
             "modo_edicao": False,
 
             "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
-            "cadastro_user": self.request.user.get_full_name()
-                             or self.request.user.username,
+            "cadastro_user": (
+                self.request.user.get_full_name()
+                or self.request.user.username
+            ),
 
             "atualizacao_data": "",
             "atualizacao_user": "",
@@ -1287,19 +1290,24 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         processomapear = form.save(commit=False)
 
-        # 🔥 REGRA MÍNIMA ESTRUTURAL
+        # ------------------------------------------------
+        # PROCESSO
+        # ------------------------------------------------
+        # Processo não possui Processo Pai.
         if processomapear.tipo == ProcessoMapear.TIPO_PROCESSO:
             processomapear.parent = None
 
+        # ------------------------------------------------
+        # USUÁRIO DE CADASTRO
+        # ------------------------------------------------
         processomapear.usuario_cadastro = self.request.user
+
+        # No momento da inclusão ainda não existe atualização.
         processomapear.usuario_atualizacao = None
 
-        # 🔥 GARANTE HERANÇA PERSISTIDA
-        if processomapear.parent:
-            processomapear.classificacao = processomapear.parent.classificacao
-            processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
-            processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
-
+        # ------------------------------------------------
+        # PERSISTÊNCIA
+        # ------------------------------------------------
         processomapear.save()
 
         messages.success(
@@ -1308,6 +1316,7 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
         )
 
         self.object = processomapear
+
         return HttpResponseRedirect(self.get_success_url())
 
 # --------------------------------#
