@@ -145,31 +145,20 @@
                 <option value="50" {% if request.GET.page_size == "50" %}selected{% endif %}>50</option>
               </select>
             </div>
-
           </div>
 
           <!-- DIREITA -->
           <div class="filtro-acoes">
-
             <button type="submit"
                     class="filtro-botao filtro-botao-primario">
               Filtrar
             </button>
-
             <a href="{% url 'arquiteturaprocessos:processos' %}"
-               class="filtro-botao filtro-botao-secundario">
-              Limpar
-            </a>
-
+               class="filtro-botao filtro-botao-secundario">Limpar</a>
             <a href="{% url 'arquiteturaprocessos:criar_processo' %}"
-               class="filtro-botao filtro-botao-primario">
-              + Novo
-            </a>
-
+               class="filtro-botao filtro-botao-primario">+ Novo</a>
           </div>
-
         </div>
-
       </div>
     </form>
     {% endif %}
@@ -179,7 +168,6 @@
     </div>
 
     <div class="overflow-x-auto">
-
       <table class="text-sm w-full bg-white border border-gray-200 rounded-lg shadow table-fixed">
         <thead class="bg-blue-100 text-blue-800">
           <tr>

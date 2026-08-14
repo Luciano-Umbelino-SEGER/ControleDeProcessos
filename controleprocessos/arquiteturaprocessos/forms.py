@@ -1502,6 +1502,12 @@ class Form_ProcessoForm(forms.ModelForm):
 # ----------------------------------
 class Form_ProcessoMapearForm(forms.ModelForm):
 
+    abrangencia = forms.ChoiceField(
+        choices=AbrangenciaChoices.choices,
+        label="Abrangência",
+        widget=forms.RadioSelect,
+    )
+
     classificacao = forms.ModelChoiceField(
         queryset=Classificacao.objects.all(),
         required=False,
@@ -1529,7 +1535,9 @@ class Form_ProcessoMapearForm(forms.ModelForm):
     )
 
     area_responsavel = forms.ModelChoiceField(
-        queryset=ContatoAreaSeger.objects.filter(ativo=True).order_by("nome_area"),
+        queryset=ContatoAreaSeger.objects.filter(
+            ativo=True
+        ).order_by("nome_area"),
         required=False,
         label="Área Responsável",
         empty_label="Selecione uma área"
@@ -1538,40 +1546,109 @@ class Form_ProcessoMapearForm(forms.ModelForm):
     class Meta:
         model = ProcessoMapear
         exclude = (
+            "uuid",
             "usuario_cadastro",
             "usuario_atualizacao",
             "data_criacao",
             "data_atualizacao",
+            "usuario_finalizacao",
+            "data_finalizacao",
             "status",
         )
 
         widgets = {
-            "objetivo": forms.Textarea(attrs={"rows": "2"}),
+            "objetivo": forms.Textarea(
+                attrs={"rows": "2"}
+            ),
         }
 
     # ------------------------------------------------
-    # INIT – Estilização + ajuste Select2 (CRÍTICO)
+    # INIT – estilo base, bloqueios por modo
     # ------------------------------------------------
     def __init__(self, *args, **kwargs):
-        self.modo_inclusao = kwargs.pop("modo_inclusao", False)
-        self.modo_visualizacao = kwargs.pop("modo_visualizacao", False)
-        self.modo_exclusao = kwargs.pop("modo_exclusao", False)
-        self.modo_edicao = kwargs.pop("modo_edicao", False)
+        self.modo_inclusao = kwargs.pop(
+            "modo_inclusao", False
+        )
+        self.modo_visualizacao = kwargs.pop(
+            "modo_visualizacao", False
+        )
+        self.modo_exclusao = kwargs.pop(
+            "modo_exclusao", False
+        )
+        self.modo_edicao = kwargs.pop(
+            "modo_edicao", False
+        )
 
         super().__init__(*args, **kwargs)
 
-        # 🔥 LIMITES TEXTO
+        # ------------------------------------------------
+        # OBRIGATORIEDADE
+        #
+        # Processo a Mapear funciona como rascunho.
+        # A validação completa para iniciar o processo
+        # é realizada por validar_para_iniciar().
+        #
+        # Tipo e Abrangência permanecem obrigatórios,
+        # pois são definidos por radio buttons.
+        # ------------------------------------------------
+        self.fields["nome"].required = False
+        self.fields["objetivo"].required = False
+        self.fields["area_responsavel"].required = False
+        self.fields["gestor"].required = False
+        self.fields["telefone"].required = False
+        self.fields["email"].required = False
+        self.fields["classificacao"].required = False
+        self.fields["macroprocesso_nivel1"].required = False
+        self.fields["macroprocesso_nivel2"].required = False
+        self.fields["parent"].required = False
+        self.fields["observacao"].required = False
+
+        # ------------------------------------------------
+        # GARANTIA DOS IDS PARA O TRIPLE FILTER
+        # ------------------------------------------------
+        if "classificacao" in self.fields:
+            self.fields[
+                "classificacao"
+            ].widget.attrs["id"] = "id_classificacao"
+
+        if "macroprocesso_nivel1" in self.fields:
+            self.fields[
+                "macroprocesso_nivel1"
+            ].widget.attrs["id"] = "id_macroprocesso_nivel1"
+
+        if "macroprocesso_nivel2" in self.fields:
+            self.fields[
+                "macroprocesso_nivel2"
+            ].widget.attrs["id"] = "id_macroprocesso_nivel2"
+
+        # ------------------------------------------------
+        # LIMITES DE TEXTO
+        # ------------------------------------------------
         if "objetivo" in self.fields:
             self.fields["objetivo"].max_length = 3000
-            self.fields["objetivo"].widget.attrs["maxlength"] = 3000
-            self.fields["objetivo"].widget.attrs["rows"] = 4
+            self.fields[
+                "objetivo"
+            ].widget.attrs["maxlength"] = 3000
+            self.fields[
+                "objetivo"
+            ].widget.attrs["rows"] = 4
 
-        # 🔥 SELECT2 + EDIÇÃO (CORREÇÃO PRINCIPAL)
-        if self.instance and self.instance.area_responsavel:
+        if "observacao" in self.fields:
+            self.fields["observacao"].max_length = 3000
+            self.fields[
+                "observacao"
+            ].widget.attrs["maxlength"] = 3000
+
+        # ------------------------------------------------
+        # SELECT2 + EDIÇÃO
+        # ------------------------------------------------
+        if self.instance and self.instance.pk:
             area = self.instance.area_responsavel
 
             if area:
-                self.fields["area_responsavel"].queryset = (
+                self.fields[
+                    "area_responsavel"
+                ].queryset = (
                     ContatoAreaSeger.objects.filter(
                         Q(ativo=True) | Q(pk=area.pk)
                     ).order_by("nome_area")
@@ -1579,34 +1656,82 @@ class Form_ProcessoMapearForm(forms.ModelForm):
 
         self.label_suffix = ""
 
-        # 🔵 PROCESSO PAI
+        # ------------------------------------------------
+        # PROCESSO PAI
+        # ------------------------------------------------
         self.fields["parent"].queryset = (
-            Processo.objects.filter(parent__isnull=True)
-            .order_by("nome")
+            Processo.objects.filter(
+                parent__isnull=True
+            ).order_by("nome")
         )
+
         self.fields["parent"].empty_label = "--------"
 
-        # 🎨 ESTILO PADRÃO
-        base = (
-            "w-full border border-gray-300 rounded-md px-3 py-2 "
-            "text-black placeholder-gray-500 "
-            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        # ------------------------------------------------
+        # CLASSE PADRÃO
+        # ------------------------------------------------
+        base_class = (
+            "w-full h-[42px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500"
         )
 
-        for name, field in self.fields.items():
-            bg = ("bg-gray-100" if (self.modo_visualizacao or self.modo_exclusao) else "bg-white")
-            existing = field.widget.attrs.get("class", "")
-            field.widget.attrs["class"] = f"{existing} {base} {bg}".strip()
-            field.widget.attrs.setdefault("placeholder", field.label)
-            field.widget.attrs["autocomplete"] = "off"
+        bg = (
+            "bg-gray-100"
+            if (
+                self.modo_visualizacao
+                or self.modo_exclusao
+            )
+            else "bg-white"
+        )
 
-        # 🔒 BLOQUEIO
-        if self.modo_visualizacao or self.modo_exclusao:
+        # ------------------------------------------------
+        # ESTILIZAÇÃO DOS CAMPOS
+        # ------------------------------------------------
+        for name, field in self.fields.items():
+
+            # Rádio é controlado pelo template
+            if name in ("tipo", "abrangencia"):
+                continue
+
+            # Nome é controlado pelos inputs visuais + JavaScript
+            if name == "nome":
+                continue
+
+            existing = field.widget.attrs.get(
+                "class", ""
+            )
+
+            field.widget.attrs["class"] = (
+                f"{existing} {base_class} {bg}"
+            ).strip()
+
+            field.widget.attrs.setdefault(
+                "placeholder",
+                field.label
+            )
+
+            field.widget.attrs[
+                "autocomplete"
+            ] = "off"
+
+        # ------------------------------------------------
+        # MODO VISUALIZAÇÃO / EXCLUSÃO
+        # ------------------------------------------------
+        if (
+            self.modo_visualizacao
+            or self.modo_exclusao
+        ):
             for field in self.fields.values():
                 field.disabled = True
 
     # ------------------------------------------------
-    # CLEAN – Regras leves
+    # CLEAN – Regras para o rascunho
     # ------------------------------------------------
     def clean(self):
         cleaned = super().clean()
@@ -1614,57 +1739,88 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         nome = cleaned.get("nome")
         tipo = cleaned.get("tipo")
 
-        # 🔥 fallback para inputs visuais
+        # ------------------------------------------------
+        # NOME
+        # O nome é obrigatório para identificar o
+        # Processo a Mapear.
+        # O template utiliza inputs visuais diferentes
+        # conforme o Tipo, por isso fazemos o fallback
+        # para esses campos.
+        # ------------------------------------------------
         if not nome:
-            nome_post = self.data.get("nome") or self.data.get("id_nome")
+            nome_post = (
+                self.data.get("nome")
+                or self.data.get("id_nome")
+            )
 
-            # tenta pegar dos inputs visíveis
             if not nome_post:
-                nome_post = self.data.get("subprocesso_input_visible") or \
-                            self.data.get("processo_input_visible")
+                nome_post = (
+                    self.data.get(
+                        "subprocesso_input_visible"
+                    )
+                    or self.data.get(
+                        "processo_input_visible"
+                    )
+                )
 
             if nome_post:
                 cleaned["nome"] = nome_post.strip()
             else:
-                self.add_error("nome", "Informe o nome do Processo, Subprocesso ou Outro.")
+                self.add_error(
+                    "nome",
+                    "Informe o nome do Processo, "
+                    "Subprocesso ou Outro."
+                )
 
-        # restante continua igual
+        # ------------------------------------------------
+        # OBJETIVO
+        # O Objetivo faz parte da identificação mínima
+        # do rascunho.
+        # ------------------------------------------------
         objetivo = cleaned.get("objetivo")
 
         if not objetivo or objetivo.strip() == "":
-            self.add_error("objetivo", "Informe o objetivo do Processo.")
+            self.add_error(
+                "objetivo",
+                "Informe o objetivo do Processo a Mapear."
+            )
 
+        # ------------------------------------------------
+        # PROCESSO
+        # Um Processo não possui Processo Pai.
+        # ------------------------------------------------
         if tipo == ProcessoMapear.TIPO_PROCESSO:
             cleaned["parent"] = None
 
+        # ------------------------------------------------
+        # HERANÇA DO PROCESSO PAI
+        # Quando existe Processo Pai, o Subprocesso
+        # herda suas características.
+        # ------------------------------------------------
         parent = cleaned.get("parent")
 
         if parent:
-            cleaned["classificacao"] = parent.classificacao
-            cleaned["macroprocesso_nivel1"] = parent.macroprocesso_nivel1
-            cleaned["macroprocesso_nivel2"] = parent.macroprocesso_nivel2
-
-        macro1 = cleaned.get("macroprocesso_nivel1")
-        macro2 = cleaned.get("macroprocesso_nivel2")
-
-        if macro2 and macro1:
-            if macro2.macroprocesso_nivel1_id != macro1.id:
-                self.add_error(
-                    "macroprocesso_nivel2",
-                    "Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 informado."
-                )
-
-        if macro2 and not macro1:
-            self.add_error(
-                "macroprocesso_nivel1",
-                "Macroprocesso Nível 1 é obrigatório quando Macroprocesso Nível 2 for informado."
+            cleaned["classificacao"] = (
+                parent.classificacao
+            )
+            cleaned["macroprocesso_nivel1"] = (
+                parent.macroprocesso_nivel1
+            )
+            cleaned["macroprocesso_nivel2"] = (
+                parent.macroprocesso_nivel2
             )
 
         return cleaned
 
-    # 🔥 IMPORTANTE: NÃO converter para string
+    # ------------------------------------------------
+    # ÁREA RESPONSÁVEL
+    #
+    # IMPORTANTE: NÃO converter para string.
+    # ------------------------------------------------
     def clean_area_responsavel(self):
-        return self.cleaned_data.get("area_responsavel")
+        return self.cleaned_data.get(
+            "area_responsavel"
+        )
 
 # ----------------------------------
 # Área Responsável - Formulário

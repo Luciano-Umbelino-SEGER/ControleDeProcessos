@@ -622,6 +622,14 @@ class ContatoAreaSeger(models.Model):
         return f"<ContatoAreaSeger nome_area={self.nome_area}>"
 
 # ============================================================
+# ABRANGÊNCIA
+# ============================================================
+class AbrangenciaChoices(models.TextChoices):
+    GOVES = "GOVES", "GOVES"
+    SEGER = "SEGER", "SEGER"
+    OUTROS = "OUTROS", "OUTROS"
+
+# ============================================================
 # Processos a Mapear
 # ============================================================
 class ProcessoMapear(models.Model):
@@ -643,6 +651,21 @@ class ProcessoMapear(models.Model):
         (STATUS_ATIVO, "Ativo"),
         (STATUS_FINALIZADO, "Finalizado"),
     ]
+
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+        db_index=True,
+        verbose_name="UUID"
+    )
+
+    abrangencia = models.CharField(
+        max_length=10,
+        choices=AbrangenciaChoices.choices,
+        default=AbrangenciaChoices.GOVES,
+        verbose_name="Abrangência"
+    )
 
     nome = models.CharField(max_length=500)
 
@@ -706,6 +729,19 @@ class ProcessoMapear(models.Model):
         related_name='processosmapear_atualizados',
         null=True,
         blank=True
+    )
+
+    usuario_finalizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="processosmapear_finalizados"
+    )
+
+    data_finalizacao = models.DateTimeField(
+        blank=True,
+        null=True
     )
 
     tipo = models.CharField(
@@ -840,15 +876,6 @@ def modelo_processo_upload_to(instance, filename):
         f"modelos_processo/{novo_nome}"
     )
 
-# ============================================================
-# ABRANGÊNCIA
-# ============================================================
-class AbrangenciaChoices(models.TextChoices):
-    GOVES = "GOVES", "GOVES"
-    SEGER = "SEGER", "SEGER"
-    OUTROS = "OUTROS", "OUTROS"
-
-# Aqui 1
 # ============================================================
 # PROCESSO / SUBPROCESSO
 # ============================================================

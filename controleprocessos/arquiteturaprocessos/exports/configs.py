@@ -601,36 +601,35 @@ class ArquiteturaProcessosExportConfig:
 class ProcessosMapearExportConfig:
 
     filename = 'processos_mapear'
-
     titulo_pdf = 'Processos a Mapear'
 
     headers = [
         'Nome',
         'Tipo',
+        'Abrangência',
         'Classificação',
         'Macro N1',
         'Macro N2',
         'Área',
-        'Gestor',
-        'E-mail',
-        'Telefone',
         'Criação',
+        'Data Finalização',
+        'Situação',
     ]
 
     pdf_col_widths = [
         120,  # Nome
         55,   # Tipo
+        60,   # Abrangência
         70,   # Classificação
         82,   # Macro N1
         82,   # Macro N2
         70,   # Área
-        75,   # Gestor
-        110,  # Email
-        70,   # Telefone
         50,   # Criação
+        70,   # Data Finalização
+        65,   # Situação
     ]
 
-    pdf_center_columns = [9]
+    pdf_center_columns = [2, 3, 8, 9, 10]
 
     # -------------------------------------------------
     # Queryset
@@ -651,9 +650,13 @@ class ProcessosMapearExportConfig:
             .order_by('-data_criacao')
         )
 
-        # ===== FILTROS =====
+        # =================================================
+        # FILTROS
+        # =================================================
+
         nome = req.get("nome", "").strip()
         tipo = req.get("tipo", "").strip()
+        abrangencia = req.get("abrangencia", "").strip()
         classificacao = req.get("classificacao", "").strip()
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
@@ -667,40 +670,87 @@ class ProcessosMapearExportConfig:
 
         status = req.get("status", "ativo").strip()
 
-        # 🔥 VALIDAÇÃO
+        # =================================================
+        # VALIDAÇÃO DO PERÍODO
+        # =================================================
         if cri_de and cri_ate and cri_ate < cri_de:
             return ProcessoMapear.objects.none()
 
-        # 🔍 FILTROS
+        # =================================================
+        # NOME
+        # =================================================
         if nome:
-            queryset = queryset.filter(nome__icontains=nome)
+            queryset = queryset.filter(
+                nome__icontains=nome
+            )
 
-        if tipo in ["processo", "subprocesso", "outro"]:
-            queryset = queryset.filter(tipo=tipo)
+        # =================================================
+        # TIPO
+        # =================================================
+        if tipo in [
+            "processo",
+            "subprocesso",
+            "outro",
+        ]:
+            queryset = queryset.filter(
+                tipo=tipo
+            )
 
+        # =================================================
+        # ABRANGÊNCIA
+        # =================================================
+        if abrangencia in [
+            "GOVES",
+            "SEGER",
+            "OUTROS",
+        ]:
+            queryset = queryset.filter(
+                abrangencia=abrangencia
+            )
+
+        # =================================================
+        # CLASSIFICAÇÃO
+        # =================================================
         if classificacao:
-            queryset = queryset.filter(classificacao_id=classificacao)
+            queryset = queryset.filter(
+                classificacao_id=classificacao
+            )
 
+        # =================================================
+        # MACROPROCESSO NÍVEL 1
+        # =================================================
         if macro1:
             queryset = queryset.filter(
                 macroprocesso_nivel1__nome__icontains=macro1
             )
 
+        # =================================================
+        # MACROPROCESSO NÍVEL 2
+        # =================================================
         if macro2:
             queryset = queryset.filter(
                 macroprocesso_nivel2__nome__icontains=macro2
             )
 
+        # =================================================
+        # ÁREA RESPONSÁVEL
+        # =================================================
         if area:
             queryset = queryset.filter(
                 area_responsavel__nome_area__icontains=area
             )
 
+        # =================================================
+        # DATA DE CRIAÇÃO – INÍCIO
+        # =================================================
         if cri_de:
             queryset = queryset.filter(
                 data_criacao__gte=cri_de
             )
 
+        # =================================================
+        # DATA DE CRIAÇÃO – FIM
+        # =================================================
         if cri_ate:
 
             fim_do_dia = datetime.combine(
@@ -712,7 +762,9 @@ class ProcessosMapearExportConfig:
                 data_criacao__lte=fim_do_dia
             )
 
-        # STATUS
+        # =================================================
+        # SITUAÇÃO
+        # =================================================
         if status == "finalizado":
 
             queryset = queryset.filter(
@@ -723,7 +775,6 @@ class ProcessosMapearExportConfig:
             pass
 
         else:
-
             queryset = queryset.filter(
                 status="ativo"
             )
@@ -735,106 +786,124 @@ class ProcessosMapearExportConfig:
     # -------------------------------------------------
     def row_builder(self, obj):
 
-        telefone = obj.telefone or ''
+        # =================================================
+        # TIPO
+        # =================================================
+        if obj.tipo == "processo":
 
-        # -----------------------------------------
-        # Tipo
-        # -----------------------------------------
-        if obj.tipo == 'processo':
-            tipo = 'Processo'
+            tipo = "Processo"
 
-        elif obj.tipo == 'subprocesso':
-            tipo = 'Subprocesso'
+        elif obj.tipo == "subprocesso":
+
+            tipo = "Subprocesso"
 
         else:
 
-            if obj.status == 'finalizado':
-                tipo = 'Outro (Finalizado)'
-            else:
-                tipo = 'Outro'
+            tipo = "Outro"
 
-        # -----------------------------------------
-        # Nome subprocesso
-        # -----------------------------------------
+        # =================================================
+        # NOME
+        # =================================================
         nome = (
-            f'-> {obj.nome}'
-            if obj.tipo == 'subprocesso'
+            f"-> {obj.nome}"
+            if obj.tipo == "subprocesso"
             else obj.nome
         )
 
-        # -------------------------------------------------
-        # Blindagem contra FK órfã
-        # -------------------------------------------------
+        # =================================================
+        # ABRANGÊNCIA
+        # =================================================
+        abrangencia = (
+            obj.get_abrangencia_display()
+            if obj.abrangencia
+            else "----"
+        )
 
+        # =================================================
+        # CLASSIFICAÇÃO
+        # =================================================
         try:
             classificacao = (
                 obj.classificacao.nome
                 if obj.classificacao
-                else '----'
+                else "----"
             )
-
         except Exception:
-            classificacao = '----'
+            classificacao = "----"
 
+        # =================================================
+        # MACROPROCESSO NÍVEL 1
+        # =================================================
         try:
             macro_n1 = (
                 obj.macroprocesso_nivel1.nome
                 if obj.macroprocesso_nivel1
-                else '----'
+                else "----"
             )
-
         except Exception:
-            macro_n1 = '----'
+            macro_n1 = "----"
 
+        # =================================================
+        # MACROPROCESSO NÍVEL 2
+        # =================================================
         try:
             macro_n2 = (
                 obj.macroprocesso_nivel2.nome
                 if obj.macroprocesso_nivel2
-                else '----'
+                else "----"
             )
-
         except Exception:
-            macro_n2 = '----'
+            macro_n2 = "----"
 
+        # =================================================
+        # ÁREA RESPONSÁVEL
+        # =================================================
         try:
             area_responsavel = (
                 obj.area_responsavel.nome_area
                 if obj.area_responsavel
-                else '----'
+                else "----"
             )
-
         except Exception:
-            area_responsavel = '----'
+            area_responsavel = "----"
+
+        # =================================================
+        # DATA DE CRIAÇÃO
+        # =================================================
+        data_criacao = (
+            obj.data_criacao.strftime("%d/%m/%Y")
+            if obj.data_criacao
+            else "----"
+        )
+
+        # =================================================
+        # DATA DE FINALIZAÇÃO
+        # =================================================
+        data_finalizacao = (
+            obj.data_finalizacao.strftime("%d/%m/%Y")
+            if obj.data_finalizacao
+            else "----"
+        )
+
+        # =================================================
+        # SITUAÇÃO
+        # =================================================
+        if obj.status == "finalizado":
+            situacao = "Finalizado"
+        else:
+            situacao = "Ativo"
 
         return [
-
-            nome or '----',
-
+            nome or "----",
             tipo,
-
+            abrangencia,
             classificacao,
-
             macro_n1,
-
             macro_n2,
-
             area_responsavel,
-
-            obj.gestor or '----',
-
-            obj.email or '----',
-
-            (
-                telefone
-                if telefone
-                else '----'
-            ),
-
-            (
-                obj.data_criacao.strftime('%d/%m/%Y')
-                if obj.data_criacao
-                else '----'
-            ),
+            data_criacao,
+            data_finalizacao,
+            situacao,
         ]
 
 # -----------------------------------------------------#

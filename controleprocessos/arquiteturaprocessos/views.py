@@ -44,7 +44,7 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, Processo, SistemasUECI, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
-    Perfil, NormaProcedimento,
+    Perfil, NormaProcedimento, AbrangenciaChoices,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -991,19 +991,32 @@ class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
         return context
 
 # -------------------------------
-#  Listagem de Processo a Mapear
+# Listagem de Processos a Mapear
 # -------------------------------
 class ProcessosMapear(LoginRequiredMixin, ListView):
     model = ProcessoMapear
-    template_name = 'processosmapear/processosmapear.html'
-    context_object_name = 'processosmapear'
+    template_name = "processosmapear/processosmapear.html"
+    context_object_name = "processosmapear"
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
+
+        # Usuário não autenticado:
+        # deixa o LoginRequiredMixin tratar o acesso.
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
+        # Usuário autenticado:
+        # verifica o perfil de acesso.
+        perfil = getattr(request.user, "perfil", None)
+
+        if not perfil or perfil.nome.lower() != "administrador":
             raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
 
-    # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO DO LOG)
+    # ------------------------------------------------
+    # PAGINAÇÃO DINÂMICA
+    # ------------------------------------------------
     def get_paginate_by(self, queryset):
         page_size = self.request.GET.get("page_size")
 
@@ -1012,53 +1025,91 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         except (TypeError, ValueError):
             return 10
 
+    # ------------------------------------------------
+    # CONTEXTO
+    # ------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
         req = self.request.GET
 
-        # 🔥 LISTAS
-        context['classificacoes'] = Classificacao.objects.all().order_by("nome")
+        # ------------------------------------------------
+        # LISTAS
+        # ------------------------------------------------
+        context["classificacoes"] = (
+            Classificacao.objects.all().order_by("nome")
+        )
 
-        # 🔥 FILTROS (mantém valores no form)
-        context["classificacao_selecionada"] = req.get("classificacao", "")
+        # ------------------------------------------------
+        # FILTROS
+        # ------------------------------------------------
+        context["classificacao_selecionada"] = (
+            req.get("classificacao", "")
+        )
         context["nome_busca"] = req.get("nome", "")
         context["macro1_busca"] = req.get("macro1", "")
         context["macro2_busca"] = req.get("macro2", "")
         context["area_busca"] = req.get("area", "")
         context["tipo_selecionado"] = req.get("tipo", "")
-        context["status_selecionado"] = req.get("status", "")
+        context["abrangencia_selecionada"] = (
+            req.get("abrangencia", "")
+        )
+        context["status_selecionado"] = (
+            req.get("status", "")
+        )
 
-        # 🔥 QUERY STRING (PADRÃO DO LOG)
+        # ------------------------------------------------
+        # QUERY STRING
+        # ------------------------------------------------
         query_params = self.request.GET.copy()
 
-        # 🔹 SEM PAGE (para paginação)
+        # Sem page – utilizado pela paginação
         query_params_no_page = query_params.copy()
+
         if "page" in query_params_no_page:
             query_params_no_page.pop("page")
 
-        # 🔹 CONTEXT
-        context["query_string"] = query_params_no_page.urlencode()
-        context["query_string_full"] = query_params.urlencode()
+        context["query_string"] = (
+            query_params_no_page.urlencode()
+        )
+
+        context["query_string_full"] = (
+            query_params.urlencode()
+        )
 
         return context
 
+    # ------------------------------------------------
+    # QUERYSET
+    # ------------------------------------------------
     def get_queryset(self):
 
         req = self.request.GET
 
-        queryset = ProcessoMapear.objects.select_related(
-            'classificacao',
-            'macroprocesso_nivel1',
-            'macroprocesso_nivel2',
-            'parent',
-            'area_responsavel',
-        ).order_by('-data_criacao')
+        queryset = (
+            ProcessoMapear.objects
+            .select_related(
+                "classificacao",
+                "macroprocesso_nivel1",
+                "macroprocesso_nivel2",
+                "parent",
+                "area_responsavel",
+                "usuario_finalizacao",
+            )
+            .order_by("-data_criacao")
+        )
 
-        # ===== FILTROS =====
+        # ====================================================
+        # FILTROS
+        # ====================================================
         nome = req.get("nome", "").strip()
         tipo = req.get("tipo", "").strip()
-        classificacao = req.get("classificacao", "").strip()
+        abrangencia = req.get(
+            "abrangencia", ""
+        ).strip()
+        classificacao = req.get(
+            "classificacao", ""
+        ).strip()
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
@@ -1066,55 +1117,135 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
         cri_de_raw = req.get("criacao_de")
         cri_ate_raw = req.get("criacao_ate")
 
-        cri_de = parse_date(cri_de_raw) if cri_de_raw else None
-        cri_ate = parse_date(cri_ate_raw) if cri_ate_raw else None
+        cri_de = (
+            parse_date(cri_de_raw)
+            if cri_de_raw
+            else None
+        )
 
-        status = req.get("status", "ativo").strip()
+        cri_ate = (
+            parse_date(cri_ate_raw)
+            if cri_ate_raw
+            else None
+        )
 
-        # 🔥 VALIDAÇÃO DE DATA
+        status = req.get(
+            "status",
+            "ativo"
+        ).strip()
+
+        # ====================================================
+        # VALIDAÇÃO DE DATA
+        # ====================================================
         if cri_de and cri_ate and cri_ate < cri_de:
-            messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
+            messages.error(
+                self.request,
+                "A data final deve ser maior ou igual à data inicial."
+            )
+
             return ProcessoMapear.objects.none()
 
-        # 🔍 FILTROS
+        # ====================================================
+        # NOME
+        # ====================================================
         if nome:
-            queryset = queryset.filter(nome__icontains=nome)
+            queryset = queryset.filter(
+                nome__icontains=nome
+            )
 
-        if tipo in ["processo", "subprocesso", "outro"]:
-            queryset = queryset.filter(tipo=tipo)
+        # ====================================================
+        # TIPO
+        # ====================================================
+        if tipo in [
+            ProcessoMapear.TIPO_PROCESSO,
+            ProcessoMapear.TIPO_SUBPROCESSO,
+            ProcessoMapear.TIPO_OUTRO,
+        ]:
+            queryset = queryset.filter(
+                tipo=tipo
+            )
 
+        # ====================================================
+        # ABRANGÊNCIA
+        # ====================================================
+        if abrangencia in [
+            AbrangenciaChoices.GOVES,
+            AbrangenciaChoices.SEGER,
+            AbrangenciaChoices.OUTROS,
+        ]:
+            queryset = queryset.filter(
+                abrangencia=abrangencia
+            )
+
+        # ====================================================
+        # CLASSIFICAÇÃO
+        # ====================================================
         if classificacao:
-            queryset = queryset.filter(classificacao_id=classificacao)
+            queryset = queryset.filter(
+                classificacao_id=classificacao
+            )
 
+        # ====================================================
+        # MACROPROCESSO NÍVEL 1
+        # ====================================================
         if macro1:
-            queryset = queryset.filter(macroprocesso_nivel1__nome__icontains=macro1)
+            queryset = queryset.filter(
+                macroprocesso_nivel1__nome__icontains=macro1
+            )
 
+        # ====================================================
+        # MACROPROCESSO NÍVEL 2
+        # ====================================================
         if macro2:
-            queryset = queryset.filter(macroprocesso_nivel2__nome__icontains=macro2)
+            queryset = queryset.filter(
+                macroprocesso_nivel2__nome__icontains=macro2
+            )
 
-        # 🔥 CORREÇÃO IMPORTANTE (Área)
+        # ====================================================
+        # ÁREA RESPONSÁVEL
+        # ====================================================
         if area:
-            queryset = queryset.filter(area_responsavel__nome_area__icontains=area)
+            queryset = queryset.filter(
+                area_responsavel__nome_area__icontains=area
+            )
 
+        # ====================================================
+        # DATA DE CRIAÇÃO – INÍCIO
+        # ====================================================
         if cri_de:
-            queryset = queryset.filter(data_criacao__gte=cri_de)
+            queryset = queryset.filter(
+                data_criacao__gte=cri_de
+            )
 
+        # ====================================================
+        # DATA DE CRIAÇÃO – FIM
+        # ====================================================
         if cri_ate:
-            fim_do_dia = datetime.combine(cri_ate, time.max)
-            queryset = queryset.filter(data_criacao__lte=fim_do_dia)
+            fim_do_dia = datetime.combine(
+                cri_ate,
+                time.max
+            )
 
-        # --------------------
-        # STATUS (Estado)
-        # --------------------
+            queryset = queryset.filter(
+                data_criacao__lte=fim_do_dia
+            )
+
+        # ====================================================
+        # STATUS
+        # ====================================================
         if status == "finalizado":
-            queryset = queryset.filter(status="finalizado")
+
+            queryset = queryset.filter(
+                status=ProcessoMapear.STATUS_FINALIZADO
+            )
 
         elif status == "todos":
             pass
 
-        else:  # ativo
-            queryset = queryset.filter(status="ativo")
-
+        else:
+            queryset = queryset.filter(
+                status=ProcessoMapear.STATUS_ATIVO
+            )
 
         return queryset
 
