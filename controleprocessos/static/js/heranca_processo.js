@@ -1,87 +1,197 @@
 /* =========================================================
-   HERANÇA DE PROCESSO — CORE REUTILIZÁVEL (VERSÃO ESTÁVEL)
+   HERANÇA DE PROCESSO — CORE REUTILIZÁVEL
    ========================================================= */
 
 window.HerancaProcesso = (function () {
 
-    const CAMPOS_PADRAO = [
+    /*
+     * =====================================================
+     * CAMPOS DA HERANÇA DO PROCESSO PAI
+     *
+     * O Processo Pai fornece:
+     *
+     *   Classificação
+     *   Macroprocesso Nível 1
+     *   Macroprocesso Nível 2
+     *   Área Responsável
+     *
+     * Gestor / Telefone / E-mail NÃO pertencem aqui.
+     * =====================================================
+     */
+    const CAMPOS_HERANCA_PAI = [
         "id_classificacao",
         "id_macroprocesso_nivel1",
         "id_macroprocesso_nivel2",
-        "id_area_responsavel",
+        "id_area_responsavel"
+    ];
+
+    /*
+     * =====================================================
+     * CAMPOS DA HERANÇA DA ÁREA
+     *
+     * Estes campos pertencem exclusivamente à Área
+     * Responsável.
+     *
+     * Este JS NÃO os hidrata.
+     *
+     * O responsável por isso é:
+     *
+     *     auto_preenchimento_area.js
+     * =====================================================
+     */
+    const CAMPOS_HERANCA_AREA = [
         "id_gestor",
         "id_telefone",
         "id_email"
-    ]
+    ];
 
-    /* =========================
-       SAFE jQuery (não quebra se $ não existir)
-    ========================= */
+    /*
+     * =====================================================
+     * CONTROLE DE REQUISIÇÕES
+     *
+     * Impede que uma resposta antiga de um Processo Pai
+     * altere a tela depois que o usuário já mudou de tipo
+     * ou selecionou outro Pai.
+     * =====================================================
+     */
+    let requisicaoAtual = 0;
+
+
+    /* =====================================================
+       SAFE jQuery
+       ===================================================== */
+
     function hasJQuery() {
-        return typeof window.$ !== "undefined"
+        return typeof window.$ !== "undefined";
     }
 
-    /* =========================
+
+    /* =====================================================
        SET SELECT
-    ========================= */
-    function setSelect(id, value) {
+       ===================================================== */
+
+    function setSelect(id, value, dispararChange = true) {
 
         if (hasJQuery()) {
-            const el = $('#' + id)
-            if (!el.length) return
 
-            el.val(value).trigger('change')
+            const el = $("#" + id);
+
+            if (!el.length) {
+                return;
+            }
+
+            if (el.hasClass("select2-hidden-accessible")) {
+
+                el.val(value || null);
+
+                if (dispararChange) {
+                    el.trigger("change");
+                }
+
+            } else {
+
+                el.val(value || "");
+
+                if (dispararChange) {
+                    el.trigger("change");
+                }
+            }
+
         } else {
-            const el = document.getElementById(id)
-            if (!el) return
 
-            el.value = value
+            const el = document.getElementById(id);
+
+            if (!el) {
+                return;
+            }
+
+            el.value = value || "";
+
+            if (dispararChange) {
+
+                el.dispatchEvent(
+                    new Event("change", {
+                        bubbles: true
+                    })
+                );
+            }
         }
     }
 
-    /* =========================
-       SET INPUT
-    ========================= */
-    function setInput(id, value) {
-        const el = document.getElementById(id)
-        if (!el) return
 
-        el.value = value || ''
+    /* =====================================================
+       SET INPUT
+       ===================================================== */
+
+    function setInput(id, value) {
+
+        const el = document.getElementById(id);
+
+        if (!el) {
+            return;
+        }
+
+        el.value = value || "";
     }
 
-    /* =========================
-       BLOQUEIO (compatível com select2)
-    ========================= */
+
+    /* =====================================================
+       BLOQUEIO
+       ===================================================== */
+
     function bloquearCampo(id) {
 
         const el = document.getElementById(id);
-        if (!el) return;
 
-        // Inputs continuam readonly
+        if (!el) {
+            return;
+        }
+
+        /*
+         * Inputs:
+         * readonly
+         *
+         * SELECTs:
+         * não usamos disabled porque precisam continuar
+         * participando do POST.
+         */
         if (el.tagName !== "SELECT") {
             el.readOnly = true;
         }
 
-        // Nunca desabilitar SELECTs.
-        // Eles precisam continuar sendo enviados no POST.
         el.classList.add("campo-herdado");
 
-        // Select2
-        if (window.$ && $(el).hasClass("select2-hidden-accessible")) {
+
+        /*
+         * Select2
+         */
+        if (
+            window.$ &&
+            $(el).hasClass("select2-hidden-accessible")
+        ) {
+
             $(el)
                 .next(".select2-container")
                 .addClass("campo-herdado")
-                .css("pointer-events", "none");
+                .css(
+                    "pointer-events",
+                    "none"
+                );
         }
     }
 
-    /* =========================
+
+    /* =====================================================
        DESBLOQUEIO
-    ========================= */
+       ===================================================== */
+
     function desbloquearCampo(id) {
 
         const el = document.getElementById(id);
-        if (!el) return;
+
+        if (!el) {
+            return;
+        }
 
         if (el.tagName !== "SELECT") {
             el.readOnly = false;
@@ -89,94 +199,302 @@ window.HerancaProcesso = (function () {
 
         el.classList.remove("campo-herdado");
 
-        if (window.$ && $(el).hasClass("select2-hidden-accessible")) {
+
+        /*
+         * Select2
+         */
+        if (
+            window.$ &&
+            $(el).hasClass("select2-hidden-accessible")
+        ) {
+
             $(el)
                 .next(".select2-container")
                 .removeClass("campo-herdado")
-                .css("pointer-events", "");
+                .css(
+                    "pointer-events",
+                    ""
+                );
         }
     }
 
-    /* =========================
-       LIMPAR VALORES
-    ========================= */
+
+    /* =====================================================
+       LIMPAR CAMPO
+       ===================================================== */
+
     function limparCampo(id) {
 
         if (hasJQuery()) {
-            const el = $('#' + id)
-            if (!el.length) return
+
+            const el = $("#" + id);
+
+            if (!el.length) {
+                return;
+            }
 
             if (el.is("select")) {
-                el.val(null).trigger('change')
-            } else {
-                el.val('')
-            }
-        } else {
-            const el = document.getElementById(id)
-            if (!el) return
 
-            el.value = ''
+                el.val(null)
+                    .trigger("change");
+
+            } else {
+
+                el.val("");
+            }
+
+        } else {
+
+            const el =
+                document.getElementById(id);
+
+            if (!el) {
+                return;
+            }
+
+            el.value = "";
         }
     }
 
-    /* =========================
-       APLICAR HERANÇA
-    ========================= */
-    function aplicar(processoId, options = {}) {
 
-        if (!processoId) return
+    /* =====================================================
+       INVALIDAR REQUISIÇÃO ATUAL
+       ===================================================== */
 
-        const url = options.url
+    function invalidarRequisicao() {
+        requisicaoAtual++;
+    }
 
-        const endpoint = url.replace(/\/0\//, `/${processoId}/`)
+
+    /* =====================================================
+       APLICAR HERANÇA DO PROCESSO PAI
+       ===================================================== */
+
+    function aplicar(
+        processoId,
+        options = {}
+    ) {
+
+        if (!processoId) {
+            return;
+        }
+
+        const url = options.url;
+
+        if (!url) {
+            console.error(
+                "URL da herança do Processo Pai não informada."
+            );
+
+            return;
+        }
+
+        /*
+         * Cada chamada recebe um número próprio.
+         *
+         * Somente a requisição mais recente poderá
+         * alterar a tela.
+         */
+        const numeroRequisicao =
+            ++requisicaoAtual;
+
+        const endpoint =
+            url.replace(
+                /\/0\//,
+                `/${processoId}/`
+            );
 
         fetch(endpoint)
-            .then(r => r.json())
-            .then(data => {
-                setSelect("id_classificacao", data.classificacao)
-                setSelect("id_macroprocesso_nivel1", data.macro1)
-                setSelect("id_macroprocesso_nivel2", data.macro2)
-                setSelect("id_area_responsavel", data.area)
+            .then(response => {
 
-                setInput("id_gestor", data.gestor)
-                setInput("id_telefone", data.telefone)
-                setInput("id_email", data.email)
-
-                // 🔥 sincroniza hidden
-                const hiddenParent = document.getElementById("id_parent")
-                if (hiddenParent) {
-                    hiddenParent.value = processoId
+                if (!response.ok) {
+                    throw new Error(
+                        `Erro HTTP ${response.status}`
+                    );
                 }
 
-                CAMPOS_PADRAO.forEach(bloquearCampo)
+                return response.json();
+            })
+            .then(data => {
 
-                if (typeof options.onApply === "function") {
-                    options.onApply(data)
+                /*
+                 * A requisição deixou de ser válida.
+                 *
+                 * Isso acontece, por exemplo, quando:
+                 *
+                 * Subprocesso → Processo
+                 *
+                 * antes do retorno do fetch.
+                 */
+                if (
+                    numeroRequisicao !==
+                    requisicaoAtual
+                ) {
+                    return;
+                }
+
+
+                /*
+                 * =========================================
+                 * HERANÇA DO PROCESSO PAI
+                 * =========================================
+                 */
+
+                setSelect(
+                    "id_classificacao",
+                    data.classificacao
+                );
+
+                setSelect(
+                    "id_macroprocesso_nivel1",
+                    data.macro1
+                );
+
+                setSelect(
+                    "id_macroprocesso_nivel2",
+                    data.macro2
+                );
+
+                setSelect(
+                    "id_area_responsavel",
+                    data.area
+                );
+
+
+                /*
+                 * =========================================
+                 * IMPORTANTE
+                 *
+                 * Gestor
+                 * Telefone
+                 * E-mail
+                 *
+                 * NÃO são preenchidos aqui.
+                 *
+                 * Esses campos pertencem à segunda
+                 * herança:
+                 *
+                 * Área Responsável.
+                 * =========================================
+                 */
+
+
+                /*
+                 * =========================================
+                 * SINCRONIZA HIDDEN PARENT
+                 * =========================================
+                 */
+                const hiddenParent =
+                    document.getElementById(
+                        "id_parent"
+                    );
+
+                if (hiddenParent) {
+                    hiddenParent.value =
+                        processoId;
+                }
+
+
+                /*
+                 * =========================================
+                 * BLOQUEIA CAMPOS HERDADOS DO PAI
+                 * =========================================
+                 */
+                CAMPOS_HERANCA_PAI.forEach(
+                    bloquearCampo
+                );
+
+
+                /*
+                 * =========================================
+                 * CALLBACK
+                 * =========================================
+                 */
+                if (
+                    typeof options.onApply ===
+                    "function"
+                ) {
+
+                    options.onApply(data);
                 }
 
             })
-            .catch(err => console.error("Erro herança:", err))
+            .catch(error => {
+
+                /*
+                 * Ignora erros decorrentes de uma
+                 * requisição que já deixou de ser válida.
+                 */
+                if (
+                    numeroRequisicao !==
+                    requisicaoAtual
+                ) {
+                    return;
+                }
+
+                console.error(
+                    "Erro herança do Processo Pai:",
+                    error
+                );
+            });
     }
 
-    /* =========================
-       LIMPAR HERANÇA
-    ========================= */
+
+    /* =====================================================
+       LIMPAR / ENCERRAR HERANÇA DO PROCESSO PAI
+       ===================================================== */
+
     function limpar(options = {}) {
 
-        CAMPOS_PADRAO.forEach(id => {
-            desbloquearCampo(id)
-        })
+        /*
+         * Primeiro invalidamos qualquer fetch anterior.
+         *
+         * Assim uma resposta atrasada não poderá
+         * repovoar a tela.
+         */
+        invalidarRequisicao();
 
-        if (typeof options.onClear === "function") {
-            options.onClear()
+
+        /*
+         * Desbloqueia somente os campos que pertencem
+         * à herança do Processo Pai.
+         */
+        CAMPOS_HERANCA_PAI.forEach(
+            desbloquearCampo
+        );
+
+
+        /*
+         * Por padrão NÃO mexemos nos valores.
+         *
+         * Quem decide qual valor deve permanecer ou ser
+         * restaurado é o controlador do tipo:
+         *
+         *     tipo_processo_mapear.js
+         *
+         * Isso é importante para preservar a memória
+         * específica de cada tipo.
+         */
+        if (
+            typeof options.onClear ===
+            "function"
+        ) {
+
+            options.onClear();
         }
     }
 
+
+    /* =====================================================
+       API PÚBLICA
+       ===================================================== */
+
     return {
+
         aplicar,
         limpar,
         bloquearCampo,
         desbloquearCampo
-    }
+    };
 
 })();

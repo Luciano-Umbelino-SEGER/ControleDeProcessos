@@ -225,7 +225,7 @@ fieldset[disabled] input[type="radio"] {
                             </div>
 
                             <!-- ================================================= -->
-                            <!-- NOME DO SUBPROCESSO / ELEMENTO                     -->
+                            <!-- NOME DO SUBPROCESSO / OUTRO                       -->
                             <!-- ================================================= -->
                             <div>
                                 <label id="lbl_campo_subprocesso"
@@ -244,7 +244,7 @@ fieldset[disabled] input[type="radio"] {
                                        data-similarity-field="nome"
                                        data-similarity-id="{{ form.instance.id }}"
                                        class="w-full border border-gray-300 rounded-md px-3 py-2 h-[42px] text-black focus:ring-2 focus:ring-blue-500 {% if form.instance.tipo != 'subprocesso' and form.instance.tipo != 'outro' %}bg-gray-100{% endif %}"
-                                       placeholder="{% if form.instance.tipo == 'outro' %}Nome do Elemento{% else %}Nome do Subprocesso{% endif %}"
+                                       placeholder="{% if form.instance.tipo == 'outro' %}Nome {% else %}Nome do Subprocesso{% endif %}"
                                        {% if form.instance.tipo != "subprocesso" and form.instance.tipo != "outro" %}disabled{% endif %}>
 
                                 <!-- HIDDEN DJANGO -->
