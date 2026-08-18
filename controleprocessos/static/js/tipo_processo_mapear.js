@@ -60,12 +60,6 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // ELEMENTOS — ÁREA
-    //
-    // IMPORTANTE:
-    // A Área pertence ao Processo.
-    //
-    // A hidratação de Gestor / Telefone / E-mail
-    // NÃO pertence a este JS.
     // =========================================
     const areaSelect =
         document.getElementById("id_area_responsavel");
@@ -76,20 +70,35 @@ function initTipoProcessoMapear(config = {}) {
     let tipoAtual = "processo";
 
     /*
-     * Memória independente por tipo.
+     * =====================================================
+     * MEMÓRIA INDEPENDENTE POR TIPO
      *
-     * PROCESSO:
+     * PROCESSO
      *   nome
      *   parent = sempre vazio
-     *   area = escolhida pelo usuário
+     *   classificacao
+     *   macro1
+     *   macro2
+     *   area
      *
-     * SUBPROCESSO:
+     * SUBPROCESSO
      *   nome
-     *   parent próprio
+     *   parent
+     *   classificacao herdada do Pai
+     *   macro1 herdado do Pai
+     *   macro2 herdado do Pai
      *
-     * OUTRO:
+     * OUTRO
      *   nome
-     *   parent próprio
+     *   parent
+     *   classificacao herdada do Pai
+     *   macro1 herdado do Pai
+     *   macro2 herdado do Pai
+     *
+     * IMPORTANTE:
+     * Área não é armazenada em Subprocesso/Outro.
+     * Ela continua sendo atributo derivado do Processo Pai.
+     * =====================================================
      */
     const cacheEstados = {
 
@@ -104,18 +113,25 @@ function initTipoProcessoMapear(config = {}) {
 
         subprocesso: {
             nome: "",
-            parent: ""
+            parent: "",
+            classificacao: "",
+            macro1: "",
+            macro2: ""
         },
 
         outro: {
             nome: "",
-            parent: ""
+            parent: "",
+            classificacao: "",
+            macro1: "",
+            macro2: ""
         }
     };
 
     // =========================================
     // UTILITÁRIOS
     // =========================================
+
     function getTipoSelecionado() {
 
         if (rbProcesso?.checked) {
@@ -155,27 +171,77 @@ function initTipoProcessoMapear(config = {}) {
         return areaSelect.value || "";
     }
 
-    function definirParent(parentId, dispararChange = false) {
+    function obterCaracteristicasAtuais() {
+
+        return {
+            classificacao:
+                document.getElementById(
+                    "id_classificacao"
+                )?.value || "",
+
+            macro1:
+                document.getElementById(
+                    "id_macroprocesso_nivel1"
+                )?.value || "",
+
+            macro2:
+                document.getElementById(
+                    "id_macroprocesso_nivel2"
+                )?.value || ""
+        };
+    }
+
+    function definirParent(parentId,dispararChange = false) {
 
         const valor = parentId || "";
 
+        // =========================================
+        // HIDDEN DJANGO
+        // =========================================
         if (parentHidden) {
             parentHidden.value = valor;
         }
 
+        // =========================================
+        // SELECT VISUAL / SELECT2
+        // =========================================
         if (!parentSelect) {
             return;
         }
 
         if (
             window.$ &&
-            $(parentSelect).hasClass("select2-hidden-accessible")
+            $(parentSelect).hasClass(
+                "select2-hidden-accessible"
+            )
         ) {
 
-            $(parentSelect).val(valor || null);
+            /*
+             * Atualiza o valor interno.
+             */
+            $(parentSelect).val(
+                valor || null
+            );
 
+            /*
+             * Atualiza somente a interface do Select2.
+             *
+             * NÃO usamos "change", pois isso poderia
+             * disparar novamente a lógica de seleção
+             * do Processo Pai.
+             */
+            $(parentSelect).trigger(
+                "change.select2"
+            );
+
+            /*
+             * Só dispara o change completo quando
+             * explicitamente solicitado.
+             */
             if (dispararChange) {
-                $(parentSelect).trigger("change");
+                $(parentSelect).trigger(
+                    "change"
+                );
             }
 
         } else {
@@ -201,14 +267,8 @@ function initTipoProcessoMapear(config = {}) {
             ) {
 
                 /*
-                 * Atualiza o valor e somente o Select2.
-                 *
-                 * IMPORTANTE:
-                 * não usamos .trigger("change"), pois isso
-                 * poderia disparar a herança da Área.
-                 *
-                 * change.select2 atualiza apenas a interface
-                 * do Select2.
+                 * Atualiza somente a interface do Select2.
+                 * Não dispara a herança da Área.
                  */
                 $(areaSelect)
                     .val(valor || null)
@@ -247,7 +307,7 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
-    // SALVA ESTADO
+    // SALVA ESTADO DO TIPO ATUAL
     // =========================================
     function salvarEstado(tipo) {
 
@@ -255,27 +315,28 @@ function initTipoProcessoMapear(config = {}) {
             return;
         }
 
+        // =========================================
+        // PROCESSO
+        // =========================================
         if (tipo === "processo") {
 
             cacheEstados.processo.nome =
                 processoInput?.value || "";
 
-            cacheEstados.processo.parent = "";
+            cacheEstados.processo.parent =
+                "";
+
+            const caracteristicas =
+                obterCaracteristicasAtuais();
 
             cacheEstados.processo.classificacao =
-                document.getElementById(
-                    "id_classificacao"
-                )?.value || "";
+                caracteristicas.classificacao;
 
             cacheEstados.processo.macro1 =
-                document.getElementById(
-                    "id_macroprocesso_nivel1"
-                )?.value || "";
+                caracteristicas.macro1;
 
             cacheEstados.processo.macro2 =
-                document.getElementById(
-                    "id_macroprocesso_nivel2"
-                )?.value || "";
+                caracteristicas.macro2;
 
             cacheEstados.processo.area =
                 obterAreaAtual();
@@ -283,6 +344,9 @@ function initTipoProcessoMapear(config = {}) {
             return;
         }
 
+        // =========================================
+        // SUBPROCESSO
+        // =========================================
         if (tipo === "subprocesso") {
 
             cacheEstados.subprocesso.nome =
@@ -291,9 +355,24 @@ function initTipoProcessoMapear(config = {}) {
             cacheEstados.subprocesso.parent =
                 obterParentAtual();
 
+            const caracteristicas =
+                obterCaracteristicasAtuais();
+
+            cacheEstados.subprocesso.classificacao =
+                caracteristicas.classificacao;
+
+            cacheEstados.subprocesso.macro1 =
+                caracteristicas.macro1;
+
+            cacheEstados.subprocesso.macro2 =
+                caracteristicas.macro2;
+
             return;
         }
 
+        // =========================================
+        // OUTRO
+        // =========================================
         if (tipo === "outro") {
 
             cacheEstados.outro.nome =
@@ -301,18 +380,53 @@ function initTipoProcessoMapear(config = {}) {
 
             cacheEstados.outro.parent =
                 obterParentAtual();
+
+            const caracteristicas =
+                obterCaracteristicasAtuais();
+
+            cacheEstados.outro.classificacao =
+                caracteristicas.classificacao;
+
+            cacheEstados.outro.macro1 =
+                caracteristicas.macro1;
+
+            cacheEstados.outro.macro2 =
+                caracteristicas.macro2;
         }
     }
 
     // =========================================
-    // PREPARA ESTADO DO DESTINO
+    // PREPARA ESTADO DO TIPO DE DESTINO
+    //
+    // Regra:
+    //
+    // 1. Processo não possui Parent.
+    //
+    // 2. Subprocesso e Outro possuem memória
+    //    independente.
+    //
+    // 3. Se o tipo destino já possui Parent,
+    //    mantém seu próprio estado.
+    //
+    // 4. Se o destino está vazio e o outro tipo
+    //    não-Processo possui Parent, herda:
+    //
+    //      Parent
+    //      Classificação
+    //      Macro N1
+    //      Macro N2
+    //
+    // 5. A transferência só ocorre quando o
+    //    destino estiver vazio.
     // =========================================
     function prepararEstadoDestino(
         tipoAnterior,
         novoTipo
     ) {
 
-        // Processo nunca possui Pai.
+        // =========================================
+        // PROCESSO
+        // =========================================
         if (novoTipo === "processo") {
 
             cacheEstados.processo.parent = "";
@@ -320,41 +434,67 @@ function initTipoProcessoMapear(config = {}) {
             return;
         }
 
-        /*
-         * Se o destino já possui Pai próprio,
-         * preserva sua associação.
-         */
-        if (cacheEstados[novoTipo].parent) {
+        const estadoDestino =
+            cacheEstados[novoTipo];
+
+        if (!estadoDestino) {
             return;
         }
 
-        /*
-         * Se ainda não possui Pai, herdamos apenas
-         * a associação inicial do outro tipo de
-         * rascunho.
-         */
-        if (
-            tipoAnterior !== "processo" &&
-            cacheEstados[tipoAnterior]?.parent
-        ) {
+        // =========================================
+        // DESTINO JÁ POSSUI PAI
+        // =========================================
+        if (estadoDestino.parent) {
 
-            cacheEstados[novoTipo].parent =
-                cacheEstados[tipoAnterior].parent;
+            /*
+             * O tipo já possui sua própria associação.
+             *
+             * Não recebe nada do outro tipo.
+             */
+            return;
         }
+
+        // =========================================
+        // IDENTIFICA O OUTRO TIPO NÃO-PROCESSO
+        // =========================================
+        const outroTipo =
+            novoTipo === "subprocesso"
+                ? "outro"
+                : "subprocesso";
+
+        const estadoOutro =
+            cacheEstados[outroTipo];
+
+        if (!estadoOutro) {
+            return;
+        }
+
+        // =========================================
+        // OUTRO TIPO NÃO POSSUI PAI
+        // =========================================
+        if (!estadoOutro.parent) {
+            return;
+        }
+
+        // =========================================
+        // HERDA O ESTADO DO OUTRO TIPO
+        // =========================================
+
+        estadoDestino.parent =
+            estadoOutro.parent;
+
+        estadoDestino.classificacao =
+            estadoOutro.classificacao || "";
+
+        estadoDestino.macro1 =
+            estadoOutro.macro1 || "";
+
+        estadoDestino.macro2 =
+            estadoOutro.macro2 || "";
     }
 
     // =========================================
-    // LIMPA CARACTERÍSTICAS HERDADAS NA TELA
-    //
-    // Usada ao entrar em Subprocesso/Outro.
-    //
-    // IMPORTANTE:
-    // Não altera o cache do Processo.
-    // Apenas limpa os valores visíveis.
-    //
-    // A partir do momento em que houver um Processo Pai,
-    // HerancaProcesso.aplicar() preencherá novamente esses
-    // campos.
+    // LIMPA CARACTERÍSTICAS VISUAIS
     // =========================================
     function limparCaracteristicasDaTela() {
 
@@ -391,11 +531,9 @@ function initTipoProcessoMapear(config = {}) {
             ) {
 
                 /*
-                 * Atualiza o Select2 sem disparar o
-                 * evento change da Área Responsável.
+                 * Atualiza somente o Select2.
                  *
-                 * Isso evita chamar a segunda herança
-                 * durante a troca de Tipo.
+                 * Não dispara a herança de Área.
                  */
                 $(el)
                     .val(null)
@@ -422,11 +560,105 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
-    // RESTAURA ESTADO
+    // RESTAURA CARACTERÍSTICAS DO CACHE
+    // =========================================
+    function restaurarCaracteristicasDoCache(
+        estado
+    ) {
+
+        if (!estado) {
+            return;
+        }
+
+        const classificacao =
+            document.getElementById(
+                "id_classificacao"
+            );
+
+        const macro1 =
+            document.getElementById(
+                "id_macroprocesso_nivel1"
+            );
+
+        const macro2 =
+            document.getElementById(
+                "id_macroprocesso_nivel2"
+            );
+
+        if (classificacao) {
+
+            if (
+                window.$ &&
+                $(classificacao).hasClass(
+                    "select2-hidden-accessible"
+                )
+            ) {
+
+                $(classificacao)
+                    .val(
+                        estado.classificacao || null
+                    )
+                    .trigger("change.select2");
+
+            } else {
+
+                classificacao.value =
+                    estado.classificacao || "";
+            }
+        }
+
+        if (macro1) {
+
+            if (
+                window.$ &&
+                $(macro1).hasClass(
+                    "select2-hidden-accessible"
+                )
+            ) {
+
+                $(macro1)
+                    .val(
+                        estado.macro1 || null
+                    )
+                    .trigger("change.select2");
+
+            } else {
+
+                macro1.value =
+                    estado.macro1 || "";
+            }
+        }
+
+        if (macro2) {
+
+            if (
+                window.$ &&
+                $(macro2).hasClass(
+                    "select2-hidden-accessible"
+                )
+            ) {
+
+                $(macro2)
+                    .val(
+                        estado.macro2 || null
+                    )
+                    .trigger("change.select2");
+
+            } else {
+
+                macro2.value =
+                    estado.macro2 || "";
+            }
+        }
+    }
+
+    // =========================================
+    // RESTAURA ESTADO DO TIPO
     // =========================================
     function restaurarEstado(tipo) {
 
-        const estado = cacheEstados[tipo];
+        const estado =
+            cacheEstados[tipo];
 
         if (!estado) {
             return;
@@ -438,66 +670,28 @@ function initTipoProcessoMapear(config = {}) {
         if (tipo === "processo") {
 
             if (processoInput) {
+
                 processoInput.value =
                     estado.nome || "";
             }
 
-            /*
-             * Processo não possui Pai.
-             */
-            definirParent("", false);
+            definirParent(
+                "",
+                false
+            );
 
-            /*
-             * Restaura as características próprias
-             * que o usuário havia escolhido para o Processo.
-             */
-            const classificacao =
-                document.getElementById(
-                    "id_classificacao"
-                );
+            restaurarCaracteristicasDoCache(
+                estado
+            );
 
-            const macro1 =
-                document.getElementById(
-                    "id_macroprocesso_nivel1"
-                );
-
-            const macro2 =
-                document.getElementById(
-                    "id_macroprocesso_nivel2"
-                );
-
-            if (classificacao) {
-                classificacao.value =
-                    estado.classificacao || "";
-            }
-
-            if (macro1) {
-                macro1.value =
-                    estado.macro1 || "";
-            }
-
-            if (macro2) {
-                macro2.value =
-                    estado.macro2 || "";
-            }
-
-            /*
-             * Restaura a Área própria do Processo.
-             *
-             * Não dispara a herança da Área aqui.
-             */
             definirArea(
                 estado.area || ""
             );
 
-            /*
-             * O campo de Subprocesso/Outro permanece
-             * visualmente vazio.
-             *
-             * A memória continua preservada.
-             */
             if (subprocessoInput) {
-                subprocessoInput.value = "";
+
+                subprocessoInput.value =
+                    "";
             }
 
             return;
@@ -509,6 +703,7 @@ function initTipoProcessoMapear(config = {}) {
         if (tipo === "subprocesso") {
 
             if (subprocessoInput) {
+
                 subprocessoInput.value =
                     estado.nome || "";
             }
@@ -516,6 +711,10 @@ function initTipoProcessoMapear(config = {}) {
             definirParent(
                 estado.parent || "",
                 false
+            );
+
+            restaurarCaracteristicasDoCache(
+                estado
             );
 
             return;
@@ -527,6 +726,7 @@ function initTipoProcessoMapear(config = {}) {
         if (tipo === "outro") {
 
             if (subprocessoInput) {
+
                 subprocessoInput.value =
                     estado.nome || "";
             }
@@ -534,6 +734,10 @@ function initTipoProcessoMapear(config = {}) {
             definirParent(
                 estado.parent || "",
                 false
+            );
+
+            restaurarCaracteristicasDoCache(
+                estado
             );
         }
     }
@@ -581,7 +785,8 @@ function initTipoProcessoMapear(config = {}) {
             );
 
             if (lblCampoProcesso) {
-                lblCampoProcesso.textContent = "Nome";
+                lblCampoProcesso.textContent =
+                    "Nome";
             }
 
             if (lblCampoSubprocesso) {
@@ -648,6 +853,7 @@ function initTipoProcessoMapear(config = {}) {
         );
 
         if (lblCampoProcesso) {
+
             lblCampoProcesso.textContent =
                 "Selecionar Processo para associar";
         }
@@ -685,9 +891,13 @@ function initTipoProcessoMapear(config = {}) {
 
         if (tipoAtual === "processo") {
 
-            processoInput?.classList.remove("hidden");
+            processoInput?.classList.remove(
+                "hidden"
+            );
 
-            containerSelect?.classList.add("hidden");
+            containerSelect?.classList.add(
+                "hidden"
+            );
 
             if (subprocessoInput) {
 
@@ -701,9 +911,13 @@ function initTipoProcessoMapear(config = {}) {
             return;
         }
 
-        processoInput?.classList.add("hidden");
+        processoInput?.classList.add(
+            "hidden"
+        );
 
-        containerSelect?.classList.remove("hidden");
+        containerSelect?.classList.remove(
+            "hidden"
+        );
 
         if (subprocessoInput) {
 
@@ -716,189 +930,174 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
-    // ESTADO VISUAL DA ÁREA
+    // ESTADO DOS CAMPOS POR TIPO
     // =========================================
-    // =========================================
-// ESTADO DOS CAMPOS POR TIPO
-//
-// PROCESSO
-//   Habilitados:
-//     Classificação
-//     Macro N1
-//     Macro N2
-//     Área Responsável
-//
-//   Sempre bloqueados:
-//     Gestor
-//     Telefone
-//     E-mail
-//
-// SUBPROCESSO / OUTRO
-//   Todos os campos ficam bloqueados.
-// =========================================
-function atualizarEstadoCamposPorTipo() {
+    function atualizarEstadoCamposPorTipo() {
 
-    const camposEstruturais = [
-        "id_classificacao",
-        "id_macroprocesso_nivel1",
-        "id_macroprocesso_nivel2",
-        "id_area_responsavel"
-    ];
+        const camposEstruturais = [
+            "id_classificacao",
+            "id_macroprocesso_nivel1",
+            "id_macroprocesso_nivel2",
+            "id_area_responsavel"
+        ];
 
-    const camposContato = [
-        "id_gestor",
-        "id_telefone",
-        "id_email"
-    ];
+        const camposContato = [
+            "id_gestor",
+            "id_telefone",
+            "id_email"
+        ];
 
-    // =========================================
-    // PROCESSO
-    // =========================================
-    if (tipoAtual === "processo") {
+        if (tipoAtual === "processo") {
 
-        /*
-         * O usuário pode definir as características
-         * próprias do Processo.
-         */
-        camposEstruturais.forEach(
-            HerancaProcesso.desbloquearCampo
-        );
+            camposEstruturais.forEach(
+                HerancaProcesso.desbloquearCampo
+            );
 
-        /*
-         * Os dados de contato são sempre derivados
-         * da Área Responsável.
-         */
-        camposContato.forEach(
+            camposContato.forEach(
+                HerancaProcesso.bloquearCampo
+            );
+
+            return;
+        }
+
+        [
+            ...camposEstruturais,
+            ...camposContato
+        ].forEach(
             HerancaProcesso.bloquearCampo
         );
-
-        return;
     }
 
     // =========================================
-    // SUBPROCESSO / OUTRO
+    // HERANÇA DO PROCESSO PAI
     // =========================================
-    /*
-     * Esses tipos nunca definem diretamente suas
-     * características estruturais ou de contato.
-     *
-     * Tudo vem do Processo Pai quando houver.
-     */
-    [
-        ...camposEstruturais,
-        ...camposContato
-    ].forEach(
-        HerancaProcesso.bloquearCampo
-    );
-}
+    window.aplicarRegraHeranca = function () {
 
-    // =========================================
-// HERANÇA DO PROCESSO PAI
-//
-// SOMENTE:
-// - Classificação
-// - Macroprocesso Nível 1
-// - Macroprocesso Nível 2
-// - Área Responsável
-//
-// Gestor / Telefone / E-mail pertencem
-// exclusivamente à herança da Área.
-// =========================================
-window.aplicarRegraHeranca = function () {
+        // =========================================
+        // PROCESSO
+        // =========================================
+        if (tipoAtual === "processo") {
 
-    // =========================================
-    // PROCESSO
-    // =========================================
-    if (tipoAtual === "processo") {
+            HerancaProcesso.limpar();
 
-        /*
-         * Processo não possui Processo Pai.
-         *
-         * Encerramos qualquer herança anterior.
-         *
-         * O método limpar() não apaga os valores.
-         * A memória do Processo será restaurada
-         * por restaurarEstado().
-         */
-        HerancaProcesso.limpar();
+            atualizarEstadoCamposPorTipo();
 
-        /*
-         * Processo pode editar:
-         * - Classificação
-         * - Macro N1
-         * - Macro N2
-         * - Área Responsável
-         *
-         * Gestor / Telefone / E-mail permanecem
-         * bloqueados.
-         */
-        atualizarEstadoCamposPorTipo();
-
-        return;
-    }
-
-    // =========================================
-    // SUBPROCESSO / OUTRO
-    // =========================================
-    const processoId =
-        obterParentAtual();
-
-    // =========================================
-    // SEM PROCESSO PAI
-    // =========================================
-    if (!processoId) {
-
-        /*
-         * Não existe herança do Processo Pai.
-         *
-         * Encerramos qualquer herança anterior.
-         */
-        HerancaProcesso.limpar();
-
-        /*
-         * Mesmo sem Pai, Subprocesso e Outro não
-         * podem editar as características do Processo.
-         */
-        atualizarEstadoCamposPorTipo();
-
-        return;
-    }
-
-    // =========================================
-    // COM PROCESSO PAI
-    // =========================================
-    HerancaProcesso.aplicar(
-        processoId,
-        {
-            url: urlHeranca,
-
-            onApply: () => {
-
-                /*
-                 * A herança preenche:
-                 * - Classificação
-                 * - Macro N1
-                 * - Macro N2
-                 * - Área Responsável
-                 *
-                 * O retorno da herança NÃO altera:
-                 * - Nome
-                 * - Parent
-                 * - memória do tipo.
-                 */
-                restaurarEstado(
-                    tipoAtual
-                );
-
-                /*
-                 * Garante que os campos continuem
-                 * bloqueados para Subprocesso/Outro.
-                 */
-                atualizarEstadoCamposPorTipo();
-            }
+            return;
         }
-    );
-};
+
+        // =========================================
+        // SUBPROCESSO / OUTRO
+        // =========================================
+        const processoId =
+            obterParentAtual();
+
+        // =========================================
+        // SEM PROCESSO PAI
+        // =========================================
+        if (!processoId) {
+
+            HerancaProcesso.limpar();
+
+            atualizarEstadoCamposPorTipo();
+
+            return;
+        }
+
+        // =========================================
+        // CAPTURA O ESTADO DA CONSULTA
+        //
+        // IMPORTANTE:
+        // Essas variáveis precisam ser capturadas
+        // ANTES do fetch.
+        // =========================================
+        const tipoDaConsulta =
+            tipoAtual;
+
+        const parentDaConsulta =
+            processoId;
+
+        // =========================================
+        // EXISTE PROCESSO PAI
+        // =========================================
+        HerancaProcesso.aplicar(
+            processoId,
+            {
+                url: urlHeranca,
+
+                onApply: (data) => {
+
+                    // =====================================
+                    // SEGURANÇA — TIPO NÃO É MAIS O MESMO
+                    // =====================================
+                    if (
+                        tipoAtual !== tipoDaConsulta
+                    ) {
+                        return;
+                    }
+
+                    // =====================================
+                    // SEGURANÇA — PAI NÃO É MAIS O MESMO
+                    // =====================================
+                    if (
+                        cacheEstados[tipoDaConsulta].parent !==
+                        parentDaConsulta
+                    ) {
+                        return;
+                    }
+
+                    // =====================================
+                    // GUARDA A HERANÇA NO TIPO CORRETO
+                    // =====================================
+                    cacheEstados[tipoDaConsulta].parent =
+                        parentDaConsulta;
+
+                    cacheEstados[tipoDaConsulta].classificacao =
+                        data.classificacao || "";
+
+                    cacheEstados[tipoDaConsulta].macro1 =
+                        data.macro1 || "";
+
+                    cacheEstados[tipoDaConsulta].macro2 =
+                        data.macro2 || "";
+
+                    // =====================================
+                    // RESTAURA O ESTADO DO TIPO
+                    // =====================================
+                    restaurarEstado(
+                        tipoDaConsulta
+                    );
+
+                    // =====================================
+                    // HERANÇA DA ÁREA RESPONSÁVEL
+                    //
+                    // A Área já veio do Processo Pai.
+                    // Agora usamos essa Área para hidratar:
+                    // - Gestor
+                    // - Telefone / Ramal
+                    // - E-mail
+                    //
+                    // O "true" informa que a hidratação foi
+                    // solicitada pela herança do Processo Pai,
+                    // não por uma seleção manual da Área.
+                    // =====================================
+                    if (
+                        data.area &&
+                        typeof window.preencherCamposArea === "function"
+                    ) {
+                        window.preencherCamposArea(
+                            data.area,
+                            true
+                        );
+                    }
+
+                    // =====================================
+                    // MANTÉM OS CAMPOS BLOQUEADOS
+                    // =====================================
+                    atualizarEstadoCamposPorTipo();
+                }
+            }
+        );
+    };
 
     // =========================================
     // TROCA DE TIPO
@@ -915,30 +1114,43 @@ window.aplicarRegraHeranca = function () {
         const tipoAnterior =
             tipoAtual;
 
-        // 1. Guarda estado anterior
-        salvarEstado(tipoAnterior);
+        // =========================================
+        // 1. GUARDA ESTADO ANTERIOR
+        // =========================================
+        salvarEstado(
+            tipoAnterior
+        );
 
-        // 2. Prepara estado destino
+        // =========================================
+        // 2. PREPARA ESTADO DESTINO
+        // =========================================
         prepararEstadoDestino(
             tipoAnterior,
             novoTipo
         );
 
-        // 3. Atualiza tipo
-        tipoAtual = novoTipo;
+        // =========================================
+        // 3. ATUALIZA TIPO
+        // =========================================
+        tipoAtual =
+            novoTipo;
 
-        // 4. Atualiza interface
+        // =========================================
+        // 4. ATUALIZA INTERFACE
+        // =========================================
         atualizarLabels();
+
         atualizarVisibilidadeCampos();
+
         atualizarEstadoCamposPorTipo();
+
         atualizarBotoes();
 
-        // -----------------------------------------
-        // LIMPA CARACTERÍSTICAS PRÓPRIAS DO PROCESSO
+        // =========================================
+        // 5. LIMPA CARACTERÍSTICAS VISUAIS
         //
-        // Subprocesso/Outro não possuem características
-        // estruturais próprias enquanto não houver Processo Pai.
-        // -----------------------------------------
+        // Somente Subprocesso/Outro.
+        // =========================================
         if (
             tipoAtual === "subprocesso" ||
             tipoAtual === "outro"
@@ -947,17 +1159,28 @@ window.aplicarRegraHeranca = function () {
             limparCaracteristicasDaTela();
         }
 
-        // 5. Restaura estado
-        restaurarEstado(tipoAtual);
+        // =========================================
+        // 6. RESTAURA ESTADO DO DESTINO
+        // =========================================
+        restaurarEstado(
+            tipoAtual
+        );
 
-        // 6. Herança do Pai
+        // =========================================
+        // 7. APLICA HERANÇA DO PAI
+        // =========================================
         aplicarRegraHeranca();
 
-        // 7. Nome oculto
+        // =========================================
+        // 8. SINCRONIZA NOME
+        // =========================================
         sincronizarNome();
 
         setTimeout(() => {
-            window.isTrocandoTipo = false;
+
+            window.isTrocandoTipo =
+                false;
+
         }, 0);
     }
 
@@ -986,7 +1209,9 @@ window.aplicarRegraHeranca = function () {
         "input",
         function () {
 
-            if (tipoAtual !== "processo") {
+            if (
+                tipoAtual !== "processo"
+            ) {
                 return;
             }
 
@@ -1016,16 +1241,7 @@ window.aplicarRegraHeranca = function () {
     );
 
     // =========================================
-    // EVENTO DA ÁREA
-    //
-    // SOMENTE PROCESSO
-    //
-    // A seleção da Área é feita pelo usuário.
-    // O JS da Área será responsável por:
-    //
-    // Gestor
-    // Telefone
-    // E-mail
+    // EVENTO DA ÁREA — SOMENTE PROCESSO
     // =========================================
     if (areaSelect) {
 
@@ -1037,7 +1253,9 @@ window.aplicarRegraHeranca = function () {
                     return;
                 }
 
-                if (tipoAtual !== "processo") {
+                if (
+                    tipoAtual !== "processo"
+                ) {
                     return;
                 }
 
@@ -1070,15 +1288,53 @@ window.aplicarRegraHeranca = function () {
                 const processoId =
                     $(this).val() || "";
 
-                cacheEstados[tipoAtual].parent =
+                const tipoDoEvento =
+                    tipoAtual;
+
+                /*
+                 * A associação pertence EXCLUSIVAMENTE
+                 * ao tipo atualmente selecionado.
+                 */
+                cacheEstados[tipoDoEvento].parent =
                     processoId;
 
+                /*
+                 * O Pai mudou.
+                 *
+                 * Portanto as características herdadas
+                 * anteriormente deixam de ser válidas.
+                 */
+                cacheEstados[tipoDoEvento].classificacao =
+                    "";
+
+                cacheEstados[tipoDoEvento].macro1 =
+                    "";
+
+                cacheEstados[tipoDoEvento].macro2 =
+                    "";
+
+                /*
+                 * Limpa somente a representação visual.
+                 */
+                limparCaracteristicasDaTela();
+
                 if (parentHidden) {
+
                     parentHidden.value =
                         processoId;
                 }
 
-                aplicarRegraHeranca();
+                /*
+                 * IMPORTANTE:
+                 *
+                 * O template já possui um listener de change
+                 * responsável por chamar aplicarRegraHeranca().
+                 *
+                 * Portanto NÃO chamamos novamente aqui.
+                 *
+                 * Este listener fica responsável somente por
+                 * atualizar a memória do tipo atual.
+                 */
             }
         );
     }
@@ -1094,18 +1350,45 @@ window.aplicarRegraHeranca = function () {
         cacheEstados.processo.nome =
             processoInput?.value || "";
 
-        cacheEstados.processo.parent = "";
+        cacheEstados.processo.parent =
+            "";
+
+        const caracteristicas =
+            obterCaracteristicasAtuais();
+
+        cacheEstados.processo.classificacao =
+            caracteristicas.classificacao;
+
+        cacheEstados.processo.macro1 =
+            caracteristicas.macro1;
+
+        cacheEstados.processo.macro2 =
+            caracteristicas.macro2;
 
         cacheEstados.processo.area =
             obterAreaAtual();
 
-    } else if (tipoAtual === "subprocesso") {
+    } else if (
+        tipoAtual === "subprocesso"
+    ) {
 
         cacheEstados.subprocesso.nome =
             subprocessoInput?.value || "";
 
         cacheEstados.subprocesso.parent =
             obterParentAtual();
+
+        const caracteristicas =
+            obterCaracteristicasAtuais();
+
+        cacheEstados.subprocesso.classificacao =
+            caracteristicas.classificacao;
+
+        cacheEstados.subprocesso.macro1 =
+            caracteristicas.macro1;
+
+        cacheEstados.subprocesso.macro2 =
+            caracteristicas.macro2;
 
     } else {
 
@@ -1114,14 +1397,36 @@ window.aplicarRegraHeranca = function () {
 
         cacheEstados.outro.parent =
             obterParentAtual();
+
+        const caracteristicas =
+            obterCaracteristicasAtuais();
+
+        cacheEstados.outro.classificacao =
+            caracteristicas.classificacao;
+
+        cacheEstados.outro.macro1 =
+            caracteristicas.macro1;
+
+        cacheEstados.outro.macro2 =
+            caracteristicas.macro2;
     }
 
+    // =========================================
+    // INICIALIZAÇÃO
+    // =========================================
     atualizarLabels();
+
     atualizarVisibilidadeCampos();
+
     atualizarEstadoCamposPorTipo();
+
     atualizarBotoes();
 
-    restaurarEstado(tipoAtual);
+    restaurarEstado(
+        tipoAtual
+    );
+
     aplicarRegraHeranca();
+
     sincronizarNome();
 }
