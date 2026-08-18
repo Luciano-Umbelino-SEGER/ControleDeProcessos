@@ -1325,13 +1325,13 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
 # --------------------------------#
 class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
     model = ProcessoMapear
-    form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
-    context_object_name = 'processomapear'
+    context_object_name = "processomapear"
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
+        if request.user.perfil.nome.lower() != "administrador":
             raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -1349,25 +1349,55 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
             "modo_edicao": False,
             "modo_exclusao": False,
 
+            # =========================================
+            # CADASTRO
+            # =========================================
             "cadastro_data": (
-                timezone.localtime(processomapear.data_criacao)
-                .strftime("%d/%m/%Y %H:%M:%S")
+                timezone.localtime(
+                    processomapear.data_criacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_criacao
+                else ""
             ),
 
             "cadastro_user": (
                 processomapear.usuario_cadastro.get_full_name()
-                if processomapear.usuario_cadastro else ""
+                if processomapear.usuario_cadastro
+                else ""
             ),
 
+            # =========================================
+            # ATUALIZAÇÃO
+            # =========================================
             "atualizacao_data": (
-                timezone.localtime(processomapear.data_atualizacao)
-                .strftime("%d/%m/%Y %H:%M:%S")
-                if processomapear.data_atualizacao else ""
+                timezone.localtime(
+                    processomapear.data_atualizacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_atualizacao
+                else ""
             ),
 
             "atualizacao_user": (
                 processomapear.usuario_atualizacao.get_full_name()
-                if processomapear.usuario_atualizacao else ""
+                if processomapear.usuario_atualizacao
+                else ""
+            ),
+
+            # =========================================
+            # FINALIZAÇÃO
+            # =========================================
+            "finalizacao_data": (
+                timezone.localtime(
+                    processomapear.data_finalizacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_finalizacao
+                else ""
+            ),
+
+            "finalizacao_user": (
+                processomapear.usuario_finalizacao.get_full_name()
+                if processomapear.usuario_finalizacao
+                else ""
             ),
         })
 
