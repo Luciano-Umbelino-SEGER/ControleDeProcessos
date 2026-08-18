@@ -59,6 +59,14 @@ function initTipoProcessoMapear(config = {}) {
         document.getElementById("id_parent_select");
 
     // =========================================
+    // ELEMENTOS — ABRANGÊNCIA
+    // =========================================
+    const radiosAbrangencia =
+        document.querySelectorAll(
+            'input[name="abrangencia"]'
+        );
+
+    // =========================================
     // ELEMENTOS — ÁREA
     // =========================================
     const areaSelect =
@@ -76,6 +84,7 @@ function initTipoProcessoMapear(config = {}) {
      * PROCESSO
      *   nome
      *   parent = sempre vazio
+     *   abrangencia
      *   classificacao
      *   macro1
      *   macro2
@@ -84,6 +93,7 @@ function initTipoProcessoMapear(config = {}) {
      * SUBPROCESSO
      *   nome
      *   parent
+     *   abrangencia herdada do Pai
      *   classificacao herdada do Pai
      *   macro1 herdado do Pai
      *   macro2 herdado do Pai
@@ -91,6 +101,7 @@ function initTipoProcessoMapear(config = {}) {
      * OUTRO
      *   nome
      *   parent
+     *   abrangencia herdada do Pai
      *   classificacao herdada do Pai
      *   macro1 herdado do Pai
      *   macro2 herdado do Pai
@@ -105,6 +116,7 @@ function initTipoProcessoMapear(config = {}) {
         processo: {
             nome: "",
             parent: "",
+            abrangencia: "",
             classificacao: "",
             macro1: "",
             macro2: "",
@@ -114,6 +126,7 @@ function initTipoProcessoMapear(config = {}) {
         subprocesso: {
             nome: "",
             parent: "",
+            abrangencia: "",
             classificacao: "",
             macro1: "",
             macro2: ""
@@ -122,6 +135,7 @@ function initTipoProcessoMapear(config = {}) {
         outro: {
             nome: "",
             parent: "",
+            abrangencia: "",
             classificacao: "",
             macro1: "",
             macro2: ""
@@ -171,6 +185,13 @@ function initTipoProcessoMapear(config = {}) {
         return areaSelect.value || "";
     }
 
+    function obterAbrangenciaAtual() {
+
+        return document.querySelector(
+            'input[name="abrangencia"]:checked'
+        )?.value || "";
+    }
+
     function obterCaracteristicasAtuais() {
 
         return {
@@ -191,7 +212,10 @@ function initTipoProcessoMapear(config = {}) {
         };
     }
 
-    function definirParent(parentId,dispararChange = false) {
+    function definirParent(
+        parentId,
+        dispararChange = false
+    ) {
 
         const valor = parentId || "";
 
@@ -216,19 +240,12 @@ function initTipoProcessoMapear(config = {}) {
             )
         ) {
 
-            /*
-             * Atualiza o valor interno.
-             */
             $(parentSelect).val(
                 valor || null
             );
 
             /*
              * Atualiza somente a interface do Select2.
-             *
-             * NÃO usamos "change", pois isso poderia
-             * disparar novamente a lógica de seleção
-             * do Processo Pai.
              */
             $(parentSelect).trigger(
                 "change.select2"
@@ -268,11 +285,14 @@ function initTipoProcessoMapear(config = {}) {
 
                 /*
                  * Atualiza somente a interface do Select2.
+                 *
                  * Não dispara a herança da Área.
                  */
                 $(areaSelect)
                     .val(valor || null)
-                    .trigger("change.select2");
+                    .trigger(
+                        "change.select2"
+                    );
 
             } else {
 
@@ -282,6 +302,60 @@ function initTipoProcessoMapear(config = {}) {
         } else {
 
             areaSelect.value = valor;
+        }
+    }
+
+    function definirAbrangencia(valor) {
+
+        const radios =
+            document.querySelectorAll(
+                'input[name="abrangencia"]'
+            );
+
+        const valorAtual =
+            valor || "";
+
+        radios.forEach(radio => {
+
+            radio.checked =
+                radio.value === valorAtual;
+        });
+
+        atualizarVisualAbrangencia();
+    }
+
+    function atualizarVisualAbrangencia() {
+
+        const mapa = {
+            GOVES: "lbl_goves",
+            SEGER: "lbl_seger",
+            OUTROS: "lbl_outros"
+        };
+
+        Object.values(mapa).forEach(id => {
+
+            const label =
+                document.getElementById(id);
+
+            label?.classList.remove(
+                "text-blue-700",
+                "text-gray-400"
+            );
+        });
+
+        const valor =
+            obterAbrangenciaAtual();
+
+        const labelId =
+            mapa[valor];
+
+        if (labelId) {
+
+            document.getElementById(
+                labelId
+            )?.classList.add(
+                "text-blue-700"
+            );
         }
     }
 
@@ -326,6 +400,9 @@ function initTipoProcessoMapear(config = {}) {
             cacheEstados.processo.parent =
                 "";
 
+            cacheEstados.processo.abrangencia =
+                obterAbrangenciaAtual();
+
             const caracteristicas =
                 obterCaracteristicasAtuais();
 
@@ -355,6 +432,9 @@ function initTipoProcessoMapear(config = {}) {
             cacheEstados.subprocesso.parent =
                 obterParentAtual();
 
+            cacheEstados.subprocesso.abrangencia =
+                obterAbrangenciaAtual();
+
             const caracteristicas =
                 obterCaracteristicasAtuais();
 
@@ -381,6 +461,9 @@ function initTipoProcessoMapear(config = {}) {
             cacheEstados.outro.parent =
                 obterParentAtual();
 
+            cacheEstados.outro.abrangencia =
+                obterAbrangenciaAtual();
+
             const caracteristicas =
                 obterCaracteristicasAtuais();
 
@@ -402,34 +485,27 @@ function initTipoProcessoMapear(config = {}) {
     //
     // 1. Processo não possui Parent.
     //
-    // 2. Subprocesso e Outro possuem memória
-    //    independente.
+    // 2. Se destino já possui Parent, mantém
+    //    completamente seu estado.
     //
-    // 3. Se o tipo destino já possui Parent,
-    //    mantém seu próprio estado.
-    //
-    // 4. Se o destino está vazio e o outro tipo
+    // 3. Se destino está vazio e o outro tipo
     //    não-Processo possui Parent, herda:
     //
-    //      Parent
-    //      Classificação
-    //      Macro N1
-    //      Macro N2
-    //
-    // 5. A transferência só ocorre quando o
-    //    destino estiver vazio.
+    //    Parent
+    //    Abrangência
+    //    Classificação
+    //    Macro N1
+    //    Macro N2
     // =========================================
-    function prepararEstadoDestino(
-        tipoAnterior,
-        novoTipo
-    ) {
+    function prepararEstadoDestino(novoTipo) {
 
         // =========================================
         // PROCESSO
         // =========================================
         if (novoTipo === "processo") {
 
-            cacheEstados.processo.parent = "";
+            cacheEstados.processo.parent =
+                "";
 
             return;
         }
@@ -447,7 +523,8 @@ function initTipoProcessoMapear(config = {}) {
         if (estadoDestino.parent) {
 
             /*
-             * O tipo já possui sua própria associação.
+             * O destino já possui sua própria
+             * associação.
              *
              * Não recebe nada do outro tipo.
              */
@@ -479,9 +556,11 @@ function initTipoProcessoMapear(config = {}) {
         // =========================================
         // HERDA O ESTADO DO OUTRO TIPO
         // =========================================
-
         estadoDestino.parent =
             estadoOutro.parent;
+
+        estadoDestino.abrangencia =
+            estadoOutro.abrangencia || "";
 
         estadoDestino.classificacao =
             estadoOutro.classificacao || "";
@@ -495,6 +574,9 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // LIMPA CARACTERÍSTICAS VISUAIS
+    //
+    // Usada ao entrar em Subprocesso/Outro.
+    // Não apaga a memória.
     // =========================================
     function limparCaracteristicasDaTela() {
 
@@ -531,19 +613,26 @@ function initTipoProcessoMapear(config = {}) {
             ) {
 
                 /*
-                 * Atualiza somente o Select2.
+                 * Atualiza somente a interface do Select2.
                  *
-                 * Não dispara a herança de Área.
+                 * Não dispara eventos de negócio.
                  */
                 $(el)
                     .val(null)
-                    .trigger("change.select2");
+                    .trigger(
+                        "change.select2"
+                    );
 
             } else {
 
                 el.value = "";
             }
         });
+
+        // =========================================
+        // ABRANGÊNCIA
+        // =========================================
+        definirAbrangencia("");
 
         // =========================================
         // CONTATOS
@@ -585,6 +674,9 @@ function initTipoProcessoMapear(config = {}) {
                 "id_macroprocesso_nivel2"
             );
 
+        // =========================================
+        // CLASSIFICAÇÃO
+        // =========================================
         if (classificacao) {
 
             if (
@@ -598,7 +690,9 @@ function initTipoProcessoMapear(config = {}) {
                     .val(
                         estado.classificacao || null
                     )
-                    .trigger("change.select2");
+                    .trigger(
+                        "change.select2"
+                    );
 
             } else {
 
@@ -607,6 +701,9 @@ function initTipoProcessoMapear(config = {}) {
             }
         }
 
+        // =========================================
+        // MACRO N1
+        // =========================================
         if (macro1) {
 
             if (
@@ -620,7 +717,9 @@ function initTipoProcessoMapear(config = {}) {
                     .val(
                         estado.macro1 || null
                     )
-                    .trigger("change.select2");
+                    .trigger(
+                        "change.select2"
+                    );
 
             } else {
 
@@ -629,6 +728,9 @@ function initTipoProcessoMapear(config = {}) {
             }
         }
 
+        // =========================================
+        // MACRO N2
+        // =========================================
         if (macro2) {
 
             if (
@@ -642,7 +744,9 @@ function initTipoProcessoMapear(config = {}) {
                     .val(
                         estado.macro2 || null
                     )
-                    .trigger("change.select2");
+                    .trigger(
+                        "change.select2"
+                    );
 
             } else {
 
@@ -650,6 +754,13 @@ function initTipoProcessoMapear(config = {}) {
                     estado.macro2 || "";
             }
         }
+
+        // =========================================
+        // ABRANGÊNCIA
+        // =========================================
+        definirAbrangencia(
+            estado.abrangencia || ""
+        );
     }
 
     // =========================================
@@ -743,7 +854,7 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
-    // LABELS
+    // ATUALIZA LABELS
     // =========================================
     function atualizarLabels() {
 
@@ -870,6 +981,52 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
+    // ESTADO DA ABRANGÊNCIA
+    //
+    // Processo:
+    //   usuário pode escolher.
+    //
+    // Subprocesso / Outro:
+    //   Abrangência vem do Processo Pai
+    //   e fica bloqueada.
+    // =========================================
+    function atualizarEstadoAbrangencia() {
+
+        const habilitada =
+            tipoAtual === "processo";
+
+        radiosAbrangencia.forEach(
+            radio => {
+
+                radio.disabled =
+                    !habilitada;
+
+                /*
+                 * Mantém o radio visualmente coerente
+                 * com o estado habilitado/desabilitado.
+                 */
+                const label =
+                    radio.closest("label");
+
+                if (label) {
+
+                    label.classList.toggle(
+                        "cursor-pointer",
+                        habilitada
+                    );
+
+                    label.classList.toggle(
+                        "cursor-not-allowed",
+                        !habilitada
+                    );
+                }
+            }
+        );
+
+        atualizarVisualAbrangencia();
+    }
+
+    // =========================================
     // BOTÕES
     // =========================================
     function atualizarBotoes() {
@@ -889,6 +1046,9 @@ function initTipoProcessoMapear(config = {}) {
     // =========================================
     function atualizarVisibilidadeCampos() {
 
+        // =========================================
+        // PROCESSO
+        // =========================================
         if (tipoAtual === "processo") {
 
             processoInput?.classList.remove(
@@ -911,6 +1071,9 @@ function initTipoProcessoMapear(config = {}) {
             return;
         }
 
+        // =========================================
+        // SUBPROCESSO / OUTRO
+        // =========================================
         processoInput?.classList.add(
             "hidden"
         );
@@ -981,6 +1144,7 @@ function initTipoProcessoMapear(config = {}) {
             HerancaProcesso.limpar();
 
             atualizarEstadoCamposPorTipo();
+            atualizarEstadoAbrangencia();
 
             return;
         }
@@ -991,24 +1155,18 @@ function initTipoProcessoMapear(config = {}) {
         const processoId =
             obterParentAtual();
 
-        // =========================================
-        // SEM PROCESSO PAI
-        // =========================================
         if (!processoId) {
 
             HerancaProcesso.limpar();
 
             atualizarEstadoCamposPorTipo();
+            atualizarEstadoAbrangencia();
 
             return;
         }
 
         // =========================================
         // CAPTURA O ESTADO DA CONSULTA
-        //
-        // IMPORTANTE:
-        // Essas variáveis precisam ser capturadas
-        // ANTES do fetch.
         // =========================================
         const tipoDaConsulta =
             tipoAtual;
@@ -1051,6 +1209,9 @@ function initTipoProcessoMapear(config = {}) {
                     cacheEstados[tipoDaConsulta].parent =
                         parentDaConsulta;
 
+                    cacheEstados[tipoDaConsulta].abrangencia =
+                        data.abrangencia || "";
+
                     cacheEstados[tipoDaConsulta].classificacao =
                         data.classificacao || "";
 
@@ -1069,21 +1230,13 @@ function initTipoProcessoMapear(config = {}) {
 
                     // =====================================
                     // HERANÇA DA ÁREA RESPONSÁVEL
-                    //
-                    // A Área já veio do Processo Pai.
-                    // Agora usamos essa Área para hidratar:
-                    // - Gestor
-                    // - Telefone / Ramal
-                    // - E-mail
-                    //
-                    // O "true" informa que a hidratação foi
-                    // solicitada pela herança do Processo Pai,
-                    // não por uma seleção manual da Área.
                     // =====================================
                     if (
                         data.area &&
-                        typeof window.preencherCamposArea === "function"
+                        typeof window.preencherCamposArea ===
+                        "function"
                     ) {
+
                         window.preencherCamposArea(
                             data.area,
                             true
@@ -1094,6 +1247,7 @@ function initTipoProcessoMapear(config = {}) {
                     // MANTÉM OS CAMPOS BLOQUEADOS
                     // =====================================
                     atualizarEstadoCamposPorTipo();
+                    atualizarEstadoAbrangencia();
                 }
             }
         );
@@ -1124,10 +1278,7 @@ function initTipoProcessoMapear(config = {}) {
         // =========================================
         // 2. PREPARA ESTADO DESTINO
         // =========================================
-        prepararEstadoDestino(
-            tipoAnterior,
-            novoTipo
-        );
+        prepararEstadoDestino(novoTipo);
 
         // =========================================
         // 3. ATUALIZA TIPO
@@ -1143,6 +1294,8 @@ function initTipoProcessoMapear(config = {}) {
         atualizarVisibilidadeCampos();
 
         atualizarEstadoCamposPorTipo();
+
+        atualizarEstadoAbrangencia();
 
         atualizarBotoes();
 
@@ -1185,7 +1338,7 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
-    // EVENTOS DOS RADIOS
+    // EVENTOS DOS RADIOS DE TIPO
     // =========================================
     rbProcesso?.addEventListener(
         "click",
@@ -1241,6 +1394,39 @@ function initTipoProcessoMapear(config = {}) {
     );
 
     // =========================================
+    // EVENTOS DA ABRANGÊNCIA
+    //
+    // Somente Processo pode alterar.
+    // =========================================
+    radiosAbrangencia.forEach(
+        radio => {
+
+            radio.addEventListener(
+                "change",
+                function () {
+
+                    if (
+                        window.isTrocandoTipo
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        tipoAtual !== "processo"
+                    ) {
+                        return;
+                    }
+
+                    cacheEstados.processo.abrangencia =
+                        this.value;
+
+                    atualizarVisualAbrangencia();
+                }
+            );
+        }
+    );
+
+    // =========================================
     // EVENTO DA ÁREA — SOMENTE PROCESSO
     // =========================================
     if (areaSelect) {
@@ -1249,7 +1435,9 @@ function initTipoProcessoMapear(config = {}) {
             "change.tipoProcessoMapear",
             function () {
 
-                if (window.isTrocandoTipo) {
+                if (
+                    window.isTrocandoTipo
+                ) {
                     return;
                 }
 
@@ -1274,7 +1462,9 @@ function initTipoProcessoMapear(config = {}) {
             "change.tipoProcessoMapear",
             function () {
 
-                if (window.isTrocandoTipo) {
+                if (
+                    window.isTrocandoTipo
+                ) {
                     return;
                 }
 
@@ -1292,18 +1482,19 @@ function initTipoProcessoMapear(config = {}) {
                     tipoAtual;
 
                 /*
-                 * A associação pertence EXCLUSIVAMENTE
-                 * ao tipo atualmente selecionado.
+                 * O usuário escolheu explicitamente
+                 * o Pai deste tipo.
                  */
                 cacheEstados[tipoDoEvento].parent =
                     processoId;
 
                 /*
-                 * O Pai mudou.
-                 *
-                 * Portanto as características herdadas
-                 * anteriormente deixam de ser válidas.
+                 * As características anteriores deixam
+                 * de ser válidas até a nova herança chegar.
                  */
+                cacheEstados[tipoDoEvento].abrangencia =
+                    "";
+
                 cacheEstados[tipoDoEvento].classificacao =
                     "";
 
@@ -1325,15 +1516,8 @@ function initTipoProcessoMapear(config = {}) {
                 }
 
                 /*
-                 * IMPORTANTE:
-                 *
-                 * O template já possui um listener de change
-                 * responsável por chamar aplicarRegraHeranca().
-                 *
-                 * Portanto NÃO chamamos novamente aqui.
-                 *
-                 * Este listener fica responsável somente por
-                 * atualizar a memória do tipo atual.
+                 * A herança será executada pelo fluxo
+                 * já existente.
                  */
             }
         );
@@ -1352,6 +1536,9 @@ function initTipoProcessoMapear(config = {}) {
 
         cacheEstados.processo.parent =
             "";
+
+        cacheEstados.processo.abrangencia =
+            obterAbrangenciaAtual();
 
         const caracteristicas =
             obterCaracteristicasAtuais();
@@ -1378,6 +1565,9 @@ function initTipoProcessoMapear(config = {}) {
         cacheEstados.subprocesso.parent =
             obterParentAtual();
 
+        cacheEstados.subprocesso.abrangencia =
+            obterAbrangenciaAtual();
+
         const caracteristicas =
             obterCaracteristicasAtuais();
 
@@ -1398,6 +1588,9 @@ function initTipoProcessoMapear(config = {}) {
         cacheEstados.outro.parent =
             obterParentAtual();
 
+        cacheEstados.outro.abrangencia =
+            obterAbrangenciaAtual();
+
         const caracteristicas =
             obterCaracteristicasAtuais();
 
@@ -1412,7 +1605,7 @@ function initTipoProcessoMapear(config = {}) {
     }
 
     // =========================================
-    // INICIALIZAÇÃO
+    // INICIALIZAÇÃO DA INTERFACE
     // =========================================
     atualizarLabels();
 
@@ -1420,13 +1613,24 @@ function initTipoProcessoMapear(config = {}) {
 
     atualizarEstadoCamposPorTipo();
 
+    atualizarEstadoAbrangencia();
+
     atualizarBotoes();
 
+    // =========================================
+    // RESTAURA ESTADO INICIAL
+    // =========================================
     restaurarEstado(
         tipoAtual
     );
 
+    // =========================================
+    // HERANÇA INICIAL DO PAI
+    // =========================================
     aplicarRegraHeranca();
 
+    // =========================================
+    // SINCRONIZAÇÃO FINAL
+    // =========================================
     sincronizarNome();
 }

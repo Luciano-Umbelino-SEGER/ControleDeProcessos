@@ -834,6 +834,7 @@ def obter_dados_processo(request, pk):
         ).get(pk=pk)
 
         data = {
+            "abrangencia": processo.abrangencia,
             "classificacao": processo.classificacao_id,
             "macro1": processo.macroprocesso_nivel1_id,
             "macro2": processo.macroprocesso_nivel2_id,
