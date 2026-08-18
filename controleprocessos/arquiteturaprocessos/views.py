@@ -1620,13 +1620,13 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
 # --------------------------------#
 class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
     model = ProcessoMapear
-    form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     context_object_name = "processomapear"
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
+        if request.user.perfil.nome.lower() != "administrador":
             raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -1639,6 +1639,7 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
                 "area_responsavel",
                 "usuario_cadastro",
                 "usuario_atualizacao",
+                "usuario_finalizacao",
             )
         )
 
@@ -1652,31 +1653,66 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
         )
 
         context.update({
+            # =========================================
+            # MODOS
+            # =========================================
             "modo_exclusao": True,
             "modo_visualizacao": False,
             "modo_inclusao": False,
             "modo_edicao": False,
 
+            # =========================================
+            # CADASTRO
+            # =========================================
             "cadastro_data": (
-                timezone.localtime(processomapear.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processomapear.data_criacao else ""
+                timezone.localtime(
+                    processomapear.data_criacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_criacao
+                else ""
             ),
 
             "cadastro_user": (
                 processomapear.usuario_cadastro.get_full_name()
                 or processomapear.usuario_cadastro.username
-                if processomapear.usuario_cadastro else ""
+                if processomapear.usuario_cadastro
+                else ""
             ),
 
+            # =========================================
+            # ATUALIZAÇÃO
+            # =========================================
             "atualizacao_data": (
-                timezone.localtime(processomapear.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
-                if processomapear.data_atualizacao else ""
+                timezone.localtime(
+                    processomapear.data_atualizacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_atualizacao
+                else ""
             ),
 
             "atualizacao_user": (
                 processomapear.usuario_atualizacao.get_full_name()
                 or processomapear.usuario_atualizacao.username
-                if processomapear.usuario_atualizacao else ""
+                if processomapear.usuario_atualizacao
+                else ""
+            ),
+
+            # =========================================
+            # FINALIZAÇÃO
+            # =========================================
+            "finalizacao_data": (
+                timezone.localtime(
+                    processomapear.data_finalizacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_finalizacao
+                else ""
+            ),
+
+            "finalizacao_user": (
+                processomapear.usuario_finalizacao.get_full_name()
+                or processomapear.usuario_finalizacao.username
+                if processomapear.usuario_finalizacao
+                else ""
             ),
         })
 
@@ -1686,12 +1722,15 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
         self.object = self.get_object()
         processomapear = self.object
 
+        # Guarda o nome antes da exclusão
+        nome_processomapear = processomapear.nome
+
         try:
             processomapear.delete()
 
             messages.success(
                 request,
-                f"Processo a Mapear '{processomapear.nome}' excluído com sucesso!"
+                f"Processo a Mapear '{nome_processomapear}' excluído com sucesso!"
             )
 
         except Exception:
@@ -1699,9 +1738,12 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
                 request,
                 "Erro ao excluir o processo. Tente novamente."
             )
+
             return redirect(request.path)
 
-        return redirect("arquiteturaprocessos:processosmapear")
+        return redirect(
+            "arquiteturaprocessos:processosmapear"
+        )
 
 # ------------------------------
 # Cadastro / Listagem Usuários

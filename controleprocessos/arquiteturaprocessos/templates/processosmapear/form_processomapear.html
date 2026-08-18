@@ -184,7 +184,7 @@ fieldset[disabled] input[type="radio"] {
                                     <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
                                         <input type="radio"
                                                id="rb_goves"
-                                               name="abrangencia"
+                                               name="abrangencia_visual"
                                                value="GOVES"
                                                {% if form.abrangencia.value == "GOVES" or not form.instance.pk %}checked{% endif %}>
 
@@ -198,7 +198,7 @@ fieldset[disabled] input[type="radio"] {
                                     <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
                                         <input type="radio"
                                                id="rb_seger"
-                                               name="abrangencia"
+                                               name="abrangencia_visual"
                                                value="SEGER"
                                                {% if form.abrangencia.value == "SEGER" %}checked{% endif %}>
 
@@ -212,7 +212,7 @@ fieldset[disabled] input[type="radio"] {
                                     <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
                                         <input type="radio"
                                                id="rb_outros"
-                                               name="abrangencia"
+                                               name="abrangencia_visual"
                                                value="OUTROS"
                                                {% if form.abrangencia.value == "OUTROS" %}checked{% endif %}>
 
@@ -221,6 +221,12 @@ fieldset[disabled] input[type="radio"] {
                                             OUTROS
                                         </span>
                                     </label>
+
+                                    <input type="hidden"
+                                           id="id_abrangencia"
+                                           name="abrangencia"
+                                           value="{{ form.abrangencia.value|default_if_none:'' }}">
+
                                 </div>
                             </div>
 

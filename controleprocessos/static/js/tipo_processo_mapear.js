@@ -63,8 +63,11 @@ function initTipoProcessoMapear(config = {}) {
     // =========================================
     const radiosAbrangencia =
         document.querySelectorAll(
-            'input[name="abrangencia"]'
+            'input[name="abrangencia_visual"]'
         );
+
+    const hiddenAbrangencia =
+        document.getElementById("id_abrangencia");
 
     // =========================================
     // ELEMENTOS — ÁREA
@@ -188,7 +191,7 @@ function initTipoProcessoMapear(config = {}) {
     function obterAbrangenciaAtual() {
 
         return document.querySelector(
-            'input[name="abrangencia"]:checked'
+            'input[name="abrangencia_visual"]:checked'
         )?.value || "";
     }
 
@@ -309,7 +312,7 @@ function initTipoProcessoMapear(config = {}) {
 
         const radios =
             document.querySelectorAll(
-                'input[name="abrangencia"]'
+                'input[name="abrangencia_visual"]'
             );
 
         const valorAtual =
@@ -320,6 +323,11 @@ function initTipoProcessoMapear(config = {}) {
             radio.checked =
                 radio.value === valorAtual;
         });
+
+        if (hiddenAbrangencia) {
+            hiddenAbrangencia.value =
+                valorAtual;
+        }
 
         atualizarVisualAbrangencia();
     }
