@@ -1524,86 +1524,207 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         return HttpResponseRedirect(self.get_success_url())
 
 # --------------------------------------------------#
-# Iniciar Processo - Processo a Mapear --> processo #
+# Iniciar Processo - Processo a Mapear --> Processo #
 # --------------------------------------------------#
 class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
+        if request.user.perfil.nome.lower() != "administrador":
             raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, pk):
 
-        processomapear = get_object_or_404(ProcessoMapear, pk=pk)
-        nome_normalizado = (processomapear.nome or "").strip()
+        processomapear = get_object_or_404(
+            ProcessoMapear,
+            pk=pk
+        )
 
-        # 🔥 VALIDAÇÃO DE NEGÓCIO
+        nome_normalizado = (
+            processomapear.nome or ""
+        ).strip()
+
+        # =========================================
+        # VALIDAÇÃO DE NEGÓCIO
+        # =========================================
         erros = processomapear.validar_para_iniciar()
 
         if erros:
             for erro in erros:
-                messages.error(request, erro)
+                messages.error(
+                    request,
+                    erro
+                )
 
-            return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
+            return redirect(
+                "arquiteturaprocessos:editar_processomapear",
+                pk=pk
+            )
 
-        # 🔥 VALIDAÇÃO DE PARENT
-        parent = processomapear.parent
+        # =========================================
+        # TIPO
+        # =========================================
+        if processomapear.tipo == ProcessoMapear.TIPO_PROCESSO:
+            # Processo nunca possui Pai
+            parent = None
+        elif (
+            processomapear.tipo ==
+            ProcessoMapear.TIPO_SUBPROCESSO
+        ):
 
-        if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO:
+            # =====================================
+            # SUBPROCESSO — PAI OBRIGATÓRIO
+            # =====================================
+            parent = processomapear.parent
 
             if not parent:
-                messages.error(request, "Subprocesso deve estar vinculado a um processo.")
-                return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
+                messages.error(
+                    request,
+                    "Subprocesso deve estar vinculado a um Processo."
+                )
 
-            if not Processo.objects.filter(pk=parent.pk).exists():
-                messages.error(request, "O processo pai não existe mais.")
-                return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
+                return redirect(
+                    "arquiteturaprocessos:editar_processomapear",
+                    pk=pk
+                )
 
+            if not Processo.objects.filter(
+                pk=parent.pk
+            ).exists():
+                messages.error(
+                    request,
+                    "O processo pai não existe mais."
+                )
+
+                return redirect(
+                    "arquiteturaprocessos:editar_processomapear",
+                    pk=pk
+                )
         else:
-            parent = None
-
-        # 🔥 👉 AQUI ENTRA O BLOQUEIO
-        if Processo.objects.filter(nome__iexact=nome_normalizado).exists():
+            # =====================================
+            # OUTRO — NÃO PODE SER INICIADO
+            # =====================================
             messages.error(
                 request,
-                f"Já existe um processo com o nome '{nome_normalizado}'."
+                "Tipo Outro não pode ser iniciado."
             )
-            return redirect("arquiteturaprocessos:editar_processomapear", pk=pk)
 
-        # 🔥 TRANSFORMAÇÃO
+            return redirect(
+                "arquiteturaprocessos:editar_processomapear",
+                pk=pk
+            )
+
+        # =========================================
+        # DUPLICIDADE DE NOME
+        # =========================================
+        if Processo.objects.filter(
+            nome__iexact=nome_normalizado
+        ).exists():
+            messages.error(
+                request,
+                f"Já existe um processo com o nome "
+                f"'{nome_normalizado}'."
+            )
+
+            return redirect(
+                "arquiteturaprocessos:editar_processomapear",
+                pk=pk
+            )
+
+        # =========================================
+        # PREPARA ATRIBUTOS DA NOVA ENTIDADE
+        # =========================================
+        if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO:
+            # =====================================
+            # SUBPROCESSO
+            #
+            # O Processo Pai é a fonte de verdade
+            # dos atributos herdados.
+            # =====================================
+            abrangencia = parent.abrangencia
+            classificacao = parent.classificacao
+            macro1 = parent.macroprocesso_nivel1
+            macro2 = parent.macroprocesso_nivel2
+            area_responsavel = parent.area_responsavel
+            gestor = parent.gestor
+            telefone = parent.telefone
+            email = parent.email
+        else:
+            # =====================================
+            # PROCESSO
+            #
+            # Usa os próprios atributos do rascunho.
+            # =====================================
+            if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO:
+                abrangencia = parent.abrangencia
+            else:
+                abrangencia = (
+                        request.POST.get("abrangencia")
+                        or processomapear.abrangencia
+                )
+            classificacao = processomapear.classificacao
+            macro1 = processomapear.macroprocesso_nivel1
+            macro2 = processomapear.macroprocesso_nivel2
+            area_responsavel = processomapear.area_responsavel
+            gestor = processomapear.gestor
+            telefone = processomapear.telefone
+            email = processomapear.email
+
+        # =========================================
+        # TRANSFORMAÇÃO
+        # =========================================
         with transaction.atomic():
-
             processo = Processo.objects.create(
-                nome=(processomapear.nome or "").strip(),
-                gestor=(processomapear.gestor or "").strip(),
-                email=(processomapear.email or "").strip(),
-                telefone=(processomapear.telefone or "").strip(),
+                # Valores obrigatórios na criação do Processo
+                data_elaboracao=timezone.localdate(),
+                versao_processo=1,
 
+                nome=nome_normalizado,
+                abrangencia=abrangencia,
+                gestor=(
+                    gestor or ""
+                ).strip(),
+                email=(
+                    email or ""
+                ).strip(),
+                telefone=(
+                    telefone or ""
+                ).strip(),
                 objetivo=processomapear.objetivo,
-                observacao=processomapear.observacao,
-
-                classificacao=processomapear.classificacao,
-                macroprocesso_nivel1=processomapear.macroprocesso_nivel1,
-                macroprocesso_nivel2=processomapear.macroprocesso_nivel2,
-
+                classificacao=classificacao,
+                macroprocesso_nivel1=macro1,
+                macroprocesso_nivel2=macro2,
                 parent=parent,
-                area_responsavel=processomapear.area_responsavel,
-
-                usuario_cadastro=processomapear.usuario_cadastro,
+                area_responsavel=area_responsavel,
+                usuario_cadastro=
+                    processomapear.usuario_cadastro,
                 usuario_atualizacao=request.user,
                 data_atualizacao=timezone.now(),
             )
 
+            # O rascunho deixa de existir
             processomapear.delete()
+
+        # =========================================
+        # MENSAGEM
+        # =========================================
+        tipo_criado = (
+            "Subprocesso"
+            if processomapear.tipo ==
+            ProcessoMapear.TIPO_SUBPROCESSO
+            else "Processo"
+        )
 
         messages.success(
             request,
-            f"{'Subprocesso' if processomapear.tipo == ProcessoMapear.TIPO_SUBPROCESSO else 'Processo'} "
+            f"{tipo_criado} "
             f"'{processo.nome}' criado com sucesso!"
         )
 
-        return redirect("arquiteturaprocessos:processos")
+        return redirect(
+            "arquiteturaprocessos:processos"
+        )
 
 # ---------------------------------------#
 # Finalizar Tarefa - Processo a Mapear   #

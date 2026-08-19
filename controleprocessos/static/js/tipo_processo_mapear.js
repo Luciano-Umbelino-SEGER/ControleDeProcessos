@@ -340,31 +340,38 @@ function initTipoProcessoMapear(config = {}) {
             OUTROS: "lbl_outros"
         };
 
-        Object.values(mapa).forEach(id => {
-
-            const label =
-                document.getElementById(id);
-
-            label?.classList.remove(
-                "text-blue-700",
-                "text-gray-400"
-            );
-        });
-
         const valor =
             obterAbrangenciaAtual();
 
-        const labelId =
-            mapa[valor];
+        Object.entries(mapa).forEach(
+            ([codigo, id]) => {
 
-        if (labelId) {
+                const label =
+                    document.getElementById(id);
 
-            document.getElementById(
-                labelId
-            )?.classList.add(
-                "text-blue-700"
-            );
-        }
+                if (!label) {
+                    return;
+                }
+
+                label.classList.remove(
+                    "text-blue-700",
+                    "text-gray-500"
+                );
+
+                if (codigo === valor) {
+
+                    label.classList.add(
+                        "text-blue-700"
+                    );
+
+                } else {
+
+                    label.classList.add(
+                        "text-gray-500"
+                    );
+                }
+            }
+        );
     }
 
     // =========================================
@@ -1428,6 +1435,11 @@ function initTipoProcessoMapear(config = {}) {
                     cacheEstados.processo.abrangencia =
                         this.value;
 
+                    if (hiddenAbrangencia) {
+                        hiddenAbrangencia.value =
+                            this.value;
+                    }
+
                     atualizarVisualAbrangencia();
                 }
             );
@@ -1518,7 +1530,6 @@ function initTipoProcessoMapear(config = {}) {
                 limparCaracteristicasDaTela();
 
                 if (parentHidden) {
-
                     parentHidden.value =
                         processoId;
                 }
@@ -1641,4 +1652,29 @@ function initTipoProcessoMapear(config = {}) {
     // SINCRONIZAÇÃO FINAL
     // =========================================
     sincronizarNome();
+
+    // =========================================
+    // GARANTIA FINAL DO POST
+    //
+    // O hidden é a fonte efetiva do valor enviado
+    // ao Django.
+    // =========================================
+    const form =
+    hiddenAbrangencia?.closest("form");
+
+    if (form) {
+        form.addEventListener(
+            "submit",
+            function () {
+
+                const abrangencia =
+                    obterAbrangenciaAtual();
+
+                if (hiddenAbrangencia) {
+                    hiddenAbrangencia.value =
+                        abrangencia;
+                }
+            }
+        );
+    }
 }

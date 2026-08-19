@@ -762,53 +762,134 @@ class ProcessoMapear(models.Model):
     def validar_para_iniciar(self):
         erros = []
 
+        # =========================================
+        # NOME
+        # =========================================
         if not self.nome or not self.nome.strip():
-            erros.append("Nome do Processo/Subprocesso/Outro é obrigatório.")
+            erros.append(
+                "Nome do Processo/Subprocesso é obrigatório."
+            )
 
+        # =========================================
+        # ABRANGÊNCIA
+        # =========================================
+        if not self.abrangencia:
+            erros.append(
+                "Abrangência é obrigatória."
+            )
+
+        # =========================================
+        # CLASSIFICAÇÃO
+        # =========================================
         if not self.classificacao:
-            erros.append("Classificação é obrigatória.")
+            erros.append(
+                "Classificação é obrigatória."
+            )
 
-        # 🔥 MACROPROCESSO
+        # =========================================
+        # MACROPROCESSO
+        # =========================================
         if self.macroprocesso_nivel2:
-            if not self.macroprocesso_nivel1:
-                erros.append("Macroprocesso Nível 1 é obrigatório quando Macroprocesso Nível 2 for informado.")
-            elif self.macroprocesso_nivel2.macroprocesso_nivel1_id != self.macroprocesso_nivel1_id:
-                erros.append("Macroprocesso Nível 2 não pertence ao Macroprocesso Nível 1 informado.")
 
-        # 🔥 TIPO
-        if self.tipo not in [c[0] for c in self.TIPO_CHOICES]:
+            if not self.macroprocesso_nivel1:
+
+                erros.append(
+                    "Macroprocesso Nível 1 é obrigatório "
+                    "quando Macroprocesso Nível 2 for informado."
+                )
+
+            elif (
+                    self.macroprocesso_nivel2.macroprocesso_nivel1_id
+                    != self.macroprocesso_nivel1_id
+            ):
+
+                erros.append(
+                    "Macroprocesso Nível 2 não pertence "
+                    "ao Macroprocesso Nível 1 informado."
+                )
+
+        # =========================================
+        # TIPO
+        # =========================================
+        if self.tipo not in [
+            c[0] for c in self.TIPO_CHOICES
+        ]:
             erros.append("Tipo inválido.")
 
-        # 🔥 SUBPROCESSO
+        # =========================================
+        # SUBPROCESSO
+        # =========================================
         if self.tipo == self.TIPO_SUBPROCESSO:
+
             if not self.parent:
-                erros.append("Subprocesso deve estar vinculado a um Processo.")
-            elif not Processo.objects.filter(pk=self.parent_id).exists():
-                erros.append("O processo pai não existe mais.")
+                erros.append(
+                    "Subprocesso deve estar vinculado a um Processo."
+                )
 
+            elif not Processo.objects.filter(
+                    pk=self.parent_id
+            ).exists():
+                erros.append(
+                    "O processo pai não existe mais."
+                )
+
+        # =========================================
+        # OUTRO
+        # =========================================
+        elif self.tipo == self.TIPO_OUTRO:
+
+            erros.append(
+                "Tipo Outro não pode ser iniciado."
+            )
+
+        # =========================================
+        # OBJETIVO
+        # =========================================
         if not self.objetivo or not self.objetivo.strip():
-            erros.append("Objetivo é obrigatório.")
+            erros.append(
+                "Objetivo é obrigatório."
+            )
 
-        # 🔥 FK
+        # =========================================
+        # ÁREA RESPONSÁVEL
+        # =========================================
         if not self.area_responsavel:
-            erros.append("Área Responsável é obrigatória.")
+            erros.append(
+                "Área Responsável é obrigatória."
+            )
 
+        # =========================================
+        # GESTOR
+        # =========================================
         if not self.gestor or not self.gestor.strip():
-            erros.append("Gestor é obrigatório.")
+            erros.append(
+                "Gestor é obrigatório."
+            )
 
+        # =========================================
+        # TELEFONE
+        # =========================================
         if not self.telefone or not self.telefone.strip():
-            erros.append("Telefone é obrigatório.")
+            erros.append(
+                "Telefone é obrigatório."
+            )
 
-        # 🔥 EMAIL
+        # =========================================
+        # E-MAIL
+        # =========================================
         email = (self.email or "").strip()
 
         if not email:
-            erros.append("E-mail é obrigatório.")
+            erros.append(
+                "E-mail é obrigatório."
+            )
         else:
             try:
                 validate_email(email)
             except ValidationError:
-                erros.append("E-mail inválido.")
+                erros.append(
+                    "E-mail inválido."
+                )
 
         return erros
 
