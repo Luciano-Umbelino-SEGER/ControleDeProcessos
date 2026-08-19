@@ -403,107 +403,100 @@ fieldset[disabled] input[type="radio"] {
 
 
                         <!-- ================================================= -->
-                        <!-- AUDITORIA                                          -->
+                        <!-- AUDITORIA                                        -->
                         <!-- ================================================= -->
-                        <div class="grid grid-cols-6 gap-6 mb-1">
+                        <div class="grid grid-cols-3 gap-4 mb-1">
 
-                            <!-- DATA CADASTRO -->
-                            <div>
+                            <!-- ============================================= -->
+                            <!-- CADASTRO                                      -->
+                            <!-- ============================================= -->
+                            <div class="grid grid-cols-[1.1fr_1fr] gap-3">
+                                <!-- DATA CADASTRO -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Data Cadastro
+                                    </label>
 
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Data Cadastro
-                                </label>
+                                    <input type="text"
+                                           value="{{ cadastro_data }}"
+                                           readonly
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                </div>
 
-                                <input type="text"
-                                       value="{{ cadastro_data }}"
-                                       readonly
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                <!-- RESPONSÁVEL CADASTRO -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Resp. Cadastro
+                                    </label>
 
+                                    <input type="text"
+                                           value="{{ cadastro_user }}"
+                                           readonly
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                </div>
                             </div>
 
+                            <!-- ============================================= -->
+                            <!-- ATUALIZAÇÃO                                   -->
+                            <!-- ============================================= -->
+                            <div class="grid grid-cols-[1.1fr_1fr] gap-3">
+                                <!-- DATA ATUALIZAÇÃO -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Data Atualização
+                                    </label>
 
-                            <!-- RESPONSÁVEL CADASTRO -->
-                            <div>
+                                    <input type="text"
+                                           value="{{ atualizacao_data }}"
+                                           readonly
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                </div>
 
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Resp. Cadastro
-                                </label>
+                                <!-- RESPONSÁVEL ATUALIZAÇÃO -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Resp. Atualização
+                                    </label>
 
-                                <input type="text"
-                                       value="{{ cadastro_user }}"
-                                       readonly
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-
+                                    <input type="text"
+                                           value="{{ atualizacao_user }}"
+                                           readonly
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                </div>
                             </div>
 
+                            <!-- ============================================= -->
+                            <!-- FINALIZAÇÃO                                   -->
+                            <!-- ============================================= -->
+                            <div class="grid grid-cols-[1.1fr_1fr] gap-3">
+                                <!-- DATA FINALIZAÇÃO -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Data Finalização
+                                    </label>
 
-                            <!-- DATA ATUALIZAÇÃO -->
-                            <div>
+                                    <input type="text"
+                                           value="{{ finalizacao_data|default:'' }}"
+                                           readonly
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                </div>
 
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Data Atualização
-                                </label>
+                                <!-- RESPONSÁVEL FINALIZAÇÃO -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Resp. Finalização
+                                    </label>
 
-                                <input type="text"
-                                       value="{{ atualizacao_data }}"
-                                       readonly
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-
+                                    <input type="text"
+                                           value="{{ finalizacao_user|default:'' }}"
+                                           readonly
+                                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
+                                </div>
                             </div>
-
-
-                            <!-- RESPONSÁVEL ATUALIZAÇÃO -->
-                            <div>
-
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Resp. Atualização
-                                </label>
-
-                                <input type="text"
-                                       value="{{ atualizacao_user }}"
-                                       readonly
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-
-                            </div>
-
-
-                            <!-- DATA FINALIZAÇÃO -->
-                            <div>
-
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Data Finalização
-                                </label>
-
-                                <input type="text"
-                                       value="{{ finalizacao_data|default:'' }}"
-                                       readonly
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-
-                            </div>
-
-
-                            <!-- RESPONSÁVEL FINALIZAÇÃO -->
-                            <div>
-
-                                <label class="block text-sm font-medium text-blue-700">
-                                    Resp. Finalização
-                                </label>
-
-                                <input type="text"
-                                       value="{{ finalizacao_user|default:'' }}"
-                                       readonly
-                                       class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 text-black">
-
-                            </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </fieldset>
 
         <!-- BOTÕES -->

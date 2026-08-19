@@ -1421,8 +1421,10 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
 
-
-        context["form"].modo_edicao = True
+        context["form"] = Form_ProcessoMapearForm(
+            instance=processomapear,
+            modo_edicao=True
+        )
 
         context.update({
             "modo_edicao": True,
@@ -1450,6 +1452,18 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 processomapear.usuario_atualizacao.get_full_name()
                 if processomapear.usuario_atualizacao else ""
             ),
+
+            "finalizacao_data": (
+                timezone.localtime(
+                    processomapear.data_finalizacao
+                ).strftime("%d/%m/%Y %H:%M:%S")
+                if processomapear.data_finalizacao else ""
+            ),
+
+            "finalizacao_user": (
+                processomapear.usuario_finalizacao.get_full_name()
+                if processomapear.usuario_finalizacao else ""
+            ),
         })
 
         return context
@@ -1463,9 +1477,14 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         acao = self.request.POST.get("acao", "").strip()
 
         if processomapear.parent:
+            processomapear.abrangencia = processomapear.parent.abrangencia
             processomapear.classificacao = processomapear.parent.classificacao
             processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
             processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
+            processomapear.area_responsavel = processomapear.parent.area_responsavel
+            processomapear.gestor = processomapear.parent.gestor
+            processomapear.telefone = processomapear.parent.telefone
+            processomapear.email = processomapear.parent.email
 
         # 🔥 VALIDAÇÃO PARA INICIAR (SEM SALVAR AINDA)
         if acao == "iniciar":
@@ -1587,33 +1606,61 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
         return redirect("arquiteturaprocessos:processos")
 
 # ---------------------------------------#
-# Finalizar Tarefa -  Processo a Mapear  #
+# Finalizar Tarefa - Processo a Mapear   #
 # ---------------------------------------#
 class FinalizarProcessoMapear(LoginRequiredMixin, View):
 
     def post(self, request, pk):
-        obj = get_object_or_404(ProcessoMapear, pk=pk)
+        obj = get_object_or_404(
+            ProcessoMapear,
+            pk=pk
+        )
 
-        if request.user.perfil.nome.lower() != 'administrador':
-            messages.error(request, "Você não tem permissão para finalizar esta tarefa.")
-            return redirect('arquiteturaprocessos:processosmapear')
+        if request.user.perfil.nome.lower() != "administrador":
+            messages.error(
+                request,
+                "Você não tem permissão para finalizar esta tarefa."
+            )
 
-        # 🔥 evita reprocessar
+            return redirect(
+                "arquiteturaprocessos:processosmapear"
+            )
+
+        # =========================================
+        # EVITA REPROCESSAR
+        # =========================================
         if obj.status == "finalizado":
-            messages.warning(request, "Esta tarefa já está finalizada.")
-            return redirect('arquiteturaprocessos:processosmapear')
+            messages.warning(
+                request,
+                "Esta tarefa já está finalizada."
+            )
 
-        obj.status = "finalizado"
-        obj.usuario_atualizacao = request.user
-        obj.data_atualizacao = timezone.now()  # 👈 importante
-        obj.save()
+            return redirect(
+                "arquiteturaprocessos:processosmapear"
+            )
+
+        # =========================================
+        # FINALIZAÇÃO
+        # =========================================
+        agora = timezone.now()
+
+        with transaction.atomic():
+            obj.status = "finalizado"
+            obj.usuario_finalizacao = request.user
+            obj.data_finalizacao = agora
+            obj.usuario_atualizacao = request.user
+            obj.data_atualizacao = agora
+
+            obj.save()
 
         messages.success(
             request,
             f"Tarefa '{obj.nome}' finalizada com sucesso."
         )
 
-        return redirect('arquiteturaprocessos:processosmapear')
+        return redirect(
+            "arquiteturaprocessos:processosmapear"
+        )
 
 # --------------------------------#
 # Excluir Processo a Mapear       #
