@@ -515,18 +515,25 @@ fieldset[disabled] input[type="radio"] {
           {% elif modo_edicao %}
 
             <!-- INICIAR PROCESSO -->
-           {% if form.instance.status == "ativo" and form.instance.tipo != "outro" %}
+            {% if form.instance.status == "ativo" and form.instance.tipo != "outro" %}
             <button type="button"
                     @click="$dispatch('abrir-modal-confirmacao', {
                         url: '{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}',
                         mensagem: `
                             Você está prestes a transformar o Processo a Mapear -
-                            <strong>{{ form.instance.nome }}</strong>, em um {{ form.instance.tipo }}.<br><br>
+                            <strong>${
+                                document.getElementById('processo_input_visible')?.value?.trim()
+                                ||
+                                document.getElementById('subprocesso_input_visible')?.value?.trim()
+                                ||
+                                '{{ form.instance.nome }}'
+                            }</strong>, em um {{ form.instance.tipo }}.<br><br>
                             Confirma a inicialização do {{ form.instance.tipo }}?
-                        `
+                        `,
+                        salvarAntes: true
                     })"
                     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">
-                 Iniciar Processo
+                Iniciar Processo
             </button>
             {% endif %}
 

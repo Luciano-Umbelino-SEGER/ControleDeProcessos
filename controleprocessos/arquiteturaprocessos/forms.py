@@ -1215,7 +1215,7 @@ class MacroN2Select(forms.Select):
                 pass
 
         return option
-# Aqui 1
+
 # ----------------------------
 # Processos - Formulário
 # ----------------------------
@@ -1434,7 +1434,7 @@ class Form_ProcessoForm(forms.ModelForm):
 
             # padding quando estiver editando
             if self.instance and self.instance.pk and self.instance.versao_processo:
-                self.initial["versao_processo"] = f"{int(self.instance.versao_processo):04d}"
+                self.initial["versao_processo"] = f"{int(self.instance.versao_processo):03d}"
 
         # --------------------------------------------------------------------
         # Modo VISUALIZAÇÃO / EXCLUSÃO — trava tudo

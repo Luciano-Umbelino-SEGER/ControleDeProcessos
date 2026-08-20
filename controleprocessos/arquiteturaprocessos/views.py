@@ -1403,6 +1403,86 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
 
         return context
 
+# --------------------------------------------------#
+# Função Responsãvel pela Inicialização do Processo #
+# --------------------------------------------------#
+def transformar_processo_mapear_em_processo(
+    processomapear,
+    usuario,):
+    nome_normalizado = (processomapear.nome or ""
+    ).strip()
+
+    # =========================================
+    # VALIDAÇÃO DO PROCESSO PAI
+    # =========================================
+    parent = processomapear.parent
+
+    if (
+        processomapear.tipo ==
+        ProcessoMapear.TIPO_SUBPROCESSO
+    ):
+
+        if not parent:
+            raise ValueError(
+                "Subprocesso deve estar vinculado a um processo."
+            )
+
+        if not Processo.objects.filter(
+            pk=parent.pk
+        ).exists():
+
+            raise ValueError(
+                "O processo pai não existe mais."
+            )
+
+    else:
+        parent = None
+
+    # =========================================
+    # DUPLICIDADE DE NOME
+    # =========================================
+    if Processo.objects.filter(
+        nome__iexact=nome_normalizado
+    ).exists():
+
+        raise ValueError(
+            f"Já existe um processo com o nome "
+            f"'{nome_normalizado}'."
+        )
+
+    # =========================================
+    # TRANSFORMAÇÃO
+    # =========================================
+    with transaction.atomic():
+
+        processo = Processo.objects.create(
+            nome=nome_normalizado,
+            abrangencia=processomapear.abrangencia,
+            gestor=(processomapear.gestor or "").strip(),
+            email=(processomapear.email or "").strip(),
+            telefone=(processomapear.telefone or "").strip(),
+
+            objetivo=processomapear.objetivo,
+
+            classificacao=processomapear.classificacao,
+            macroprocesso_nivel1=processomapear.macroprocesso_nivel1,
+            macroprocesso_nivel2=processomapear.macroprocesso_nivel2,
+
+            parent=parent,
+            area_responsavel=processomapear.area_responsavel,
+
+            data_elaboracao=timezone.localdate(),
+            versao_processo=1,
+
+            usuario_cadastro=processomapear.usuario_cadastro,
+            usuario_atualizacao=usuario,
+            data_atualizacao=timezone.now(),
+        )
+
+        processomapear.delete()
+
+    return processo
+
 # --------------------------------#
 # Editar Processo a Mapear        #
 # --------------------------------#
@@ -1486,7 +1566,9 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             processomapear.telefone = processomapear.parent.telefone
             processomapear.email = processomapear.parent.email
 
-        # 🔥 VALIDAÇÃO PARA INICIAR (SEM SALVAR AINDA)
+        # =========================================
+        # VALIDAÇÃO E INICIALIZAÇÃO
+        # =========================================
         if acao == "iniciar":
 
             erros = processomapear.validar_para_iniciar()
@@ -1499,16 +1581,50 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 context["form"] = form
                 return self.render_to_response(context)
 
-            # 🔥 salva só o necessário antes da confirmação
+            # =========================================
+            # PERSISTE AS ALTERAÇÕES DO RASCUNHO
+            # =========================================
             processomapear.usuario_atualizacao = self.request.user
             processomapear.data_atualizacao = timezone.now()
             processomapear.save()
 
-            self.request.session["confirmar_iniciar"] = True
+            # =========================================
+            # TRANSFORMA O RASCUNHO EM PROCESSO
+            # =========================================
+            tipo = processomapear.tipo
+
+            try:
+                processo = transformar_processo_mapear_em_processo(
+                    processomapear,
+                    self.request.user,
+                )
+
+            except ValueError as erro:
+
+                form.add_error(None, str(erro))
+
+                context = self.get_context_data()
+                context["form"] = form
+
+                return self.render_to_response(context)
+
+            # =========================================
+            # MENSAGEM DE SUCESSO
+            # =========================================
+            mensagem_tipo = (
+                "Subprocesso"
+                if tipo == ProcessoMapear.TIPO_SUBPROCESSO
+                else "Processo"
+            )
+
+            messages.success(
+                self.request,
+                f"{mensagem_tipo} "
+                f"'{processo.nome}' criado com sucesso!"
+            )
 
             return redirect(
-                "arquiteturaprocessos:editar_processomapear",
-                pk=processomapear.pk
+                "arquiteturaprocessos:processos"
             )
 
         # 🔵 fluxo normal (salvar sem iniciar)

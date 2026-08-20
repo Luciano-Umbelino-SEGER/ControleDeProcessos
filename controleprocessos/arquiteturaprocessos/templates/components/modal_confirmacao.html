@@ -1,30 +1,146 @@
 <div
-    x-data="{ open: false, actionUrl: '', mensagem: '' }"
-    @abrir-modal-confirmacao.window="open = true; actionUrl = $event.detail.url; mensagem = $event.detail.mensagem"
+    x-data="{
+        open: false,
+        actionUrl: '',
+        mensagem: '',
+        salvarAntes: false,
+        processando: false,
+
+        confirmar() {
+
+            // =========================================
+            // FLUXO ORIGINAL DO MODAL
+            //
+            // Ausência de salvarAntes:
+            // mantém exatamente o comportamento atual.
+            // =========================================
+            if (!this.salvarAntes) {
+
+                this.$refs.actionForm.submit();
+
+                return;
+            }
+
+            // =========================================
+            // FLUXO ESPECIAL — INICIALIZAÇÃO
+            // =========================================
+            const formPrincipal =
+                document.getElementById(
+                    'form-processomapear'
+                );
+
+            if (!formPrincipal) {
+
+                console.error(
+                    'Formulário principal de Processo a Mapear não encontrado.'
+                );
+
+                this.processando = false;
+
+                return;
+            }
+
+            // =========================================
+            // EVITA DUPLO CLIQUE
+            // =========================================
+            if (this.processando) {
+                return;
+            }
+
+            this.processando = true;
+
+            // =========================================
+            // IDENTIFICAÇÃO DA OPERAÇÃO
+            // =========================================
+            let campoAcao =
+                formPrincipal.querySelector(
+                    'input[name=\'acao\']'
+                );
+
+            if (!campoAcao) {
+
+                campoAcao =
+                    document.createElement('input');
+
+                campoAcao.type = 'hidden';
+                campoAcao.name = 'acao';
+
+                formPrincipal.appendChild(
+                    campoAcao
+                );
+            }
+
+            campoAcao.value = 'iniciar';
+
+            // =========================================
+            // ENVIA O FORMULÁRIO PRINCIPAL
+            //
+            // requestSubmit() dispara o submit normal
+            // do formulário, incluindo os listeners
+            // existentes no template.
+            // =========================================
+            formPrincipal.requestSubmit();
+        }
+    }"
+
+    @abrir-modal-confirmacao.window="
+        open = true;
+        actionUrl = $event.detail.url;
+        mensagem = $event.detail.mensagem;
+        salvarAntes = $event.detail.salvarAntes || false;
+        processando = false;
+    "
+
     x-show="open"
     class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50"
     x-cloak
 >
     <div class="bg-white rounded-lg shadow-lg p-6 w-96 text-center">
+
         <!-- Mensagem dinâmica -->
-        <p class="text-gray-700 text-lg mb-6" x-html="mensagem"></p>
+        <p
+            class="text-gray-700 text-lg mb-6"
+            x-html="mensagem"
+        ></p>
 
         <!-- Botões centralizados -->
         <div class="flex justify-center gap-4">
-             <form :action="actionUrl" method="POST">
+
+            <!--
+                Mantido para preservar o comportamento
+                original de todos os demais usos do modal.
+            -->
+            <form
+                x-ref="actionForm"
+                :action="actionUrl"
+                method="POST"
+            >
                 {% csrf_token %}
+
                 <button
-                    type="submit"
-                    class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    Sim
+                    type="button"
+                    @click="confirmar()"
+                    :disabled="processando"
+                    class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span x-show="!processando">
+                        Sim
+                    </span>
+
+                    <span x-show="processando">
+                        Processando...
+                    </span>
                 </button>
             </form>
 
             <button
                 @click="open = false"
-                class="px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
+                :disabled="processando"
+                class="px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 disabled:opacity-50"
+            >
                 Não
             </button>
+
         </div>
     </div>
 </div>
