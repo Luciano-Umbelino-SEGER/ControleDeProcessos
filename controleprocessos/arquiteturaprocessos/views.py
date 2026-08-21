@@ -562,42 +562,47 @@ class ArquiteruraProcessos(ListView):
 
             norma = rel.norma_procedimento
 
-            norma_doc = None
+            norma_docs = []
 
+            # PDF
             if norma.documento_norma_procedimento:
-
                 nome_pdf = os.path.basename(
                     norma.documento_norma_procedimento.name
                 )
 
-                norma_doc = {
+                norma_docs.append({
                     "displayname": nome_pdf,
                     "url": norma.documento_norma_procedimento.url,
-                }
+                    "tipo": "pdf",
+                })
 
-            elif norma.link_documento_norma:
-
+            # URL externa
+            if norma.link_documento_norma:
                 nome_link = os.path.basename(
                     unquote(norma.link_documento_norma)
                 )
 
-                norma_doc = {
+                norma_docs.append({
                     "displayname": nome_link,
                     "url": norma.link_documento_norma,
-                }
+                    "tipo": "url",
+                })
 
             normas.append({
                 "titulo": norma.nome_norma,
                 "codigo": norma.codigo_norma,
-                "versao": norma.versao,
-                "emitente": norma.emitente,
+                "versao": (
+                    str(int(norma.versao)).zfill(3)
+                    if norma.versao
+                    else ""
+                ),
                 "sistema": str(norma.sistema),
                 "vigencia": (
                     norma.vigencia_inicio.strftime("%d/%m/%Y")
                     if norma.vigencia_inicio
                     else ""
                 ),
-                "documento": norma_doc,
+                "documentos": norma_docs,
             })
 
         return {

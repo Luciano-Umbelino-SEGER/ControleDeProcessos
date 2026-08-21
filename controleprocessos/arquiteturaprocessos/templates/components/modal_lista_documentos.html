@@ -45,20 +45,37 @@
 
       <!-- NORMA DE PROCEDIMENTO -->
       <div>
-        <h4 id="titulo-normas" class="text-sm font-semibold text-blue-800 mt-4 mb-2">
-          Norma de Procedimento
+
+        <!-- Título da seção -->
+        <h4 id="titulo-normas"
+            class="text-sm font-semibold text-blue-800 mt-4 mb-2">
+          Norma de Procedimento (0)
         </h4>
 
-        <!-- Cabeçalho das colunas (mantém) -->
-        <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
-                    text-sm font-semibold text-blue-600 px-3 pb-0.5">
-          <span>Título</span><span></span><span>Tema</span>
-          <span>Versão</span><span>Emitente</span><span>Início de Vigência</span>
-        </div>
+        <!-- Linha superior -->
         <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
 
-        <!-- 🔽 AQUI entra a lista dinâmica -->
-        <div id="lista-normas" class="space-y-1"></div>
+        <!-- Cabeçalho -->
+        <div class="grid grid-cols-[3fr_1.2fr_1.2fr_0.8fr_1.4fr]
+                    text-sm font-semibold text-blue-600
+                    px-3 pb-0.5">
+
+          <span>Nome da Norma</span>
+          <span>Sistema</span>
+          <span>Código</span>
+          <span>Versão</span>
+          <span>Vigência Início</span>
+
+        </div>
+
+        <!-- Linha inferior do cabeçalho -->
+        <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
+
+        <!-- Lista dinâmica -->
+        <div id="lista-normas"
+             class="px-3">
+        </div>
+
       </div>
 
     </div>
@@ -169,94 +186,141 @@ function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo 
     tituloNormas.textContent  = `Norma de Procedimento (${normas.length})`;
   }
 
-  const criarLinha = (doc) => {
-    const qtdArtefatos =
-      (doc.modelo ? 1 : 0) +
-      (doc.norma  ? 1 : 0);
+    // =========================================================
+    // NORMA DE PROCEDIMENTO
+    // =========================================================
+    const criarLinhaNorma = (norma) => {
 
-    return `
-    <!-- Linha principal -->
-    <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
-                items-center px-3 py-1.5 text-sm text-gray-900
-                hover:bg-gray-100 rounded transition">
+      const documentos = norma.documentos || [];
 
-      <span class="truncate font-medium">${doc.titulo || "-"}</span>
-      <span></span>
-      <span class="truncate">${doc.tema || "-"}</span>
-      <span>${doc.versao ?? "-"}</span>
-      <span class="truncate">${doc.emitente || "-"}</span>
-      <span>${doc.vigencia || "-"}</span>
-    </div>
+      const renderizarDocumento = (documento) => {
+        const icone = documento.tipo === "url" ? "🔗" : "📄";
+        const url = encodeURIComponent(documento.url || "")
+          .replace(/'/g, "%27");
+        const nome = encodeURIComponent(documento.displayname || "")
+          .replace(/'/g, "%27");
 
-    <!-- Linha secundária (ÚNICA) -->
-    <div class="ml-6 px-3 py-1.5 text-sm text-gray-600
-                flex items-center gap-3 whitespace-nowrap overflow-hidden">
+        return `
+          <div class="flex items-center gap-1 min-w-0">
 
-      <span class="italic text-gray-500 shrink-0">
-        Artefatos associados (${qtdArtefatos}):
-      </span>
+            <span class="shrink-0">${icone}</span>
 
-      ${
-        doc.modelo ? `
-        <div class="flex items-center gap-1 min-w-0 max-w-[45%]">
-          <span>📄</span>
-          <span class="truncate font-medium"
-                title="${doc.modelo.displayname}">
-            ${doc.modelo.displayname}
+            <span
+              class="truncate font-medium"
+              title="${documento.displayname || "-"}">
+              ${documento.displayname || "-"}
+            </span>
+
+            <button
+              type="button"
+              class="text-blue-600 hover:text-blue-800 ml-1 shrink-0"
+              title="Visualizar"
+              onclick="abrirModalDocumento(
+                decodeURIComponent('${url}'),
+                decodeURIComponent('${nome}')
+              )">
+
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor">
+
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0
+                     3 3 0 016 0z"/>
+
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943
+                     7.523 5 12 5
+                     c4.477 0 8.268 2.943
+                     9.542 7
+                     -1.274 4.057
+                     -5.065 7
+                     -9.542 7
+                     -4.477 0
+                     -8.268-2.943
+                     -9.542-7z"/>
+
+              </svg>
+
+            </button>
+
+          </div>
+        `;
+      };
+
+
+      const documentosHtml = documentos.length
+        ? documentos.map(renderizarDocumento).join("")
+        : `
+            <span class="text-gray-400 italic">
+              Nenhum documento associado.
+            </span>
+          `;
+
+
+      return `
+        <!-- DADOS DA NORMA -->
+        <div class="grid grid-cols-[3fr_1.2fr_1.2fr_0.8fr_1.4fr]
+                    items-center
+                    px-3
+                    pt-2
+                    text-sm
+                    text-gray-900">
+
+          <!-- Nome da Norma -->
+          <span
+            class="truncate font-medium"
+            title="${norma.titulo || "-"}">
+            ${norma.titulo || "-"}
           </span>
-          <button class="text-blue-600 hover:text-blue-800 ml-1 shrink-0"
-                  title="Visualizar Documento"
-                  onclick="abrirModalDocumento('${doc.modelo.url}', '${doc.modelo.displayname}')">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="w-5 h-5"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke-width="2"
-                 stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-          </button>
-        </div>
-        ` : ''
-      }
 
-      ${
-        doc.modelo && doc.norma ? `<span class="text-gray-400 shrink-0">|</span>` : ''
-      }
-
-      ${
-        doc.norma ? `
-        <div class="flex items-center gap-1 min-w-0 max-w-[45%]">
-          <span>🔗</span>
-          <span class="truncate font-medium"
-                title="${doc.norma.displayname}">
-            ${doc.norma.displayname}
+          <!-- Sistema -->
+          <span class="truncate">
+            ${norma.sistema || "-"}
           </span>
-          <button class="text-blue-600 hover:text-blue-800 ml-1 shrink-0"
-                  title="Visualizar Documento"
-                  onclick="abrirModalDocumento('${doc.norma.url}', '${doc.norma.displayname}')">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="w-5 h-5"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke-width="2"
-                 stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-          </button>
-        </div>
-        ` : ''
-      }
 
-    </div>
-    `;
-  };
+          <!-- Código -->
+          <span class="truncate">
+            ${norma.codigo || "-"}
+          </span>
+
+          <!-- Versão -->
+          <span>
+            ${norma.versao || "-"}
+          </span>
+
+          <!-- Vigência Início -->
+          <span>
+            ${norma.vigencia || "-"}
+          </span>
+
+        </div>
+
+
+        <!-- DOCUMENTOS ASSOCIADOS -->
+        <div class="px-3 pt-1 pb-3 text-sm text-gray-600">
+
+          <div class="flex items-center gap-3 whitespace-nowrap overflow-hidden">
+
+            <span class="italic text-gray-500 shrink-0">
+              Documento(s) Associado(s):
+            </span>
+
+            ${documentosHtml}
+
+          </div>
+
+        </div>
+      `;
+    };
 
   modelos.forEach(modelo => {
     listaModelos.insertAdjacentHTML(
@@ -267,7 +331,12 @@ function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo 
 
   configurarBotoesModelo();
 
-  normas.forEach(n  => listaNormas.insertAdjacentHTML("beforeend", criarLinha(n)));
+  normas.forEach(norma => {
+    listaNormas.insertAdjacentHTML(
+      "beforeend",
+      criarLinhaNorma(norma)
+    );
+  });
 
   tituloElem.textContent = `Documentos Associados ao ${tipo} ${nomeProcesso}`;
 
