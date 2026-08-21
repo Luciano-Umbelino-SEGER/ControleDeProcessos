@@ -23,20 +23,22 @@
 
       <!-- MODELO DE PROCESSO -->
       <div>
-        <h4 id="titulo-modelos" class="text-sm font-semibold text-blue-800 mb-2">
+        <h4 id="titulo-modelos"
+            class="text-sm font-semibold text-blue-800 mb-2">
           Modelo de Processo
         </h4>
 
-        <!-- Cabeçalho das colunas (mantém) -->
-        <div class="grid grid-cols-[2.6fr_40px_2.2fr_0.8fr_2.6fr_1.4fr]
-                    text-sm font-semibold text-blue-600 px-3 pb-0.5">
-          <span>Título</span><span></span><span>Tema</span>
-          <span>Versão</span><span>Emitente</span><span>Início de Vigência</span>
+        <!-- Cabeçalho -->
+        <div class="text-sm font-semibold text-blue-600 px-3 pb-0.5">
+          Documento(s) Associado(s)
         </div>
+
         <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
 
-        <!-- 🔽 AQUI entra a lista dinâmica -->
-        <div id="lista-modelos" class="space-y-1"></div>
+        <!-- Lista dinâmica -->
+        <div id="lista-modelos"
+             class="px-3 py-1 flex flex-wrap items-center gap-x-6 gap-y-2">
+        </div>
       </div>
 
       <div class="border-t-2 border-[#0097A7] mt-10 mb-14"></div>
@@ -77,8 +79,66 @@
   </div>
 </div>
 
+
+
 <!-- Script de controle do modal -->
 <script>
+function criarLinhaModelo(documento) {
+  if (!documento) return "";
+
+  const icone = documento.tipo === "url" ? "🔗" : "📄";
+
+  const url = encodeURIComponent(documento.url || "");
+  const nome = encodeURIComponent(documento.displayname || "");
+
+  return `
+    <div class="flex items-center gap-1.5 text-sm text-gray-900
+                min-w-0">
+
+      <span class="shrink-0">${icone}</span>
+
+      <span class="truncate font-medium"
+            title="${documento.displayname || ""}">
+        ${documento.displayname || ""}
+      </span>
+
+      <button
+        type="button"
+        class="botao-visualizar-modelo text-blue-600 hover:text-blue-800
+               ml-1 shrink-0 transition"
+        data-url="${url}"
+        data-nome="${nome}"
+        title="Visualizar Documento">
+
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </button>
+
+    </div>
+  `;
+}
+
+function configurarBotoesModelo() {
+  document
+    .querySelectorAll(".botao-visualizar-modelo")
+    .forEach(botao => {
+
+      botao.addEventListener("click", function () {
+
+        const url = decodeURIComponent(this.dataset.url || "");
+        const nome = decodeURIComponent(this.dataset.nome || "");
+
+        abrirModalDocumento(url, nome);
+      });
+
+    });
+}
+
 function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo = "Processo") {
   const modal        = document.getElementById('modalListaDocumentos');
   const conteudo     = document.getElementById('conteudoModalLista');
@@ -101,7 +161,8 @@ function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo 
   listaNormas.innerHTML  = "";
 
   if (tituloModelos) {
-    tituloModelos.textContent = `Modelo de Processo (${modelos.length})`;
+    tituloModelos.textContent =
+      `Modelo de Processo — ${nomeProcesso} (${modelos.length})`;
   }
 
   if (tituloNormas) {
@@ -197,7 +258,15 @@ function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo 
     `;
   };
 
-  modelos.forEach(m => listaModelos.insertAdjacentHTML("beforeend", criarLinha(m)));
+  modelos.forEach(modelo => {
+    listaModelos.insertAdjacentHTML(
+      "beforeend",
+      criarLinhaModelo(modelo)
+    );
+  });
+
+  configurarBotoesModelo();
+
   normas.forEach(n  => listaNormas.insertAdjacentHTML("beforeend", criarLinha(n)));
 
   tituloElem.textContent = `Documentos Associados ao ${tipo} ${nomeProcesso}`;

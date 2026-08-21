@@ -528,33 +528,32 @@ class ArquiteruraProcessos(ListView):
 
         # =====================================================
         # DOCUMENTO MODELO DO PROCESSO
+        # Pode existir PDF, URL externa ou ambos
         # =====================================================
-        modelo = None
 
+        # PDF
         if processo.documento_modelo_processo:
-
             nome_pdf = os.path.basename(
                 processo.documento_modelo_processo.name
             )
 
-            modelo = {
+            modelos.append({
                 "displayname": nome_pdf,
                 "url": processo.documento_modelo_processo.url,
-            }
+                "tipo": "pdf",
+            })
 
-        elif processo.link_documento_modelo_processo:
-
+        # URL externa
+        if processo.link_documento_modelo_processo:
             nome_link = os.path.basename(
                 unquote(processo.link_documento_modelo_processo)
             )
 
-            modelo = {
+            modelos.append({
                 "displayname": nome_link,
                 "url": processo.link_documento_modelo_processo,
-            }
-
-        if modelo:
-            modelos.append(modelo)
+                "tipo": "url",
+            })
 
         # =====================================================
         # NORMAS DE PROCEDIMENTO
@@ -615,16 +614,17 @@ class ArquiteruraProcessos(ListView):
         req = self.request.GET
 
         nome = req.get("nome", "").strip()
+        abrangencia = req.get("abrangencia", "").strip()
         classificacao = req.get("classificacao", "").strip()
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
 
-        cri_de = parse_date(req.get("criacao_de"))
-        cri_ate = parse_date(req.get("criacao_ate"))
+        elab_de = parse_date(req.get("elaboracao_de"))
+        elab_ate = parse_date(req.get("elaboracao_ate"))
 
         # 🔥 Validação antes
-        if cri_de and cri_ate and cri_ate < cri_de:
+        if elab_de and elab_ate and elab_ate < elab_de:
             messages.error(self.request, "A data final deve ser maior ou igual à data inicial.")
             return Processo.objects.none()
 
@@ -650,6 +650,9 @@ class ArquiteruraProcessos(ListView):
         if nome:
             qs = qs.filter(nome__icontains=nome)
 
+        if abrangencia:
+            qs = qs.filter(abrangencia=abrangencia)
+
         if classificacao:
             qs = qs.filter(classificacao_id=classificacao)
 
@@ -662,12 +665,12 @@ class ArquiteruraProcessos(ListView):
         if area:
             qs = qs.filter(area_responsavel__ativo=True, area_responsavel__nome_area__icontains=area)
 
-        if cri_de:
-            qs = qs.filter(data_criacao__gte=cri_de)
+        if elab_de:
+            qs = qs.filter(data_elaboracao__gte=elab_de)
 
-        if cri_ate:
-            fim_do_dia = datetime.combine(cri_ate, time.max)
-            qs = qs.filter(data_criacao__lte=fim_do_dia)
+        if elab_ate:
+            fim_do_dia = datetime.combine(elab_ate, time.max)
+            qs = qs.filter(data_elaboracao__lte=fim_do_dia)
 
         return qs
 

@@ -36,6 +36,22 @@
                      value="{{ request.GET.nome }}">
             </div>
 
+            <!-- Abrangência -->
+            <div class="flex flex-col">
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Abrangência</label>
+              <select name="abrangencia"
+                      class="w-24 px-2 py-1.5 border border-gray-300 rounded-md bg-white
+                             focus:ring-2 focus:ring-blue-500
+                             {% if request.GET.abrangencia %}text-black{% else %}text-gray-400{% endif %}">
+
+                <option value="">Todas</option>
+                <option value="GOVES" {% if request.GET.abrangencia == "GOVES" %}selected{% endif %}>GOVES</option>
+                <option value="SEGER" {% if request.GET.abrangencia == "SEGER" %}selected{% endif %}>SEGER</option>
+                <option value="OUTROS" {% if request.GET.abrangencia == "OUTROS" %}selected{% endif %}>OUTROS</option>
+
+              </select>
+            </div>
+
             <!-- Classificação -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">Classificação</label>
@@ -81,8 +97,8 @@
 
             <!-- Datas -->
             <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação De</label>
-              <input name="criacao_de"
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Elaboração De</label>
+              <input name="elaboracao_de"
                      type="text"
                      placeholder="dd/mm/aaaa"
                      onfocus="
@@ -99,12 +115,12 @@
                      "
                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500 text-gray-400"
-                     value="{{ request.GET.criacao_de }}">
+                     value="{{ request.GET.elaboracao_de }}">
             </div>
 
             <div class="flex flex-col">
-              <label class="text-sm font-semibold text-blue-800 mb-0.5">Criação Até</label>
-              <input name="criacao_ate"
+              <label class="text-sm font-semibold text-blue-800 mb-0.5">Elaboração Até</label>
+              <input name="elaboracao_ate"
                      type="text"
                      placeholder="dd/mm/aaaa"
                      onfocus="
@@ -121,7 +137,7 @@
                      "
                      class="w-32 px-2 py-1.5 border border-gray-300 rounded-md
                             focus:ring-2 focus:ring-blue-500 text-gray-400"
-                     value="{{ request.GET.criacao_ate }}">
+                     value="{{ request.GET.elaboracao_ate }}">
             </div>
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">
@@ -168,15 +184,16 @@
         <thead class="bg-blue-100 text-blue-800">
           <tr>
             <th class="py-3 px-3 text-left w-[15%]">Processo / Subprocesso</th>
-            <th class="py-3 px-2 text-left w-[14%]">Objetivo</th>
-            <th class="py-3 px-2 text-left w-[8%]">Classificação</th>
-            <th class="py-3 px-2 text-left w-[10%]">Macro N1</th>
-            <th class="py-3 px-2 text-left w-[10%]">Macro N2</th>
+            <th class="py-3 px-2 text-left w-[5%]">Abrangência</th>
+            <th class="py-3 px-2 text-left w-[15%]">Objetivo</th>
+            <th class="py-3 px-2 text-left w-[7%]">Classificação</th>
+            <th class="py-3 px-2 text-left w-[9%]">Macro N1</th>
+            <th class="py-3 px-2 text-left w-[9%]">Macro N2</th>
             <th class="py-3 px-2 text-left w-[8%]">Área Responsável</th>
             <th class="py-3 px-2 text-left w-[8%]">Gestor</th>
-            <th class="py-3 px-2 text-left w-[7%]">Telefone</th>
-            <th class="py-3 px-2 text-center w-[5%]">Versão</th>
-            <th class="py-3 px-2 text-center w-[6%]">Criado em</th>
+            <th class="py-3 px-2 text-left w-[6%]">Telefone</th>
+            <th class="py-3 px-2 text-center w-[4%]">Versão</th>
+            <th class="py-3 px-2 text-center w-[5%]">Elaboração</th>
             <th class="py-3 px-2 text-center w-[6%]">Documentos</th>
           </tr>
         </thead>
@@ -197,8 +214,15 @@
                 <td class="py-3 px-3 font-semibold text-blue-800 text-[0.8rem] leading-snug">
                   {{ processo.nome }}
                   {% if processo.parent %}
-                    <div class="text-xs text-blue-500 text-blue-800 text-[0.8rem] leading-snug">Subprocesso de {{ processo.parent.nome }}</div>
+                    <div class="text-xs text-blue-500 text-blue-800 text-[0.8rem] leading-snug">
+                      Subprocesso de {{ processo.parent.nome }}
+                    </div>
                   {% endif %}
+                </td>
+
+                <!-- Abrangência -->
+                <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">
+                  {{ processo.abrangencia }}
                 </td>
 
                 <!-- Objetivo -->
@@ -224,8 +248,8 @@
                   {% endif %}
                 </td>
                 <td class="py-3 px-2 text-center text-blue-600 text-[0.8rem]">
-                  {% if processo.data_criacao %}
-                    {{ processo.data_criacao|date:"d/m/Y" }}
+                  {% if processo.data_elaboracao %}
+                    {{ processo.data_elaboracao|date:"d/m/Y" }}
                   {% else %}
                     —
                   {% endif %}
@@ -303,6 +327,11 @@
                   <td class="py-3 px-3 text-blue-600">
                     <span class="ml-5 block">{{ sub.nome }}</span>
                   </td>
+
+                  <td class="py-3 px-2 text-blue-600 text-[0.8rem] leading-snug">
+                    {{ sub.abrangencia }}
+                  </td>
+
                   <td class="py-3 px-2 text-blue-600">
                     <span
                       class="objetivo-truncate"
@@ -325,8 +354,8 @@
                     {% endif %}
                   </td>
                   <td class="py-3 px-2 text-center text-blue-600 text-[0.8rem]">
-                    {% if sub.data_criacao %}
-                      {{ sub.data_criacao|date:"d/m/Y" }}
+                    {% if sub.data_elaboracao %}
+                      {{ sub.data_elaboracao|date:"d/m/Y" }}
                     {% else %}
                       —
                     {% endif %}
@@ -384,12 +413,10 @@
 
           {% empty %}
             <tr>
-              <td colspan="11" class="py-4 text-center text-gray-500">Nenhum processo encontrado.</td>
+              <td colspan="12" class="py-4 text-center text-gray-500">Nenhum processo encontrado.</td>
             </tr>
           {% endfor %}
-
         </tbody>
-
       </table>
       </div>
 
