@@ -289,15 +289,13 @@
                       </button>
 
                     {% else %}
-                      <div class="flex justify-center items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed w-full">
-
+                      <div class="pasta-vazia-container flex justify-center items-center gap-1 px-2 py-1 cursor-not-allowed w-full">
                         <img
                           src="{% static 'images/icones/pasta-fechada.png' %}"
                           class="pasta-icon pasta-vazia"
                           alt="Nenhum documento">
 
-
-                        <span class="text-blue-700 font-medium">(0)</span>
+                        <span class="text-blue-700 font-medium">({{ cnt }})</span>
                       </div>
                     {% endif %}
                   {% endwith %}
@@ -395,8 +393,7 @@
                         </button>
 
                       {% else %}
-                        <div class="flex justify-center items-center gap-1 px-2 py-1 opacity-40 cursor-not-allowed w-full">
-
+                        <div class="pasta-vazia-container flex justify-center items-center gap-1 px-2 py-1 cursor-not-allowed w-full">
                           <img
                             src="{% static 'images/icones/pasta-fechada.png' %}"
                             class="pasta-icon pasta-vazia"
@@ -495,15 +492,19 @@
   }
 
   .pasta-vazia {
-    filter: grayscale(15%) brightness(1.05);
-    transform: scale(1.30);
-    transform-origin: center;
+      transform: scale(1.31);
+      transform-origin: center;
+      transition: transform 0.25s ease;
+  }
+
+  .pasta-vazia-container:hover .pasta-vazia {
+      transform: scale(1.42);
   }
 
   /* Fonte base mais compacta para a tabela */
   .zebra-safe td {
     font-size: 0.8125rem;
-    line-height: 1.35;
+    line-height: 1.32;
   }
 
   /* Objetivo: limitar a 2 linhas com reticências */
