@@ -597,6 +597,11 @@ class ArquiteruraProcessos(ListView):
                     else ""
                 ),
                 "sistema": str(norma.sistema),
+                "elaboracao": (
+                    norma.data_elaboracao.strftime("%d/%m/%Y")
+                    if norma.data_elaboracao
+                    else ""
+                ),
                 "vigencia": (
                     norma.vigencia_inicio.strftime("%d/%m/%Y")
                     if norma.vigencia_inicio

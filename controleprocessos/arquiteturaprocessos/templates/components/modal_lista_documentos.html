@@ -55,15 +55,15 @@
         <!-- Linha superior -->
         <div class="border-t border-[#0097A7] mt-0.5 mb-2"></div>
 
-        <!-- Cabeçalho -->
-        <div class="grid grid-cols-[3fr_1.2fr_1.2fr_0.8fr_1.4fr]
-                    text-sm font-semibold text-blue-600
-                    px-3 pb-0.5">
+        <!-- Cabeçalho Norma de Procedimento-->
+       <div class="grid grid-cols-[3.25fr_2.75fr_1.35fr_0.65fr_0.95fr_0.95fr]
+            text-sm font-semibold text-blue-600 px-3 pb-0.5">
 
           <span>Nome da Norma</span>
           <span>Sistema</span>
           <span>Código</span>
           <span>Versão</span>
+          <span>Elaboração</span>
           <span>Vigência Início</span>
 
         </div>
@@ -267,23 +267,21 @@ function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo 
 
 
       return `
-        <!-- DADOS DA NORMA -->
-        <div class="grid grid-cols-[3fr_1.2fr_1.2fr_0.8fr_1.4fr]
-                    items-center
-                    px-3
-                    pt-2
-                    text-sm
-                    text-gray-900">
+      <!-- DADOS DA NORMA -->
+        <div class="grid grid-cols-[3.25fr_2.75fr_1.35fr_0.65fr_0.95fr_0.95fr]
+            items-center pt-2 text-sm text-gray-900">
 
           <!-- Nome da Norma -->
           <span
-            class="truncate font-medium"
+            class="truncate font-medium pr-4"
             title="${norma.titulo || "-"}">
             ${norma.titulo || "-"}
           </span>
 
           <!-- Sistema -->
-          <span class="truncate">
+          <span
+            class="truncate"
+            title="${norma.sistema || "-"}">
             ${norma.sistema || "-"}
           </span>
 
@@ -297,16 +295,19 @@ function abrirModalListaDocumentosPorArrays(modelos, normas, nomeProcesso, tipo 
             ${norma.versao || "-"}
           </span>
 
+          <!-- Elaboração -->
+          <span>
+            ${norma.elaboracao || "-"}
+          </span>
+
           <!-- Vigência Início -->
           <span>
             ${norma.vigencia || "-"}
           </span>
-
         </div>
 
-
         <!-- DOCUMENTOS ASSOCIADOS -->
-        <div class="px-3 pt-1 pb-3 text-sm text-gray-600">
+        <div class="pl-4 pt-2 pb-3 text-sm text-gray-600">
 
           <div class="flex items-center gap-3 whitespace-nowrap overflow-hidden">
 
