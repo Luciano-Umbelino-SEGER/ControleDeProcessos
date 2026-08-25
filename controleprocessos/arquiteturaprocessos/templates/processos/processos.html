@@ -281,9 +281,8 @@
             </td>
           </tr>
 
-
           <!-- SUBPROCESSOS -->
-          {% for sub in processo.subprocessos.all|dictsort:"id" %}
+          {% for sub in processo.subprocessos.all %}
             {% with pos=forloop.parentloop.counter0|add:forloop.counter0 %}
             <tr class="subprocesso-{{ processo.id }} hidden text-blue-500 hover:bg-blue-100 transition-colors
                       {% if pos|divisibleby:2 %}bg-blue-50{% else %}bg-white{% endif %}">

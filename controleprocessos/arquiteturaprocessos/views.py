@@ -23,7 +23,7 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q, Max, Exists, OuterRef, Count
+from django.db.models import Q, Max, Exists, OuterRef, Count, Prefetch
 from calendar import month_abbr
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
@@ -4269,13 +4269,22 @@ class ProcessoView(LoginRequiredMixin, ListView):
             )
             .prefetch_related(
                 "documentos",
-                "subprocessos",
-                "subprocessos__classificacao",
-                "subprocessos__macroprocesso_nivel1",
-                "subprocessos__macroprocesso_nivel2",
-                "subprocessos__area_responsavel",
+                Prefetch(
+                    "subprocessos",
+                    queryset=Processo.objects
+                    .select_related(
+                        "classificacao",
+                        "macroprocesso_nivel1",
+                        "macroprocesso_nivel2",
+                        "area_responsavel",
+                    )
+                    .prefetch_related(
+                        "documentos",
+                    )
+                    .order_by("-data_criacao", "-id"),
+                ),
             )
-            .order_by("id")
+            .order_by("-data_criacao", "-id")
         )
 
         # --------------------
