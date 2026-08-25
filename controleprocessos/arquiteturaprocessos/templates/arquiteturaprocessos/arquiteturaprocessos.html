@@ -313,7 +313,7 @@
               ======================================================
               {% endcomment %}
 
-              {% for sub in processo.subprocessos.all|dictsort:"id" %}
+              {% for sub in processo.subprocessos_exibicao %}
 
                 {{ sub.docs_modelos|json_script:"modelos-sub-"|add:sub.id }}
                 {{ sub.docs_normas|json_script:"normas-sub-"|add:sub.id }}

@@ -11,6 +11,7 @@ from arquiteturaprocessos.models import (ContatoAreaSeger, Usuario, Processo, Pr
                                          MacroprocessoNivel1, MacroprocessoNivel2,)
 from auditoria.models import LogAcaoSistema
 from arquiteturaprocessos.exports.registry import (register_export,)
+from arquiteturaprocessos.utils.documentos import contar_documentos_associados
 
 # -----------------------------------------------------#
 # Exportação da Listagem de Áreas Responsáveis         #
@@ -370,6 +371,7 @@ class ArquiteturaProcessosExportConfig:
 
     headers = [
         'Processo / Subprocesso',
+        'Abrangência',
         'Objetivo',
         'Classificação',
         'Macro N1',
@@ -378,25 +380,26 @@ class ArquiteturaProcessosExportConfig:
         'Gestor',
         'Telefone',
         'Versão',
-        'Criado em',
-        'Documentos Associados',
+        'Elaboração',
+        'Documentos',
     ]
 
     pdf_col_widths = [
-        120,  # Processo/Subprocesso
-        110,  # Objetivo
-        60,   # Classificação
-        80,   # Macro N1
-        80,   # Macro N2
-        67,   # Área
-        67,   # Gestor
-        64,   # Telefone
-        35,   # Versão
-        53,   # Criado em
-        47,   # Docs
+        105,  # Processo/Subprocesso
+        50,  # Abrangência
+        100,  # Objetivo
+        60,  # Classificação
+        70,  # Macro N1
+        70,  # Macro N2
+        65,  # Área
+        65,  # Gestor
+        60,  # Telefone
+        35,  # Versão
+        45,  # Elaboração
+        50,  # Docs
     ]
 
-    pdf_center_columns = [8, 9, 10]
+    pdf_center_columns = [9, 10, 11]
 
     # -------------------------------------------------
     # Queryset
@@ -406,19 +409,20 @@ class ArquiteturaProcessosExportConfig:
         req = request.GET
 
         nome = req.get("nome", "").strip()
+        abrangencia = req.get("abrangencia", "").strip()
         classificacao = req.get("classificacao", "").strip()
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
 
-        cri_de_raw = req.get("criacao_de")
-        cri_ate_raw = req.get("criacao_ate")
+        elab_de_raw = req.get("elaboracao_de")
+        elab_ate_raw = req.get("elaboracao_ate")
 
-        cri_de = parse_date(cri_de_raw) if cri_de_raw else None
-        cri_ate = parse_date(cri_ate_raw) if cri_ate_raw else None
+        elab_de = parse_date(elab_de_raw) if elab_de_raw else None
+        elab_ate = parse_date(elab_ate_raw) if elab_ate_raw else None
 
         # 🔥 Validação
-        if cri_de and cri_ate and cri_ate < cri_de:
+        if elab_de and elab_ate and elab_ate < elab_de:
             return Processo.objects.none()
 
         qs = (
@@ -433,7 +437,7 @@ class ArquiteturaProcessosExportConfig:
             .prefetch_related(
                 "subprocessos",
             )
-            .order_by("id")
+            .order_by("-data_criacao", "-id")
         )
 
         # --------------------
@@ -441,6 +445,9 @@ class ArquiteturaProcessosExportConfig:
         # --------------------
         if nome:
             qs = qs.filter(nome__icontains=nome)
+
+        if abrangencia:
+            qs = qs.filter(abrangencia=abrangencia)
 
         if classificacao:
             qs = qs.filter(classificacao_id=classificacao)
@@ -460,17 +467,17 @@ class ArquiteturaProcessosExportConfig:
                 area_responsavel__nome_area__icontains=area
             )
 
-        if cri_de:
-            qs = qs.filter(data_criacao__gte=cri_de)
+        if elab_de:
+            qs = qs.filter(data_elaboracao__gte=elab_de)
 
-        if cri_ate:
+        if elab_ate:
             fim_do_dia = datetime.combine(
-                cri_ate,
+                elab_ate,
                 time.max
             )
 
             qs = qs.filter(
-                data_criacao__lte=fim_do_dia
+                data_elaboracao__lte=fim_do_dia
             )
 
         return qs
@@ -488,19 +495,21 @@ class ArquiteturaProcessosExportConfig:
             else obj.nome
         )
 
-        docs_count = obj.documentos.count()
+        # -------------------------------------------------
+        # Documentos associados
+        # Mesma regra utilizada pela ListView
+        # -------------------------------------------------
+        docs_count = contar_documentos_associados(obj)
 
         # -------------------------------------------------
         # Blindagem contra FK órfã
         # -------------------------------------------------
-
         try:
             macro_n1 = (
                 obj.macroprocesso_nivel1.nome
                 if obj.macroprocesso_nivel1
                 else '----'
             )
-
         except Exception:
             macro_n1 = '----'
 
@@ -538,6 +547,8 @@ class ArquiteturaProcessosExportConfig:
 
             nome or '----',
 
+            obj.abrangencia or '----',
+
             obj.objetivo or '----',
 
             classificacao,
@@ -563,8 +574,8 @@ class ArquiteturaProcessosExportConfig:
             ),
 
             (
-                obj.data_criacao.strftime('%d/%m/%Y')
-                if obj.data_criacao
+                obj.data_elaboracao.strftime('%d/%m/%Y')
+                if obj.data_elaboracao
                 else '----'
             ),
 
@@ -584,7 +595,7 @@ class ArquiteturaProcessosExportConfig:
         )
 
         # Subprocessos
-        for sub in obj.subprocessos.all():
+        for sub in obj.subprocessos.all().order_by("-data_criacao", "-id"):
 
             linhas.append(
                 self.build_row(

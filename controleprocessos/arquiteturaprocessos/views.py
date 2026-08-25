@@ -39,6 +39,7 @@ from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_s
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
 from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
+from arquiteturaprocessos.utils.documentos import contar_documentos_associados
 from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, xlsx_exporter, pdf_exporter,)
 
 from .models import (
@@ -618,8 +619,6 @@ class ArquiteruraProcessos(ListView):
     # -----------------------------------------
     # Query principal
     # -----------------------------------------
-    from datetime import datetime, time
-
     def get_queryset(self):
         req = self.request.GET
 
@@ -652,6 +651,7 @@ class ArquiteruraProcessos(ListView):
                 "documentos__norma_procedimento",
                 "subprocessos__documentos__norma_procedimento",
             )
+            .order_by("-data_criacao", "-id")
         )
 
         # --------------------
@@ -713,20 +713,31 @@ class ArquiteruraProcessos(ListView):
 
             proc.docs_modelos = docs["modelos"]
             proc.docs_normas = docs["normas"]
-            proc.docs_count = len(docs["modelos"]) + len(docs["normas"])
+            proc.docs_count = contar_documentos_associados(proc)
 
             documentos_por_processo[str(proc.id)] = {
                 "modelos": docs["modelos"],
                 "normas": docs["normas"],
             }
 
-            # -------- SUBPROCESSOS --------
-            for sub in proc.subprocessos.all():
+            # -------------------------------------------------
+            # SUBPROCESSOS
+            # Mantém as mesmas instâncias preparadas pela View
+            # para uso no template.
+            # -------------------------------------------------
+            proc.subprocessos_exibicao = []
+
+            for sub in proc.subprocessos.all().order_by(
+                    "-data_criacao",
+                    "-id"
+            ):
                 sub_docs = self.montar_docs(sub)
 
                 sub.docs_modelos = sub_docs["modelos"]
                 sub.docs_normas = sub_docs["normas"]
-                sub.docs_count = len(sub_docs["modelos"]) + len(sub_docs["normas"])
+                sub.docs_count = contar_documentos_associados(sub)
+
+                proc.subprocessos_exibicao.append(sub)
 
                 documentos_por_processo[str(sub.id)] = {
                     "modelos": sub_docs["modelos"],
