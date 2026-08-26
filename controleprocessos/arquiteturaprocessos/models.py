@@ -119,6 +119,12 @@ class Usuario(AbstractUser):
 class Classificacao(models.Model):
     nome = models.CharField(max_length=100)
     descricao = models.TextField()
+    imagem = models.ImageField(
+        upload_to="classificacoes/",
+        max_length=500,
+        blank=True,
+        null=True,
+    )
 
     def __str__(self):
         return self.nome

@@ -1,129 +1,284 @@
-
 {% extends 'base.html' %}
 {% load static form_tags %}
 
 {% block titulo %}
     {% if modo_visualizacao %}
-        Visualização de Classificação
+        Visualização de Classificação de Macroprocessos
     {% elif modo_edicao %}
-        Edição de Classificação
+        Edição de Classificação de Macroprocessos
     {% elif modo_exclusao %}
-        Exclusão de Classificação
+        Exclusão de Classificação de Macroprocessos
     {% else %}
-        Inclusão de Classificação
+        Inclusão de Classificação de Macroprocessos
     {% endif %}
 {% endblock %}
 
 {% block body %}
-<div class="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4">
-<div class="w-full max-w-6xl bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-<h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
-    {% if modo_visualizacao %}
-        Visualização de Classificação
-    {% elif modo_edicao %}
-        Edição de Classificação
-    {% elif modo_exclusao %}
-        Exclusão de Classificação
-    {% else %}
-        Inclusão de Classificação
-    {% endif %}
-</h2>
 
-{% if form.non_field_errors %}
-    <div class="text-red-600 mb-4">
-        {{ form.non_field_errors }}
-    </div>
-{% endif %}
+    <div class="max-w-6xl mx-auto mt-[96px] bg-blue-50 border-2 border-blue-800 rounded-lg p-8 shadow-md">
 
-<form method="post" id="form-exclusao">
-    {% csrf_token %}
-    <div class="grid grid-cols-1 gap-6">
-        {% for field in form %}
-            <div>
-                <label class="block text-sm font-semibold text-blue-800 mb-1">
-                    {{ field.label }}
-                </label>
-
-                {% if field.name == "descricao" %}
-                    <div x-data="{ count: 0, max: 3000 }" class="relative">
-
-                        {{ field|add_attr:"@input:count = $event.target.value.length"|add_attr:"maxlength:3000" }}
-
-                        <div class="text-sm mt-1 text-right"
-                             x-init="count = $el.previousElementSibling.value.length"
-                             :class="{
-                                'text-gray-500': count < 2800,
-                                'text-yellow-600': count >= 2800 && count < max,
-                                'text-red-600': count >= max
-                             }">
-                            <span x-text="count"></span> / 3000
-                        </div>
-                    </div>
-                {% else %}
-                    {{ field }}
-                {% endif %}
-
-                {% if field.errors %}
-                    <p class="text-red-500 text-sm mt-1">
-                        {{ field.errors|striptags }}
-                    </p>
-                {% endif %}
-            </div>
-        {% endfor %}
-    </div>
-    <div class="flex justify-end mt-8 space-x-4">
-        {% if not modo_visualizacao %}
-            {% if modo_exclusao %}
-                <button
-                    type="button"
-                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                    @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:excluir_classificacao' classificacao.id %}',
-                        mensagem: 'Confirma a exclusão da classificação <strong>{{ classificacao.nome }}</strong>?'
-                    })">
-                    Confirmar Exclusão
-                </button>
-
+        <!-- ===================================================== -->
+        <!-- TÍTULO -->
+        <!-- ===================================================== -->
+        <h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
+            {% if modo_visualizacao %}
+                Visualização de Classificação de Macroprocessos
             {% elif modo_edicao %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-                    Salvar Alterações
-                </button>
+                Edição de Classificação de Macroprocessos
+            {% elif modo_exclusao %}
+                Exclusão de Classificação de Macroprocessos
             {% else %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
-                    Adicionar Classificação
-                </button>
+                Inclusão de Classificação de Macroprocessos
             {% endif %}
+        </h2>
+
+        {% if form.non_field_errors %}
+            <div class="text-red-600 mb-4">
+                {{ form.non_field_errors }}
+            </div>
         {% endif %}
 
-        <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition" href="{% url 'arquiteturaprocessos:classificacoes' %}">
-            {% if modo_visualizacao %}
-                Voltar
-            {% else %}
-                Cancelar
-            {% endif %}
-        </a>
+        <form method="post" id="form-exclusao" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- ================================================= -->
+            <!-- ÁREA PRINCIPAL -->
+            <!-- ================================================= -->
+            <div class="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8 items-start">
+
+                <!-- ========================================================= -->
+                <!-- IMAGEM                                                     -->
+                <!-- ========================================================= -->
+                <div>
+                    <label class="block text-sm font-medium text-blue-700 mb-1">
+                        Imagem
+                    </label>
+
+                    <div id="imagem-dropzone"
+                         class="relative w-full h-[205px] border-2 border-dashed border-blue-300 rounded-lg bg-white
+                                flex items-center justify-center overflow-hidden cursor-pointer transition duration-200
+                                hover:border-blue-500 hover:bg-blue-50">
+
+                        <!-- CAMPO REAL DO DJANGO -->
+                        {{ form.imagem|add_attr:"class:hidden" }}
+
+                        <!-- PREVIEW DA IMAGEM -->
+                        <div id="imagem-preview"
+                             class="{% if not form.instance.imagem %}hidden{% endif %}
+                                    absolute inset-0 flex items-center justify-center bg-white">
+
+                            {% if form.instance.imagem %}
+                                <img src="{{ form.instance.imagem.url }}"
+                                     alt="{{ form.instance.nome }}"
+                                     class="max-h-full max-w-full object-contain p-2">
+                            {% endif %}
+                        </div>
+
+                        <!-- PLACEHOLDER -->
+                        <div id="imagem-placeholder"
+                             class="{% if form.instance.imagem %}hidden{% endif %}
+                                    text-center px-4">
+
+                            <div class="text-blue-500 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="mx-auto h-8 w-8"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="1.5">
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M3 16.5l4.5-4.5a2.121 2.121 0 013 0l3 3m0 0l1.5-1.5a2.121 2.121 0 013 0L21 15m-9-9h.01M5.25
+                                           21h13.5A2.25 2.25 0 0021 18.75V5.25A2.25
+                                           2.25 0 0018.75 3H5.25A2.25 2.25
+                                           0 003 5.25v13.5A2.25 2.25 0 005.25 21z"/>
+                                </svg>
+                            </div>
+
+                            <p class="text-sm font-semibold text-blue-800">
+                                Arraste uma imagem aqui
+                            </p>
+
+                            <p class="text-sm text-gray-500 mt-1">
+                                ou clique para selecionar
+                            </p>
+
+                            <div class="text-xs text-gray-500 mt-2 leading-tight text-left">
+
+                                <div class="flex items-baseline">
+                                    <span class="font-semibold whitespace-nowrap mr-2">
+                                        Arquivos:
+                                    </span>
+                                    <span class="whitespace-nowrap">
+                                        JPG, JPEG, PNG ou WEBP
+                                    </span>
+                                </div>
+
+                                <div class="flex items-baseline mt-2">
+                                    <span class="font-semibold whitespace-nowrap mr-2">
+                                        Tamanho:
+                                    </span>
+                                    <span>
+                                        2 MB
+                                    </span>
+                                </div>
+
+                                <div class="flex items-baseline mt-2">
+                                    <span class="font-semibold whitespace-nowrap mr-2">
+                                        Dimensões:
+                                    </span>
+                                    <span class="whitespace-nowrap">
+                                        2000 × 2000 px
+                                    </span>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ERRO DE VALIDAÇÃO DA IMAGEM -->
+                    <p id="imagem-error"
+                       class="hidden text-red-500 text-sm mt-1">
+                    </p>
+
+                    <!-- ERROS DA IMAGEM -->
+                    {% if form.imagem.errors %}
+                        <p class="text-red-500 text-sm mt-1">
+                            {{ form.imagem.errors|striptags }}
+                        </p>
+                    {% endif %}
+                </div>
+
+                <!-- ============================================= -->
+                <!-- CAMPOS -->
+                <!-- ============================================= -->
+                <div class="space-y-6">
+                    <!-- ========================================= -->
+                    <!-- NOME -->
+                    <!-- ========================================= -->
+                    <div>
+                        <label for="{{ form.nome.id_for_label }}" class="block text-sm font-semibold text-blue-800 mb-1">
+                            {{ form.nome.label }}
+                        </label>
+                        {{ form.nome }}
+
+                        {% if form.nome.errors %}
+                            <p class="text-red-500 text-sm mt-1">
+                                {{ form.nome.errors|striptags }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- ========================================= -->
+                    <!-- DESCRIÇÃO -->
+                    <!-- ========================================= -->
+                    <div>
+                        <label for="{{ form.descricao.id_for_label }}"
+                               class="block text-sm font-semibold text-blue-800 mb-1">
+                            {{ form.descricao.label }}
+                        </label>
+
+                        <div x-data="{ count: 0, max: 3000 }" class="relative">
+                            {{ form.descricao|add_attr:"@input:count = $event.target.value.length"|add_attr:"maxlength:3000" }}
+
+                            <div class="text-sm mt-1 text-right"
+                                 x-init="count = $el.previousElementSibling.value.length"
+                                 :class="{
+                                     'text-gray-500': count < 2800,
+                                     'text-yellow-600': count >= 2800 && count < max,
+                                     'text-red-600': count >= max}">
+                                <span x-text="count"></span> / 3000
+                            </div>
+                        </div>
+
+                        {% if form.descricao.errors %}
+                            <p class="text-red-500 text-sm mt-1">
+                                {{ form.descricao.errors|striptags }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- BOTÕES -->
+            <!-- ================================================= -->
+            <div class="flex justify-end mt-8 space-x-4">
+                {% if not modo_visualizacao %}
+                    {% if modo_exclusao %}
+                        <button
+                            type="button"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            @click="$dispatch('abrir-modal-confirmacao', {
+                                url: '{% url 'arquiteturaprocessos:excluir_classificacao' classificacao.id %}',
+                                mensagem: 'Confirma a exclusão da classificação <strong>{{ classificacao.nome }}</strong>?'})">
+                            Confirmar Exclusão
+                        </button>
+
+                    {% elif modo_edicao %}
+                        <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                            Salvar Alterações
+                        </button>
+                    {% else %}
+                        <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition" type="submit">
+                            Adicionar Classificação
+                        </button>
+                    {% endif %}
+                {% endif %}
+
+                <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+                    href="{% url 'arquiteturaprocessos:classificacoes' %}">
+                    {% if modo_visualizacao %}
+                        Voltar
+                    {% else %}
+                        Cancelar
+                    {% endif %}
+                </a>
+            </div>
+        </form>
     </div>
-</form>
-</div>
-</div>
 
 {% if modo_exclusao %}
-<!-- Modal de confirmação de exclusão -->
+<!-- ========================================================= -->
+<!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+<!-- ========================================================= -->
 <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-[400px] mx-auto border border-gray-300">
+
         <h2 class="text-xl font-semibold mb-4 text-black">
-            Confirma a exclusão da classificação {{ classificacao.nome }}?
+            Confirma a exclusão da classificação
+            {{ classificacao.nome }}?
         </h2>
+
         <div class="flex justify-center gap-4">
-            <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
-            <a href="{% url 'arquiteturaprocessos:classificacoes' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">Não</a>
+            <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                Sim
+            </button>
+
+            <a href="{% url 'arquiteturaprocessos:classificacoes' %}"
+               class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">
+                Não
+            </a>
         </div>
     </div>
 </div>
+
 <script>
     function abrirModalConfirmacao() {
-        document.getElementById('modal-confirmacao').classList.remove('hidden');
+        document
+            .getElementById('modal-confirmacao')
+            .classList.remove('hidden');
     }
 </script>
 {% endif %}
+
+<script src="{% static 'js/classificacao_macroprocesso.js' %}"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    initClassificacaoMacroprocessoImagem();
+});
+</script>
+
 {% endblock %}

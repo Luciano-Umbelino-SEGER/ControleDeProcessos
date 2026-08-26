@@ -284,13 +284,13 @@ TelefoneFormSet = inlineformset_factory(
 )
 
 # ============================================================
-# CLASSIFICAÇÃO / MACROPROCESSOS / PROCESSO
-# (mantive exatamente como na versão estável)
+# CLASSIFICAÇÃO DE  MACROPROCESSOS
 # ============================================================
 class Form_ClassificacaoForm(forms.ModelForm):
+
     class Meta:
         model = Classificacao
-        fields = ['nome', 'descricao']
+        fields = ['nome', 'descricao', 'imagem']
 
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
@@ -298,12 +298,29 @@ class Form_ClassificacaoForm(forms.ModelForm):
         modo_edicao = kwargs.pop('modo_edicao', False)
 
         super().__init__(*args, **kwargs)
+
+        # ====================================================
+        # DESCRIÇÃO
+        # ====================================================
         if "descricao" in self.fields:
             self.fields["descricao"].max_length = 3000
             self.fields["descricao"].widget.attrs["maxlength"] = 3000
             self.fields["descricao"].widget.attrs["rows"] = 4
 
+        # ====================================================
+        # IMAGEM
+        # ====================================================
+        if "imagem" in self.fields:
+            self.fields["imagem"].widget = forms.FileInput(
+                attrs={
+                    "id": "imagem",
+                    "accept": ".jpg,.jpeg,.png,.webp,"
+                              "image/jpeg,image/png,image/webp",
+                }
+            )
+
         self.label_suffix = ""
+
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
             "text-black placeholder-gray-500 "
@@ -311,21 +328,104 @@ class Form_ClassificacaoForm(forms.ModelForm):
         )
 
         for name, field in self.fields.items():
+
+            # A imagem possui uma área de upload própria no template.
+            if name == "imagem":
+                continue
+
             existing = field.widget.attrs.get("class", "")
-            bg_color = "bg-gray-100" if (modo_visualizacao or modo_exclusao) else "bg-white"
-            field.widget.attrs["class"] = f"{existing} {base} {bg_color}".strip()
-            field.widget.attrs.setdefault("placeholder", field.label)
+
+            bg_color = (
+                "bg-gray-100"
+                if (modo_visualizacao or modo_exclusao)
+                else "bg-white"
+            )
+
+            field.widget.attrs["class"] = (
+                f"{existing} {base} {bg_color}"
+            ).strip()
+
+            field.widget.attrs.setdefault(
+                "placeholder",
+                field.label
+            )
+
             field.widget.attrs["autocomplete"] = "off"
 
+        # ====================================================
+        # VISUALIZAÇÃO / EXCLUSÃO
+        # ====================================================
         if modo_visualizacao or modo_exclusao:
-            for field in self.fields.values():
+            for name, field in self.fields.items():
                 field.disabled = True
-                existing_classes = field.widget.attrs.get("class", "")
-                field.widget.attrs["class"] = f"{existing_classes} bg-gray-100".strip()
 
+                if name != "imagem":
+                    existing_classes = field.widget.attrs.get(
+                        "class", ""
+                    )
+
+                    field.widget.attrs["class"] = (
+                        f"{existing_classes} bg-gray-100"
+                    ).strip()
+
+        # ====================================================
+        # EXCLUSÃO
+        # ====================================================
         if modo_exclusao and self.instance:
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
+
+    # ========================================================
+    # VALIDAÇÃO DA IMAGEM
+    # ========================================================
+    def clean_imagem(self):
+        imagem = self.cleaned_data.get("imagem")
+
+        # Imagem é opcional
+        if not imagem:
+            return imagem
+
+        # ----------------------------------------------------
+        # TAMANHO MÁXIMO — 2 MB
+        # ----------------------------------------------------
+        tamanho_maximo = 2 * 1024 * 1024
+
+        if imagem.size > tamanho_maximo:
+            raise forms.ValidationError(
+                "A imagem não pode ultrapassar 2 MB."
+            )
+
+        # ----------------------------------------------------
+        # EXTENSÕES PERMITIDAS
+        # ----------------------------------------------------
+        extensoes_permitidas = {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+        }
+
+        nome_arquivo = imagem.name.lower()
+
+        if not any(
+            nome_arquivo.endswith(ext)
+            for ext in extensoes_permitidas
+        ):
+            raise forms.ValidationError(
+                "Arquivo não permitido. "
+                "Arquivos permitidos: JPG, JPEG, PNG ou WEBP."
+            )
+
+        # ----------------------------------------------------
+        # DIMENSÕES MÁXIMAS
+        # ----------------------------------------------------
+        if imagem.width > 2000 or imagem.height > 2000:
+            raise forms.ValidationError(
+                "As dimensões da imagem não podem "
+                "ultrapassar 2000 × 2000 pixels."
+            )
+
+        return imagem
 
 # ============================================================
 # MACROPROCESSO NIVEL 1
