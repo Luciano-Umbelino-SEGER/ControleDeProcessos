@@ -37,6 +37,8 @@
 
 <body x-data="{
     menuOpen: localStorage.getItem('gpp_sidebar_open') === 'true' || localStorage.getItem('gpp_sidebar_open') === null,
+
+    submenuCadeiaValor: false,
     submenuEstrutura: false,
     submenuEstatisticas: false,
     submenuProcessos: false,
@@ -54,6 +56,7 @@
 
         localStorage.setItem('gpp_sidebar_open', this.menuOpen)
 
+        this.submenuCadeiaValor = false
         this.submenuProcessos = false
         this.submenuEstrutura = false
         this.submenuEstatisticas = false
@@ -68,9 +71,8 @@
     {% include 'components/modal_confirmacao.html' %}
 
     <div class="flex flex-1">
-        {% if request.user.is_authenticated %}
-            {% include "components/layout/sidebar.html" %}
-        {% endif %}
+
+        {% include "components/layout/sidebar.html" %}
 
         <div x-show="menuOpen"
              x-transition.opacity

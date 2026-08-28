@@ -14,117 +14,178 @@ docs/MENU_SIGEMP.md
 
 =========================================================== -->
 <nav class="flex-1 px-2 py-4 space-y-2" role="menu">
+
     <!-- ===================================================== -->
     <!-- MÓDULO CADEIA DE VALOR -->
     <!-- ===================================================== -->
-    {% include "components/layout/sidebar_item.html" with title="Cadeia de Valor" icon="fa-image" disabled=True %}
+
+    {% if request.user.is_authenticated %}
+
+        <!-- Administrador: módulo expansível -->
+        <div>
+            {% include "components/layout/sidebar_group.html" with title="Cadeia de Valor" icon="fa-image" submenu="submenuCadeiaValor" %}
+
+            <div x-show="submenuCadeiaValor"
+                 x-transition
+                 class="ml-10 mt-0.5 space-y-0.5">
+
+                {% include "components/layout/sidebar_subitem.html" with href="#" title="Visualizar" icon="fa-eye" %}
+
+                {% include "components/layout/sidebar_subitem.html" with href="#" title="Imagens" icon="fa-image" %}
+
+                {% include "components/layout/sidebar_subitem.html" with href="#" title="Definições" icon="fa-file-lines" %}
+
+            </div>
+        </div>
+
+    {% else %}
+
+        <!-- Usuário público: acesso direto à Cadeia de Valor -->
+        {% include "components/layout/sidebar_item.html" with href="#" title="Cadeia de Valor" icon="fa-image" %}
+
+    {% endif %}
+
 
     <!-- ===================================================== -->
-    <!-- MÓDULO ARQUITETURA -->
+    <!-- CONSULTA PÚBLICA — ARQUITETURA DE PROCESSOS -->
     <!-- ===================================================== -->
+
     {% url 'arquiteturaprocessos:arquiteturaprocessos' as arquitetura_url %}
+
     {% include "components/layout/sidebar_item.html" with href=arquitetura_url title="Arquitetura de Processos" icon="fa-sitemap" %}
 
-    <!-- ===================================================== -->
-    <!-- MÓDULO PROCESSOS -->
-    <!-- ===================================================== -->
-    <div>
-        {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
-
-        <div x-show="submenuProcessos" x-transition class="ml-10 mt-0.5 space-y-0.5">
-            {% url 'arquiteturaprocessos:processos' as processos_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
-
-            {% url 'arquiteturaprocessos:processosmapear' as processos_mapear_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=processos_mapear_url title="A Mapear" icon="fa-list-check" %}
-        </div>
-    </div>
 
     <!-- ===================================================== -->
-    <!-- MÓDULO ESTATÍSTICAS -->
+    <!-- A PARTIR DAQUI: SOMENTE ADMINISTRADORES -->
     <!-- ===================================================== -->
-    <div>
-        {% include "components/layout/sidebar_group.html" with title="Estatísticas" icon="fa-chart-line" submenu="submenuEstatisticas"%}
 
-        <div x-show="submenuEstatisticas"  x-transition class="ml-10 mt-0.5 space-y-0.5">
-            {% url 'arquiteturaprocessos:estatisticas_dashboard' as estatisticas_dashboard_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=estatisticas_dashboard_url title="Dashboard" icon="fa-chart-pie" %}
+    {% if request.user.is_authenticated %}
 
-            {% url 'arquiteturaprocessos:estatisticaprocessos_mapear' as estatisticas_mapear_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=estatisticas_mapear_url title="Processos a Mapear" icon="fa-list-check" %}
+        <!-- ================================================= -->
+        <!-- MÓDULO PROCESSOS -->
+        <!-- ================================================= -->
 
-            {% url 'arquiteturaprocessos:estatisticas_processos' as estatisticas_processos_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=estatisticas_processos_url title="Processos" icon="fa-chart-column" %}
+        <div>
+            {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
 
-            {% url 'arquiteturaprocessos:estatisticas_comparativos' as comparativos_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=comparativos_url title="Comparativos" icon="fa-magnifying-glass-chart" %}
-        </div>
+            <div x-show="submenuProcessos"
+                 x-transition
+                 class="ml-10 mt-0.5 space-y-0.5">
 
-    </div>
+                {% url 'arquiteturaprocessos:processos' as processos_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
 
-    {% if request.user.perfil.nome|lower == 'administrador' %}
-    <!-- ===================================================== -->
-    <!-- MÓDULO ESTRUTURA DE DOCUMENTOS -->
-    <!-- ===================================================== -->
-    <div>
-        {% include "components/layout/sidebar_group.html" with title="Estrutura de Documentos" icon="fa-cogs" submenu="submenuEstrutura"%}
+                {% url 'arquiteturaprocessos:processosmapear' as processos_mapear_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=processos_mapear_url title="A Mapear" icon="fa-list-check" %}
 
-        <div x-show="submenuEstrutura" x-transition class="ml-14 space-y-1">
-            <!-- Processos -->
-            {% include "components/layout/sidebar_subgroup.html" with title="Processos" icon="fa-folder-open" submenu="submenuEstruturaProcessos"%}
-
-            <div x-show="submenuEstruturaProcessos" x-transition class="ml-8 mt-0.5 space-y-0.5">
-                {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Definição" icon="fa-book" %}
-
-                {% url 'arquiteturaprocessos:classificacoes' as classificacao_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=classificacao_url title="Classificação" icon="fa-tags" %}
-
-                {% url 'arquiteturaprocessos:macroprocessonivel1' as macroprocesso_n1_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n1_url title="Macroprocesso N1" icon="fa-layer-group" %}
-
-                {% url 'arquiteturaprocessos:macroprocessonivel2' as macroprocesso_n2_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n2_url title="Macroprocesso N2" icon="fa-layer-group" %}
-
-                {% url 'arquiteturaprocessos:areasresponsaveis' as areas_responsaveis_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=areas_responsaveis_url title="Áreas Responsáveis" icon="fa-users-gear" %}
             </div>
+        </div>
 
-            <!-- Normas de Procedimento -->
-            {% include "components/layout/sidebar_subgroup.html" with title="Normas de Procedimento" icon="fa-file-lines" submenu="submenuEstruturaNormas"%}
 
-            <div x-show="submenuEstruturaNormas" x-transition class="ml-8 mt-0.5 space-y-0.5">
-                {% url 'arquiteturaprocessos:tiposdocumento' 'norma' as definicao_normas_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=definicao_normas_url title="Definição" icon="fa-book"%}
+        <!-- ================================================= -->
+        <!-- MÓDULO ESTATÍSTICAS -->
+        <!-- ================================================= -->
 
-                {% url 'arquiteturaprocessos:sistemas_ueci' as sistemas_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=sistemas_url title="Sistemas" icon="fa-desktop"%}
+        <div>
+            {% include "components/layout/sidebar_group.html" with title="Estatísticas" icon="fa-chart-line" submenu="submenuEstatisticas" %}
 
-                {% url 'arquiteturaprocessos:normasprocedimento' as normas_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=normas_url title="Normas" icon="fa-file-contract"%}
+            <div x-show="submenuEstatisticas"
+                 x-transition
+                 class="ml-10 mt-0.5 space-y-0.5">
+
+                {% url 'arquiteturaprocessos:estatisticas_dashboard' as estatisticas_dashboard_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=estatisticas_dashboard_url title="Dashboard" icon="fa-chart-pie" %}
+
+                {% url 'arquiteturaprocessos:estatisticaprocessos_mapear' as estatisticas_mapear_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=estatisticas_mapear_url title="Processos a Mapear" icon="fa-list-check" %}
+
+                {% url 'arquiteturaprocessos:estatisticas_processos' as estatisticas_processos_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=estatisticas_processos_url title="Processos" icon="fa-chart-column" %}
+
+                {% url 'arquiteturaprocessos:estatisticas_comparativos' as comparativos_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=comparativos_url title="Comparativos" icon="fa-magnifying-glass-chart" %}
+
             </div>
-
         </div>
 
 
-    </div>
+        <!-- ================================================= -->
+        <!-- MÓDULO ESTRUTURA DE DOCUMENTOS -->
+        <!-- ================================================= -->
 
-    <!-- ===================================================== -->
-    <!-- MÓDULO ADMINISTRAÇÃO -->
-    <!-- ===================================================== -->
-    <div>
-        {% include "components/layout/sidebar_group.html" with title="Administração" icon="fa-users" submenu="submenuAdministracao"%}
+        <div>
+            {% include "components/layout/sidebar_group.html" with title="Estrutura de Documentos" icon="fa-cogs" submenu="submenuEstrutura" %}
 
-        <div x-show="submenuAdministracao" x-transition class="ml-10 mt-0.5 space-y-0.5">
-            {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
+            <div x-show="submenuEstrutura"
+                 x-transition
+                 class="ml-14 space-y-1">
 
-            {% url 'auditoria:log_list' as log_url %}
-            {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}
+                <!-- Processos -->
+                {% include "components/layout/sidebar_subgroup.html" with title="Processos" icon="fa-folder-open" submenu="submenuEstruturaProcessos" %}
 
+                <div x-show="submenuEstruturaProcessos"
+                     x-transition
+                     class="ml-8 mt-0.5 space-y-0.5">
+
+                    {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Definição" icon="fa-book" %}
+
+                    {% url 'arquiteturaprocessos:classificacoes' as classificacao_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=classificacao_url title="Classificação" icon="fa-tags" %}
+
+                    {% url 'arquiteturaprocessos:macroprocessonivel1' as macroprocesso_n1_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n1_url title="Macroprocesso N1" icon="fa-layer-group" %}
+
+                    {% url 'arquiteturaprocessos:macroprocessonivel2' as macroprocesso_n2_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n2_url title="Macroprocesso N2" icon="fa-layer-group" %}
+
+                    {% url 'arquiteturaprocessos:areasresponsaveis' as areas_responsaveis_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=areas_responsaveis_url title="Áreas Responsáveis" icon="fa-users-gear" %}
+
+                </div>
+
+
+                <!-- Normas de Procedimento -->
+                {% include "components/layout/sidebar_subgroup.html" with title="Normas de Procedimento" icon="fa-file-lines" submenu="submenuEstruturaNormas" %}
+
+                <div x-show="submenuEstruturaNormas"
+                     x-transition
+                     class="ml-8 mt-0.5 space-y-0.5">
+
+                    {% url 'arquiteturaprocessos:tiposdocumento' 'norma' as definicao_normas_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=definicao_normas_url title="Definição" icon="fa-book" %}
+
+                    {% url 'arquiteturaprocessos:sistemas_ueci' as sistemas_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=sistemas_url title="Sistemas" icon="fa-desktop" %}
+
+                    {% url 'arquiteturaprocessos:normasprocedimento' as normas_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=normas_url title="Normas" icon="fa-file-contract" %}
+
+                </div>
+
+            </div>
         </div>
 
-    </div>
+
+        <!-- ================================================= -->
+        <!-- MÓDULO ADMINISTRAÇÃO -->
+        <!-- ================================================= -->
+
+        <div>
+            {% include "components/layout/sidebar_group.html" with title="Administração" icon="fa-users" submenu="submenuAdministracao" %}
+
+            <div x-show="submenuAdministracao"
+                 x-transition
+                 class="ml-10 mt-0.5 space-y-0.5">
+
+                {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
+
+                {% url 'auditoria:log_list' as log_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}
+
+            </div>
+        </div>
 
     {% endif %}
 
