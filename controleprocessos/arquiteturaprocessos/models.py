@@ -3,6 +3,7 @@ import re
 import os
 import uuid
 from uuid import uuid4
+from datetime import datetime
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -114,16 +115,60 @@ class Usuario(AbstractUser):
 
 
 # ============================================================
+# GERAÇÃO DO NOME DA IMAGEM DA CLASSIFICAÇÃO / MACROPROCESSO
+# ============================================================
+def nome_imagem_classificacao(instance, filename):
+    """
+    Gera o nome físico da imagem da Classificação.
+
+    Formato:
+        Nome_Normalizado_YYYYMMDD_HHMMSS.ext
+    """
+    nome = instance.nome.strip()
+
+    # Remove acentos
+    nome_normalizado = slugify(nome, allow_unicode=False)
+
+    # Substitui hífens por underscore
+    nome_normalizado = nome_normalizado.replace("-", "_")
+
+    # Remove qualquer caractere que eventualmente tenha permanecido
+    nome_normalizado = re.sub(
+        r"[^a-zA-Z0-9_]",
+        "",
+        nome_normalizado
+    )
+
+    # Extensão original
+    extensao = filename.rsplit(".", 1)[-1].lower()
+
+    # Data e hora
+    agora = datetime.now()
+
+    data_hora = agora.strftime("%Y%m%d_%H%M%S")
+
+    return (
+        f"classificacoes/"
+        f"{nome_normalizado}_{data_hora}.{extensao}"
+    )
+
+# ============================================================
 # CLASSIFICAÇÃO / MACROPROCESSOS
 # ============================================================
 class Classificacao(models.Model):
     nome = models.CharField(max_length=100)
     descricao = models.TextField()
     imagem = models.ImageField(
-        upload_to="classificacoes/",
+        upload_to=nome_imagem_classificacao,
         max_length=500,
         blank=True,
         null=True,
+    )
+    imagem_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        editable=False,
     )
 
     def __str__(self):

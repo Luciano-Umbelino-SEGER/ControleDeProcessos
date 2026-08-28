@@ -3,6 +3,7 @@ from datetime import datetime, time, timedelta
 import os
 import json
 import re
+import hashlib
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.storage import default_storage
@@ -388,9 +389,23 @@ def resetar_senha_usuario(request, pk):
 
     return redirect("arquiteturaprocessos:cadastrousuarios")
 
-# ---------------------------
-# Classificações CRUD
-# ---------------------------
+# ============================================================
+# UTILITÁRIOS / IMAGENS
+# ============================================================
+def calcular_hash_imagem(imagem):
+    """
+    Calcula o hash SHA-256 do conteúdo de uma imagem.
+    """
+    hash_imagem = hashlib.sha256()
+
+    for bloco in imagem.chunks():
+        hash_imagem.update(bloco)
+
+    return hash_imagem.hexdigest()
+
+# ============================================================
+# CLASSIFICAÇÕES CRUD
+# ============================================================
 class Classificacoes(LoginRequiredMixin, ListView):
     model = Classificacao
     template_name = 'estrutura/classificacoes.html'
@@ -413,8 +428,18 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        imagem = form.cleaned_data.get("imagem")
+
+        if imagem:
+            form.instance.imagem_hash = calcular_hash_imagem(imagem)
+
         response = super().form_valid(form)
-        messages.success(self.request, f"Classificação '{self.object.nome}' criada com sucesso!")
+
+        messages.success(
+            self.request,
+            f"Classificação '{self.object.nome}' criada com sucesso!"
+        )
+
         return response
 
     def form_invalid(self, form):
@@ -459,16 +484,197 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        classificacao = self.get_object()
+
+        # ========================================================
+        # DADOS ANTERIORES
+        # ========================================================
+        nome_classificacao_anterior = classificacao.nome
+
+        imagem_anterior = classificacao.imagem
+        nome_imagem_anterior = (
+            imagem_anterior.name
+            if imagem_anterior
+            else None
+        )
+
+        hash_imagem_anterior = classificacao.imagem_hash
+
+        # ========================================================
+        # NOVA IMAGEM
+        #
+        # Verificamos diretamente os arquivos enviados no POST.
+        # ========================================================
+        nova_imagem = self.request.FILES.get("imagem")
+        novo_hash = None
+
+        # ========================================================
+        # EXISTE NOVA IMAGEM
+        # ========================================================
+        if nova_imagem:
+
+            novo_hash = calcular_hash_imagem(nova_imagem)
+
+            # ----------------------------------------------------
+            # A imagem enviada é exatamente a mesma.
+            #
+            # Mantemos o arquivo atual e seu hash.
+            # ----------------------------------------------------
+            if novo_hash == hash_imagem_anterior:
+
+                form.instance.imagem = nome_imagem_anterior
+                form.instance.imagem_hash = hash_imagem_anterior
+
+            # ----------------------------------------------------
+            # A imagem realmente mudou.
+            #
+            # O ModelForm fará o novo upload.
+            # ----------------------------------------------------
+            else:
+
+                form.instance.imagem_hash = novo_hash
+
+        # ========================================================
+        # SALVA OS DADOS DO FORMULÁRIO
+        # ========================================================
         resp = super().form_valid(form)
-        messages.success(self.request, f"Classificação '{self.object.nome}' atualizada com sucesso!")
+
+        # ========================================================
+        # NOVO NOME DA CLASSIFICAÇÃO
+        # ========================================================
+        nome_classificacao_atual = self.object.nome
+
+        # ========================================================
+        # CASO 1 — NÃO HOUVE NOVA IMAGEM
+        #
+        # Portanto, o arquivo físico existente deve apenas
+        # acompanhar a alteração do nome da Classificação.
+        # ========================================================
+        if (
+            not nova_imagem
+            and nome_imagem_anterior
+            and nome_classificacao_anterior != nome_classificacao_atual
+        ):
+
+            # ----------------------------------------------------
+            # Extensão original.
+            # ----------------------------------------------------
+            extensao = Path(
+                nome_imagem_anterior
+            ).suffix.lower()
+
+            # ----------------------------------------------------
+            # Nome físico seguro da Classificação.
+            # ----------------------------------------------------
+            nome_base = re.sub(
+                r'[^A-Za-z0-9_-]+',
+                '_',
+                nome_classificacao_atual
+            ).strip('_')
+
+            # ----------------------------------------------------
+            # Recupera o timestamp existente.
+            # ----------------------------------------------------
+            nome_sem_extensao = Path(
+                nome_imagem_anterior
+            ).stem
+
+            match = re.search(
+                r'_(\d{8}_\d{6})$',
+                nome_sem_extensao
+            )
+
+            if match:
+                timestamp = match.group(1)
+            else:
+                timestamp = timezone.now().strftime(
+                    "%Y%m%d_%H%M%S"
+                )
+
+            # ----------------------------------------------------
+            # Novo nome físico.
+            # ----------------------------------------------------
+            novo_nome = (
+                f"{nome_base}_{timestamp}{extensao}"
+            )
+
+            novo_caminho = (
+                f"classificacoes/{novo_nome}"
+            )
+
+            # ----------------------------------------------------
+            # Se o nome físico realmente mudou, renomeamos
+            # diretamente o arquivo existente.
+            # ----------------------------------------------------
+            if nome_imagem_anterior != novo_caminho:
+
+                caminho_antigo = default_storage.path(
+                    nome_imagem_anterior
+                )
+
+                caminho_novo = default_storage.path(
+                    novo_caminho
+                )
+
+                # ------------------------------------------------
+                # Renomeação física verdadeira.
+                # ------------------------------------------------
+                os.rename(
+                    caminho_antigo,
+                    caminho_novo
+                )
+
+                # ------------------------------------------------
+                # Atualiza somente o caminho no banco.
+                # ------------------------------------------------
+                self.object.imagem.name = novo_caminho
+
+                self.object.save(
+                    update_fields=["imagem"]
+                )
+
+        # ========================================================
+        # CASO 2 — NOVA IMAGEM DIFERENTE
+        #
+        # O Django já salvou a nova imagem.
+        # Excluímos somente a imagem anterior.
+        # ========================================================
+        elif (
+            nova_imagem
+            and novo_hash != hash_imagem_anterior
+            and nome_imagem_anterior
+            and nome_imagem_anterior != self.object.imagem.name
+        ):
+
+            if default_storage.exists(
+                nome_imagem_anterior
+            ):
+                default_storage.delete(
+                    nome_imagem_anterior
+                )
+
+        # ========================================================
+        # MENSAGEM DE SUCESSO
+        # ========================================================
+        messages.success(
+            self.request,
+            f"Classificação '{self.object.nome}' atualizada com sucesso!"
+        )
+
         return resp
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível atualizar a classificação. Corrija os erros abaixo.")
+        messages.error(
+            self.request,
+            "Não foi possível atualizar a classificação. "
+            "Corrija os erros abaixo."
+        )
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:classificacoes')
+        return reverse(
+            'arquiteturaprocessos:classificacoes'
+        )
 
 class ExcluirClassificacao(LoginRequiredMixin, DetailView):
     model = Classificacao

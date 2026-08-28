@@ -2,7 +2,6 @@
    CLASSIFICAÇÃO DE MACROPROCESSOS
    Controle da imagem da Classificação
    ============================================================ */
-
 function initClassificacaoMacroprocessoImagem() {
 
     const dropzone = document.getElementById('imagem-dropzone');
@@ -15,34 +14,18 @@ function initClassificacaoMacroprocessoImagem() {
         return;
     }
 
-
     /* ========================================================
        CONFIGURAÇÕES
        ======================================================== */
-
-    const tiposPermitidos = [
-        'image/jpeg',
-        'image/png',
-        'image/webp'
-    ];
-
-    const extensoesPermitidas = [
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.webp'
-    ];
-
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    const extensoesPermitidas = ['.jpg', '.jpeg', '.png', '.webp'];
     const tamanhoMaximo = 2 * 1024 * 1024;
-
     const larguraMaxima = 2000;
     const alturaMaxima = 2000;
 
-
     /* ========================================================
-       MENSAGENS DE ERRO
+       MENSAGEM DE ERRO
        ======================================================== */
-
     function mostrarErro(mensagem) {
 
         if (error) {
@@ -51,8 +34,13 @@ function initClassificacaoMacroprocessoImagem() {
         }
 
         if (preview) {
-            preview.src = '';
             preview.classList.add('hidden');
+
+            const imagemPreview = preview.querySelector('img');
+
+            if (imagemPreview) {
+                imagemPreview.src = '';
+            }
         }
 
         if (placeholder) {
@@ -60,7 +48,9 @@ function initClassificacaoMacroprocessoImagem() {
         }
     }
 
-
+    /* ========================================================
+       LIMPAR ERRO
+       ======================================================== */
     function limparErro() {
 
         if (!error) {
@@ -71,11 +61,31 @@ function initClassificacaoMacroprocessoImagem() {
         error.classList.add('hidden');
     }
 
+    /* ========================================================
+       LIMPAR ARQUIVO SELECIONADO
+       ======================================================== */
+    function limparArquivo() {
+
+        input.value = '';
+
+        if (preview) {
+            preview.classList.add('hidden');
+
+            const imagemPreview = preview.querySelector('img');
+
+            if (imagemPreview) {
+                imagemPreview.src = '';
+            }
+        }
+
+        if (placeholder) {
+            placeholder.classList.remove('hidden');
+        }
+    }
 
     /* ========================================================
-       VALIDAÇÃO DA EXTENSÃO
+       VALIDAR EXTENSÃO
        ======================================================== */
-
     function validarExtensao(nomeArquivo) {
 
         const nome = nomeArquivo.toLowerCase();
@@ -85,48 +95,76 @@ function initClassificacaoMacroprocessoImagem() {
         });
     }
 
+    /* ========================================================
+       MOSTRAR PREVIEW
+       ======================================================== */
+    function mostrarPreview(arquivo) {
+
+        const url = URL.createObjectURL(arquivo);
+        const imagemPreview = preview
+            ? preview.querySelector('img')
+            : null;
+
+        if (!imagemPreview) {
+            URL.revokeObjectURL(url);
+            return;
+        }
+
+        imagemPreview.src = url;
+
+        imagemPreview.onload = function () {
+            URL.revokeObjectURL(url);
+        };
+
+        preview.classList.remove('hidden');
+
+        if (placeholder) {
+            placeholder.classList.add('hidden');
+        }
+    }
 
     /* ========================================================
-       VALIDAÇÃO DA IMAGEM
+       VALIDAR IMAGEM
        ======================================================== */
-
     function validarImagem(arquivo) {
 
         limparErro();
 
-        /*
-         * Validação do tipo MIME e da extensão.
-         */
+        /* ----------------------------------------------------
+           TIPO / EXTENSÃO
+           ---------------------------------------------------- */
         if (
             !tiposPermitidos.includes(arquivo.type) ||
             !validarExtensao(arquivo.name)
         ) {
+
+            limparArquivo();
 
             mostrarErro(
                 'Tipo de arquivo não permitido. ' +
                 'Selecione uma imagem JPG, JPEG, PNG ou WEBP.'
             );
 
-            return;
+            return false;
         }
 
-
-        /*
-         * Validação do tamanho.
-         */
+        /* ----------------------------------------------------
+           TAMANHO
+           ---------------------------------------------------- */
         if (arquivo.size > tamanhoMaximo) {
+
+            limparArquivo();
 
             mostrarErro(
                 'A imagem excede o tamanho máximo permitido de 2 MB.'
             );
 
-            return;
+            return false;
         }
 
-
-        /*
-         * Validação das dimensões.
-         */
+        /* ----------------------------------------------------
+           DIMENSÕES
+           ---------------------------------------------------- */
         const imagem = new Image();
 
         imagem.onload = function () {
@@ -136,6 +174,8 @@ function initClassificacaoMacroprocessoImagem() {
                 imagem.height > alturaMaxima
             ) {
 
+                limparArquivo();
+
                 mostrarErro(
                     'A imagem excede as dimensões máximas permitidas ' +
                     'de 2000 × 2000 pixels.'
@@ -144,43 +184,33 @@ function initClassificacaoMacroprocessoImagem() {
                 return;
             }
 
-
-            /*
-             * Imagem aprovada.
-             *
-             * Criamos uma URL temporária para o preview.
-             */
-            const url = URL.createObjectURL(arquivo);
-
-            if (preview) {
-                preview.src = url;
-                preview.classList.remove('hidden');
-            }
-
-            if (placeholder) {
-                placeholder.classList.add('hidden');
-            }
+            /* ------------------------------------------------
+               IMAGEM APROVADA
+               ------------------------------------------------ */
+            mostrarPreview(arquivo);
         };
 
 
         imagem.onerror = function () {
-
+            limparArquivo();
             mostrarErro(
                 'Não foi possível carregar a imagem selecionada.'
             );
         };
 
+        const url = URL.createObjectURL(arquivo);
+        imagem.src = url;
+        imagem.onloadend = function () {
+            URL.revokeObjectURL(url);
+        };
 
-        imagem.src = URL.createObjectURL(arquivo);
+        return true;
     }
-
 
     /* ========================================================
        PROCESSAR ARQUIVO
        ======================================================== */
-
     function processarArquivo(arquivo) {
-
         if (!arquivo) {
             return;
         }
@@ -188,19 +218,16 @@ function initClassificacaoMacroprocessoImagem() {
         validarImagem(arquivo);
     }
 
-
     /* ========================================================
        CLIQUE NA MOLDURA
        ======================================================== */
-
     dropzone.addEventListener('click', function (event) {
-
         if (input.disabled) {
             return;
         }
 
         /*
-         * O próprio input é oculto.
+         * O input está oculto.
          * O clique na moldura abre o Explorer.
          */
         if (event.target !== input) {
@@ -208,26 +235,19 @@ function initClassificacaoMacroprocessoImagem() {
         }
     });
 
-
     /* ========================================================
        SELEÇÃO PELO EXPLORER
        ======================================================== */
-
     input.addEventListener('change', function () {
-
         if (this.files && this.files.length > 0) {
-
             processarArquivo(this.files[0]);
         }
     });
 
-
     /* ========================================================
        DRAG & DROP — ARRASTAR
        ======================================================== */
-
     dropzone.addEventListener('dragover', function (event) {
-
         if (input.disabled) {
             return;
         }
@@ -240,26 +260,20 @@ function initClassificacaoMacroprocessoImagem() {
         );
     });
 
-
     /* ========================================================
-       DRAG & DROP — SAIR DA MOLDURA
+       DRAG & DROP — SAIR
        ======================================================== */
-
     dropzone.addEventListener('dragleave', function () {
-
         dropzone.classList.remove(
             'border-blue-600',
             'bg-blue-100'
         );
     });
 
-
     /* ========================================================
-       DRAG & DROP — SOLTAR ARQUIVO
+       DRAG & DROP — SOLTAR
        ======================================================== */
-
     dropzone.addEventListener('drop', function (event) {
-
         if (input.disabled) {
             return;
         }
@@ -271,7 +285,6 @@ function initClassificacaoMacroprocessoImagem() {
             'bg-blue-100'
         );
 
-
         const arquivos = event.dataTransfer.files;
 
         if (!arquivos || arquivos.length === 0) {
@@ -281,24 +294,16 @@ function initClassificacaoMacroprocessoImagem() {
 
         const arquivo = arquivos[0];
 
-
         /*
-         * Mantemos o arquivo no input.
-         *
-         * Dessa forma, quando o formulário for enviado,
-         * o Django receberá normalmente:
-         *
-         * request.FILES["imagem"]
+         * Coloca o arquivo no input para que o Django
+         * possa recebê-lo no POST.
          */
         const dataTransfer = new DataTransfer();
-
         dataTransfer.items.add(arquivo);
-
         input.files = dataTransfer.files;
 
-
         /*
-         * Processa e valida o arquivo.
+         * Processa e valida.
          */
         processarArquivo(arquivo);
     });

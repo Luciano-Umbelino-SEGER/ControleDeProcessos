@@ -67,11 +67,9 @@
                              class="{% if not form.instance.imagem %}hidden{% endif %}
                                     absolute inset-0 flex items-center justify-center bg-white">
 
-                            {% if form.instance.imagem %}
-                                <img src="{{ form.instance.imagem.url }}"
-                                     alt="{{ form.instance.nome }}"
-                                     class="max-h-full max-w-full object-contain p-2">
-                            {% endif %}
+                            <img src="{% if form.instance.imagem %}{{ form.instance.imagem.url }}{% endif %}"
+                                 alt="{{ form.instance.nome|default:'Imagem da Classificação de Macroprocessos' }}"
+                                 class="max-h-full max-w-full object-contain p-2">
                         </div>
 
                         <!-- PLACEHOLDER -->

@@ -1,5 +1,6 @@
 import os
 import re
+from PIL import Image
 from django import forms
 from django.forms import inlineformset_factory
 from django.forms.widgets import (FileInput, Select,)
@@ -381,49 +382,59 @@ class Form_ClassificacaoForm(forms.ModelForm):
     def clean_imagem(self):
         imagem = self.cleaned_data.get("imagem")
 
-        # Imagem é opcional
-        if not imagem:
+        # ----------------------------------------------------
+        # Em uma edição sem nova imagem, não há nada para
+        # validar. Não abrimos nem processamos a imagem existente.
+        # ----------------------------------------------------
+        if "imagem" not in self.files:
             return imagem
 
-        # ----------------------------------------------------
-        # TAMANHO MÁXIMO — 2 MB
-        # ----------------------------------------------------
-        tamanho_maximo = 2 * 1024 * 1024
+        # ========================================================
+        # TAMANHO MÁXIMO
+        # ========================================================
+        tamanho_maximo = 2 * 1024 * 1024  # 2 MB
 
         if imagem.size > tamanho_maximo:
             raise forms.ValidationError(
-                "A imagem não pode ultrapassar 2 MB."
+                "A imagem excede o tamanho máximo permitido de 2 MB."
             )
 
-        # ----------------------------------------------------
-        # EXTENSÕES PERMITIDAS
-        # ----------------------------------------------------
-        extensoes_permitidas = {
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp",
-        }
+        # ========================================================
+        # FORMATO E DIMENSÕES
+        # ========================================================
+        try:
+            with Image.open(imagem) as imagem_pillow:
 
-        nome_arquivo = imagem.name.lower()
+                formatos_permitidos = {
+                    "JPEG",
+                    "PNG",
+                    "WEBP",
+                }
 
-        if not any(
-            nome_arquivo.endswith(ext)
-            for ext in extensoes_permitidas
-        ):
+                if imagem_pillow.format not in formatos_permitidos:
+                    raise forms.ValidationError(
+                        "Tipo de arquivo não permitido. "
+                        "Selecione uma imagem JPG, JPEG, PNG ou WEBP."
+                    )
+
+                largura, altura = imagem_pillow.size
+
+                if largura > 2000 or altura > 2000:
+                    raise forms.ValidationError(
+                        "A imagem excede as dimensões máximas permitidas "
+                        "de 2000 × 2000 pixels."
+                    )
+
+        except forms.ValidationError:
+            raise
+
+        except Exception:
             raise forms.ValidationError(
-                "Arquivo não permitido. "
-                "Arquivos permitidos: JPG, JPEG, PNG ou WEBP."
+                "Não foi possível validar a imagem selecionada."
             )
 
-        # ----------------------------------------------------
-        # DIMENSÕES MÁXIMAS
-        # ----------------------------------------------------
-        if imagem.width > 2000 or imagem.height > 2000:
-            raise forms.ValidationError(
-                "As dimensões da imagem não podem "
-                "ultrapassar 2000 × 2000 pixels."
-            )
+        finally:
+            imagem.seek(0)
 
         return imagem
 
