@@ -702,7 +702,14 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
             )
             return redirect('arquiteturaprocessos:classificacoes')
 
+        nome_imagem = (classificacao.imagem.name if classificacao.imagem else None)
+
         classificacao.delete()
+
+        # Exclui o Arquivo de imagem associada da pasta
+        if nome_imagem and default_storage.exists(nome_imagem):
+            default_storage.delete(nome_imagem)
+
         messages.success(request, f"Classificação '{classificacao.nome}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:classificacoes')
 
