@@ -29,12 +29,10 @@ docs/MENU_SIGEMP.md
                  x-transition
                  class="ml-10 mt-0.5 space-y-0.5">
 
-                {% include "components/layout/sidebar_subitem.html" with href="#" title="Visualizar" icon="fa-eye" %}
-
+                {% url 'arquiteturaprocessos:tiposdocumento' 'cadeia_valor' as cadeiavalor_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=cadeiavalor_url title="Definição" icon="fa-file-lines"%}
                 {% include "components/layout/sidebar_subitem.html" with href="#" title="Imagens" icon="fa-image" %}
-
-                {% include "components/layout/sidebar_subitem.html" with href="#" title="Definições" icon="fa-file-lines" %}
-
+                {% include "components/layout/sidebar_subitem.html" with href="#" title="Visualizar" icon="fa-eye" %}
             </div>
         </div>
 
@@ -123,22 +121,36 @@ docs/MENU_SIGEMP.md
                 <!-- Processos -->
                 {% include "components/layout/sidebar_subgroup.html" with title="Processos" icon="fa-folder-open" submenu="submenuEstruturaProcessos" %}
 
-                <div x-show="submenuEstruturaProcessos"
-                     x-transition
-                     class="ml-8 mt-0.5 space-y-0.5">
+                <div x-show="submenuEstruturaProcessos" x-transition class="ml-8 mt-0.5 space-y-0.5">
 
-                    {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Definição" icon="fa-book" %}
+                    <!-- Definição -->
+                    {% include "components/layout/sidebar_subgroup.html" with title="Definição" icon="fa-book" submenu="submenuEstruturaProcessosDefinicao" %}
 
+                    <div x-show="submenuEstruturaProcessosDefinicao" x-transition class="ml-8 mt-0.5 space-y-0.5">
+
+                        <!-- Macroprocesso -->
+                        {% url 'arquiteturaprocessos:tiposdocumento' 'macroprocesso' as macroprocesso_url %}
+                        {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_url title="Macroprocesso" icon="fa-layer-group"%}
+
+                        <!-- Modelo de Processo -->
+                        {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
+                        {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Modelo de Processo" icon="fa-file-lines" %}
+
+                    </div>
+
+                    <!-- Classificação de Macroprocessos -->
                     {% url 'arquiteturaprocessos:classificacoes' as classificacao_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=classificacao_url title="Classificação" icon="fa-tags" %}
+                    {% include "components/layout/sidebar_subitem.html" with href=classificacao_url title="Classificação de Macroprocessos" icon="fa-tags" %}
 
+                    <!-- Macroprocesso N1 -->
                     {% url 'arquiteturaprocessos:macroprocessonivel1' as macroprocesso_n1_url %}
                     {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n1_url title="Macroprocesso N1" icon="fa-layer-group" %}
 
+                    <!-- Macroprocesso N2 -->
                     {% url 'arquiteturaprocessos:macroprocessonivel2' as macroprocesso_n2_url %}
                     {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n2_url title="Macroprocesso N2" icon="fa-layer-group" %}
 
+                    <!-- Áreas Responsáveis -->
                     {% url 'arquiteturaprocessos:areasresponsaveis' as areas_responsaveis_url %}
                     {% include "components/layout/sidebar_subitem.html" with href=areas_responsaveis_url title="Áreas Responsáveis" icon="fa-users-gear" %}
 

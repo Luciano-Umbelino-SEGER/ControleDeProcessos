@@ -725,8 +725,10 @@ class Form_TipoDocumentoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        contexto = kwargs.pop('contexto', None)
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
         modo_exclusao = kwargs.pop('modo_exclusao', False)
+
         somente_leitura = modo_visualizacao or modo_exclusao
 
         super().__init__(*args, **kwargs)
@@ -748,7 +750,11 @@ class Form_TipoDocumentoForm(forms.ModelForm):
                 'class',
                 base + (' bg-gray-100' if somente_leitura else ' bg-white')
             )
-            field.widget.attrs.setdefault('placeholder', field.label)
+
+            field.widget.attrs.setdefault(
+                'placeholder',
+                field.label
+            )
 
             # 🔠 Documento sempre armazenado em CAIXA ALTA
             if name == 'nome':
@@ -756,8 +762,24 @@ class Form_TipoDocumentoForm(forms.ModelForm):
                     'style',
                     'text-transform: uppercase;'
                 )
-                field.widget.attrs['oninput'] = 'this.value = this.value.toUpperCase();'
 
+                field.widget.attrs['oninput'] = (
+                    'this.value = this.value.toUpperCase();'
+                )
+
+        # ========================================================
+        # DEFINIÇÕES SEM CAMPO "DOCUMENTO"
+        # ========================================================
+        # Para Macroprocesso e Cadeia de Valor, o campo "Documento"
+        # não é exibido.
+        #
+        # O nome é definido automaticamente pelo Model.
+        if contexto in {"macroprocesso", "cadeia_valor"}:
+            self.fields.pop("nome")
+
+        # ========================================================
+        # SOMENTE LEITURA
+        # ========================================================
         if somente_leitura:
             for field in self.fields.values():
                 field.disabled = True
@@ -765,6 +787,7 @@ class Form_TipoDocumentoForm(forms.ModelForm):
     # 🔒 REGRA DE DOMÍNIO: Documento sempre armazenado em CAIXA ALTA
     def clean_nome(self):
         nome = self.cleaned_data.get('nome')
+
         if nome:
             return nome.strip().upper()
 

@@ -3,14 +3,14 @@
    @click="closeSidebar()"
    :title="!menuOpen ? '{{ title }}' : ''">
 
-    <div class="w-7 h-6 flex items-center justify-center">
+    <div class="w-7 h-6 flex-shrink-0 flex items-center justify-center">
         <i class="fas {{ icon }} text-sm"></i>
     </div>
 
     <div
         x-show="menuOpen"
         x-transition.opacity.duration.300ms
-        class="ml-2 text-sm">
+        class="ml-2 text-sm whitespace-nowrap">
 
         {{ title }}
 

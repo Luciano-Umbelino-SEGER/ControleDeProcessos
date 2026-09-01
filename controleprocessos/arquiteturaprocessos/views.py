@@ -3240,11 +3240,14 @@ class DefinicaoDocumentoMixin:
         return self.kwargs["contexto"]
 
     def get_nome_documento(self):
-        return (
-            "Modelo de Processo"
-            if self.get_contexto() == "processo"
-            else "Norma de Procedimento"
-        )
+        nomes = {
+            "processo": "Modelo de Processo",
+            "norma": "Norma de Procedimento",
+            "macroprocesso": "Macroprocesso",
+            "cadeia_valor": "Cadeia de Valor",
+        }
+
+        return nomes.get(self.get_contexto())
 
     def get_titulo(self):
         return f"Definição de {self.get_nome_documento()}"
@@ -3300,8 +3303,11 @@ class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
+
+        kwargs['contexto'] = self.get_contexto()
         kwargs['modo_visualizacao'] = False
         kwargs['modo_exclusao'] = False
+
         return kwargs
 
     def form_valid(self, form):
@@ -3325,7 +3331,11 @@ class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView
         )
 
 
-class VisualizarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, DetailView):
+class VisualizarTipoDocumento(
+    LoginRequiredMixin,
+    DefinicaoDocumentoMixin,
+    DetailView
+):
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -3335,6 +3345,7 @@ class VisualizarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, Detai
 
         ctx['form'] = Form_TipoDocumentoForm(
             instance=self.get_object(),
+            contexto=self.get_contexto(),
             modo_visualizacao=True
         )
 
@@ -3347,7 +3358,12 @@ class VisualizarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, Detai
 
         return ctx
 
-class EditarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, UpdateView):
+
+class EditarTipoDocumento(
+    LoginRequiredMixin,
+    DefinicaoDocumentoMixin,
+    UpdateView
+):
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
@@ -3367,8 +3383,11 @@ class EditarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, UpdateVie
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
+
+        kwargs['contexto'] = self.get_contexto()
         kwargs['modo_visualizacao'] = False
         kwargs['modo_exclusao'] = False
+
         return kwargs
 
     def form_valid(self, form):
@@ -3391,7 +3410,12 @@ class EditarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, UpdateVie
             }
         )
 
-class ExcluirTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, DetailView):
+
+class ExcluirTipoDocumento(
+    LoginRequiredMixin,
+    DefinicaoDocumentoMixin,
+    DetailView
+):
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -3416,6 +3440,7 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, DetailVi
 
         ctx['form'] = Form_TipoDocumentoForm(
             instance=self.object,
+            contexto=self.get_contexto(),
             modo_exclusao=True
         )
 

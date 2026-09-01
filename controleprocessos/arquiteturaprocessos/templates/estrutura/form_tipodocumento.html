@@ -11,123 +11,166 @@
     {% else %}
         Inclusão de {{ nome_documento }}
     {% endif %}
-
 {% endblock %}
 
 {% block body %}
 <div class="max-w-5xl mx-auto px-6 py-6 bg-blue-50 border-2 border-blue-800 rounded-lg shadow-md p-8">
-<h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
 
-    {% if modo_visualizacao %}
-        Visualizar Definição de {{ nome_documento }}
-    {% elif modo_edicao %}
-        Editar Definição de {{ nome_documento }}
-    {% elif modo_exclusao %}
-        Excluir Definição de {{ nome_documento }}
-    {% else %}
-        Incluir Definição de {{ nome_documento }}
-    {% endif %}
+    <h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
 
-</h2>
-
-{% if form.non_field_errors %}
-    <div class="text-red-600 mb-4">
-        {{ form.non_field_errors }}
-    </div>
-{% endif %}
-
-<form method="post" id="form-exclusao">
-    {% csrf_token %}
-
-    <div class="grid grid-cols-1 gap-6">
-        {% for field in form %}
-        <div>
-            <label class="block text-sm font-semibold text-blue-800 mb-1">
-                {{ field.label }}
-            </label>
-
-            {% if field.name == "descricao" %}
-                <div x-data="{ count: 0, max: 3000 }" class="relative">
-
-                    {{ field|add_attr:"@input:count = $event.target.value.length"|add_attr:"maxlength:3000" }}
-
-                    <div class="text-sm mt-1 text-right"
-                         x-init="count = $el.previousElementSibling.value.length"
-                         :class="{
-                            'text-gray-500': count < 2800,
-                            'text-yellow-600': count >= 2800 && count < max,
-                            'text-red-600': count >= max
-                         }">
-                        <span x-text="count"></span> / 3000
-                    </div>
-
-                </div>
-            {% else %}
-                {{ field }}
-            {% endif %}
-
-            {% if field.errors %}
-                <p class="text-red-500 text-sm mt-1">
-                    {{ field.errors|striptags }}
-                </p>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="flex justify-end mt-8 space-x-4">
-
-        {% if not modo_visualizacao %}
-
-            {% if modo_exclusao %}
-                <button type="button"
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        onclick="abrirModalConfirmacao()">
-                    Confirmar Exclusão
-                </button>
-
-            {% elif modo_edicao %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        type="submit">
-                    Salvar Alterações
-                </button>
-
-            {% else %}
-                <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        type="submit">
-                    Adicionar {{ nome_documento }}
-                </button>
-            {% endif %}
+        {% if modo_visualizacao %}
+            Visualizar Definição de {{ nome_documento }}
+        {% elif modo_edicao %}
+            Editar Definição de {{ nome_documento }}
+        {% elif modo_exclusao %}
+            Excluir Definição de {{ nome_documento }}
+        {% else %}
+            Incluir Definição de {{ nome_documento }}
         {% endif %}
 
-        <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-           href="{% url 'arquiteturaprocessos:tiposdocumento' contexto %}">
-            {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
-        </a>
-    </div>
-</form>
+    </h2>
+
+    {% if form.non_field_errors %}
+        <div class="text-red-600 mb-4">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <form method="post" id="form-exclusao">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 gap-6">
+
+            {% for field in form %}
+            <div>
+
+                <label class="block text-sm font-semibold text-blue-800 mb-1">
+                    {{ field.label }}
+                </label>
+
+                {% if field.name == "descricao" %}
+
+                    <div x-data="{ count: 0, max: 3000 }" class="relative">
+
+                        {{ field|add_attr:"@input:count = $event.target.value.length"|add_attr:"maxlength:3000" }}
+
+                        <div class="text-sm mt-1 text-right"
+                             x-init="count = $el.previousElementSibling.value.length"
+                             :class="{
+                                'text-gray-500': count < 2800,
+                                'text-yellow-600': count >= 2800 && count < max,
+                                'text-red-600': count >= max
+                             }">
+
+                            <span x-text="count"></span> / 3000
+
+                        </div>
+
+                    </div>
+
+                {% else %}
+
+                    {{ field }}
+
+                {% endif %}
+
+                {% if field.errors %}
+                    <p class="text-red-500 text-sm mt-1">
+                        {{ field.errors|striptags }}
+                    </p>
+                {% endif %}
+
+            </div>
+            {% endfor %}
+
+        </div>
+
+        <div class="flex justify-end mt-8 space-x-4">
+
+            {% if not modo_visualizacao %}
+
+                {% if modo_exclusao %}
+
+                    <button type="button"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            onclick="abrirModalConfirmacao()">
+                        Confirmar Exclusão
+                    </button>
+
+                {% elif modo_edicao %}
+
+                    <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            type="submit">
+                        Salvar Alterações
+                    </button>
+
+                {% else %}
+
+                    <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                            type="submit">
+                        Adicionar Definição
+                    </button>
+
+                {% endif %}
+
+            {% endif %}
+
+            <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
+               href="{% url 'arquiteturaprocessos:tiposdocumento' contexto %}">
+
+                {% if modo_visualizacao %}
+                    Voltar
+                {% else %}
+                    Cancelar
+                {% endif %}
+
+            </a>
+
+        </div>
+
+    </form>
+
 </div>
 
 {% if modo_exclusao %}
+
 <!-- Modal de confirmação de exclusão -->
-<div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+<div id="modal-confirmacao"
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+
     <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[90%] max-w-[400px] mx-auto border border-gray-300">
+
         <h2 class="text-xl font-normal mb-4 text-black">
-            Confirma a exclusão da definição de {{ nome_documento }} -
-            <strong>{{ tipodocumento.nome }}</strong>?
+            Confirma a exclusão da definição de {{ nome_documento }}?
         </h2>
+
         <div class="flex justify-center gap-4">
-            <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
-            <a href="{% url 'arquiteturaprocessos:tiposdocumento' contexto %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">Não</a>
+
+            <button type="submit"
+                    form="form-exclusao"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                Sim
+            </button>
+
+            <a href="{% url 'arquiteturaprocessos:tiposdocumento' contexto %}"
+               class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">
+                Não
+            </a>
+
         </div>
+
     </div>
+
 </div>
 
 <script>
     function abrirModalConfirmacao() {
-        document.getElementById('modal-confirmacao').classList.remove('hidden');
+        document
+            .getElementById('modal-confirmacao')
+            .classList.remove('hidden');
     }
 </script>
+
 {% endif %}
 
 {% endblock %}

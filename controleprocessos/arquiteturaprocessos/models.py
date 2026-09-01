@@ -282,6 +282,12 @@ class TiposDocumento(models.Model):
         return self.nome
 
     def save(self, *args, **kwargs):
+        if self.contexto == "macroprocesso":
+            self.nome = "MACROPROCESSO"
+
+        elif self.contexto == "cadeia_valor":
+            self.nome = "CADEIA DE VALOR"
+
         if not self.slug:
             self.slug = slugify(self.nome)
 
