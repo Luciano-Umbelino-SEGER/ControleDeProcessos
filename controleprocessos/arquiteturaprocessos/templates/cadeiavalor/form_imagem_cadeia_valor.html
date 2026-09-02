@@ -1,0 +1,775 @@
+{% extends 'base.html' %}
+{% load static form_tags %}
+
+{% block titulo %}
+    {% if modo_visualizacao %}
+        Visualização de Imagem da Cadeia de Valor
+    {% elif modo_edicao %}
+        Edição de Imagem da Cadeia de Valor
+    {% else %}
+        Inclusão de Imagem da Cadeia de Valor
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+
+<div class="max-w-6xl mx-auto mt-[48px] mb-8
+            bg-blue-50 border-2 border-blue-800
+            rounded-lg p-8 shadow-md">
+
+    <!-- ===================================================== -->
+    <!-- TÍTULO                                                -->
+    <!-- ===================================================== -->
+    <h2 class="text-2xl font-bold text-blue-800 text-center mb-8">
+
+        {% if modo_visualizacao %}
+            Visualização de Imagem da Cadeia de Valor
+        {% elif modo_edicao %}
+            Edição de Imagem da Cadeia de Valor
+        {% else %}
+            Inclusão de Imagem da Cadeia de Valor
+        {% endif %}
+
+    </h2>
+
+
+    {% if form.non_field_errors %}
+        <div class="text-red-600 mb-4">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+
+    <form method="post"
+          id="form-imagem-cadeia-valor"
+          enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+
+        <!-- ================================================= -->
+        <!-- ÁREA PRINCIPAL                                    -->
+        <!-- ================================================= -->
+        <div class="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8 items-start">
+
+
+            <!-- ========================================================= -->
+            <!-- IMAGEM                                                     -->
+            <!-- ========================================================= -->
+            <div>
+
+                <label class="block text-sm font-medium text-blue-700 mb-1">
+                    Imagem
+                </label>
+
+
+                <div id="imagem-dropzone"
+                     class="relative w-full h-[205px]
+                            border-2 border-dashed border-blue-300
+                            rounded-lg bg-white
+                            flex items-center justify-center
+                            overflow-hidden cursor-pointer
+                            transition duration-200
+                            hover:border-blue-500 hover:bg-blue-50
+                            {% if modo_visualizacao or modo_edicao %}
+                                cursor-default
+                            {% endif %}">
+
+                    <!-- ================================================= -->
+                    <!-- CAMPO REAL DO DJANGO                              -->
+                    <!-- ================================================= -->
+                    {% if not modo_visualizacao and not modo_edicao and form.imagem %}
+                        {{ form.imagem|add_attr:"class:hidden" }}
+                    {% endif %}
+
+
+                    <!-- ================================================= -->
+                    <!-- IMAGEM CADASTRADA / PREVIEW                       -->
+                    <!-- ================================================= -->
+                    <div id="imagem-preview"
+                         class="{% if not form.instance.imagem %}hidden{% endif %}
+                                absolute inset-0
+                                flex items-center justify-center
+                                bg-white">
+
+                        {% if form.instance.imagem %}
+                            <img src="{{ form.instance.imagem.url }}"
+                                 alt="Imagem da Cadeia de Valor"
+                                 class="max-h-full max-w-full object-contain p-2">
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- ÁREA DE UPLOAD                                     -->
+                    <!-- ================================================= -->
+                    {% if not form.instance.imagem and not modo_visualizacao and not modo_edicao %}
+
+                        <div id="imagem-placeholder"
+                             class="text-center px-4">
+
+                            <div class="text-blue-500 mb-1">
+
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="mx-auto h-8 w-8"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="1.5">
+
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M3 16.5l4.5-4.5a2.121 2.121 0 013 0l3 3m0 0l1.5-1.5a2.121 2.121 0 013 0L21 15m-9-9h.01M5.25 21h13.5A2.25 2.25 0 0021 18.75V5.25A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25v13.5A2.25 2.25 0 005.25 21z"/>
+
+                                </svg>
+
+                            </div>
+
+
+                            <p class="text-sm font-semibold text-blue-800">
+                                Arraste uma imagem aqui
+                            </p>
+
+                            <p class="text-sm text-gray-500 mt-1">
+                                ou clique para selecionar
+                            </p>
+
+
+                            <div class="text-xs text-gray-500 mt-2 leading-tight text-left">
+
+                                <div class="flex items-baseline">
+                                    <span class="font-semibold whitespace-nowrap mr-2">
+                                        Arquivos:
+                                    </span>
+
+                                    <span class="whitespace-nowrap">
+                                        JPG, JPEG, PNG ou WEBP
+                                    </span>
+                                </div>
+
+
+                                <div class="flex items-baseline mt-2">
+                                    <span class="font-semibold whitespace-nowrap mr-2">
+                                        Tamanho:
+                                    </span>
+
+                                    <span>
+                                        2 MB
+                                    </span>
+                                </div>
+
+
+                                <div class="flex items-baseline mt-2">
+                                    <span class="font-semibold whitespace-nowrap mr-2">
+                                        Dimensões:
+                                    </span>
+
+                                    <span class="whitespace-nowrap">
+                                        2000 × 2000 px
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- ================================================= -->
+                <!-- ERRO DE VALIDAÇÃO DA IMAGEM                       -->
+                <!-- ================================================= -->
+                <p id="imagem-error"
+                   class="hidden text-red-500 text-sm mt-1">
+                </p>
+
+
+                {% if form.imagem and form.imagem.errors %}
+                    <p class="text-red-500 text-sm mt-1">
+                        {{ form.imagem.errors|striptags }}
+                    </p>
+                {% endif %}
+
+            </div>
+
+
+
+            <!-- ================================================= -->
+            <!-- CAMPOS                                             -->
+            <!-- ================================================= -->
+            <div class="space-y-6">
+
+
+                <!-- ================================================= -->
+                <!-- NOME + SITUAÇÃO                                  -->
+                <!-- ================================================= -->
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-4">
+
+
+                    <!-- ================================================= -->
+                    <!-- NOME                                              -->
+                    <!-- ================================================= -->
+                    <div>
+
+                        <label for="{{ form.nome.id_for_label }}"
+                               class="block text-sm font-semibold text-blue-800 mb-1">
+                            {{ form.nome.label }}
+                        </label>
+
+                        {{ form.nome }}
+
+                        {% if form.nome.errors %}
+                            <p class="text-red-500 text-sm mt-1">
+                                {{ form.nome.errors|striptags }}
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- SITUAÇÃO                                           -->
+                    <!-- ================================================= -->
+                    <div>
+
+                        <label class="block text-sm font-semibold text-blue-800 mb-1">
+                            Situação
+                        </label>
+
+                        <div class="w-full px-3 py-2 rounded-md text-center
+                                    {% if form.instance.situacao == 'Ativa' %}
+                                        bg-green-200 text-green-800
+                                    {% else %}
+                                        bg-red-200 text-red-800
+                                    {% endif %}">
+
+                            {% if form.instance.situacao == 'Ativa' %}
+                                Ativa
+                            {% else %}
+                                Inativa
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ================================================= -->
+                <!-- DESCRIÇÃO                                          -->
+                <!-- ================================================= -->
+                <div>
+
+                    <label for="{{ form.descricao.id_for_label }}"
+                           class="block text-sm font-semibold text-blue-800 mb-1">
+                        {{ form.descricao.label }}
+                    </label>
+
+
+                    <div x-data="{ count: 0, max: 3000 }"
+                         class="relative">
+
+                        {{ form.descricao|add_attr:"@input:count = $event.target.value.length"|add_attr:"maxlength:3000" }}
+
+                        <div class="text-sm mt-1 text-right"
+                             x-init="count = $el.previousElementSibling.value.length"
+                             :class="{
+                                 'text-gray-500': count < 2800,
+                                 'text-yellow-600': count >= 2800 && count < max,
+                                 'text-red-600': count >= max
+                             }">
+
+                            <span x-text="count"></span> / 3000
+
+                        </div>
+
+                    </div>
+
+
+                    {% if form.descricao.errors %}
+                        <p class="text-red-500 text-sm mt-1">
+                            {{ form.descricao.errors|striptags }}
+                        </p>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ===================================================== -->
+        <!-- REGISTROS DO SISTEMA                                 -->
+        <!-- ===================================================== -->
+        <div class="relative border border-blue-200 rounded-lg
+                    px-4 pt-7 pb-4 mt-8 bg-white/30">
+
+
+            <!-- TÍTULO SOBREPOSTO -->
+            <div class="absolute -top-3 left-5 px-3 bg-blue-50">
+
+                <h2 class="text-base font-semibold text-blue-800 leading-none">
+                    Registros do Sistema
+                </h2>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- AUDITORIA                                         -->
+            <!-- ================================================= -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-5">
+
+
+                <!-- DATA INCLUSÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Data Inclusão
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.data_inclusao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- RESP. INCLUSÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Resp. Inclusão
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.responsavel_inclusao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- DATA ATUALIZAÇÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Data Atualização
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.data_atualizacao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- RESP. ATUALIZAÇÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Resp. Atualização
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.responsavel_atualizacao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- DATA ATIVAÇÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Data Ativação
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.data_ativacao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- RESP. ATIVAÇÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Resp. Ativação
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.responsavel_ativacao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- DATA DESATIVAÇÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Data Desativação
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.data_desativacao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+
+                <!-- RESP. DESATIVAÇÃO -->
+                <div>
+
+                    <label class="block text-sm font-semibold text-blue-800 mb-1">
+                        Resp. Desativação
+                    </label>
+
+                    <input type="text"
+                           value="{{ imagem_cadeia_valor.responsavel_desativacao|default:'' }}"
+                           disabled
+                           class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ===================================================== -->
+        <!-- BOTÕES                                                -->
+        <!-- ===================================================== -->
+        <div class="flex justify-end mt-8 space-x-4">
+
+
+            <!-- ================================================= -->
+            <!-- INCLUSÃO                                          -->
+            <!-- ================================================= -->
+            {% if not modo_visualizacao and not modo_edicao %}
+
+                <button type="submit"
+                        class="bg-blue-600 text-white px-6 py-2 rounded
+                               hover:bg-blue-700 transition">
+                    Salvar Imagem
+                </button>
+
+            {% endif %}
+
+
+
+            <!-- ================================================= -->
+            <!-- EDIÇÃO                                            -->
+            <!-- ================================================= -->
+            {% if modo_edicao %}
+
+                {% if form.instance.situacao != 'Ativa' %}
+
+                    <button type="button"
+                            class="bg-green-600 text-white px-6 py-2 rounded
+                                   hover:bg-green-700 transition">
+                        Ativar Imagem
+                    </button>
+
+                {% endif %}
+
+
+                <button type="submit"
+                        class="bg-blue-600 text-white px-6 py-2 rounded
+                               hover:bg-blue-700 transition">
+                    Salvar Alterações
+                </button>
+
+            {% endif %}
+
+
+
+            <!-- ================================================= -->
+            <!-- CANCELAR / VOLTAR                                 -->
+            <!-- ================================================= -->
+            <a href="{% url 'arquiteturaprocessos:imagens_cadeia_valor' %}"
+               class="bg-gray-300 text-gray-800 px-6 py-2 rounded
+                      hover:bg-gray-400 transition">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================= -->
+<!-- JAVASCRIPT – IMAGEM DA CADEIA DE VALOR                    -->
+<!-- ========================================================= -->
+{% if not modo_visualizacao and not modo_edicao %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const dropzone = document.getElementById("imagem-dropzone");
+    const input = document.getElementById("imagem");
+    const preview = document.getElementById("imagem-preview");
+    const placeholder = document.getElementById("imagem-placeholder");
+    const errorElement = document.getElementById("imagem-error");
+
+    if (!dropzone || !input) {
+        return;
+    }
+
+    // ========================================================
+    // CONFIGURAÇÕES
+    // ========================================================
+    const tamanhoMaximo = 2 * 1024 * 1024;
+
+    const tiposPermitidos = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    const formatosPermitidos = [
+        "JPEG",
+        "PNG",
+        "WEBP"
+    ];
+
+    // ========================================================
+    // MOSTRA ERRO
+    // ========================================================
+    function mostrarErro(mensagem) {
+
+        errorElement.textContent = mensagem;
+        errorElement.classList.remove("hidden");
+
+        preview.classList.add("hidden");
+
+        if (placeholder) {
+            placeholder.classList.remove("hidden");
+        }
+
+        input.value = "";
+    }
+
+    // ========================================================
+    // LIMPA ERRO
+    // ========================================================
+    function limparErro() {
+
+        errorElement.textContent = "";
+        errorElement.classList.add("hidden");
+    }
+
+    // ========================================================
+    // VALIDAÇÃO
+    // ========================================================
+    function validarImagem(file) {
+
+        limparErro();
+
+        if (!file) {
+            return false;
+        }
+
+        // ----------------------------------------------------
+        // Tamanho
+        // ----------------------------------------------------
+        if (file.size > tamanhoMaximo) {
+
+            mostrarErro(
+                "A imagem excede o tamanho máximo permitido de 2 MB."
+            );
+
+            return false;
+        }
+
+        // ----------------------------------------------------
+        // Tipo MIME
+        // ----------------------------------------------------
+        if (!tiposPermitidos.includes(file.type)) {
+
+            mostrarErro(
+                "Tipo de arquivo não permitido. " +
+                "Selecione uma imagem JPG, JPEG, PNG ou WEBP."
+            );
+
+            return false;
+        }
+
+        // ----------------------------------------------------
+        // Dimensões
+        // ----------------------------------------------------
+        const leitor = new FileReader();
+
+        leitor.onload = function (evento) {
+
+            const imagem = new Image();
+
+            imagem.onload = function () {
+
+                if (imagem.width > 2000 || imagem.height > 2000) {
+
+                    mostrarErro(
+                        "A imagem excede as dimensões máximas permitidas " +
+                        "de 2000 × 2000 pixels."
+                    );
+
+                    return;
+                }
+
+                exibirPreview(file);
+            };
+
+            imagem.onerror = function () {
+
+                mostrarErro(
+                    "Não foi possível validar a imagem selecionada."
+                );
+            };
+
+            imagem.src = evento.target.result;
+        };
+
+        leitor.onerror = function () {
+
+            mostrarErro(
+                "Não foi possível ler a imagem selecionada."
+            );
+        };
+
+        leitor.readAsDataURL(file);
+
+        return true;
+    }
+
+    // ========================================================
+    // PREVIEW
+    // ========================================================
+    function exibirPreview(file) {
+
+        const leitor = new FileReader();
+
+        leitor.onload = function (evento) {
+
+            preview.innerHTML = "";
+
+            const imagem = document.createElement("img");
+
+            imagem.src = evento.target.result;
+            imagem.alt = "Pré-visualização da Imagem da Cadeia de Valor";
+
+            imagem.className =
+                "max-h-full max-w-full object-contain p-2";
+
+            preview.appendChild(imagem);
+
+            preview.classList.remove("hidden");
+
+            if (placeholder) {
+                placeholder.classList.add("hidden");
+            }
+        };
+
+        leitor.readAsDataURL(file);
+    }
+
+    // ========================================================
+    // SELEÇÃO DO ARQUIVO
+    // ========================================================
+    input.addEventListener("change", function () {
+
+        const file = this.files[0];
+
+        validarImagem(file);
+    });
+
+    // ========================================================
+    // CLIQUE NA ÁREA
+    // ========================================================
+    dropzone.addEventListener("click", function (evento) {
+
+        if (evento.target === input) {
+            return;
+        }
+
+        input.click();
+    });
+
+    // ========================================================
+    // DRAG OVER
+    // ========================================================
+    dropzone.addEventListener("dragover", function (evento) {
+
+        evento.preventDefault();
+
+        dropzone.classList.add(
+            "border-blue-500",
+            "bg-blue-50"
+        );
+    });
+
+    // ========================================================
+    // DRAG LEAVE
+    // ========================================================
+    dropzone.addEventListener("dragleave", function () {
+
+        dropzone.classList.remove(
+            "border-blue-500",
+            "bg-blue-50"
+        );
+    });
+
+    // ========================================================
+    // DROP
+    // ========================================================
+    dropzone.addEventListener("drop", function (evento) {
+
+        evento.preventDefault();
+
+        dropzone.classList.remove(
+            "border-blue-500",
+            "bg-blue-50"
+        );
+
+        const files = evento.dataTransfer.files;
+
+        if (!files || !files.length) {
+            return;
+        }
+
+        const file = files[0];
+
+        /*
+         * Transferimos o arquivo para o input real do Django.
+         * O DataTransfer permite atribuir o arquivo ao input
+         * mantendo o envio normal pelo formulário.
+         */
+        const dataTransfer = new DataTransfer();
+
+        dataTransfer.items.add(file);
+
+        input.files = dataTransfer.files;
+
+        validarImagem(file);
+    });
+
+});
+</script>
+
+{% endif %}
+
+{% endblock %}

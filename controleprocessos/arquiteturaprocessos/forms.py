@@ -15,6 +15,7 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, Processo,
     TiposDocumento, ProcessoMapear, ContatoAreaSeger, NormaProcedimento, SistemasUECI, AbrangenciaChoices,
+    ImagemCadeiaValor,
 )
 from django.db.models import Q
 from arquiteturaprocessos.utils.processos import validar_normas_processo
@@ -402,6 +403,160 @@ class Form_ClassificacaoForm(forms.ModelForm):
         # ========================================================
         # FORMATO E DIMENSÕES
         # ========================================================
+        try:
+            with Image.open(imagem) as imagem_pillow:
+
+                formatos_permitidos = {
+                    "JPEG",
+                    "PNG",
+                    "WEBP",
+                }
+
+                if imagem_pillow.format not in formatos_permitidos:
+                    raise forms.ValidationError(
+                        "Tipo de arquivo não permitido. "
+                        "Selecione uma imagem JPG, JPEG, PNG ou WEBP."
+                    )
+
+                largura, altura = imagem_pillow.size
+
+                if largura > 2000 or altura > 2000:
+                    raise forms.ValidationError(
+                        "A imagem excede as dimensões máximas permitidas "
+                        "de 2000 × 2000 pixels."
+                    )
+
+        except forms.ValidationError:
+            raise
+
+        except Exception:
+            raise forms.ValidationError(
+                "Não foi possível validar a imagem selecionada."
+            )
+
+        finally:
+            imagem.seek(0)
+
+        return imagem
+
+# ============================================================
+# FORMULÁRIO – IMAGEM DA CADEIA DE VALOR
+# ============================================================
+class Form_ImagemCadeiaValorForm(forms.ModelForm):
+
+    class Meta:
+        model = ImagemCadeiaValor
+        fields = ['nome', 'descricao', 'imagem']
+
+    def __init__(self, *args, **kwargs):
+        modo_visualizacao = kwargs.pop('modo_visualizacao', False)
+        modo_edicao = kwargs.pop('modo_edicao', False)
+
+        super().__init__(*args, **kwargs)
+
+        # ====================================================
+        # DESCRIÇÃO
+        # ====================================================
+        if "descricao" in self.fields:
+            self.fields["descricao"].max_length = 3000
+            self.fields["descricao"].widget.attrs["maxlength"] = 3000
+            self.fields["descricao"].widget.attrs["rows"] = 4
+
+        # ====================================================
+        # IMAGEM
+        # ====================================================
+        if "imagem" in self.fields:
+            self.fields["imagem"].widget = forms.FileInput(
+                attrs={
+                    "id": "imagem",
+                    "accept": ".jpg,.jpeg,.png,.webp,"
+                              "image/jpeg,image/png,image/webp",
+                }
+            )
+
+        self.label_suffix = ""
+
+        base = (
+            "w-full border border-gray-300 rounded-md px-3 py-2 "
+            "text-black placeholder-gray-500 "
+            "focus:outline-none focus:ring-2 focus:ring-blue-500"
+        )
+
+        for name, field in self.fields.items():
+
+            # A imagem possui uma área de upload própria no template.
+            if name == "imagem":
+                continue
+
+            existing = field.widget.attrs.get("class", "")
+
+            bg_color = (
+                "bg-gray-100"
+                if modo_visualizacao
+                else "bg-white"
+            )
+
+            field.widget.attrs["class"] = (
+                f"{existing} {base} {bg_color}"
+            ).strip()
+
+            field.widget.attrs.setdefault(
+                "placeholder",
+                field.label
+            )
+
+            field.widget.attrs["autocomplete"] = "off"
+
+        # ====================================================
+        # EDIÇÃO
+        # ====================================================
+        # Na edição não permitimos substituir a imagem.
+        if modo_edicao:
+            self.fields.pop("imagem", None)
+
+        # ====================================================
+        # VISUALIZAÇÃO
+        # ====================================================
+        if modo_visualizacao:
+            for name, field in self.fields.items():
+                field.disabled = True
+
+                existing_classes = field.widget.attrs.get(
+                    "class",
+                    ""
+                )
+
+                field.widget.attrs["class"] = (
+                    f"{existing_classes} bg-gray-100"
+                ).strip()
+
+    # ========================================================
+    # VALIDAÇÃO DA IMAGEM
+    # ========================================================
+    def clean_imagem(self):
+        imagem = self.cleaned_data.get("imagem")
+
+        # ----------------------------------------------------
+        # Na inclusão a imagem é obrigatória.
+        # ----------------------------------------------------
+        if not imagem:
+            raise forms.ValidationError(
+                "Selecione uma imagem."
+            )
+
+        # ====================================================
+        # TAMANHO MÁXIMO
+        # ====================================================
+        tamanho_maximo = 2 * 1024 * 1024  # 2 MB
+
+        if imagem.size > tamanho_maximo:
+            raise forms.ValidationError(
+                "A imagem excede o tamanho máximo permitido de 2 MB."
+            )
+
+        # ====================================================
+        # FORMATO E DIMENSÕES
+        # ====================================================
         try:
             with Image.open(imagem) as imagem_pillow:
 

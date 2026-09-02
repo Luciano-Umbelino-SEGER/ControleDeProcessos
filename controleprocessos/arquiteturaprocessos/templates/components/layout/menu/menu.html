@@ -18,9 +18,7 @@ docs/MENU_SIGEMP.md
     <!-- ===================================================== -->
     <!-- MÓDULO CADEIA DE VALOR -->
     <!-- ===================================================== -->
-
     {% if request.user.is_authenticated %}
-
         <!-- Administrador: módulo expansível -->
         <div>
             {% include "components/layout/sidebar_group.html" with title="Cadeia de Valor" icon="fa-image" submenu="submenuCadeiaValor" %}
@@ -30,17 +28,16 @@ docs/MENU_SIGEMP.md
                  class="ml-10 mt-0.5 space-y-0.5">
 
                 {% url 'arquiteturaprocessos:tiposdocumento' 'cadeia_valor' as cadeiavalor_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=cadeiavalor_url title="Definição" icon="fa-file-lines"%}
-                {% include "components/layout/sidebar_subitem.html" with href="#" title="Imagens" icon="fa-image" %}
+                {% url 'arquiteturaprocessos:imagens_cadeia_valor' as imagens_cadeia_valor_url %}
+
+                {% include "components/layout/sidebar_subitem.html" with href=cadeiavalor_url title="Definição" icon="fa-file-lines" %}
+                {% include "components/layout/sidebar_subitem.html" with href=imagens_cadeia_valor_url title="Imagens" icon="fa-image" %}
                 {% include "components/layout/sidebar_subitem.html" with href="#" title="Visualizar" icon="fa-eye" %}
             </div>
         </div>
-
     {% else %}
-
         <!-- Usuário público: acesso direto à Cadeia de Valor -->
         {% include "components/layout/sidebar_item.html" with href="#" title="Cadeia de Valor" icon="fa-image" %}
-
     {% endif %}
 
 
@@ -56,13 +53,11 @@ docs/MENU_SIGEMP.md
     <!-- ===================================================== -->
     <!-- A PARTIR DAQUI: SOMENTE ADMINISTRADORES -->
     <!-- ===================================================== -->
-
     {% if request.user.is_authenticated %}
 
         <!-- ================================================= -->
         <!-- MÓDULO PROCESSOS -->
         <!-- ================================================= -->
-
         <div>
             {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
 
@@ -83,7 +78,6 @@ docs/MENU_SIGEMP.md
         <!-- ================================================= -->
         <!-- MÓDULO ESTATÍSTICAS -->
         <!-- ================================================= -->
-
         <div>
             {% include "components/layout/sidebar_group.html" with title="Estatísticas" icon="fa-chart-line" submenu="submenuEstatisticas" %}
 
@@ -106,14 +100,11 @@ docs/MENU_SIGEMP.md
             </div>
         </div>
 
-
         <!-- ================================================= -->
         <!-- MÓDULO ESTRUTURA DE DOCUMENTOS -->
         <!-- ================================================= -->
-
         <div>
             {% include "components/layout/sidebar_group.html" with title="Estrutura de Documentos" icon="fa-cogs" submenu="submenuEstrutura" %}
-
             <div x-show="submenuEstrutura"
                  x-transition
                  class="ml-14 space-y-1">

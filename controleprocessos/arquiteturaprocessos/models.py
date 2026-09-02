@@ -5,6 +5,7 @@ import uuid
 from uuid import uuid4
 from datetime import datetime
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 from django.conf import settings
@@ -171,6 +172,155 @@ class Classificacao(models.Model):
         editable=False,
     )
 
+    def __str__(self):
+        return self.nome
+
+# ============================================================
+# IMAGENS DA CADEIA DE VALOR
+# ============================================================
+class ImagemCadeiaValor(models.Model):
+
+    # ========================================================
+    # SITUAÇÃO
+    # ========================================================
+    SITUACAO_CHOICES = [
+        ("Ativa", "Ativa"),
+        ("Inativa", "Inativa"),
+    ]
+
+    # ========================================================
+    # IDENTIFICAÇÃO
+    # ========================================================
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True
+    )
+
+    nome = models.CharField(
+        max_length=255,
+        verbose_name="Nome"
+    )
+
+    descricao = models.TextField(
+        blank=True,
+        max_length=3000,
+        verbose_name="Descrição"
+    )
+
+    imagem = models.ImageField(
+        upload_to="cadeia_valor/",
+        verbose_name="Imagem"
+    )
+
+    # ========================================================
+    # SITUAÇÃO
+    # ========================================================
+    situacao = models.CharField(
+        max_length=7,
+        choices=SITUACAO_CHOICES,
+        default="Inativa",
+        db_index=True,
+        verbose_name="Situação"
+    )
+
+    # ========================================================
+    # AUDITORIA – INCLUSÃO
+    # ========================================================
+    data_inclusao = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data Inclusão"
+    )
+
+    responsavel_inclusao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imagem_cadeia_valor_incluidas",
+        verbose_name="Responsável Inclusão"
+    )
+
+    # ========================================================
+    # AUDITORIA – ATUALIZAÇÃO
+    # ========================================================
+    data_atualizacao = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data Atualização"
+    )
+
+    responsavel_atualizacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imagem_cadeia_valor_atualizadas",
+        verbose_name="Responsável Atualização"
+    )
+
+    # ========================================================
+    # AUDITORIA – ATIVAÇÃO
+    # ========================================================
+    data_ativacao = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data Ativação"
+    )
+
+    responsavel_ativacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imagem_cadeia_valor_ativadas",
+        verbose_name="Responsável Ativação"
+    )
+
+    # ========================================================
+    # AUDITORIA – DESATIVAÇÃO
+    # ========================================================
+    data_desativacao = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data Desativação"
+    )
+
+    responsavel_desativacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imagem_cadeia_valor_desativadas",
+        verbose_name="Responsável Desativação"
+    )
+
+    # ========================================================
+    # META
+    # ========================================================
+    class Meta:
+
+        db_table = "arquiteturaprocessos_imagem_cadeia_valor"
+
+        verbose_name = "Imagem da Cadeia de Valor"
+        verbose_name_plural = "Imagens da Cadeia de Valor"
+
+        ordering = [
+            "-data_inclusao"
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["situacao"],
+                condition=Q(situacao="Ativa"),
+                name="unique_imagem_cadeia_valor_ativa"
+            )
+        ]
+
+    # ========================================================
+    # REPRESENTAÇÃO
+    # ========================================================
     def __str__(self):
         return self.nome
 

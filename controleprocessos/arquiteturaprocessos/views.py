@@ -46,7 +46,7 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, Processo, SistemasUECI, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
-    Perfil, NormaProcedimento, AbrangenciaChoices,
+    Perfil, NormaProcedimento, AbrangenciaChoices, ImagemCadeiaValor,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -57,6 +57,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_Sistema_UECIForm, Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm, Form_AreaResponsavelForm, Form_NormaProcedimentoForm,
+    Form_ImagemCadeiaValorForm,
 )
 
 # ---------------------------------------------------
@@ -712,6 +713,82 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
 
         messages.success(request, f"Classificação '{classificacao.nome}' excluída com sucesso!")
         return redirect('arquiteturaprocessos:classificacoes')
+
+# ============================================================
+# IMAGENS DA CADEIA DE VALOR - CRUD
+# ============================================================
+class ImagensCadeiaValor(LoginRequiredMixin, ListView):
+    model = ImagemCadeiaValor
+    template_name = 'cadeiavalor/imagens_cadeia_valor.html'
+    context_object_name = 'imagens'
+    queryset = ImagemCadeiaValor.objects.order_by('nome')
+
+# ============================================================
+# INCLUSÃO – IMAGEM DA CADEIA DE VALOR
+# ============================================================
+class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
+    template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
+    form_class = Form_ImagemCadeiaValorForm
+    context_object_name = 'imagem_cadeia_valor'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            'modo_inclusao': True,
+            'modo_visualizacao': False,
+            'modo_edicao': False,
+        })
+
+        return context
+
+    def form_valid(self, form):
+
+        # ====================================================
+        # AUDITORIA – INCLUSÃO
+        # ====================================================
+        form.instance.responsavel_inclusao = self.request.user
+
+        # ====================================================
+        # SITUAÇÃO INICIAL
+        # ====================================================
+        form.instance.situacao = "Inativa"
+
+        response = super().form_valid(form)
+
+        messages.success(
+            self.request,
+            f"Imagem '{self.object.nome}' criada com sucesso!"
+        )
+
+        return response
+
+    def form_invalid(self, form):
+
+        messages.error(
+            self.request,
+            "Não foi possível criar a imagem. "
+            "Corrija os erros abaixo."
+        )
+
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'arquiteturaprocessos:imagens_cadeia_valor'
+        )
+
+
+class VisualizarImagemCadeiaValor(LoginRequiredMixin, TemplateView):
+    template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
+
+
+class EditarImagemCadeiaValor(LoginRequiredMixin, TemplateView):
+    template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
+
+# Visualização Pública da Cadeia de Valor
+class VisualizarCadeiaValor(TemplateView):
+    template_name = 'cadeiavalor/cadeia_valor.html'
 
 # ---------------------------------------------
 # ARQUITETURA DE PROCESSOS (Tela Pública)

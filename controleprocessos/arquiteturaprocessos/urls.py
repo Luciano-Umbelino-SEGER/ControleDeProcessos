@@ -3,6 +3,7 @@ from django.urls import path, reverse_lazy
 from . import views
 from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, CustomPasswordResetConfirmView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
+                    ImagensCadeiaValor, CriarImagemCadeiaValor, VisualizarImagemCadeiaValor, EditarImagemCadeiaValor, VisualizarCadeiaValor,
                     VisualizarClassificacao, EditarClassificacao, ExcluirClassificacao, MacroProcessoNivel1View,
                     CriarMacroProcessoNivel1, VisualizarMacroProcessoNivel1, EditarMacroProcessoNivel1,
                     ExcluirMacroProcessoNivel1, MacroProcessoNivel2View, CriarMacroProcessoNivel2, VisualizarMacroProcessoNivel2,
@@ -75,6 +76,12 @@ urlpatterns = [
     path('classificacoes/<int:pk>/visualizar/', VisualizarClassificacao.as_view(), name='visualizar_classificacao'),
     path('classificacoes/<int:pk>/editar/', EditarClassificacao.as_view(), name='editar_classificacao'),
     path('classificacoes/<int:pk>/excluir/', ExcluirClassificacao.as_view(), name='excluir_classificacao'),
+    # Imagens de Cadeia de Valor
+    path('imagens-cadeia-valor/', ImagensCadeiaValor.as_view(), name='imagens_cadeia_valor'),
+    path('imagem-cadeia-valor/novo/', CriarImagemCadeiaValor.as_view(), name='criar_imagem_cadeia_valor'),
+    path('imagens-cadeia-valor/<int:pk>/visualizar/', VisualizarImagemCadeiaValor.as_view(), name='visualizar_imagem_cadeia_valor'),
+    path('imagens-cadeia-valor/<int:pk>/editar/', EditarImagemCadeiaValor.as_view(), name='editar_imagem_cadeia_valor'),
+    path('cadeia-de-valor/', VisualizarCadeiaValor.as_view(), name='visualizar_cadeia_valor'),
     # Macroprocesso Nivel 1
     path('macroprocessonivel1/', MacroProcessoNivel1View.as_view(), name='macroprocessonivel1'),
     path('macroprocessonivel1/novo/', CriarMacroProcessoNivel1.as_view(), name='criar_macroprocessonivel1'),
