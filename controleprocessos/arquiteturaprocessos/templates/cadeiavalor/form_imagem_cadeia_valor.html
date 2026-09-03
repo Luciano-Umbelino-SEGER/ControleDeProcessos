@@ -304,30 +304,24 @@
 
         </div>
 
-
-
         <!-- ===================================================== -->
         <!-- REGISTROS DO SISTEMA                                 -->
         <!-- ===================================================== -->
-        <div class="relative border border-blue-200 rounded-lg
-                    px-4 pt-7 pb-4 mt-8 bg-white/30">
-
-
+        <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 mt-8 bg-white/30">
             <!-- TÍTULO SOBREPOSTO -->
             <div class="absolute -top-3 left-5 px-3 bg-blue-50">
-
                 <h2 class="text-base font-semibold text-blue-800 leading-none">
                     Registros do Sistema
                 </h2>
-
             </div>
-
 
             <!-- ================================================= -->
             <!-- AUDITORIA                                         -->
             <!-- ================================================= -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-5">
-
+            <div class="grid grid-cols-1 md:grid-cols-[0.6fr_1.4fr_0.6fr_1.4fr] gap-x-6 gap-y-5">
+                <!-- ================================================= -->
+                <!-- LINHA 1                                           -->
+                <!-- ================================================= -->
 
                 <!-- DATA INCLUSÃO -->
                 <div>
@@ -337,7 +331,7 @@
                     </label>
 
                     <input type="text"
-                           value="{{ imagem_cadeia_valor.data_inclusao|default:'' }}"
+                           value="{% if imagem_cadeia_valor.data_inclusao %}{{ imagem_cadeia_valor.data_inclusao|date:'d/m/Y' }}{% endif %}"
                            disabled
                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
 
@@ -367,7 +361,7 @@
                     </label>
 
                     <input type="text"
-                           value="{{ imagem_cadeia_valor.data_atualizacao|default:'' }}"
+                           value="{% if imagem_cadeia_valor.data_atualizacao %}{{ imagem_cadeia_valor.data_atualizacao|date:'d/m/Y' }}{% endif %}"
                            disabled
                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
 
@@ -389,6 +383,10 @@
                 </div>
 
 
+                <!-- ================================================= -->
+                <!-- LINHA 2                                           -->
+                <!-- ================================================= -->
+
                 <!-- DATA ATIVAÇÃO -->
                 <div>
 
@@ -397,7 +395,7 @@
                     </label>
 
                     <input type="text"
-                           value="{{ imagem_cadeia_valor.data_ativacao|default:'' }}"
+                           value="{% if imagem_cadeia_valor.data_ativacao %}{{ imagem_cadeia_valor.data_ativacao|date:'d/m/Y' }}{% endif %}"
                            disabled
                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
 
@@ -427,7 +425,7 @@
                     </label>
 
                     <input type="text"
-                           value="{{ imagem_cadeia_valor.data_desativacao|default:'' }}"
+                           value="{% if imagem_cadeia_valor.data_desativacao %}{{ imagem_cadeia_valor.data_desativacao|date:'d/m/Y' }}{% endif %}"
                            disabled
                            class="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-gray-600">
 
@@ -451,8 +449,6 @@
             </div>
 
         </div>
-
-
 
         <!-- ===================================================== -->
         <!-- BOTÕES                                                -->

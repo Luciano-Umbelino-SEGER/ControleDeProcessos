@@ -796,9 +796,32 @@ class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
             'arquiteturaprocessos:imagens_cadeia_valor'
         )
 
+# ============================================================
+# VISUALIZAÇÃO - IMAGEM DA CADEIA DE VALOR
+# ============================================================
+class VisualizarImagemCadeiaValor(LoginRequiredMixin, DetailView):
 
-class VisualizarImagemCadeiaValor(LoginRequiredMixin, TemplateView):
+    model = ImagemCadeiaValor
     template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
+    context_object_name = 'imagem_cadeia_valor'
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            'form': Form_ImagemCadeiaValorForm(
+                instance=self.object,
+                modo_visualizacao=True,
+            ),
+
+            'modo_inclusao': False,
+            'modo_visualizacao': True,
+            'modo_edicao': False,
+            'modo_exclusao': False,
+        })
+
+        return context
 
 
 class EditarImagemCadeiaValor(LoginRequiredMixin, TemplateView):
