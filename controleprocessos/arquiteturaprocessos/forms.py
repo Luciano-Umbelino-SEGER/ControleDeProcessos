@@ -455,6 +455,13 @@ class Form_ImagemCadeiaValorForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # ====================================================
+        # CAMPOS OBRIGATÓRIOS
+        # ====================================================
+        self.fields["nome"].required = False
+        self.fields["descricao"].required = False
+        self.fields["imagem"].required = False
+
+        # ====================================================
         # DESCRIÇÃO
         # ====================================================
         if "descricao" in self.fields:
@@ -529,6 +536,32 @@ class Form_ImagemCadeiaValorForm(forms.ModelForm):
                 field.widget.attrs["class"] = (
                     f"{existing_classes} bg-gray-100"
                 ).strip()
+
+    # ========================================================
+    # VALIDAÇÃO – NOME
+    # ========================================================
+    def clean_nome(self):
+        nome = self.cleaned_data.get("nome")
+
+        if not nome or not nome.strip():
+            raise forms.ValidationError(
+                "Informe o nome da imagem da Cadeia de Valor."
+            )
+
+        return nome.strip()
+
+    # ========================================================
+    # VALIDAÇÃO – DESCRIÇÃO
+    # ========================================================
+    def clean_descricao(self):
+        descricao = self.cleaned_data.get("descricao")
+
+        if not descricao or not descricao.strip():
+            raise forms.ValidationError(
+                "Informe a descrição da imagem da Cadeia de Valor."
+            )
+
+        return descricao.strip()
 
     # ========================================================
     # VALIDAÇÃO DA IMAGEM

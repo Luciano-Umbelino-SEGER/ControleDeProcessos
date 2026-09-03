@@ -781,16 +781,6 @@ class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
 
         return response
 
-    def form_invalid(self, form):
-
-        messages.error(
-            self.request,
-            "Não foi possível criar a imagem. "
-            "Corrija os erros abaixo."
-        )
-
-        return super().form_invalid(form)
-
     def get_success_url(self):
         return reverse(
             'arquiteturaprocessos:imagens_cadeia_valor'
@@ -823,9 +813,255 @@ class VisualizarImagemCadeiaValor(LoginRequiredMixin, DetailView):
 
         return context
 
+# ============================================================
+# IMAGEM DA CADEIA DE VALOR - EDIÇÃO
+# ============================================================
+class EditarImagemCadeiaValor(LoginRequiredMixin, UpdateView):
+    model = ImagemCadeiaValor
+    template_name = "cadeiavalor/form_imagem_cadeia_valor.html"
+    form_class = Form_ImagemCadeiaValorForm
+    success_url = reverse_lazy("arquiteturaprocessos:imagens_cadeia_valor")
 
-class EditarImagemCadeiaValor(LoginRequiredMixin, TemplateView):
-    template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
+    # --------------------------------------------------------
+    # FORM KWARGS
+    # --------------------------------------------------------
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"modo_edicao": True,})
+
+        return kwargs
+
+    # --------------------------------------------------------
+    # OTIMIZAÇÃO
+    # --------------------------------------------------------
+    def get_queryset(self):
+        return (
+            ImagemCadeiaValor.objects
+            .select_related(
+                "responsavel_inclusao",
+                "responsavel_atualizacao",
+                "responsavel_ativacao",
+                "responsavel_desativacao",
+            )
+        )
+
+    # --------------------------------------------------------
+    # CONTEXTO
+    # --------------------------------------------------------
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        imagem = self.object
+        context.update({
+            "modo_edicao": True,
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+
+            "imagem_cadeia_valor": imagem,
+        })
+
+        return context
+
+    # --------------------------------------------------------
+    # GRAVAÇÃO FINAL
+    # --------------------------------------------------------
+    def form_valid(self, form):
+        with transaction.atomic():
+            imagem_original = self.object
+
+            # =================================================
+            # DADOS ANTES
+            # =================================================
+            dados_antes = {
+                "nome": imagem_original.nome,
+                "descricao": imagem_original.descricao,
+            }
+
+            # =================================================
+            # SALVAR ALTERAÇÕES
+            # =================================================
+            imagem = form.save(commit=False)
+            imagem.data_atualizacao = timezone.now()
+            imagem.responsavel_atualizacao = self.request.user
+            imagem.save()
+
+            # =================================================
+            # DADOS DEPOIS
+            # =================================================
+            dados_depois = {
+                "nome": imagem.nome,
+                "descricao": imagem.descricao,
+            }
+
+            # =================================================
+            # LOG
+            # =================================================
+            registrar_log(
+                request=self.request,
+                acao="UPDATE",
+                modelo="ImagemCadeiaValor",
+                objeto_id=str(imagem.id),
+                descricao=(
+                    f"Imagem da Cadeia de Valor "
+                    f"'{imagem.nome}' atualizada"
+                ),
+                dados_antes=dados_antes,
+                dados_depois=dados_depois,
+            )
+
+        # =====================================================
+        # MENSAGEM DE SUCESSO
+        # =====================================================
+        messages.success(
+            self.request,
+            f"Imagem da Cadeia de Valor "
+            f"'{imagem.nome}' atualizada com sucesso!"
+        )
+
+        self.object = imagem
+
+        return HttpResponseRedirect(
+            self.get_success_url()
+        )
+
+# ============================================================
+# ATIVAÇÃO – IMAGEM DA CADEIA DE VALOR
+# ============================================================
+class AtivarImagemCadeiaValor(LoginRequiredMixin, View):
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        with transaction.atomic():
+            # ====================================================
+            # BLOQUEIA AS IMAGENS DURANTE A OPERAÇÃO
+            # ====================================================
+            imagens = list(
+                ImagemCadeiaValor.objects
+                .select_for_update()
+                .order_by('pk')
+            )
+
+            imagem = next(
+                (item for item in imagens if item.pk == pk),
+                None
+            )
+
+            if imagem is None:
+                raise Http404(
+                    "Imagem da Cadeia de Valor não encontrada."
+                )
+
+            # ====================================================
+            # SE JÁ ESTIVER ATIVA, NÃO FAZ NADA
+            # ====================================================
+            if imagem.situacao == "Ativa":
+                messages.info(
+                    request,
+                    f"A imagem '{imagem.nome}' já está ativa."
+                )
+                return HttpResponseRedirect(
+                    reverse(
+                        'arquiteturaprocessos:imagens_cadeia_valor'
+                    )
+                )
+
+            # ====================================================
+            # DATA/HORA DA OPERAÇÃO
+            # ====================================================
+            agora = timezone.now()
+
+            # ====================================================
+            # LOCALIZA A IMAGEM ATUALMENTE ATIVA
+            # ====================================================
+            imagem_anterior = next(
+                (
+                    item for item in imagens
+                    if item.situacao == "Ativa"
+                ),
+                None
+            )
+
+            # ====================================================
+            # DESATIVA A IMAGEM ATUAL
+            # ====================================================
+            if imagem_anterior is not None:
+
+                imagem_anterior.situacao = "Inativa"
+                imagem_anterior.data_desativacao = agora
+                imagem_anterior.responsavel_desativacao = request.user
+
+                imagem_anterior.save(
+                    update_fields=[
+                        'situacao',
+                        'data_desativacao',
+                        'responsavel_desativacao',
+                    ]
+                )
+
+                registrar_log(
+                    request=request,
+                    acao="DEACTIVATE",
+                    modelo="ImagemCadeiaValor",
+                    objeto_id=str(imagem_anterior.id),
+                    descricao=(
+                        f"Imagem da Cadeia de Valor "
+                        f"'{imagem_anterior.nome}' desativada "
+                        f"automaticamente pela ativação de outra imagem"
+                    ),
+                    dados_antes={
+                        "situacao": "Ativa",
+                    },
+                    dados_depois={
+                        "situacao": "Inativa",
+                    },
+                )
+
+            # ====================================================
+            # ATIVA A NOVA IMAGEM
+            # ====================================================
+            imagem.situacao = "Ativa"
+            imagem.data_ativacao = agora
+            imagem.responsavel_ativacao = request.user
+
+            imagem.save(
+                update_fields=[
+                    'situacao',
+                    'data_ativacao',
+                    'responsavel_ativacao',
+                ]
+            )
+
+            registrar_log(
+                request=request,
+                acao="ACTIVATE",
+                modelo="ImagemCadeiaValor",
+                objeto_id=str(imagem.id),
+                descricao=(
+                    f"Imagem da Cadeia de Valor "
+                    f"'{imagem.nome}' ativada"
+                ),
+                dados_antes={
+                    "situacao": "Inativa",
+                },
+                dados_depois={
+                    "situacao": "Ativa",
+                },
+            )
+
+        # ========================================================
+        # MENSAGEM DE SUCESSO
+        # ========================================================
+        messages.success(
+            request,
+            f"Imagem da Cadeia de Valor "
+            f"'{imagem.nome}' ativada com sucesso!"
+        )
+
+        return HttpResponseRedirect(
+            reverse(
+                'arquiteturaprocessos:imagens_cadeia_valor'
+            )
+        )
 
 # Visualização Pública da Cadeia de Valor
 class VisualizarCadeiaValor(TemplateView):

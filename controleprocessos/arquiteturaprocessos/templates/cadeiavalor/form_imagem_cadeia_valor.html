@@ -33,26 +33,37 @@
     </h2>
 
 
-    {% if form.non_field_errors %}
-        <div class="text-red-600 mb-4">
-            {{ form.non_field_errors }}
+    {% if form.errors %}
+        <div class="bg-red-100 border border-red-300 text-red-700 rounded-md px-5 py-4 mb-6">
+            <p class="font-semibold mb-2">
+                Não foi possível concluir a operação devido às seguintes inconsistências:
+            </p>
+
+            <ul class="list-disc pl-5 space-y-1">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>
+                            <strong>{{ field.label }}:</strong> {{ error }}
+                        </li>
+                    {% endfor %}
+                {% endfor %}
+
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
         </div>
     {% endif %}
 
 
-    <form method="post"
-          id="form-imagem-cadeia-valor"
-          enctype="multipart/form-data">
+    <form method="post" id="form-imagem-cadeia-valor" enctype="multipart/form-data">
 
         {% csrf_token %}
-
 
         <!-- ================================================= -->
         <!-- ÁREA PRINCIPAL                                    -->
         <!-- ================================================= -->
         <div class="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8 items-start">
-
-
             <!-- ========================================================= -->
             <!-- IMAGEM                                                     -->
             <!-- ========================================================= -->
@@ -179,21 +190,12 @@
 
                 </div>
 
-
                 <!-- ================================================= -->
                 <!-- ERRO DE VALIDAÇÃO DA IMAGEM                       -->
                 <!-- ================================================= -->
                 <p id="imagem-error"
                    class="hidden text-red-500 text-sm mt-1">
                 </p>
-
-
-                {% if form.imagem and form.imagem.errors %}
-                    <p class="text-red-500 text-sm mt-1">
-                        {{ form.imagem.errors|striptags }}
-                    </p>
-                {% endif %}
-
             </div>
 
 
@@ -221,13 +223,6 @@
                         </label>
 
                         {{ form.nome }}
-
-                        {% if form.nome.errors %}
-                            <p class="text-red-500 text-sm mt-1">
-                                {{ form.nome.errors|striptags }}
-                            </p>
-                        {% endif %}
-
                     </div>
 
 
@@ -290,18 +285,8 @@
                         </div>
 
                     </div>
-
-
-                    {% if form.descricao.errors %}
-                        <p class="text-red-500 text-sm mt-1">
-                            {{ form.descricao.errors|striptags }}
-                        </p>
-                    {% endif %}
-
                 </div>
-
             </div>
-
         </div>
 
         <!-- ===================================================== -->
@@ -477,25 +462,21 @@
             {% if modo_edicao %}
 
                 {% if form.instance.situacao != 'Ativa' %}
-
-                    <button type="button"
+                    <button type="submit"
+                            formaction="{% url 'arquiteturaprocessos:ativar_imagem_cadeia_valor' form.instance.pk %}"
+                            formmethod="post"
                             class="bg-green-600 text-white px-6 py-2 rounded
                                    hover:bg-green-700 transition">
                         Ativar Imagem
                     </button>
-
                 {% endif %}
-
 
                 <button type="submit"
                         class="bg-blue-600 text-white px-6 py-2 rounded
                                hover:bg-blue-700 transition">
                     Salvar Alterações
                 </button>
-
             {% endif %}
-
-
 
             <!-- ================================================= -->
             <!-- CANCELAR / VOLTAR                                 -->
