@@ -24,7 +24,7 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse, FileResponse, Http404
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
-from django.db.models import Q, Max, Exists, OuterRef, Count, Prefetch
+from django.db.models import (Q, Max, Exists, OuterRef, Count, Prefetch, Case, When, Value, IntegerField,)
 from calendar import month_abbr
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
@@ -721,7 +721,25 @@ class ImagensCadeiaValor(LoginRequiredMixin, ListView):
     model = ImagemCadeiaValor
     template_name = 'cadeiavalor/imagens_cadeia_valor.html'
     context_object_name = 'imagens'
-    queryset = ImagemCadeiaValor.objects.order_by('nome')
+
+    queryset = ImagemCadeiaValor.objects.order_by(
+        Case(
+            When(
+                situacao="Ativa",
+                then=Value(0)
+            ),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+        "-data_inclusao",
+    )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["total_registros"] = self.object_list.count()
+
+        return context
 
 # ============================================================
 # INCLUSÃO – IMAGEM DA CADEIA DE VALOR

@@ -9,13 +9,20 @@
 
 <div class="py-10 px-4 flex justify-center">
 
-    <div class="w-full max-w-5xl">
+    <div class="w-full max-w-[98%]">
 
         <!-- ===================================================== -->
         <!-- TÍTULO                                                -->
         <!-- ===================================================== -->
         <h2 class="text-2xl font-bold text-blue-800 mb-6">
+
             Imagens da Cadeia de Valor
+
+            <span class="text-base font-normal text-gray-600">
+                ({{ total_registros }}
+                registro{{ total_registros|pluralize:"s" }})
+            </span>
+
         </h2>
 
 
@@ -60,105 +67,284 @@
                           border border-gray-200 rounded-lg shadow">
 
                 <!-- ================================================= -->
+                <!-- DISTRIBUIÇÃO DAS COLUNAS                           -->
+                <!-- ================================================= -->
+                <colgroup>
+
+                    <!-- Imagem -->
+                    <col class="w-[11%]">
+
+                    <!-- Nome -->
+                    <col class="w-[22%]">
+
+                    <!-- Descrição -->
+                    <col class="w-[29%]">
+
+                    <!-- Inclusão -->
+                    <col class="w-[7%]">
+
+                    <!-- Ativação -->
+                    <col class="w-[7%]">
+
+                    <!-- Desativação -->
+                    <col class="w-[7%]">
+
+                    <!-- Situação -->
+                    <col class="w-[8%]">
+
+                    <!-- Ações -->
+                    <col class="w-[9%]">
+
+                </colgroup>
+
+
+                <!-- ================================================= -->
                 <!-- CABEÇALHO                                         -->
                 <!-- ================================================= -->
                 <thead class="bg-blue-100 text-blue-800">
+
                     <tr>
-                        <th class="py-3 px-4 text-left">Imagem</th>
-                        <th class="py-3 px-4 text-left">Nome</th>
-                        <th class="py-3 px-4 text-left">Descrição</th>
-                        <th class="py-3 px-4 text-center">Situação</th>
-                        <th class="py-3 px-4 text-center">Ações</th>
+
+                        <th class="py-3 px-4 text-left">
+                            Imagem
+                        </th>
+
+                        <th class="py-3 px-4 text-left">
+                            Nome
+                        </th>
+
+                        <th class="py-3 px-4 text-left">
+                            Descrição
+                        </th>
+
+                        <th class="py-3 px-3 text-center">
+                            Inclusão
+                        </th>
+
+                        <th class="py-3 px-3 text-center">
+                            Ativação
+                        </th>
+
+                        <th class="py-3 px-3 text-center">
+                            Desativação
+                        </th>
+
+                        <th class="py-3 px-3 text-center">
+                            Situação
+                        </th>
+
+                        <th class="py-3 px-3 text-center">
+                            Ações
+                        </th>
+
                     </tr>
+
                 </thead>
+
 
                 <!-- ================================================= -->
                 <!-- CORPO                                              -->
                 <!-- ================================================= -->
                 <tbody>
+
                     {% for imagem in imagens %}
+
                     <tr class="text-blue-500 {% cycle 'bg-white' 'bg-blue-50' %}">
+
+                        <!-- ========================================= -->
+                        <!-- IMAGEM                                     -->
+                        <!-- ========================================= -->
                         <td class="py-3 px-4 align-middle">
-                            <div class="w-28 h-20 flex items-center justify-center">
+
+                            <div class="w-36 h-24
+                                        flex items-center justify-center">
+
                                 {% if imagem.imagem %}
+
                                     <img src="{{ imagem.imagem.url }}"
                                          alt="{{ imagem.nome }}"
                                          class="max-w-full max-h-full object-contain">
+
                                 {% endif %}
+
                             </div>
+
                         </td>
-                        <td class="py-3 px-4 align-middle break-words">{{ imagem.nome }}</td>
-                        <td class="py-3 px-4 align-middle break-words">{{ imagem.descricao }}</td>
-                        <td class="py-3 px-4 align-middle text-center">
-                            {% if imagem.situacao == 'Ativa' %}
-                                <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-200 text-green-800">
-                                    Ativa
-                                </span>
-                            {% else %}
-                                <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-red-200 text-red-800">
-                                    Inativa
-                                </span>
+
+
+                        <!-- ========================================= -->
+                        <!-- NOME                                       -->
+                        <!-- ========================================= -->
+                        <td class="py-3 px-4 align-middle break-words">
+
+                            {{ imagem.nome }}
+
+                        </td>
+
+
+                        <!-- ========================================= -->
+                        <!-- DESCRIÇÃO                                  -->
+                        <!-- ========================================= -->
+                        <td class="py-3 px-4 align-middle break-words">
+
+                            {{ imagem.descricao }}
+
+                        </td>
+
+
+                        <!-- ========================================= -->
+                        <!-- DATA INCLUSÃO                              -->
+                        <!-- ========================================= -->
+                        <td class="py-3 px-3 align-middle text-center whitespace-nowrap">
+
+                            {{ imagem.data_inclusao|date:"d/m/Y" }}
+
+                        </td>
+
+
+                        <!-- ========================================= -->
+                        <!-- DATA ATIVAÇÃO                             -->
+                        <!-- ========================================= -->
+                        <td class="py-3 px-3 align-middle text-center whitespace-nowrap">
+
+                            {% if imagem.data_ativacao %}
+                                {{ imagem.data_ativacao|date:"d/m/Y" }}
                             {% endif %}
+
                         </td>
+
+
+                        <!-- ========================================= -->
+                        <!-- DATA DESATIVAÇÃO                          -->
+                        <!-- ========================================= -->
+                        <td class="py-3 px-3 align-middle text-center whitespace-nowrap">
+
+                            {% if imagem.data_desativacao %}
+                                {{ imagem.data_desativacao|date:"d/m/Y" }}
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ========================================= -->
+                        <!-- SITUAÇÃO                                   -->
+                        <!-- ========================================= -->
+                        <td class="py-3 px-3 align-middle text-center">
+
+                            {% if imagem.situacao == 'Ativa' %}
+
+                                <span class="bg-green-200 text-green-900
+                                             px-2 py-1 rounded
+                                             text-xs font-semibold">
+
+                                    Ativa
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="bg-red-200 text-red-900
+                                             px-2 py-1 rounded
+                                             text-xs font-semibold">
+
+                                    Inativa
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
 
                         <!-- ========================================= -->
                         <!-- AÇÕES                                      -->
                         <!-- ========================================= -->
-                        <td class="py-3 px-4 text-right align-middle">
-                            <div class="flex justify-end items-center space-x-2">
+                        <td class="py-3 px-3 text-center align-middle">
+
+                            <div class="flex justify-center items-center space-x-2">
+
+                                <!-- VISUALIZAR -->
                                 <a href="{% url 'arquiteturaprocessos:visualizar_imagem_cadeia_valor' imagem.pk %}"
                                    title="Visualizar"
                                    class="text-blue-600 hover:text-blue-800">
+
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                          class="h-5 w-5"
                                          fill="none"
                                          viewBox="0 0 24 24"
                                          stroke="currentColor">
-                                        <path stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7z"/>
+
+                                      <path stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+
+                                      <path stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </a>
 
+
                                 {% if request.user.perfil.nome|lower == 'administrador' %}
+
+                                    <!-- EDITAR -->
                                     <a href="{% url 'arquiteturaprocessos:editar_imagem_cadeia_valor' imagem.pk %}"
                                        title="Editar"
                                        class="text-yellow-600 hover:text-yellow-800">
+
                                         <svg xmlns="http://www.w3.org/2000/svg"
                                              class="h-5 w-5"
                                              fill="none"
                                              viewBox="0 0 24 24"
                                              stroke="currentColor">
+
                                             <path d="M17.414 2.586a2 2 0 0 0-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 0 0 0-2.828z"/>
+
                                             <path fill-rule="evenodd"
-                                                  d="M2 6a2 2 0 0 1 2-2h4a1 1 0 0 1 1 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"
+                                                  d="M2 6a2 2 0 0 1 2 2v4a1 1 0 1 1-2 0V8a2 2 0 0 1 2-2h4a1 1 0 1 1 0 2H4v10h10v-4a1 1 0 1 1 2 0v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8z"
                                                   clip-rule="evenodd"/>
+
                                         </svg>
+
                                     </a>
+
                                 {% endif %}
+
                             </div>
+
                         </td>
+
                     </tr>
+
+
                     {% empty %}
 
                     <!-- ================================================= -->
                     <!-- NENHUM REGISTRO                                    -->
                     <!-- ================================================= -->
                     <tr>
-                        <td colspan="4"
+
+                        <td colspan="8"
                             class="py-4 px-4 text-center text-gray-500">
+
                             Nenhuma imagem da Cadeia de Valor cadastrada.
+
                         </td>
+
                     </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
+
 </div>
+
 {% endblock %}
