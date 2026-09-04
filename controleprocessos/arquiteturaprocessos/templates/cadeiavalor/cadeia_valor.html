@@ -7,13 +7,10 @@ Cadeia de Valor
 {% block body %}
 
 <div class="max-w-7xl mx-auto px-4">
-
     <!-- ===================================================== -->
     <!-- CABEÇALHO DA CADEIA DE VALOR                          -->
     <!-- ===================================================== -->
-
-    <div class="mb-5">
-
+    <div class="mb-3">
         <h1 class="text-4xl font-bold text-blue-800 mb-1">
             Cadeia de Valor
         </h1>
@@ -22,34 +19,31 @@ Cadeia de Valor
             A cadeia de valor representa a visão sistêmica dos
             macroprocessos organizacionais da SEGER.
         </p>
-
     </div>
-
 
     <!-- ===================================================== -->
     <!-- DEFINIÇÃO + IMAGEM                                    -->
     <!-- ===================================================== -->
-
     <section class="relative overflow-hidden rounded-xl border border-blue-100
-                    bg-white shadow-sm min-h-[300px]">
+                bg-white shadow-sm h-[320px]">
 
-        <div class="grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] min-h-[300px]">
-
+        <div class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] h-full">
             <!-- ================================================= -->
             <!-- DEFINIÇÃO                                         -->
             <!-- ================================================= -->
-
-            <div class="relative z-10 flex items-center
+            <div class="relative z-20 flex items-start
                         bg-gradient-to-br from-blue-50 to-blue-100
-                        px-8 py-8 lg:pr-12">
+                        px-8 py-6 lg:pr-16
+                        [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
 
                 <div class="max-w-xl">
-
-                    <h2 class="text-2xl font-bold text-blue-800 mb-5">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-3">
                         Definição
                     </h2>
 
-                    <p class="text-gray-700 text-base leading-relaxed text-justify">
+                    <p class="text-gray-700 text-base leading-relaxed
+                              text-justify italic"
+                       style="text-justify: inter-word;">
                         A cadeia de valor representa a visão sistêmica dos
                         macroprocessos organizacionais da instituição, permitindo
                         compreender como informações, produtos e atividades se
@@ -59,43 +53,42 @@ Cadeia de Valor
                         integrada dos macroprocessos que contribuem para a
                         geração de valor público.
                     </p>
-
                 </div>
-
             </div>
-
 
             <!-- ================================================= -->
             <!-- IMAGEM                                             -->
             <!-- ================================================= -->
-
-            <div class="relative min-h-[300px]">
-
+            <div class="relative h-full -ml-[4%]">
                 <div class="absolute inset-0
-                            bg-gradient-to-br from-blue-100/40 to-transparent">
+                            bg-gradient-to-br from-blue-100/40 to-transparent
+                            z-10">
                 </div>
 
-                <div class="relative h-full p-4 lg:p-5">
-
+                <div class="relative h-full p-4 lg:pt-5 lg:px-5 lg:pb-6
+                            [clip-path:polygon(12%_0,100%_0,100%_100%,0_100%)]">
                     <div class="h-full overflow-hidden rounded-lg">
+                        {% if imagem_ativa and imagem_ativa.imagem %}
+                            <div class="flex h-full w-full items-center justify-center
+                                        bg-gray-100">
 
-                        <div class="flex h-full items-center justify-center
-                                    bg-gray-100">
+                                <img src="{{ imagem_ativa.imagem.url }}"
+                                     alt="{{ imagem_ativa.nome }}"
+                                     class="h-[285px] w-auto max-w-full object-contain">
+                            </div>
+                        {% else %}
+                            <div class="flex h-full items-center justify-center
+                                        bg-gray-100">
 
-                            <span class="text-gray-500">
-                                Imagem da Cadeia de Valor
-                            </span>
-
-                        </div>
-
+                                <span class="text-gray-500">
+                                    Imagem da Cadeia de Valor
+                                </span>
+                            </div>
+                        {% endif %}
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </section>
 
     <!-- ===================================================== -->

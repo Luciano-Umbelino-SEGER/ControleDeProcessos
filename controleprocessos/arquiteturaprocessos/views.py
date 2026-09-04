@@ -1063,9 +1063,22 @@ class AtivarImagemCadeiaValor(LoginRequiredMixin, View):
             )
         )
 
-# Visualização Pública da Cadeia de Valor
+# ============================================================
+# VISUALIZAR – IMAGEM DA CADEIA DE VALOR - TELA PÚBLICA
+# ============================================================
 class VisualizarCadeiaValor(TemplateView):
     template_name = 'cadeiavalor/cadeia_valor.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["imagem_ativa"] = (
+            ImagemCadeiaValor.objects
+            .filter(situacao="Ativa")
+            .first()
+        )
+
+        return context
 
 # ---------------------------------------------
 # ARQUITETURA DE PROCESSOS (Tela Pública)
