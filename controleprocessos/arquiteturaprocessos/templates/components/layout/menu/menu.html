@@ -27,12 +27,13 @@ docs/MENU_SIGEMP.md
                  x-transition
                  class="ml-10 mt-0.5 space-y-0.5">
 
+                {% url 'arquiteturaprocessos:visualizar_cadeia_valor' as visualizar_cadeia_valor_url %}
                 {% url 'arquiteturaprocessos:tiposdocumento' 'cadeia_valor' as cadeiavalor_url %}
                 {% url 'arquiteturaprocessos:imagens_cadeia_valor' as imagens_cadeia_valor_url %}
 
+                {% include "components/layout/sidebar_subitem.html" with href=visualizar_cadeia_valor_url title="Cadeia de Valor" icon="fa-image" %}
                 {% include "components/layout/sidebar_subitem.html" with href=cadeiavalor_url title="Definição" icon="fa-file-lines" %}
                 {% include "components/layout/sidebar_subitem.html" with href=imagens_cadeia_valor_url title="Imagens" icon="fa-image" %}
-                {% include "components/layout/sidebar_subitem.html" with href="#" title="Visualizar" icon="fa-eye" %}
             </div>
         </div>
     {% else %}

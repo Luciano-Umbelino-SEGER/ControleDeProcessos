@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Cadeia de Valor
+{% endblock %}
+
+{% block body %}
+
+<div class="max-w-7xl mx-auto px-4">
+
+    <!-- ===================================================== -->
+    <!-- CABEÇALHO DA CADEIA DE VALOR                          -->
+    <!-- ===================================================== -->
+
+    <div class="mb-5">
+
+        <h1 class="text-4xl font-bold text-blue-800 mb-1">
+            Cadeia de Valor
+        </h1>
+
+        <p class="text-gray-600 text-base">
+            A cadeia de valor representa a visão sistêmica dos
+            macroprocessos organizacionais da SEGER.
+        </p>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- DEFINIÇÃO + IMAGEM                                    -->
+    <!-- ===================================================== -->
+
+    <section class="relative overflow-hidden rounded-xl border border-blue-100
+                    bg-white shadow-sm min-h-[300px]">
+
+        <div class="grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] min-h-[300px]">
+
+            <!-- ================================================= -->
+            <!-- DEFINIÇÃO                                         -->
+            <!-- ================================================= -->
+
+            <div class="relative z-10 flex items-center
+                        bg-gradient-to-br from-blue-50 to-blue-100
+                        px-8 py-8 lg:pr-12">
+
+                <div class="max-w-xl">
+
+                    <h2 class="text-2xl font-bold text-blue-800 mb-5">
+                        Definição
+                    </h2>
+
+                    <p class="text-gray-700 text-base leading-relaxed text-justify">
+                        A cadeia de valor representa a visão sistêmica dos
+                        macroprocessos organizacionais da instituição, permitindo
+                        compreender como informações, produtos e atividades se
+                        relacionam e transitam entre os diferentes processos da
+                        organização. Na Seger, sua construção foi realizada de
+                        forma colaborativa, possibilitando a representação
+                        integrada dos macroprocessos que contribuem para a
+                        geração de valor público.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- IMAGEM                                             -->
+            <!-- ================================================= -->
+
+            <div class="relative min-h-[300px]">
+
+                <div class="absolute inset-0
+                            bg-gradient-to-br from-blue-100/40 to-transparent">
+                </div>
+
+                <div class="relative h-full p-4 lg:p-5">
+
+                    <div class="h-full overflow-hidden rounded-lg">
+
+                        <div class="flex h-full items-center justify-center
+                                    bg-gray-100">
+
+                            <span class="text-gray-500">
+                                Imagem da Cadeia de Valor
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- MACROPROCESSO                                        -->
+    <!-- ===================================================== -->
+    <section class="mt-8">
+        <h2 class="text-2xl font-bold text-blue-800 mb-2">
+            Macroprocesso
+        </h2>
+
+        <p class="text-gray-700 text-base leading-relaxed text-justify max-w-6xl">
+            Macroprocesso é um conjunto de processos relacionados e integrados
+            que, de forma coordenada, contribuem para o alcance de objetivos
+            estratégicos e para a geração de valor pela organização. Representa
+            uma visão abrangente das atividades organizacionais, permitindo
+            compreender como diferentes processos se articulam para produzir
+            resultados.
+        </p>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- MACROPROCESSOS DA SEGER                               -->
+    <!-- ===================================================== -->
+
+    <section class="mt-8">
+
+        <h2 class="text-2xl font-bold text-blue-800 mb-2">
+            Macroprocessos SEGER
+        </h2>
+
+        <p class="text-gray-600 text-base mb-5">
+            Os Macroprocessos estão organizados em classificações,
+            refletindo as principais áreas de atuação da SEGER.
+        </p>
+
+    </section>
+
+    <!-- ===================================================== -->
+<!-- CARDS DOS MACROPROCESSOS                              -->
+<!-- ===================================================== -->
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mt-5">
+
+    <!-- ================================================= -->
+    <!-- CARD – ESTRATÉGICO                                -->
+    <!-- ================================================= -->
+
+    <article class="overflow-hidden rounded-xl border border-blue-100
+                    bg-white shadow-sm">
+
+        <!-- Cabeçalho -->
+        <div class="flex items-center gap-4 px-5 py-4
+                    bg-purple-50">
+
+            <div class="w-16 h-16 shrink-0 rounded-full
+                        bg-purple-600 flex items-center justify-center
+                        overflow-hidden">
+
+                <span class="text-white text-sm font-semibold">
+                    IMAGEM
+                </span>
+
+            </div>
+
+            <h3 class="text-xl font-bold text-purple-700">
+                Estratégico
+            </h3>
+
+        </div>
+
+
+        <!-- Descrição -->
+        <div class="px-5 py-4">
+
+            <p class="text-gray-700 text-sm leading-relaxed text-justify">
+                Correspondem aos macroprocessos e processos que zelam pela
+                estratégia e pela gestão da organização. Ou seja, têm como
+                finalidade fornecer as diretrizes organizacionais, promover a
+                estruturação, avaliação e melhoria do funcionamento da
+                instituição e de seus processos.
+            </p>
+
+        </div>
+
+    </article>
+
+
+    <!-- ================================================= -->
+    <!-- CARD – SUPORTE                                    -->
+    <!-- ================================================= -->
+
+    <article class="overflow-hidden rounded-xl border border-orange-100
+                    bg-white shadow-sm">
+
+        <!-- Cabeçalho -->
+        <div class="flex items-center gap-4 px-5 py-4
+                    bg-orange-50">
+
+            <div class="w-16 h-16 shrink-0 rounded-full
+                        bg-orange-600 flex items-center justify-center
+                        overflow-hidden">
+
+                <span class="text-white text-sm font-semibold">
+                    IMAGEM
+                </span>
+
+            </div>
+
+            <h3 class="text-xl font-bold text-orange-700">
+                Suporte
+            </h3>
+
+        </div>
+
+
+        <!-- Descrição -->
+        <div class="px-5 py-4">
+
+            <p class="text-gray-700 text-sm leading-relaxed text-justify">
+                Correspondem aos macroprocessos e processos responsáveis por
+                prover as condições operacionais necessárias à execução dos
+                processos finalísticos e estratégicos. Orientam o seu olhar
+                para o ambiente interno da instituição fornecendo os subsídios
+                para a execução de todos os demais processos.
+            </p>
+
+        </div>
+
+    </article>
+
+
+    <!-- ================================================= -->
+    <!-- CARD – FINALÍSTICO                                -->
+    <!-- ================================================= -->
+
+    <article class="overflow-hidden rounded-xl border border-green-100
+                    bg-white shadow-sm">
+
+        <!-- Cabeçalho -->
+        <div class="flex items-center gap-4 px-5 py-4
+                    bg-green-50">
+
+            <div class="w-16 h-16 shrink-0 rounded-full
+                        bg-green-600 flex items-center justify-center
+                        overflow-hidden">
+
+                <span class="text-white text-sm font-semibold">
+                    IMAGEM
+                </span>
+
+            </div>
+
+            <h3 class="text-xl font-bold text-green-700">
+                Finalístico
+            </h3>
+
+        </div>
+
+
+        <!-- Descrição -->
+        <div class="px-5 py-4">
+
+            <p class="text-gray-700 text-sm leading-relaxed text-justify">
+                Correspondem aos macroprocessos e processos que são a razão da
+                existência da organização. Estão correlacionados à missão e à
+                visão, ao propósito e agregam valor diretamente aos
+                cidadãos/usuários/clientes.
+            </p>
+
+        </div>
+
+    </article>
+
+</div>
+
+</div>
+
+{% endblock %}
+
+
