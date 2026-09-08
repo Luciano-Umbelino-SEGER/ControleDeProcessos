@@ -1733,7 +1733,6 @@ window.NORMAS_HIDRATADAS = JSON.parse(
 {% include 'components/modal_documento_processo.html' %}
 
 <script>
-
 document.addEventListener("DOMContentLoaded", function () {
 
     const rbProcesso = document.getElementById("rb_processo")
@@ -1752,6 +1751,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const processoInput = document.getElementById("processo_input_visible")
     const subprocessoInput = document.getElementById("subprocesso_input_visible")
     const hiddenNome = document.getElementById("id_nome")
+
+    // Guarda o ID da Área escolhida no Processo
+    let areaResponsavelAnterior = "";
 
     // 🔥 hidratação inicial (ESSENCIAL)
     if (hiddenNome && hiddenNome.value) {
@@ -1789,11 +1791,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // Exposta globalmente para reutilização por outros scripts do formulário
     window.atualizarVisualTipo = function(limparAoLiberar = true) {
 
-        const CAMPOS_HERANCA = [
+        const CAMPOS_HERANCA_PAI = [
             "id_classificacao",
             "id_macroprocesso_nivel1",
             "id_macroprocesso_nivel2",
-            "id_area_responsavel",
+            "id_area_responsavel"
+        ];
+
+        const CAMPOS_HERANCA_AREA = [
             "id_gestor",
             "id_telefone",
             "id_email"
@@ -1848,7 +1853,63 @@ document.addEventListener("DOMContentLoaded", function () {
                 lblCampoSubprocesso.classList.add("text-blue-700");
             }
 
-            CAMPOS_HERANCA.forEach(id =>
+            // =================================================
+            // GUARDA A ÁREA ANTES DE LIMPAR
+            // =================================================
+            if (limparAoLiberar) {
+
+                const areaCampo =
+                    document.getElementById("id_area_responsavel");
+
+                if (areaCampo) {
+                    areaResponsavelAnterior =
+                        areaCampo.value || "";
+                }
+            }
+
+            // =================================================
+            // LIMPAR CAMPOS AO ENTRAR EM SUBPROCESSO
+            // =================================================
+            if (limparAoLiberar) {
+
+                CAMPOS_HERANCA_PAI.forEach(id => {
+
+                    const campo =
+                        document.getElementById(id);
+
+                    if (!campo) return;
+
+                    if (campo.tagName === "SELECT") {
+                        $(campo).val(null).trigger("change");
+                    } else {
+                        campo.value = "";
+                    }
+                });
+
+                CAMPOS_HERANCA_AREA.forEach(id => {
+
+                    const campo =
+                        document.getElementById(id);
+
+                    if (campo) {
+                        campo.value = "";
+                    }
+                });
+            }
+
+            // =================================================
+            // SUBPROCESSO
+            // Campos herdados do Processo Pai
+            // =================================================
+            CAMPOS_HERANCA_PAI.forEach(id =>
+                HerancaProcesso.bloquearCampo(id)
+            );
+
+            // =================================================
+            // Contatos da Área
+            // Sempre automáticos e não editáveis
+            // =================================================
+            CAMPOS_HERANCA_AREA.forEach(id =>
                 HerancaProcesso.bloquearCampo(id)
             );
 
@@ -1862,40 +1923,99 @@ document.addEventListener("DOMContentLoaded", function () {
                 lblCampoSubprocesso.classList.add("text-gray-400");
             }
 
+            // =================================================
+            // PROCESSO
+            // =================================================
             if (limparAoLiberar) {
 
                 HerancaProcesso.limpar();
 
+                // =================================================
+                // RESTAURA A ÁREA ANTERIOR
+                // =================================================
+                if (areaResponsavelAnterior) {
+
+                    const areaCampo =
+                        document.getElementById("id_area_responsavel");
+
+                    if (areaCampo) {
+
+                        $(areaCampo)
+                            .val(areaResponsavelAnterior)
+                            .trigger("change");
+
+                        preencherCamposArea(
+                            areaResponsavelAnterior,
+                            true
+                        );
+                    }
+                }
+
             } else {
 
-                CAMPOS_HERANCA.forEach(id =>
+                // =================================================
+                // PROCESSO
+                // Campos que podem ser definidos pelo usuário
+                // =================================================
+                CAMPOS_HERANCA_PAI.forEach(id =>
                     HerancaProcesso.desbloquearCampo(id)
                 );
 
+                // =================================================
+                // Contatos da Área
+                // Sempre automáticos e não editáveis
+                // =================================================
+                CAMPOS_HERANCA_AREA.forEach(id =>
+                    HerancaProcesso.bloquearCampo(id)
+                );
             }
-
         }
-
     }
 
-    if (rbProcesso) rbProcesso.addEventListener("change", () => atualizarVisualTipo(true))
-    if (rbSubprocesso) rbSubprocesso.addEventListener("change", () => atualizarVisualTipo(true))
-    if (rbGoves) rbGoves.addEventListener("change", () => atualizarVisualTipo(false));
-    if (rbSeger) rbSeger.addEventListener("change", () => atualizarVisualTipo(false));
-    if (rbOutros) rbOutros.addEventListener("change", () => atualizarVisualTipo(false));
+    if (rbProcesso)
+        rbProcesso.addEventListener(
+            "change",
+            () => atualizarVisualTipo(true)
+        )
+
+    if (rbSubprocesso)
+        rbSubprocesso.addEventListener(
+            "change",
+            () => atualizarVisualTipo(true)
+        )
+
+    if (rbGoves)
+        rbGoves.addEventListener(
+            "change",
+            () => atualizarVisualTipo(false)
+        );
+
+    if (rbSeger)
+        rbSeger.addEventListener(
+            "change",
+            () => atualizarVisualTipo(false)
+        );
+
+    if (rbOutros)
+        rbOutros.addEventListener(
+            "change",
+            () => atualizarVisualTipo(false)
+        );
 
 
     /* sincroniza nome do processo */
     if (processoInput) {
         processoInput.addEventListener("input", function () {
-            if (hiddenNome) hiddenNome.value = this.value
+            if (hiddenNome)
+                hiddenNome.value = this.value
         })
     }
 
     /* sincroniza nome do subprocesso */
     if (subprocessoInput) {
         subprocessoInput.addEventListener("input", function () {
-            if (hiddenNome) hiddenNome.value = this.value
+            if (hiddenNome)
+                hiddenNome.value = this.value
         })
     }
 

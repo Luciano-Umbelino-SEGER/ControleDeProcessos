@@ -12,18 +12,29 @@ function initAutoPreenchimentoArea(url) {
     const emailInput =
         document.getElementById("id_email");
 
-    const parentInput =
-        document.getElementById("id_parent");
-
     if (!areaSelect) {
         return;
     }
 
+    /* =====================================================
+       IDENTIFICAR TIPO DO PROCESSO
+       ===================================================== */
+    function obterTipoProcesso() {
+
+        return (
+            document.querySelector(
+                'input[name="tipo"]:checked'
+            )?.value
+            ||
+            document.querySelector(
+                'input[name="tipo_processo_fake"]:checked'
+            )?.value
+        );
+    }
 
     /* =====================================================
        PREENCHER CAMPOS DA ÁREA
        ===================================================== */
-
     function preencherCampos(areaId, forcar = false) {
 
         /*
@@ -33,10 +44,7 @@ function initAutoPreenchimentoArea(url) {
             return;
         }
 
-        const tipo =
-            document.querySelector(
-                'input[name="tipo"]:checked'
-            )?.value;
+        const tipo = obterTipoProcesso();
 
         /*
          * =================================================
@@ -166,10 +174,7 @@ function initAutoPreenchimentoArea(url) {
         "change",
         function () {
 
-            const tipo =
-                document.querySelector(
-                    'input[name="tipo"]:checked'
-                )?.value;
+            const tipo = obterTipoProcesso();
 
             /*
              * Nos tipos Subprocesso/Outro, a Área não
@@ -195,23 +200,10 @@ function initAutoPreenchimentoArea(url) {
     /* =====================================================
        EVENTO CHANGE — SELECT2
        ===================================================== */
-
     if (window.$) {
-
         $(areaSelect).on(
             "change.autoPreenchimentoArea",
             function () {
-
-                const tipo =
-                    document.querySelector(
-                        'input[name="tipo"]:checked'
-                    )?.value;
-
-                if (
-                    tipo !== "processo"
-                ) {
-                    return;
-                }
 
                 preencherCampos(
                     $(this).val(),
@@ -221,17 +213,12 @@ function initAutoPreenchimentoArea(url) {
         );
     }
 
-
     /* =====================================================
        LOAD — EDIÇÃO
        ===================================================== */
-
     setTimeout(() => {
 
-        const tipo =
-            document.querySelector(
-                'input[name="tipo"]:checked'
-            )?.value;
+        const tipo = obterTipoProcesso();
 
         /*
          * Em Subprocesso/Outro, se houver Área,

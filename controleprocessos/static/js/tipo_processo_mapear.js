@@ -495,22 +495,6 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // PREPARA ESTADO DO TIPO DE DESTINO
-    //
-    // Regra:
-    //
-    // 1. Processo não possui Parent.
-    //
-    // 2. Se destino já possui Parent, mantém
-    //    completamente seu estado.
-    //
-    // 3. Se destino está vazio e o outro tipo
-    //    não-Processo possui Parent, herda:
-    //
-    //    Parent
-    //    Abrangência
-    //    Classificação
-    //    Macro N1
-    //    Macro N2
     // =========================================
     function prepararEstadoDestino(novoTipo) {
 
@@ -536,13 +520,6 @@ function initTipoProcessoMapear(config = {}) {
         // DESTINO JÁ POSSUI PAI
         // =========================================
         if (estadoDestino.parent) {
-
-            /*
-             * O destino já possui sua própria
-             * associação.
-             *
-             * Não recebe nada do outro tipo.
-             */
             return;
         }
 
@@ -589,9 +566,6 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // LIMPA CARACTERÍSTICAS VISUAIS
-    //
-    // Usada ao entrar em Subprocesso/Outro.
-    // Não apaga a memória.
     // =========================================
     function limparCaracteristicasDaTela() {
 
@@ -627,11 +601,6 @@ function initTipoProcessoMapear(config = {}) {
                 )
             ) {
 
-                /*
-                 * Atualiza somente a interface do Select2.
-                 *
-                 * Não dispara eventos de negócio.
-                 */
                 $(el)
                     .val(null)
                     .trigger(
@@ -997,13 +966,6 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // ESTADO DA ABRANGÊNCIA
-    //
-    // Processo:
-    //   usuário pode escolher.
-    //
-    // Subprocesso / Outro:
-    //   Abrangência vem do Processo Pai
-    //   e fica bloqueada.
     // =========================================
     function atualizarEstadoAbrangencia() {
 
@@ -1016,10 +978,6 @@ function initTipoProcessoMapear(config = {}) {
                 radio.disabled =
                     !habilitada;
 
-                /*
-                 * Mantém o radio visualmente coerente
-                 * com o estado habilitado/desabilitado.
-                 */
                 const label =
                     radio.closest("label");
 
@@ -1316,8 +1274,6 @@ function initTipoProcessoMapear(config = {}) {
 
         // =========================================
         // 5. LIMPA CARACTERÍSTICAS VISUAIS
-        //
-        // Somente Subprocesso/Outro.
         // =========================================
         if (
             tipoAtual === "subprocesso" ||
@@ -1338,6 +1294,19 @@ function initTipoProcessoMapear(config = {}) {
         // 7. APLICA HERANÇA DO PAI
         // =========================================
         aplicarRegraHeranca();
+
+        if (
+            tipoAtual === "processo" &&
+            cacheEstados.processo.area &&
+            typeof window.preencherCamposArea === "function"
+        ) {
+            setTimeout(() => {
+                window.preencherCamposArea(
+                    cacheEstados.processo.area,
+                    true
+                );
+            }, 0);
+        }
 
         // =========================================
         // 8. SINCRONIZA NOME
@@ -1410,8 +1379,6 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // EVENTOS DA ABRANGÊNCIA
-    //
-    // Somente Processo pode alterar.
     // =========================================
     radiosAbrangencia.forEach(
         radio => {
@@ -1655,9 +1622,6 @@ function initTipoProcessoMapear(config = {}) {
 
     // =========================================
     // GARANTIA FINAL DO POST
-    //
-    // O hidden é a fonte efetiva do valor enviado
-    // ao Django.
     // =========================================
     const form =
     hiddenAbrangencia?.closest("form");
