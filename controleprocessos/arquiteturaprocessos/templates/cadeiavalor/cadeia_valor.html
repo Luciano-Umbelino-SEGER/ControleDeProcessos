@@ -24,93 +24,101 @@ Cadeia de Valor
     <!-- ===================================================== -->
     <!-- DEFINIÇÃO + IMAGEM                                    -->
     <!-- ===================================================== -->
+
     <div x-data="{ imagemAmpliada: false }"
          @keydown.escape.window="imagemAmpliada = false">
 
-        <section class="relative overflow-hidden rounded-xl border border-blue-100
-                        bg-white shadow-sm h-[320px]">
+        <section class="relative overflow-hidden rounded-xl
+                        border border-blue-100
+                        bg-white shadow-sm
+                        h-[320px]">
 
-            <div class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] h-full">
+            <!-- ================================================= -->
+            <!-- IMAGEM – ÁREA PRINCIPAL                           -->
+            <!-- ================================================= -->
+            <div class="absolute inset-y-0 right-0
+                        w-[62%]
+                        overflow-hidden
+                        bg-blue-50
+                        [clip-path:polygon(12%_0,100%_0,100%_100%,0_100%)]">
 
-                <!-- ================================================= -->
-                <!-- DEFINIÇÃO                                         -->
-                <!-- ================================================= -->
-                <div class="relative z-20 flex items-start
-                            bg-gradient-to-br from-blue-50 to-blue-100
-                            px-8 py-6 lg:pr-16
-                            [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
+                {% if imagem_ativa and imagem_ativa.imagem %}
 
-                    <div class="max-w-xl">
-
-                        <h2 class="text-2xl font-bold text-blue-800 mb-3">
-                            Definição
-                        </h2>
-
-                        <p class="text-gray-700 text-base leading-relaxed
-                                  text-justify italic"
-                           style="text-justify: inter-word;">
-                            A cadeia de valor representa a visão sistêmica dos
-                            macroprocessos organizacionais da instituição, permitindo
-                            compreender como informações, produtos e atividades se
-                            relacionam e transitam entre os diferentes processos da
-                            organização. Na Seger, sua construção foi realizada de
-                            forma colaborativa, possibilitando a representação
-                            integrada dos macroprocessos que contribuem para a
-                            geração de valor público.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <!-- ================================================= -->
-                <!-- IMAGEM                                             -->
-                <!-- ================================================= -->
-
-                <div class="relative h-full -ml-[4%]">
-
-                    <!-- Camada visual sobre a imagem -->
                     <div class="absolute inset-0
-                                bg-gradient-to-br from-blue-100/40 to-transparent
-                                z-10 pointer-events-none">
-                    </div>
+                                flex items-center justify-center">
 
-
-                    <div class="relative h-full p-4 lg:pt-5 lg:px-5 lg:pb-6
-                                [clip-path:polygon(12%_0,100%_0,100%_100%,0_100%)]">
-
-                        <div class="h-full overflow-hidden rounded-lg">
-
-                            {% if imagem_ativa and imagem_ativa.imagem %}
-
-                                <div class="flex h-full w-full items-center justify-center
-                                            bg-gray-100">
-
-                                    <img src="{{ imagem_ativa.imagem.url }}"
-                                         alt="{{ imagem_ativa.nome }}"
-                                         class="relative z-20 h-[285px] w-auto max-w-full
-                                                object-contain cursor-zoom-in"
-                                         @click="imagemAmpliada = true">
-
-                                </div>
-
-                            {% else %}
-
-                                <div class="flex h-full items-center justify-center
-                                            bg-gray-100">
-
-                                    <span class="text-gray-500">
-                                        Imagem da Cadeia de Valor
-                                    </span>
-
-                                </div>
-
-                            {% endif %}
-
-                        </div>
+                        <img src="{{ imagem_ativa.imagem.url }}"
+                             alt="{{ imagem_ativa.nome }}"
+                             class="absolute left-[59%] top-1/2
+                                    h-[92%] w-auto
+                                    -translate-x-1/2 -translate-y-1/2
+                                    object-contain
+                                    cursor-zoom-in
+                                    z-10"
+                             @click="imagemAmpliada = true">
 
                     </div>
+
+                {% else %}
+
+                    <div class="absolute inset-0
+                                flex items-center justify-center
+                                bg-gray-100">
+
+                        <span class="text-gray-500">
+                            Imagem da Cadeia de Valor
+                        </span>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- FAIXA BRANCA DA DIAGONAL                          -->
+            <!-- ================================================= -->
+
+            <div class="absolute inset-y-0 left-0
+                        z-20 w-[53%]
+                        bg-white
+                        [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- DEFINIÇÃO – PAINEL DIAGONAL                       -->
+            <!-- ================================================= -->
+
+            <div class="relative z-30
+                        flex items-start
+                        h-full
+                        w-[52%]
+                        bg-gradient-to-br
+                        from-blue-50
+                        to-blue-100
+                        px-8 py-6 lg:pr-16
+                        [clip-path:polygon(0_0,98%_0,86%_100%,0_100%)]">
+
+                <div class="max-w-xl">
+
+                    <h2 class="text-2xl font-bold text-blue-800 mb-3">
+                        Definição
+                    </h2>
+
+                    <p class="text-gray-700 text-base leading-relaxed
+                              text-justify italic"
+                       style="text-justify: inter-word;">
+                        A cadeia de valor representa a visão sistêmica dos
+                        macroprocessos organizacionais da instituição, permitindo
+                        compreender como informações, produtos e atividades se
+                        relacionam e transitam entre os diferentes processos da
+                        organização. Na Seger, sua construção foi realizada de
+                        forma colaborativa, possibilitando a representação
+                        integrada dos macroprocessos que contribuem para a
+                        geração de valor público.
+                    </p>
 
                 </div>
 
