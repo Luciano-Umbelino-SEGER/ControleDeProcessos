@@ -119,7 +119,7 @@ Cadeia de Valor
             Macroprocessos SEGER
         </h2>
 
-        <p class="text-gray-600 text-base mb-5">
+        <p class="text-gray-600 text-base mb-2">
             Os Macroprocessos estão organizados em classificações,
             refletindo as principais áreas de atuação da SEGER.
         </p>
@@ -127,142 +127,88 @@ Cadeia de Valor
     </section>
 
     <!-- ===================================================== -->
-<!-- CARDS DOS MACROPROCESSOS                              -->
-<!-- ===================================================== -->
+    <!-- CARDS DOS MACROPROCESSOS                              -->
+    <!-- ===================================================== -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-2">
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mt-5">
+        {% for classificacao in classificacoes %}
 
-    <!-- ================================================= -->
-    <!-- CARD – ESTRATÉGICO                                -->
-    <!-- ================================================= -->
+            <article class="relative overflow-hidden rounded-xl
+                            border border-blue-100
+                            bg-white shadow-sm
+                            min-h-[175px]
+                            h-full">
 
-    <article class="overflow-hidden rounded-xl border border-blue-100
-                    bg-white shadow-sm">
+                <!-- ================================================= -->
+                <!-- ÁREA VISUAL / IMAGEM                              -->
+                <!-- ================================================= -->
 
-        <!-- Cabeçalho -->
-        <div class="flex items-center gap-4 px-5 py-4
-                    bg-purple-50">
+                <div class="absolute inset-y-0 left-0 w-[25%]
+                            overflow-hidden">
 
-            <div class="w-16 h-16 shrink-0 rounded-full
-                        bg-purple-600 flex items-center justify-center
-                        overflow-hidden">
+                    <!-- Fundo -->
+                    <div class="absolute inset-0 bg-blue-50">
+                    </div>
 
-                <span class="text-white text-sm font-semibold">
-                    IMAGEM
-                </span>
+                    <!-- Faixa diagonal -->
+                    <div class="absolute inset-0
+                                bg-blue-100
+                                [clip-path:polygon(0_0,78%_0,48%_100%,0_100%)]">
+                    </div>
 
-            </div>
+                    <!-- Imagem cadastrada -->
+                    <div class="relative z-10 flex h-full
+                                items-start justify-center
+                                px-2 pt-7">
 
-            <h3 class="text-xl font-bold text-purple-700">
-                Estratégico
-            </h3>
+                        {% if classificacao.imagem %}
 
-        </div>
+                            <img src="{{ classificacao.imagem.url }}"
+                                 alt="{{ classificacao.nome }}"
+                                 class="w-20 h-20 object-contain">
 
+                        {% endif %}
 
-        <!-- Descrição -->
-        <div class="px-5 py-4">
+                    </div>
 
-            <p class="text-gray-700 text-sm leading-relaxed text-justify">
-                Correspondem aos macroprocessos e processos que zelam pela
-                estratégia e pela gestão da organização. Ou seja, têm como
-                finalidade fornecer as diretrizes organizacionais, promover a
-                estruturação, avaliação e melhoria do funcionamento da
-                instituição e de seus processos.
-            </p>
-
-        </div>
-
-    </article>
+                </div>
 
 
-    <!-- ================================================= -->
-    <!-- CARD – SUPORTE                                    -->
-    <!-- ================================================= -->
+                <!-- ================================================= -->
+                <!-- CONTEÚDO                                          -->
+                <!-- ================================================= -->
 
-    <article class="overflow-hidden rounded-xl border border-orange-100
-                    bg-white shadow-sm">
+                <div class="relative z-10 ml-[24%]
+                            h-full
+                            px-4 py-4">
 
-        <!-- Cabeçalho -->
-        <div class="flex items-center gap-4 px-5 py-4
-                    bg-orange-50">
+                    <h3 class="text-lg font-bold text-blue-800 mb-1">
+                        {{ classificacao.nome }}
+                    </h3>
 
-            <div class="w-16 h-16 shrink-0 rounded-full
-                        bg-orange-600 flex items-center justify-center
-                        overflow-hidden">
+                    <p class="text-gray-700 text-xs leading-relaxed text-justify">
+                        {{ classificacao.descricao }}
+                    </p>
 
-                <span class="text-white text-sm font-semibold">
-                    IMAGEM
-                </span>
+                </div>
 
-            </div>
+            </article>
 
-            <h3 class="text-xl font-bold text-orange-700">
-                Suporte
-            </h3>
+        {% empty %}
 
-        </div>
+            <div class="md:col-span-2 xl:col-span-3
+                        rounded-lg border border-gray-200
+                        bg-gray-50 px-5 py-4">
 
-
-        <!-- Descrição -->
-        <div class="px-5 py-4">
-
-            <p class="text-gray-700 text-sm leading-relaxed text-justify">
-                Correspondem aos macroprocessos e processos responsáveis por
-                prover as condições operacionais necessárias à execução dos
-                processos finalísticos e estratégicos. Orientam o seu olhar
-                para o ambiente interno da instituição fornecendo os subsídios
-                para a execução de todos os demais processos.
-            </p>
-
-        </div>
-
-    </article>
-
-
-    <!-- ================================================= -->
-    <!-- CARD – FINALÍSTICO                                -->
-    <!-- ================================================= -->
-
-    <article class="overflow-hidden rounded-xl border border-green-100
-                    bg-white shadow-sm">
-
-        <!-- Cabeçalho -->
-        <div class="flex items-center gap-4 px-5 py-4
-                    bg-green-50">
-
-            <div class="w-16 h-16 shrink-0 rounded-full
-                        bg-green-600 flex items-center justify-center
-                        overflow-hidden">
-
-                <span class="text-white text-sm font-semibold">
-                    IMAGEM
-                </span>
+                <p class="text-gray-500">
+                    Nenhuma classificação de macroprocesso cadastrada.
+                </p>
 
             </div>
 
-            <h3 class="text-xl font-bold text-green-700">
-                Finalístico
-            </h3>
+        {% endfor %}
 
-        </div>
-
-
-        <!-- Descrição -->
-        <div class="px-5 py-4">
-
-            <p class="text-gray-700 text-sm leading-relaxed text-justify">
-                Correspondem aos macroprocessos e processos que são a razão da
-                existência da organização. Estão correlacionados à missão e à
-                visão, ao propósito e agregam valor diretamente aos
-                cidadãos/usuários/clientes.
-            </p>
-
-        </div>
-
-    </article>
-
-</div>
+    </div>
 
 </div>
 

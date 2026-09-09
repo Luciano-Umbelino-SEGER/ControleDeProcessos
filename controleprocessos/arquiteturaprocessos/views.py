@@ -1072,6 +1072,12 @@ class VisualizarCadeiaValor(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        context["classificacoes"] = (
+            Classificacao.objects
+            .all()
+            .order_by("nome")
+        )
+
         context["imagem_ativa"] = (
             ImagemCadeiaValor.objects
             .filter(situacao="Ativa")
