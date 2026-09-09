@@ -1415,7 +1415,8 @@ def buscar_processos(request):
     termo = request.GET.get('q', '')
 
     processos = Processo.objects.filter(
-        Q(nome__icontains=termo)
+        parent__isnull=True,
+        nome__icontains=termo
     ).order_by('nome')[:20]
 
     data = [

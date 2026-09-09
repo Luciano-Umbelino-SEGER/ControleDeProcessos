@@ -2102,9 +2102,20 @@ document.addEventListener("DOMContentLoaded", function () {
             $('#id_parent').val(selectedId);
 
             HerancaProcesso.aplicar(selectedId, {
-                url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"
+                url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}",
 
-            })
+                onApply: function (data) {
+                    if (
+                        data.area &&
+                        typeof window.preencherCamposArea === "function"
+                    ) {
+                        window.preencherCamposArea(
+                            data.area,
+                            true
+                        );
+                    }
+                }
+            });
         });
 
         $select.on('select2:clear', function () {
@@ -2150,10 +2161,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
 
-            // Reaplica os dados herdados
-            HerancaProcesso.aplicar(parentId, {
-                url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}"
-            });
+           // Reaplica os dados herdados
+           HerancaProcesso.aplicar(parentId, {
+               url: "{% url 'arquiteturaprocessos:obter_dados_processo' 0 %}",
+
+               onApply: function (data) {
+                   if (
+                       data.area &&
+                       typeof window.preencherCamposArea === "function"
+                   ) {
+                       window.preencherCamposArea(
+                           data.area,
+                           true
+                       );
+                   }
+               }
+           });
         }
 
     }
