@@ -30,8 +30,8 @@ app_name = "arquiteturaprocessos"
 
 urlpatterns = [
     path('doc/pdf/<path:path>/', views.visualizar_pdf, name='visualizar_pdf'),
-    # Home Page - Arquitetura de Processos
-    path('', ArquiteruraProcessos.as_view(), name='homepage'),
+    # Home Page - Cadeia de Valor
+    path('', VisualizarCadeiaValor.as_view(), name='homepage'),
     # Arquitetura de Processos
     path('arquiteturaprocessos/', ArquiteruraProcessos.as_view(), name='arquiteturaprocessos'),
     # Estatísticas

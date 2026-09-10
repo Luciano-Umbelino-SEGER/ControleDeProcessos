@@ -286,13 +286,13 @@ TelefoneFormSet = inlineformset_factory(
 )
 
 # ============================================================
-# CLASSIFICAÇÃO DE  MACROPROCESSOS
+# CLASSIFICAÇÃO DE MACROPROCESSOS
 # ============================================================
 class Form_ClassificacaoForm(forms.ModelForm):
 
     class Meta:
         model = Classificacao
-        fields = ['nome', 'descricao', 'imagem']
+        fields = ['ordem', 'nome', 'descricao', 'imagem']
 
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
@@ -300,6 +300,22 @@ class Form_ClassificacaoForm(forms.ModelForm):
         modo_edicao = kwargs.pop('modo_edicao', False)
 
         super().__init__(*args, **kwargs)
+
+        # ====================================================
+        # ORDEM
+        # ====================================================
+        if "ordem" in self.fields:
+            self.fields["ordem"] = forms.IntegerField(
+                label="Ordem",
+                min_value=1,
+                required=True,
+                widget=forms.NumberInput(
+                    attrs={
+                        "min": 1,
+                        "step": 1,
+                    }
+                ),
+            )
 
         # ====================================================
         # DESCRIÇÃO
@@ -376,6 +392,40 @@ class Form_ClassificacaoForm(forms.ModelForm):
         if modo_exclusao and self.instance:
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
+
+    # ========================================================
+    # VALIDAÇÃO DA ORDEM
+    # ========================================================
+    def clean_ordem(self):
+        ordem = self.cleaned_data.get("ordem")
+
+        if ordem is None:
+            raise forms.ValidationError(
+                "Informe a ordem da classificação."
+            )
+
+        if ordem < 1:
+            raise forms.ValidationError(
+                "A ordem deve ser um número inteiro maior que zero."
+            )
+
+        consulta = Classificacao.objects.filter(
+            ordem=ordem
+        )
+
+        # Na edição, excluímos a própria classificação da consulta.
+        if self.instance and self.instance.pk:
+            consulta = consulta.exclude(
+                pk=self.instance.pk
+            )
+
+        if consulta.exists():
+            raise forms.ValidationError(
+                f"A ordem {ordem} já está sendo utilizada "
+                "por outra classificação."
+            )
+
+        return ordem
 
     # ========================================================
     # VALIDAÇÃO DA IMAGEM

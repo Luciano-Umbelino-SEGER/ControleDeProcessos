@@ -411,8 +411,7 @@ class Classificacoes(LoginRequiredMixin, ListView):
     model = Classificacao
     template_name = 'estrutura/classificacoes.html'
     context_object_name = 'classificacoes'
-    queryset = Classificacao.objects.order_by('nome')
-
+    queryset = Classificacao.objects.order_by('ordem')
 
 class CriarClassificacao(LoginRequiredMixin, CreateView):
     template_name = 'estrutura/form_classificacao.html'
@@ -444,12 +443,12 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
         return response
 
     def form_invalid(self, form):
-        messages.error(self.request, "Não foi possível criar a classificação. Corrija os erros abaixo.")
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse('arquiteturaprocessos:classificacoes')
-
+        return reverse(
+            'arquiteturaprocessos:classificacoes'
+        )
 
 class VisualizarClassificacao(LoginRequiredMixin, DetailView):
     template_name = 'estrutura/form_classificacao.html'
@@ -459,13 +458,19 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         classificacao = self.get_object()
-        context['form'] = Form_ClassificacaoForm(instance=classificacao, modo_visualizacao=True)
+
+        context['form'] = Form_ClassificacaoForm(
+            instance=classificacao,
+            modo_visualizacao=True
+        )
+
         context.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
             'modo_exclusao': False,
             'modo_edicao': False,
         })
+
         return context
 
 class EditarClassificacao(LoginRequiredMixin, UpdateView):
@@ -665,11 +670,6 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
         return resp
 
     def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Não foi possível atualizar a classificação. "
-            "Corrija os erros abaixo."
-        )
         return super().form_invalid(form)
 
     def get_success_url(self):
@@ -684,35 +684,64 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         if self.request.method != 'POST':
-            context['form'] = Form_ClassificacaoForm(instance=self.get_object(), modo_exclusao=True)
+            context['form'] = Form_ClassificacaoForm(
+                instance=self.get_object(),
+                modo_exclusao=True
+            )
+
         context.update({
             'modo_exclusao': True,
             'modo_visualizacao': False,
             'modo_inclusao': False,
             'modo_edicao': False,
         })
+
         return context
 
     def post(self, request, *args, **kwargs):
         classificacao = self.get_object()
-        processo_associado = Processo.objects.filter(classificacao=classificacao).first()
-        if processo_associado:
-            messages.error(request,
-                f"Não é possível excluir a classificação '{classificacao.nome}', pois está associada ao processo '{processo_associado.nome}'."
-            )
-            return redirect('arquiteturaprocessos:classificacoes')
 
-        nome_imagem = (classificacao.imagem.name if classificacao.imagem else None)
+        processo_associado = (
+            Processo.objects
+            .filter(classificacao=classificacao)
+            .first()
+        )
+
+        if processo_associado:
+            messages.error(
+                request,
+                f"Não é possível excluir a classificação "
+                f"'{classificacao.nome}', pois está associada "
+                f"ao processo '{processo_associado.nome}'."
+            )
+
+            return redirect(
+                'arquiteturaprocessos:classificacoes'
+            )
+
+        nome_imagem = (
+            classificacao.imagem.name
+            if classificacao.imagem
+            else None
+        )
 
         classificacao.delete()
 
-        # Exclui o Arquivo de imagem associada da pasta
+        # Exclui o arquivo de imagem associado da pasta
         if nome_imagem and default_storage.exists(nome_imagem):
             default_storage.delete(nome_imagem)
 
-        messages.success(request, f"Classificação '{classificacao.nome}' excluída com sucesso!")
-        return redirect('arquiteturaprocessos:classificacoes')
+        messages.success(
+            request,
+            f"Classificação '{classificacao.nome}' "
+            f"excluída com sucesso!"
+        )
+
+        return redirect(
+            'arquiteturaprocessos:classificacoes'
+        )
 
 # ============================================================
 # IMAGENS DA CADEIA DE VALOR - CRUD
@@ -1075,7 +1104,7 @@ class VisualizarCadeiaValor(TemplateView):
         context["classificacoes"] = (
             Classificacao.objects
             .all()
-            .order_by("nome")
+            .order_by("ordem")
         )
 
         context["imagem_ativa"] = (

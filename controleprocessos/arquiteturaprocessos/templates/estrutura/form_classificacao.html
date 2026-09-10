@@ -32,13 +32,30 @@
             {% endif %}
         </h2>
 
-        {% if form.non_field_errors %}
-            <div class="text-red-600 mb-4">
-                {{ form.non_field_errors }}
+        {% if form.errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-6">
+
+                <strong class="block mb-2">
+                    Não foi possível concluir a operação devido às seguintes inconsistências:
+                </strong>
+
+                <ul class="list-disc list-inside space-y-1">
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>
+                                <strong>{{ field.label }}:</strong> {{ error }}
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
             </div>
         {% endif %}
 
-        <form method="post" id="form-exclusao" enctype="multipart/form-data">
+        <form method="post" id="form-exclusao" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
             <!-- ================================================= -->
@@ -140,12 +157,6 @@
                        class="hidden text-red-500 text-sm mt-1">
                     </p>
 
-                    <!-- ERROS DA IMAGEM -->
-                    {% if form.imagem.errors %}
-                        <p class="text-red-500 text-sm mt-1">
-                            {{ form.imagem.errors|striptags }}
-                        </p>
-                    {% endif %}
                 </div>
 
                 <!-- ============================================= -->
@@ -153,19 +164,34 @@
                 <!-- ============================================= -->
                 <div class="space-y-6">
                     <!-- ========================================= -->
-                    <!-- NOME -->
+                    <!-- NOME + ORDEM -->
                     <!-- ========================================= -->
-                    <div>
-                        <label for="{{ form.nome.id_for_label }}" class="block text-sm font-semibold text-blue-800 mb-1">
-                            {{ form.nome.label }}
-                        </label>
-                        {{ form.nome }}
+                    <div class="flex items-end gap-3">
 
-                        {% if form.nome.errors %}
-                            <p class="text-red-500 text-sm mt-1">
-                                {{ form.nome.errors|striptags }}
-                            </p>
-                        {% endif %}
+                        <!-- ========================================= -->
+                        <!-- NOME -->
+                        <!-- ========================================= -->
+                        <div class="flex-1">
+                            <label for="{{ form.nome.id_for_label }}"
+                                   class="block text-sm font-semibold text-blue-800 mb-1">
+                                {{ form.nome.label }}
+                            </label>
+
+                            {{ form.nome }}
+                        </div>
+
+                        <!-- ========================================= -->
+                        <!-- ORDEM -->
+                        <!-- ========================================= -->
+                        <div class="w-20 flex-shrink-0">
+                            <label for="{{ form.ordem.id_for_label }}"
+                                   class="block text-sm font-semibold text-blue-800 mb-1">
+                                {{ form.ordem.label }}
+                            </label>
+
+                            {{ form.ordem }}
+                        </div>
+
                     </div>
 
                     <!-- ========================================= -->
@@ -189,12 +215,6 @@
                                 <span x-text="count"></span> / 3000
                             </div>
                         </div>
-
-                        {% if form.descricao.errors %}
-                            <p class="text-red-500 text-sm mt-1">
-                                {{ form.descricao.errors|striptags }}
-                            </p>
-                        {% endif %}
                     </div>
                 </div>
             </div>

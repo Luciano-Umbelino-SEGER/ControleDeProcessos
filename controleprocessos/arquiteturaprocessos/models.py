@@ -159,12 +159,20 @@ def nome_imagem_classificacao(instance, filename):
 class Classificacao(models.Model):
     nome = models.CharField(max_length=100)
     descricao = models.TextField()
+
+    ordem = models.PositiveIntegerField(
+        unique=True,
+        db_index=True,
+        verbose_name="Ordem"
+    )
+
     imagem = models.ImageField(
         upload_to=nome_imagem_classificacao,
         max_length=500,
         blank=True,
         null=True,
     )
+
     imagem_hash = models.CharField(
         max_length=64,
         blank=True,

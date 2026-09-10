@@ -228,7 +228,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = "arquiteturaprocessos:arquiteturaprocessos"
 LOGIN_URL = "arquiteturaprocessos:fazer_login"
-LOGOUT_REDIRECT_URL = "arquiteturaprocessos:arquiteturaprocessos"
+LOGOUT_REDIRECT_URL = "arquiteturaprocessos:homepage"
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"

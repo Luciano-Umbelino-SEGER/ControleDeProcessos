@@ -38,14 +38,13 @@ docs/MENU_SIGEMP.md
         </div>
     {% else %}
         <!-- Usuário público: acesso direto à Cadeia de Valor -->
-        {% include "components/layout/sidebar_item.html" with href="#" title="Cadeia de Valor" icon="fa-image" %}
+        {% url 'arquiteturaprocessos:visualizar_cadeia_valor' as visualizar_cadeia_valor_url %}
+        {% include "components/layout/sidebar_item.html" with href=visualizar_cadeia_valor_url title="Cadeia de Valor" icon="fa-image" %}
     {% endif %}
-
 
     <!-- ===================================================== -->
     <!-- CONSULTA PÚBLICA — ARQUITETURA DE PROCESSOS -->
     <!-- ===================================================== -->
-
     {% url 'arquiteturaprocessos:arquiteturaprocessos' as arquitetura_url %}
 
     {% include "components/layout/sidebar_item.html" with href=arquitetura_url title="Arquitetura de Processos" icon="fa-sitemap" %}
