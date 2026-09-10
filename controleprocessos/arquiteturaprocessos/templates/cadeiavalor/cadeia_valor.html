@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block titulo %}
 Cadeia de Valor
@@ -205,76 +206,85 @@ Cadeia de Valor
     <!-- ===================================================== -->
     <!-- CARDS DOS MACROPROCESSOS                              -->
     <!-- ===================================================== -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-2">
-
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-2 items-stretch">
         {% for classificacao in classificacoes %}
-
-            <article class="relative overflow-hidden rounded-xl
-                            border border-blue-100
-                            bg-white shadow-sm
-                            min-h-[175px]
-                            h-full">
+            <article
+                class="macroprocesso-card
+                       relative overflow-hidden
+                       rounded-xl
+                       border border-gray-200
+                       shadow-sm
+                       min-h-[160px]
+                       h-full
+                       bg-[var(--card-bg)]"
+                data-imagem="{% if classificacao.imagem %}{{ classificacao.imagem.url }}{% endif %}">
 
                 <!-- ================================================= -->
-                <!-- ÁREA VISUAL / IMAGEM                              -->
+                <!-- ÁREA ESQUERDA – FAIXAS COLORIDAS + IMAGEM         -->
                 <!-- ================================================= -->
+                <div class="absolute inset-y-0 left-0 w-[25%] overflow-hidden">
 
-                <div class="absolute inset-y-0 left-0 w-[25%]
-                            overflow-hidden">
-
-                    <!-- Fundo -->
-                    <div class="absolute inset-0 bg-blue-50">
+                    <!-- ================================================= -->
+                    <!-- FAIXAS DIAGONAIS                                  -->
+                    <!-- ================================================= -->
+                    <!-- Faixa intermediária – mais clara -->
+                    <div
+                        class="absolute inset-0
+                               bg-[var(--color-mid)]
+                               [clip-path:polygon(0_0,100%_0,72%_100%,0_100%)]
+                               rounded-tr-xl">
                     </div>
 
-                    <!-- Faixa diagonal -->
-                    <div class="absolute inset-0
-                                bg-blue-100
-                                [clip-path:polygon(0_0,78%_0,48%_100%,0_100%)]">
+                    <!-- Faixa principal – cor mais forte -->
+                    <div
+                        class="absolute inset-0
+                               bg-[var(--color-soft)]
+                               [clip-path:polygon(0_0,58%_0,38%_100%,0_100%)]">
                     </div>
 
                     <!-- Imagem cadastrada -->
-                    <div class="relative z-10 flex h-full
-                                items-start justify-center
+                    <div class="relative z-10
+                                flex h-full
+                                items-start
+                                justify-center
                                 px-2 pt-7">
 
                         {% if classificacao.imagem %}
-
                             <img src="{{ classificacao.imagem.url }}"
                                  alt="{{ classificacao.nome }}"
                                  class="w-20 h-20 object-contain">
+                        {% else %}
+                            <div class="w-20 h-20 rounded-full
+                                        bg-gray-500
+                                        flex items-center justify-center">
 
+                                <i class="fa-regular fa-file-lines text-white text-4xl"
+                                   aria-hidden="true"></i>
+                            </div>
                         {% endif %}
-
                     </div>
-
                 </div>
 
-
                 <!-- ================================================= -->
-                <!-- CONTEÚDO                                          -->
+                <!-- CONTEÚDO DO CARD                                  -->
                 <!-- ================================================= -->
-
-                <div class="relative z-10 ml-[24%]
-                            h-full
-                            px-4 py-4">
-
-                    <h3 class="text-lg font-bold text-blue-800 mb-1">
+                <div class="relative z-10 ml-[24%] h-full px-4 py-3">
+                    <h3 class="text-lg font-bold mb-1 text-[var(--color-strong)]">
                         {{ classificacao.nome }}
                     </h3>
-
                     <p class="text-gray-700 text-xs leading-relaxed text-justify">
-                        {{ classificacao.descricao }}
+                       {{ classificacao.descricao }}
                     </p>
-
                 </div>
-
             </article>
 
         {% empty %}
 
             <div class="md:col-span-2 xl:col-span-3
-                        rounded-lg border border-gray-200
-                        bg-gray-50 px-5 py-4">
+                        rounded-lg
+                        border border-gray-200
+                        bg-gray-50
+                        px-5 py-4">
 
                 <p class="text-gray-500">
                     Nenhuma classificação de macroprocesso cadastrada.
@@ -285,6 +295,8 @@ Cadeia de Valor
         {% endfor %}
 
     </div>
+
+    <script src="{% static 'js/coloracao_cards_macroprocessos.js' %}"></script>
 
 </div>
 
