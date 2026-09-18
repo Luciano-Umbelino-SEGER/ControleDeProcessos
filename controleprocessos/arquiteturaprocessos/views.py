@@ -1917,7 +1917,7 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
             "modo_exclusao": False,
             "modo_edicao": False,
 
-            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M"),
             "cadastro_user": (
                 self.request.user.get_full_name()
                 or self.request.user.username
@@ -1959,7 +1959,16 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
 
         self.object = processomapear
 
-        return HttpResponseRedirect(self.get_success_url())
+        query_string = self.request.GET.urlencode()
+
+        url = reverse(
+            'arquiteturaprocessos:processosmapear'
+        )
+
+        if query_string:
+            url += f'?{query_string}'
+
+        return HttpResponseRedirect(url)
 
 # --------------------------------#
 # Visualizar Processo a Mapear    #
@@ -1996,7 +2005,7 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
             "cadastro_data": (
                 timezone.localtime(
                     processomapear.data_criacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_criacao
                 else ""
             ),
@@ -2013,7 +2022,7 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
             "atualizacao_data": (
                 timezone.localtime(
                     processomapear.data_atualizacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_atualizacao
                 else ""
             ),
@@ -2030,7 +2039,7 @@ class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
             "finalizacao_data": (
                 timezone.localtime(
                     processomapear.data_finalizacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_finalizacao
                 else ""
             ),
@@ -2155,7 +2164,7 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
 
             "cadastro_data": (
                 timezone.localtime(processomapear.data_criacao)
-                .strftime("%d/%m/%Y %H:%M:%S")
+                .strftime("%d/%m/%Y %H:%M")
             ),
 
             "cadastro_user": (
@@ -2165,7 +2174,7 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
 
             "atualizacao_data": (
                 timezone.localtime(processomapear.data_atualizacao)
-                .strftime("%d/%m/%Y %H:%M:%S")
+                .strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_atualizacao else ""
             ),
 
@@ -2177,7 +2186,7 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             "finalizacao_data": (
                 timezone.localtime(
                     processomapear.data_finalizacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_finalizacao else ""
             ),
 
@@ -2278,7 +2287,16 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             f"Processo a Mapear '{processomapear.nome}' atualizado com sucesso!"
         )
 
-        return HttpResponseRedirect(self.get_success_url())
+        query_string = self.request.GET.urlencode()
+
+        url = reverse(
+            'arquiteturaprocessos:processosmapear'
+        )
+
+        if query_string:
+            url += f'?{query_string}'
+
+        return HttpResponseRedirect(url)
 
 # --------------------------------------------------#
 # Iniciar Processo - Processo a Mapear --> Processo #
@@ -2494,15 +2512,22 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
             pk=pk
         )
 
+        query_string = request.GET.urlencode()
+
         if request.user.perfil.nome.lower() != "administrador":
             messages.error(
                 request,
                 "Você não tem permissão para finalizar esta tarefa."
             )
 
-            return redirect(
-                "arquiteturaprocessos:processosmapear"
+            url = reverse(
+                'arquiteturaprocessos:processosmapear'
             )
+
+            if query_string:
+                url += f'?{query_string}'
+
+            return redirect(url)
 
         # =========================================
         # EVITA REPROCESSAR
@@ -2513,9 +2538,14 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
                 "Esta tarefa já está finalizada."
             )
 
-            return redirect(
-                "arquiteturaprocessos:processosmapear"
+            url = reverse(
+                'arquiteturaprocessos:processosmapear'
             )
+
+            if query_string:
+                url += f'?{query_string}'
+
+            return redirect(url)
 
         # =========================================
         # FINALIZAÇÃO
@@ -2536,9 +2566,14 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
             f"Tarefa '{obj.nome}' finalizada com sucesso."
         )
 
-        return redirect(
-            "arquiteturaprocessos:processosmapear"
+        url = reverse(
+            'arquiteturaprocessos:processosmapear'
         )
+
+        if query_string:
+            url += f'?{query_string}'
+
+        return redirect(url)
 
 # --------------------------------#
 # Excluir Processo a Mapear       #
@@ -2592,7 +2627,7 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
             "cadastro_data": (
                 timezone.localtime(
                     processomapear.data_criacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_criacao
                 else ""
             ),
@@ -2610,7 +2645,7 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
             "atualizacao_data": (
                 timezone.localtime(
                     processomapear.data_atualizacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_atualizacao
                 else ""
             ),
@@ -2628,7 +2663,7 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
             "finalizacao_data": (
                 timezone.localtime(
                     processomapear.data_finalizacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processomapear.data_finalizacao
                 else ""
             ),
@@ -2647,6 +2682,8 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
         self.object = self.get_object()
         processomapear = self.object
 
+        query_string = request.GET.urlencode()
+
         # Guarda o nome antes da exclusão
         nome_processomapear = processomapear.nome
 
@@ -2664,11 +2701,21 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
                 "Erro ao excluir o processo. Tente novamente."
             )
 
-            return redirect(request.path)
+            url = request.path
 
-        return redirect(
-            "arquiteturaprocessos:processosmapear"
+            if query_string:
+                url += f'?{query_string}'
+
+            return redirect(url)
+
+        url = reverse(
+            'arquiteturaprocessos:processosmapear'
         )
+
+        if query_string:
+            url += f'?{query_string}'
+
+        return redirect(url)
 
 # ------------------------------
 # Cadastro / Listagem Usuários

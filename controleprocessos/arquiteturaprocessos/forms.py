@@ -1970,8 +1970,11 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         # A validação completa para iniciar o processo
         # é realizada por validar_para_iniciar().
         #
-        # Tipo e Abrangência permanecem obrigatórios,
-        # pois são definidos por radio buttons.
+        # O Tipo permanece obrigatório.
+        #
+        # A Abrangência é obrigatória somente para Processo.
+        # Para Subprocesso, será herdada do Processo Pai.
+        # Para Outro, não é obrigatória.
         # ------------------------------------------------
         self.fields["nome"].required = False
         self.fields["objetivo"].required = False
@@ -1984,6 +1987,22 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         self.fields["macroprocesso_nivel2"].required = False
         self.fields["parent"].required = False
         self.fields["observacao"].required = False
+
+        # ------------------------------------------------
+        # ABRANGÊNCIA
+        #
+        # Processo → obrigatória
+        # Subprocesso → herdada do Processo Pai
+        # Outro → não obrigatória
+        # ------------------------------------------------
+        tipo_atual = self.data.get("tipo") if self.is_bound else None
+
+        if not tipo_atual and self.instance and self.instance.pk:
+            tipo_atual = self.instance.tipo
+
+        self.fields["abrangencia"].required = (
+                tipo_atual == ProcessoMapear.TIPO_PROCESSO
+        )
 
         # ------------------------------------------------
         # GARANTIA DOS IDS PARA O TRIPLE FILTER

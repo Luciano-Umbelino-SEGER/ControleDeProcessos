@@ -504,7 +504,7 @@ fieldset[disabled] input[type="radio"] {
 
           {% if modo_exclusao %}
             <button @click="$dispatch('abrir-modal-confirmacao', {
-                          url: '{% url 'arquiteturaprocessos:excluir_processomapear' form.instance.pk %}',
+                          url: '{% url 'arquiteturaprocessos:excluir_processomapear' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
                           mensagem: 'Confirma a exclusão do Processo a Mapear <strong>{{ form.instance.nome }}</strong>?'
                       })"
                     class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
@@ -518,7 +518,7 @@ fieldset[disabled] input[type="radio"] {
             {% if form.instance.status == "ativo" and form.instance.tipo != "outro" %}
             <button type="button"
                     @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}',
+                        url: '{% url 'arquiteturaprocessos:executar_iniciar_processomapear' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
                         mensagem: `
                             Você está prestes a transformar o Processo a Mapear -
                             <strong>${
@@ -541,7 +541,7 @@ fieldset[disabled] input[type="radio"] {
            {% if form.instance.status == "ativo" and form.instance.tipo == "outro" %}
            <button type="button"
                     @click="$dispatch('abrir-modal-confirmacao', {
-                        url: '{% url 'arquiteturaprocessos:finalizar_processomapear' form.instance.pk %}',
+                        url: '{% url 'arquiteturaprocessos:finalizar_processomapear' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
                         mensagem: 'Confirma a finalização da Tarefa <strong>{{ form.instance.nome }}</strong>?'
                     })"
                     class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">
@@ -562,7 +562,7 @@ fieldset[disabled] input[type="radio"] {
           {% endif %}
 
           <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-             href="{% url 'arquiteturaprocessos:processosmapear' %}">
+             href="{% url 'arquiteturaprocessos:processosmapear' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}">
              {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
           </a>
         </div>
