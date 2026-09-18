@@ -155,7 +155,7 @@
             </button>
             <a href="{% url 'arquiteturaprocessos:processos' %}"
                class="filtro-botao filtro-botao-secundario">Limpar</a>
-            <a href="{% url 'arquiteturaprocessos:criar_processo' %}"
+            <a href="{% url 'arquiteturaprocessos:criar_processo' %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                class="filtro-botao filtro-botao-primario">+ Novo</a>
           </div>
         </div>
@@ -240,7 +240,7 @@
               <div class="flex justify-center items-center space-x-1.5">
 
                 <!-- VISUALIZAR -->
-                <a href="{% url 'arquiteturaprocessos:visualizar_processo' processo.pk %}"
+                <a href="{% url 'arquiteturaprocessos:visualizar_processo' processo.pk %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                    class="text-blue-600 hover:text-blue-800" title="Visualizar">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -254,7 +254,7 @@
                 {% if request.user.perfil.nome|lower == 'administrador' %}
                 <!-- EDITAR -->
                 {% if processo.status != "concluido" %}
-                  <a href="{% url 'arquiteturaprocessos:editar_processo' processo.pk %}"
+                  <a href="{% url 'arquiteturaprocessos:editar_processo' processo.pk %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                      class="text-yellow-600 hover:text-yellow-800" title="Editar">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                          viewBox="0 0 24 24" stroke="currentColor">
@@ -267,7 +267,7 @@
                 {% endif %}
 
                 <!-- EXCLUIR -->
-                <a href="{% url 'arquiteturaprocessos:excluir_processo' processo.pk %}"
+                <a href="{% url 'arquiteturaprocessos:excluir_processo' processo.pk %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                    class="text-red-600 hover:text-red-800" title="Excluir">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -324,7 +324,7 @@
                 <div class="flex justify-center items-center space-x-1.5">
 
                   <!-- VISUALIZAR -->
-                  <a href="{% url 'arquiteturaprocessos:visualizar_processo' sub.pk %}"
+                  <a href="{% url 'arquiteturaprocessos:visualizar_processo' sub.pk %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                      class="text-blue-600 hover:text-blue-800" title="Visualizar">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -338,7 +338,7 @@
                   {% if request.user.perfil.nome|lower == 'administrador' %}
                     {% if sub.status != "concluido" %}
                       <!-- EDITAR -->
-                      <a href="{% url 'arquiteturaprocessos:editar_processo' sub.pk %}"
+                      <a href="{% url 'arquiteturaprocessos:editar_processo' sub.pk %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                          class="text-yellow-600 hover:text-yellow-800" title="Editar">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                            viewBox="0 0 24 24" stroke="currentColor">
@@ -350,7 +350,7 @@
                       </a>
                     {% endif %}
                   <!-- EXCLUIR -->
-                  <a href="{% url 'arquiteturaprocessos:excluir_processo' sub.pk %}"
+                  <a href="{% url 'arquiteturaprocessos:excluir_processo' sub.pk %}{% if query_string_full %}?{{ query_string_full }}{% endif %}"
                      class="text-red-600 hover:text-red-800" title="Excluir">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor">

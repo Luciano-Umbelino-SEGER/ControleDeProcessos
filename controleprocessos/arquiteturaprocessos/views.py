@@ -1,4 +1,5 @@
 # views.py (revisado)
+from django.db.models import Q
 from datetime import datetime, time, timedelta
 import os
 import re
@@ -6,6 +7,7 @@ import re
 import hashlib
 
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
@@ -4949,17 +4951,27 @@ class ProcessoView(LoginRequiredMixin, ListView):
         # ESTADO
         # --------------------
         if estado == "concluido":
-            qs = qs.filter(data_conclusao__isnull=False)
+            qs = qs.filter(
+                data_conclusao__isnull=False
+            )
 
         elif estado == "ativo":
             qs = qs.filter(
-                data_conclusao__isnull=True,
-                documentos__isnull=False
+                Q(data_conclusao__isnull=True)
+                & (
+                        Q(documento_modelo_processo__isnull=False)
+                        & ~Q(documento_modelo_processo="")
+                        | Q(link_documento_modelo_processo__isnull=False)
+                        & ~Q(link_documento_modelo_processo="")
+                        | Q(documentos__isnull=False)
+                )
             ).distinct()
 
         elif estado == "iniciado":
             qs = qs.filter(
                 data_conclusao__isnull=True,
+                documento_modelo_processo__isnull=True,
+                link_documento_modelo_processo__isnull=True,
                 documentos__isnull=True
             )
 
@@ -5747,9 +5759,16 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 
         self.object = processo
 
-        return HttpResponseRedirect(
-            self.get_success_url()
+        query_string = self.request.GET.urlencode()
+
+        url = reverse(
+            'arquiteturaprocessos:processos'
         )
+
+        if query_string:
+            url += f'?{query_string}'
+
+        return HttpResponseRedirect(url)
 
 # --------------------------------#
 # Excluir Processo                 #
@@ -5766,15 +5785,15 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         return (
             Processo.objects
             .select_related(
-                "classificacao",
-                "macroprocesso_nivel1",
-                "macroprocesso_nivel2",
-                "area_responsavel",
-                "usuario_cadastro",
-                "usuario_atualizacao",
-                "usuario_conclusao",
+                'classificacao',
+                'macroprocesso_nivel1',
+                'macroprocesso_nivel2',
+                'area_responsavel',
+                'usuario_cadastro',
+                'usuario_atualizacao',
+                'usuario_conclusao',
             )
-            .prefetch_related("subprocessos")
+            .prefetch_related('subprocessos')
         )
 
     # -------------------------------------------------
@@ -5787,14 +5806,14 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         # -------------------------------------------------
         # Listas para os selects
         # -------------------------------------------------
-        context["normas_procedimento"] = (
+        context['normas_procedimento'] = (
             get_normas_procedimento_ativas()
         )
 
         # -------------------------------------------------
         # Form em modo exclusão
         # -------------------------------------------------
-        context["form"] = Form_ProcessoForm(
+        context['form'] = Form_ProcessoForm(
             instance=processo,
             modo_exclusao=True
         )
@@ -5804,7 +5823,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         # -------------------------------------------------
         documentos_qs = (
             ProcessoDocumento.objects
-            .select_related("norma_procedimento")
+            .select_related('norma_procedimento')
             .filter(processo=processo)
         )
 
@@ -5814,28 +5833,28 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             norma = doc.norma_procedimento
 
             normas_hidratadas.append({
-                "id": norma.id,
-                "nome_norma": norma.nome_norma,
-                "codigo_norma": norma.codigo_norma,
-                "versao": norma.versao,
-                "emitente": norma.emitente,
-                "sistema": str(norma.sistema),
-                "vigencia": (
-                    norma.vigencia_inicio.strftime("%Y-%m-%d")
+                'id': norma.id,
+                'nome_norma': norma.nome_norma,
+                'codigo_norma': norma.codigo_norma,
+                'versao': norma.versao,
+                'emitente': norma.emitente,
+                'sistema': str(norma.sistema),
+                'vigencia': (
+                    norma.vigencia_inicio.strftime('%Y-%m-%d')
                     if norma.vigencia_inicio
-                    else ""
+                    else ''
                 ),
-                "pdf": (
+                'pdf': (
                     norma.documento_norma_procedimento.url
                     if norma.documento_norma_procedimento
-                    else ""
+                    else ''
                 ),
-                "link": (
-                    norma.link_documento_norma or ""
+                'link': (
+                    norma.link_documento_norma or ''
                 ),
             })
 
-        context["normas_hidratadas"] = normas_hidratadas
+        context['normas_hidratadas'] = normas_hidratadas
 
         # -------------------------------------------------
         # Subprocessos associados
@@ -5846,56 +5865,56 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
         # Controle de modo + auditoria
         # -------------------------------------------------
         context.update({
-            "modo_exclusao": True,
-            "modo_visualizacao": False,
-            "modo_inclusao": False,
-            "modo_edicao": False,
-            "desabilitar": True,
+            'modo_exclusao': True,
+            'modo_visualizacao': False,
+            'modo_inclusao': False,
+            'modo_edicao': False,
+            'desabilitar': True,
 
-            "subprocessos_existentes": subprocessos,
+            'subprocessos_existentes': subprocessos,
 
-            "cadastro_data": (
+            'cadastro_data': (
                 timezone.localtime(
                     processo.data_criacao
-                ).strftime("%d/%m/%Y %H:%M")
+                ).strftime('%d/%m/%Y %H:%M')
                 if processo.data_criacao
-                else ""
+                else ''
             ),
 
-            "cadastro_user": (
+            'cadastro_user': (
                 processo.usuario_cadastro.get_full_name()
                 or processo.usuario_cadastro.username
                 if processo.usuario_cadastro
-                else ""
+                else ''
             ),
 
-            "atualizacao_data": (
+            'atualizacao_data': (
                 timezone.localtime(
                     processo.data_atualizacao
-                ).strftime("%d/%m/%Y %H:%M")
+                ).strftime('%d/%m/%Y %H:%M')
                 if processo.data_atualizacao
-                else ""
+                else ''
             ),
 
-            "atualizacao_user": (
+            'atualizacao_user': (
                 processo.usuario_atualizacao.get_full_name()
                 if processo.usuario_atualizacao
-                else ""
+                else ''
             ),
 
-            "conclusao_data": (
+            'conclusao_data': (
                 timezone.localtime(
                     processo.data_conclusao
-                ).strftime("%d/%m/%Y %H:%M")
+                ).strftime('%d/%m/%Y %H:%M')
                 if processo.data_conclusao
-                else ""
+                else ''
             ),
 
-            "conclusao_user": (
+            'conclusao_user': (
                 processo.usuario_conclusao.get_full_name()
                 or processo.usuario_conclusao.username
                 if processo.usuario_conclusao
-                else ""
+                else ''
             ),
         })
 
@@ -5905,6 +5924,8 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
     # EXCLUSÃO
     # -------------------------------------------------
     def post(self, request, *args, **kwargs):
+
+        query_string = request.GET.urlencode()
 
         processo = self.get_object()
 
@@ -5918,19 +5939,24 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 
         if subprocessos:
 
-            lista = ", ".join(
+            lista = ', '.join(
                 subprocesso.nome
                 for subprocesso in subprocessos
             )
 
             messages.error(
                 request,
-                f"Não é possível excluir o processo "
+                f'Não é possível excluir o processo '
                 f"'{processo.nome}'. "
-                f"Existem subprocessos associados: {lista}"
+                f'Existem subprocessos associados: {lista}'
             )
 
-            return redirect(request.path)
+            url = request.path
+
+            if query_string:
+                url += f'?{query_string}'
+
+            return redirect(url)
 
         # =================================================
         # 2. GUARDAR INFORMAÇÕES DO PROCESSO
@@ -5959,22 +5985,22 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             # -------------------------------------------------
             registrar_log(
                 request=request,
-                acao="DELETE",
-                modelo="Processo",
+                acao='DELETE',
+                modelo='Processo',
                 objeto_id=str(processo.id),
                 descricao=(
                     f"Processo '{nome_processo}' excluído"
                 ),
                 dados_antes={
-                    "nome": nome_processo,
-                    "status": processo.status,
-                    "classificacao": (
+                    'nome': nome_processo,
+                    'status': processo.status,
+                    'classificacao': (
                         processo.classificacao_id
                     ),
-                    "macro_nivel1": (
+                    'macro_nivel1': (
                         processo.macroprocesso_nivel1_id
                     ),
-                    "macro_nivel2": (
+                    'macro_nivel2': (
                         processo.macroprocesso_nivel2_id
                     ),
                 },
@@ -5997,6 +6023,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             # do banco for efetivamente confirmada.
             # -------------------------------------------------
             if arquivo_pdf:
+
                 def remover_pdf():
                     default_storage.delete(arquivo_pdf)
 
@@ -6012,9 +6039,18 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             f"Processo '{nome_processo}' excluído com sucesso!"
         )
 
-        return redirect(
-            "arquiteturaprocessos:processos"
+        # =================================================
+        # 5. RETORNO PARA A LISTAGEM
+        #    PRESERVANDO FILTROS, PÁGINA E PAGE_SIZE
+        # =================================================
+        url = reverse(
+            'arquiteturaprocessos:processos'
         )
+
+        if query_string:
+            url += f'?{query_string}'
+
+        return redirect(url)
 
 # --------------------------------#
 # Concluir Processo               #
@@ -6022,6 +6058,8 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 
 @login_required
 def concluir_processo(request, pk):
+
+    query_string = request.GET.urlencode()
 
     processo = get_object_or_404(
         Processo.objects.prefetch_related("subprocessos"),
@@ -6032,10 +6070,15 @@ def concluir_processo(request, pk):
     # Segurança: só POST pode concluir
     # ---------------------------------
     if request.method != "POST":
-        return redirect(
+        url = reverse(
             "arquiteturaprocessos:editar_processo",
-            pk=pk
+            kwargs={"pk": pk}
         )
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
     # ---------------------------------
     # Verifica se pode concluir
@@ -6071,10 +6114,15 @@ def concluir_processo(request, pk):
             )
         )
 
-        return redirect(
+        url = reverse(
             "arquiteturaprocessos:editar_processo",
-            pk=pk
+            kwargs={"pk": pk}
         )
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
     # ---------------------------------
     # Conclusão em cascata
@@ -6169,9 +6217,14 @@ def concluir_processo(request, pk):
         f"Processo '{processo.nome}' concluído com sucesso!"
     )
 
-    return redirect(
+    url = reverse(
         "arquiteturaprocessos:processos"
     )
+
+    if query_string:
+        url += f"?{query_string}"
+
+    return redirect(url)
 
 # -------------------------------------
 # View customizada para Reset de Senha
