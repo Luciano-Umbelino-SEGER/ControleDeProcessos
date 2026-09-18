@@ -1,12 +1,11 @@
 # views.py (revisado)
 from datetime import datetime, time, timedelta
 import os
-import json
 import re
+
 import hashlib
 
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.core.files.storage import default_storage
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
@@ -5036,11 +5035,76 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
     # -------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         agora_local = timezone.localtime()
         normas = get_normas_procedimento_ativas()
-
         context["normas_procedimento"] = normas
+
+        # =====================================================
+        # NORMAS DE PROCEDIMENTO
+        #
+        # GET  -> nenhum estado hidratado
+        # POST -> reconstruir as Normas enviadas pelo usuário
+        #         para preservar a tela após POST inválido.
+        # =====================================================
+        normas_hidratadas = []
+
+        if self.request.method == "POST":
+            normas_ids = []
+            norma_principal = self.request.POST.get(
+                "norma_procedimento"
+            )
+
+            if norma_principal:
+                normas_ids.append(norma_principal)
+
+            normas_ids.extend(
+                self.request.POST.getlist(
+                    "norma_procedimento_extra[]"
+                )
+            )
+
+            normas_ids = list(filter(None, normas_ids))
+
+            if normas_ids:
+                normas_por_id = {
+                    str(norma.id): norma
+                    for norma in (
+                        NormaProcedimento.objects
+                        .filter(pk__in=normas_ids)
+                        .select_related("sistema")
+                    )
+                }
+
+                # Preserva exatamente a ordem enviada pelo usuário.
+                for norma_id in normas_ids:
+                    norma = normas_por_id.get(str(norma_id))
+
+                    if not norma:
+                        continue
+
+                    normas_hidratadas.append({
+                        "id": norma.id,
+                        "nome_norma": norma.nome_norma,
+                        "codigo_norma": norma.codigo_norma,
+                        "versao": norma.versao,
+                        "emitente": norma.emitente,
+                        "sistema": str(norma.sistema),
+                        "vigencia": (
+                            norma.vigencia_inicio.strftime("%Y-%m-%d")
+                            if norma.vigencia_inicio
+                            else ""
+                        ),
+                        "pdf": (
+                            norma.documento_norma_procedimento.url
+                            if norma.documento_norma_procedimento
+                            else ""
+                        ),
+                        "link": (
+                                norma.link_documento_norma or ""
+                        ),
+                    })
+
+        context["normas_hidratadas"] = normas_hidratadas
 
         # =====================================================
         # HERANÇA DO PROCESSO PAI (quando voltar de um POST inválido)
@@ -5098,7 +5162,7 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
             "modo_edicao": False,
 
             # auditoria — inclusão
-            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M:%S"),
+            "cadastro_data": agora_local.strftime("%d/%m/%Y %H:%M"),
             "cadastro_user": (
                     self.request.user.get_full_name()
                     or self.request.user.username
@@ -5116,14 +5180,11 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
         return context
 
     def post(self, request, *args, **kwargs):
-
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-
         with transaction.atomic():
             processo = form.save(commit=False)
-
             # ------------------------------------------
             # Herança do Processo Pai
             # ------------------------------------------
@@ -5257,7 +5318,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
             "desabilitar": True,
 
             "cadastro_data": (
-                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M:%S")
+                timezone.localtime(processo.data_criacao).strftime("%d/%m/%Y %H:%M")
                 if processo.data_criacao else ""
             ),
             "cadastro_user": (
@@ -5265,7 +5326,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                 if processo.usuario_cadastro else ""
             ),
             "atualizacao_data": (
-                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M:%S")
+                timezone.localtime(processo.data_atualizacao).strftime("%d/%m/%Y %H:%M")
                 if processo.data_atualizacao else ""
             ),
             "atualizacao_user": (
@@ -5274,7 +5335,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
             ),
             # auditoria — conclusao
             "conclusao_data": (
-                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M:%S")
+                timezone.localtime(processo.data_conclusao).strftime("%d/%m/%Y %H:%M")
                 if processo.data_conclusao else ""
             ),
             "conclusao_user": (
@@ -5462,7 +5523,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             "cadastro_data": (
                 timezone.localtime(
                     processo.data_criacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processo.data_criacao
                 else ""
             ),
@@ -5477,7 +5538,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             "atualizacao_data": (
                 timezone.localtime(
                     timezone.now()
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
             ),
 
             "atualizacao_user": (
@@ -5488,7 +5549,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
             "conclusao_data": (
                 timezone.localtime(
                     processo.data_conclusao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processo.data_conclusao
                 else ""
             ),
@@ -5796,7 +5857,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             "cadastro_data": (
                 timezone.localtime(
                     processo.data_criacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processo.data_criacao
                 else ""
             ),
@@ -5811,7 +5872,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             "atualizacao_data": (
                 timezone.localtime(
                     processo.data_atualizacao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processo.data_atualizacao
                 else ""
             ),
@@ -5825,7 +5886,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
             "conclusao_data": (
                 timezone.localtime(
                     processo.data_conclusao
-                ).strftime("%d/%m/%Y %H:%M:%S")
+                ).strftime("%d/%m/%Y %H:%M")
                 if processo.data_conclusao
                 else ""
             ),

@@ -1711,6 +1711,16 @@ class Form_ProcessoForm(forms.ModelForm):
         self.fields["telefone"].required = False
         self.fields["email"].required = False
 
+        if (
+                self.instance
+                and self.instance.link_documento_modelo_processo
+        ):
+            self.initial[
+                'link_documento_modelo_processo'
+            ] = unquote(
+                self.instance.link_documento_modelo_processo
+            )
+
         # 🔑 GARANTIA DOS IDS PARA O TRIPLE FILTER (SEM QUEBRAR O LAYOUT)
         if "classificacao" in self.fields:
             self.fields["classificacao"].widget.attrs["id"] = "id_classificacao"

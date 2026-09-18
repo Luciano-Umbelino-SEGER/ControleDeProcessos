@@ -534,18 +534,13 @@
                                                     this.fileName = f.name;
 
                                                     if (this.fileObjectURL) {
-                                                        URL.revokeObjectURL(
-                                                            this.fileObjectURL
-                                                        );
+                                                        URL.revokeObjectURL(this.fileObjectURL);
                                                     }
 
                                                     try {
-
-                                                        this.fileObjectURL =
-                                                            URL.createObjectURL(f);
+                                                        this.fileObjectURL = URL.createObjectURL(f);
 
                                                     } catch (e) {
-
                                                         this.fileObjectURL = '';
                                                     }
                                                 });
@@ -681,8 +676,8 @@
                                                             fileName = '';
                                                             fileObjectURL = '';
                                                             error = '';
-                                                            const inp =
-                                                                $el.querySelector('input[type=file]');
+
+                                                            const inp = $el.querySelector('input[type=file]');
                                                             if (inp) {
                                                                 inp.value = '';
                                                             }
@@ -740,8 +735,7 @@
                                         </label>
 
                                         <div x-data="{
-                                                link: `{{ form.initial.link_documento_modelo_processo|default:''|escapejs }}`,
-
+                                                link: `{{ form.link_documento_modelo_processo.value|default:''|escapejs }}`,
                                                 readonlyMode:
                                                     {% if modo_visualizacao or modo_exclusao %}
                                                         true
@@ -941,7 +935,7 @@
                                                             data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
 
                                                             data-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
-                                                            data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma|filename }}{% endif %}"
+                                                            data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
 
                                                             data-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.url }}{% endif %}"
                                                             data-nome-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.name|filename }}{% endif %}"
@@ -1009,7 +1003,7 @@
 
                             <div class="grid grid-cols-2 gap-6">
 
-                                <!-- Documento Modelo de Processo (PDF) -->
+                                <!-- Documento Norma de Procedimento (PDF) -->
                                 <div>
                                     <label class="block text-sm font-medium text-blue-700">
                                         Documento (PDF)
@@ -1129,7 +1123,7 @@
                                                                 data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
 
                                                                 data-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
-                                                                data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma|filename }}{% endif %}"
+                                                                data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
 
                                                                 data-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.url }}{% endif %}"
                                                                 data-nome-documento-norma="{% if n.documento_norma_procedimento %}{{ n.documento_norma_procedimento.name|filename }}{% endif %}">
@@ -1649,7 +1643,13 @@ function normaProcedimentoData() {
 
             /* ===== nomes amigáveis ===== */
             this.nomeDocumentoNorma = opt.dataset.nomeDocumentoNorma || "";
-            this.nomeLinkNorma = opt.dataset.nomeLinkNorma || "";
+            try {
+                this.nomeLinkNorma = decodeURIComponent(
+                    opt.dataset.nomeLinkNorma || ''
+                );
+            } catch (e) {
+                this.nomeLinkNorma = opt.dataset.nomeLinkNorma || '';
+            }
 
             /* ===== metadados ===== */
             this.codigo     = opt.dataset.codigo || "";

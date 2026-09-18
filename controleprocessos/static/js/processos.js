@@ -296,17 +296,43 @@ document.addEventListener("DOMContentLoaded", function () {
             rbProcesso.disabled = false;
             rbSubprocesso.disabled = false;
 
-            rbProcesso.addEventListener("change", () => rbProcesso.checked && setModeProcesso_inclusao());
-            rbSubprocesso.addEventListener("change", () => rbSubprocesso.checked && setModeSubprocesso_inclusao());
+            rbProcesso.addEventListener(
+                "change",
+                () => rbProcesso.checked && setModeProcesso_inclusao()
+            );
 
-            if (rbSubprocesso.checked) await setModeSubprocesso_inclusao();
-            else setModeProcesso_inclusao();
+            rbSubprocesso.addEventListener(
+                "change",
+                () => rbSubprocesso.checked && setModeSubprocesso_inclusao()
+            );
+
+            if (rbSubprocesso.checked) {
+                await setModeSubprocesso_inclusao();
+            } else {
+                setModeProcesso_inclusao();
+            }
+            // =========================================================
+            // HIDRATAÇÃO APÓS POST INVÁLIDO
+            //
+            // Na inclusão normal, NORMAS_HIDRATADAS estará vazia.
+            // Após POST inválido, a View reconstrói essa informação
+            // e os blocos de Norma são restaurados.
+            // =========================================================
+            if (
+                Array.isArray(window.NORMAS_HIDRATADAS) &&
+                window.NORMAS_HIDRATADAS.length > 0
+            ) {
+                hidratarNormas();
+            }
         }
         else {
             await inicializacaoNaoInclusao();
 
-            // 🔥 HIDRATAÇÃO (somente fora da inclusão)
-            if (typeof NORMAS_HIDRATADAS !== "undefined") {
+            // 🔥 HIDRATAÇÃO
+            if (
+                Array.isArray(window.NORMAS_HIDRATADAS) &&
+                window.NORMAS_HIDRATADAS.length > 0
+            ) {
                 hidratarNormas();
             }
 
@@ -320,14 +346,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         el.classList.add("bg-gray-100", "opacity-70", "cursor-not-allowed");
                     });
             }
-
         }
-
         // 🔒 Bloqueio FINAL após toda a inicialização
         setTimeout(() => {
             bloquearBotoesAdicionarRemover();
         }, 0);
-
     })();
 
     // NORMA
@@ -514,22 +537,18 @@ function hidratarNormas() {
     NORMAS_HIDRATADAS.slice(1).forEach((dados, idx) => {
         const uid = `hidratado_norma_${idx}_${Date.now()}`;
         const bloco = clonarTemplate("template-norma", container, uid);
-
         if (!bloco) return;
 
-        const select = bloco.querySelector('select[name="norma_procedimento_extra[]"]');
+        const select = bloco.querySelector(
+            'select[name="norma_procedimento_extra[]"]'
+        );
+
         if (!select) return;
 
-        // 1️⃣ Seleciona a norma correta
-        select.value = dados.id;
-
-
-
-        // 2️⃣ Aguarda Alpine finalizar completamente
-        atualizarBlocoAlpine(bloco, select);
-
+        hidratarSelect(select, dados);
     });
 
+    atualizarEstadoBotoes(container);
 }
 
 function clonarTemplate(templateId, container, uid) {
