@@ -33,18 +33,59 @@
             </div>
 
             <!-- Classificação -->
-            <div class="filtro-campo">
+            <div class="filtro-campo relative">
               <label class="filtro-label">Classificação</label>
-              <select name="classificacao"
-                      class="filtro-select w-[110px] {% if request.GET.classificacao %}text-black{% else %}text-gray-400{% endif %}">
-                <option value="">Todas</option>
-                {% for c in classificacoes %}
-                  <option value="{{ c.id }}"
-                    {% if classificacao_selecionada == c.id %}selected{% endif %}>
-                    {{ c.nome }}
-                  </option>
-                {% endfor %}
-              </select>
+
+              <div class="relative" id="filtro-classificacao">
+
+                <!-- Botão do filtro -->
+                <button type="button"
+                        id="btn-classificacao"
+                        class="filtro-select w-[150px] text-left flex items-center justify-between gap-1 text-gray-500"
+                        aria-haspopup="true"
+                        aria-expanded="false">
+
+                  <span id="classificacao-selecionadas-label" class="truncate text-gray-500">
+                    Todas
+                  </span>
+
+                  <span class="text-gray-500 text-xs">▼</span>
+                </button>
+
+                <!-- Menu de seleção -->
+                <div id="menu-classificacao"
+                     class="hidden fixed z-[9999] mt-1 w-[180px] bg-white border border-gray-300 rounded-md shadow-lg text-gray-900">
+
+                  <div class="py-1">
+
+                    <!-- Todas -->
+                    <label class="flex items-center gap-2 px-3 py-1.5 text-gray-700 font-normal text-sm hover:bg-gray-100 cursor-pointer">
+                      <input type="checkbox"
+                             id="classificacao-todas"
+                             class="classificacao-checkbox"
+                             {% if not classificacoes_selecionadas %}checked{% endif %}>
+                      <span class="text-gray-700 font-normal">Todas</span>
+                    </label>
+
+                    <div class="border-t border-gray-200 my-1"></div>
+
+                    <!-- Classificações -->
+                    {% for c in classificacoes %}
+                      <label class="flex items-center gap-2 px-3 py-1.5 text-gray-700 font-normal text-sm hover:bg-gray-100 cursor-pointer">
+                        <input type="checkbox"
+                               name="classificacao"
+                               value="{{ c.id }}"
+                               class="classificacao-checkbox classificacao-item"
+                               data-nome="{{ c.nome }}"
+                               {% if c.id in classificacoes_selecionadas %}checked{% endif %}>
+                        <span class="text-gray-700 font-normal">{{ c.nome }}</span>
+                      </label>
+                    {% endfor %}
+
+                  </div>
+                </div>
+
+              </div>
             </div>
 
             <!-- Macro N1 -->
@@ -78,7 +119,7 @@
             <div class="filtro-campo">
               <label class="filtro-label">Situação</label>
               <select name="estado"
-                      class="filtro-select w-[90px] {% if request.GET.estado %}text-black{% else %}text-gray-400{% endif %}">
+                      class="filtro-select w-[90px] {% if request.GET.estado %}text-black{% else %}text-gray-700{% endif %}">
                 <option value="">Todos</option>
                 <option value="ativo" {% if estado_selecionado == 'ativo' %}selected{% endif %}>Ativo</option>
                 <option value="iniciado" {% if estado_selecionado == 'iniciado' %}selected{% endif %}>Iniciado</option>
@@ -405,6 +446,153 @@
       {% endif %}
     </div>
 
-  </div>
+   </div>
 </div>
+
+<script>
+/* ============================================================
+   FILTRO DE CLASSIFICAÇÃO - SELEÇÃO MÚLTIPLA
+   ============================================================ */
+(function () {
+    const filtroClassificacao = document.getElementById("filtro-classificacao");
+    const btnClassificacao = document.getElementById("btn-classificacao");
+    const menuClassificacao = document.getElementById("menu-classificacao");
+    const classificacaoTodas = document.getElementById("classificacao-todas");
+    const classificacaoItens = document.querySelectorAll(".classificacao-item");
+    const labelSelecionadas = document.getElementById("classificacao-selecionadas-label");
+
+    // Se os elementos não existirem, não faz nada.
+    if (
+        !filtroClassificacao ||
+        !btnClassificacao ||
+        !menuClassificacao ||
+        !classificacaoTodas ||
+        !labelSelecionadas
+    ) {
+        return;
+    }
+
+    /* --------------------------------------------------------
+       Atualiza o texto exibido no botão
+       -------------------------------------------------------- */
+    function atualizarTextoBotao() {
+        const selecionadas = Array.from(classificacaoItens)
+            .filter(item => item.checked)
+            .map(item => item.dataset.nome);
+
+        if (selecionadas.length === 0) {
+            labelSelecionadas.textContent = "Todas";
+            labelSelecionadas.classList.remove("text-gray-900");
+            labelSelecionadas.classList.add("text-gray-500");
+            return;
+        }
+
+        labelSelecionadas.textContent = selecionadas.join(", ");
+        labelSelecionadas.classList.remove("text-gray-500");
+        labelSelecionadas.classList.add("text-gray-900");
+    }
+
+    /* --------------------------------------------------------
+       Abre / fecha o dropdown
+       -------------------------------------------------------- */
+    btnClassificacao.addEventListener("click", function (event) {
+        event.stopPropagation();
+
+        const estaAberto = !menuClassificacao.classList.contains("hidden");
+
+        if (!estaAberto) {
+            const rect = btnClassificacao.getBoundingClientRect();
+
+            menuClassificacao.style.top = `${rect.bottom + 4}px`;
+            menuClassificacao.style.left = `${rect.left}px`;
+
+            menuClassificacao.classList.remove("hidden");
+
+            btnClassificacao.setAttribute("aria-expanded", "true");
+        } else {
+            menuClassificacao.classList.add("hidden");
+
+            btnClassificacao.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    /* --------------------------------------------------------
+       Seleção das classificações
+       -------------------------------------------------------- */
+    classificacaoItens.forEach(function (item) {
+
+        item.addEventListener("change", function () {
+
+            const algumaSelecionada = Array.from(classificacaoItens).some(item => item.checked);
+
+            if (algumaSelecionada) {
+                // Qualquer classificação selecionada
+                // desmarca "Todas".
+                classificacaoTodas.checked = false;
+            } else {
+                // Nenhuma selecionada:
+                // volta para "Todas".
+                classificacaoTodas.checked = true;
+            }
+
+            atualizarTextoBotao();
+        });
+    });
+
+    /* --------------------------------------------------------
+       Checkbox "Todas"
+       -------------------------------------------------------- */
+    classificacaoTodas.addEventListener("change", function () {
+
+        if (classificacaoTodas.checked) {
+            // "Todas" selecionada:
+            // limpa as classificações individuais.
+            classificacaoItens.forEach(function (item) {
+                item.checked = false;
+            });
+
+        } else {
+            // Não permitimos ficar sem nenhuma opção.
+            const algumaSelecionada = Array.from(classificacaoItens)
+                .some(item => item.checked);
+            if (!algumaSelecionada) {
+                classificacaoTodas.checked = true;
+            }
+        }
+
+        atualizarTextoBotao();
+    });
+
+    /* --------------------------------------------------------
+       Clique fora do dropdown
+       -------------------------------------------------------- */
+    document.addEventListener("click", function (event) {
+
+        if (!filtroClassificacao.contains(event.target)) {
+            menuClassificacao.classList.add("hidden");
+            btnClassificacao.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        }
+    });
+
+    /* --------------------------------------------------------
+       Estado inicial
+       -------------------------------------------------------- */
+    const algumaSelecionadaInicial = Array.from(classificacaoItens)
+        .some(item => item.checked);
+
+    if (algumaSelecionadaInicial) {
+        classificacaoTodas.checked = false;
+
+    } else {
+        classificacaoTodas.checked = true;
+    }
+
+    atualizarTextoBotao();
+
+})();
+</script>
+
 {% endblock %}

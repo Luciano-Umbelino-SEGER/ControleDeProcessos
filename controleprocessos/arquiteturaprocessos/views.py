@@ -4987,7 +4987,11 @@ class ProcessoView(LoginRequiredMixin, ListView):
         req = self.request.GET
 
         nome = req.get("nome", "").strip()
-        classificacao = req.get("classificacao", "").strip()
+        classificacoes_selecionadas = [
+            int(pk)
+            for pk in req.getlist("classificacao")
+            if pk.isdigit()
+        ]
         macro1 = req.get("macro1", "").strip()
         macro2 = req.get("macro2", "").strip()
         area = req.get("area", "").strip()
@@ -5043,8 +5047,10 @@ class ProcessoView(LoginRequiredMixin, ListView):
         if nome:
             qs = qs.filter(nome__icontains=nome)
 
-        if classificacao:
-            qs = qs.filter(classificacao_id=classificacao)
+        if classificacoes_selecionadas:
+            qs = qs.filter(
+                classificacao_id__in=classificacoes_selecionadas
+            )
 
         if macro1:
             qs = qs.filter(macroprocesso_nivel1__nome__icontains=macro1)
@@ -5062,7 +5068,6 @@ class ProcessoView(LoginRequiredMixin, ListView):
             qs = qs.filter(
                 data_conclusao__isnull=False
             )
-
         elif estado == "ativo":
             qs = qs.filter(
                 Q(data_conclusao__isnull=True)
@@ -5074,12 +5079,16 @@ class ProcessoView(LoginRequiredMixin, ListView):
                         | Q(documentos__isnull=False)
                 )
             ).distinct()
-
         elif estado == "iniciado":
             qs = qs.filter(
                 data_conclusao__isnull=True,
-                documento_modelo_processo__isnull=True,
-                link_documento_modelo_processo__isnull=True,
+            ).filter(
+                Q(documento_modelo_processo__isnull=True)
+                | Q(documento_modelo_processo="")
+            ).filter(
+                Q(link_documento_modelo_processo__isnull=True)
+                | Q(link_documento_modelo_processo="")
+            ).filter(
                 documentos__isnull=True
             )
 
@@ -5113,7 +5122,11 @@ class ProcessoView(LoginRequiredMixin, ListView):
         context["total_registros"] = context["page_obj"].paginator.count
 
         # 🔥 FILTROS (persistência)
-        context["classificacao_selecionada"] = str(req.get("classificacao", ""))
+        context["classificacoes_selecionadas"] = [
+            int(pk)
+            for pk in req.getlist("classificacao")
+            if pk.isdigit()
+        ]
         context["estado_selecionado"] = str(req.get("estado", ""))
         context["nome_busca"] = req.get("nome", "")
         context["macro1_busca"] = req.get("macro1", "")
