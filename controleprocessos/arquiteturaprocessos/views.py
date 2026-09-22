@@ -3910,12 +3910,18 @@ class ExcluirTipoDocumento(
 class NormasProcedimentoView(LoginRequiredMixin, ListView):
 
     model = NormaProcedimento
-    template_name = ("modelagemprocessos/normasprocedimento.html")
-    context_object_name = ("normas_procedimento")
+    template_name = (
+        "modelagemprocessos/normasprocedimento.html"
+    )
+    context_object_name = (
+        "normas_procedimento"
+    )
 
     def get_paginate_by(self, queryset):
 
-        page_size = self.request.GET.get("page_size")
+        page_size = self.request.GET.get(
+            "page_size"
+        )
 
         try:
             return int(page_size)
@@ -3939,6 +3945,9 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             )
         )
 
+        # ====================================================
+        # FILTROS
+        # ====================================================
         nome_norma = req.get(
             "nome_norma",
             ""
@@ -3948,6 +3957,11 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             "sistema",
             ""
         ).strip()
+
+        norma_exclusiva = req.get(
+            "norma_exclusiva",
+            ""
+        ).strip().lower()
 
         emitente = req.get(
             "emitente",
@@ -3969,32 +3983,52 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             ""
         ).strip()
 
+        # ====================================================
+        # APLICAÇÃO DOS FILTROS
+        # ====================================================
         if nome_norma:
+
             queryset = queryset.filter(
                 nome_norma__icontains=nome_norma
             )
 
         if sistema:
+
             queryset = queryset.filter(
                 sistema_id=sistema
             )
 
+        if norma_exclusiva in (
+            "true",
+            "false"
+        ):
+
+            queryset = queryset.filter(
+                norma_exclusiva=(
+                    norma_exclusiva == "true"
+                )
+            )
+
         if emitente:
+
             queryset = queryset.filter(
                 emitente__icontains=emitente
             )
 
         if codigo_norma:
+
             queryset = queryset.filter(
                 codigo_norma__icontains=codigo_norma
             )
 
         if vigencia_de:
+
             queryset = queryset.filter(
                 vigencia_inicio__gte=vigencia_de
             )
 
         if vigencia_ate:
+
             queryset = queryset.filter(
                 vigencia_fim__lte=vigencia_ate
             )
@@ -4013,13 +4047,28 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
 
         req = self.request.GET
 
+        # ====================================================
+        # VALORES DOS FILTROS
+        # ====================================================
         context["nome_norma_busca"] = (
             req.get("nome_norma", "")
         )
 
+        context["norma_exclusiva_busca"] = (
+            req.get("norma_exclusiva", "")
+        )
+
         try:
-            context["sistema_busca"] = int(req.get("sistema"))
-        except (TypeError, ValueError):
+
+            context["sistema_busca"] = int(
+                req.get("sistema")
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ):
+
             context["sistema_busca"] = None
 
         context["emitente_busca"] = (
@@ -4030,11 +4079,6 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             req.get("codigo_norma", "")
         )
 
-        context["sistemas"] = (
-            SistemasUECI.objects
-            .order_by("nome_sistema")
-        )
-
         context["vigencia_de"] = (
             req.get("vigencia_de", "")
         )
@@ -4043,6 +4087,17 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             req.get("vigencia_ate", "")
         )
 
+        # ====================================================
+        # SISTEMAS
+        # ====================================================
+        context["sistemas"] = (
+            SistemasUECI.objects
+            .order_by("nome_sistema")
+        )
+
+        # ====================================================
+        # QUERY STRING
+        # ====================================================
         query_params = (
             self.request.GET.copy()
         )
@@ -4052,7 +4107,10 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
         )
 
         if "page" in query_params_no_page:
-            query_params_no_page.pop("page")
+
+            query_params_no_page.pop(
+                "page"
+            )
 
         context["query_string"] = (
             query_params_no_page.urlencode()
@@ -4062,6 +4120,9 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             query_params.urlencode()
         )
 
+        # ====================================================
+        # TOTAL DE REGISTROS
+        # ====================================================
         context["total_registros"] = (
             context["page_obj"]
             .paginator

@@ -556,6 +556,13 @@ class NormaProcedimento(models.Model):
         verbose_name="Sistema",
     )
 
+    norma_exclusiva = models.BooleanField(
+        default=False,
+        blank=True,
+        db_index=True,
+        verbose_name="Exclusiva",
+    )
+
     codigo_norma = models.CharField(
         max_length=15,
         db_index=True,

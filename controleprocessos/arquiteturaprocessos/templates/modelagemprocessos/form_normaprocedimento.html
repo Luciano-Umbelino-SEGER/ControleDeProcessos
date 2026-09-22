@@ -69,87 +69,110 @@
         <fieldset {% if modo_visualizacao or modo_exclusao %}disabled{% endif %}>
 
             <div class="grid grid-cols-12 gap-3">
+                <!-- ===================================================== -->
+                <!-- Tipo Documento -->
+                <!-- ===================================================== -->
+                <div class="col-span-12 md:col-span-3">
+
+                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                        Documento
+                    </label>
+
+                    <div class="flex items-center h-[42px]">
+                        <span class="inline-flex items-center justify-center w-full h-[42px]
+                                     rounded-md bg-green-100 text-green-800 text-[12px]
+                                     font-semibold border border-green-300
+                                     uppercase tracking-wide">
+
+                            NORMA DE PROCEDIMENTO
+                        </span>
+                    </div>
+
+                </div>
+
 
                 <!-- ===================================================== -->
-                <!-- IDENTIFICAÇÃO -->
+                <!-- Sistema -->
+                <!-- ===================================================== -->
+                <div class="col-span-12 md:col-span-7">
+
+                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                        Sistema
+                    </label>
+
+                    {{ form.sistema }}
+
+                </div>
+
+
+                <!-- ===================================================== -->
+                <!-- Norma Exclusiva -->
+                <!-- ===================================================== -->
+                <div class="col-span-12 md:col-span-2">
+                    <div class="flex items-center justify-start h-full pt-6 pl-2">
+                        <label class="inline-flex items-center gap-2
+                                      text-sm font-semibold text-blue-700
+                                      cursor-pointer">
+                            {{ form.norma_exclusiva }}
+                            <span>Exclusiva</span>
+                        </label>
+                    </div>
+                </div>
+
+
+                <!-- ===================================================== -->
+                <!-- Emitente -->
+                <!-- ===================================================== -->
+                <div class="col-span-12 md:col-span-8">
+
+                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                        Emitente
+                    </label>
+
+                    {{ form.emitente }}
+
+                </div>
+
+
+                <!-- ===================================================== -->
+                <!-- Código -->
+                <!-- ===================================================== -->
+                <div class="col-span-12 md:col-span-2">
+
+                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                        Código
+                    </label>
+
+                    {{ form.codigo_norma }}
+
+                </div>
+
+
+                <!-- ===================================================== -->
+                <!-- Versão -->
+                <!-- ===================================================== -->
+                <div class="col-span-12 md:col-span-2">
+
+                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                        Versão
+                    </label>
+
+                    {{ form.versao }}
+
+                </div>
+
+
+                <!-- ===================================================== -->
+                <!-- Nome da Norma -->
                 <!-- ===================================================== -->
                 <div class="col-span-12">
 
-                    <div class="relative border border-blue-200 rounded-lg px-4 pt-7 pb-4 bg-white/30">
+                    <label class="block text-sm font-semibold text-blue-700 mb-1">
+                        Nome
+                    </label>
 
-                        <!-- TÍTULO SOBREPOSTO -->
-                        <div class="absolute -top-3 left-5 px-3 bg-blue-50">
-                            <h2 class="text-base font-semibold text-blue-800 leading-none">
-                                Identificação do Documento
-                            </h2>
-                        </div>
+                    {{ form.nome_norma }}
 
-                        <div class="grid grid-cols-12 gap-3">
-
-                            <!-- Tipo Documento -->
-                            <div class="col-span-12 md:col-span-3">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Documento
-                                </label>
-
-                                <div class="flex items-center h-[42px]">
-                                    <span class="inline-flex items-center justify-center w-full h-[42px]
-                                                 rounded-md bg-green-100 text-green-800 text-[12px]
-                                                 font-semibold border border-green-300
-                                                 uppercase tracking-wide">
-
-                                        NORMA DE PROCEDIMENTO
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Sistema -->
-                            <div class="col-span-12 md:col-span-9">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Sistema
-                                </label>
-
-                                {{ form.sistema }}
-                            </div>
-
-                            <!-- Emitente -->
-                            <div class="col-span-12 md:col-span-12">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Emitente
-                                </label>
-
-                                {{ form.emitente }}
-                            </div>
-
-                            <!-- Nome da Norma -->
-                            <div class="col-span-12 md:col-span-8">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Nome
-                                </label>
-
-                                {{ form.nome_norma }}
-                            </div>
-
-                            <!-- Nr Norma -->
-                            <div class="col-span-12 md:col-span-2">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Código
-                                </label>
-
-                                {{ form.codigo_norma }}
-                            </div>
-
-                            <!-- Versão -->
-                            <div class="col-span-12 md:col-span-2">
-                                <label class="block text-sm font-semibold text-blue-700 mb-1">
-                                    Versão
-                                </label>
-
-                                {{ form.versao }}
-                            </div>
-
-                        </div>
-                    </div>
                 </div>
 
                 <!-- ===================================================== -->

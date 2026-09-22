@@ -72,6 +72,41 @@
                 </select>
             </div>
 
+            <!-- NORMA EXCLUSIVA -->
+            <div class="flex flex-col">
+                <label class="text-sm font-semibold text-blue-800 mb-0.5">
+                    Exclusiva
+                </label>
+
+                <select
+                    name="norma_exclusiva"
+                    class="w-36 px-2 py-1.5 border border-gray-300 rounded-md
+                           bg-white focus:ring-2 focus:ring-blue-500 text-black">
+
+                    <option value=""
+                        {% if norma_exclusiva_busca == "" %}
+                            selected
+                        {% endif %}>
+                        Todas
+                    </option>
+
+                    <option value="True"
+                        {% if norma_exclusiva_busca == "True" %}
+                            selected
+                        {% endif %}>
+                        Exclusivas
+                    </option>
+
+                    <option value="False"
+                        {% if norma_exclusiva_busca == "False" %}
+                            selected
+                        {% endif %}>
+                        Não exclusivas
+                    </option>
+
+                </select>
+            </div>
+
              <!-- CÓDIGO NORMA -->
             <div class="flex flex-col">
               <label class="text-sm font-semibold text-blue-800 mb-0.5">
@@ -218,7 +253,8 @@
         <thead class="bg-blue-100 text-blue-800">
             <tr>
                 <th class="py-3 pl-4 pr-2 text-left w-[16%]">Norma</th>
-                <th class="py-3 px-2 text-left w-[18%]">Sistema</th>
+                <th class="py-3 px-2 text-left w-[12%]">Sistema</th>
+                <th class="py-3 px-2 text-center w-[3%]">Exclusiva</th>
                 <th class="py-3 px-2 text-center w-[6%]">Código</th>
                 <th class="py-3 px-2 text-center w-[5%]">Versão</th>
                 <th class="py-3 px-2 text-left w-[14%]">Emitente</th>
@@ -241,7 +277,7 @@
                         <span>Vigência</span>
                     </div>
                 </th>
-                <th class="py-3 px-2 text-left w-[13%]">PDF</th>
+                <th class="py-3 px-2 text-left w-[18%]">PDF</th>
                 <th class="py-3 px-2 text-left min-w-[220px]">Link</th>
                 <th class="py-3 px-2 text-center w-[7%]">Ações</th>
             </tr>
@@ -263,6 +299,15 @@
                 <div class="line-clamp-3 break-words leading-snug">
                     {{ norma.sistema }}
                 </div>
+            </td>
+
+            <!-- NORMA EXCLUSIVA -->
+            <td class="py-3 px-2 text-center align-top whitespace-nowrap">
+                {% if norma.norma_exclusiva %}
+                    Sim
+                {% else %}
+                    Não
+                {% endif %}
             </td>
 
             <!-- CÓDIGO NORMA -->
@@ -428,7 +473,7 @@
 
           {% empty %}
           <tr>
-            <td colspan="12"
+            <td colspan="13"
                 class="py-4 px-4 text-center text-gray-500">
                 Nenhuma Norma de Procedimento encontrada.
             </td>

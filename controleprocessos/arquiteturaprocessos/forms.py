@@ -1161,6 +1161,25 @@ class Form_NormaProcedimentoForm(forms.ModelForm):
         })
 
         # ====================================================
+        # NORMA EXCLUSIVA
+        # ====================================================
+        self.fields["norma_exclusiva"].widget = forms.CheckboxInput(
+            attrs={
+                "class": (
+                    "h-7 w-7 "
+                    "border-2 border-gray-400 "
+                    "rounded "
+                    "text-blue-600 "
+                    "focus:ring-2 "
+                    "focus:ring-blue-500 "
+                    "cursor-pointer"
+                ),
+            }
+        )
+
+        self.fields["norma_exclusiva"].label = "Exclusiva"
+
+        # ====================================================
         # NORMA
         # ====================================================
         self.fields["nome_norma"].widget.attrs.update({
