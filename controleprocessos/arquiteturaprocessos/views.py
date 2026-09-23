@@ -5220,6 +5220,7 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
                         "nome_norma": norma.nome_norma,
                         "codigo_norma": norma.codigo_norma,
                         "versao": norma.versao,
+                        "norma_exclusiva": norma.norma_exclusiva,
                         "emitente": norma.emitente,
                         "sistema": str(norma.sistema),
                         "vigencia": (
@@ -5421,6 +5422,7 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
                 "nome_norma": norma.nome_norma,
                 "codigo_norma": norma.codigo_norma,
                 "versao": norma.versao,
+                "norma_exclusiva": norma.norma_exclusiva,
                 "emitente": norma.emitente,
                 "sistema": str(norma.sistema),
                 "vigencia": (
@@ -5624,6 +5626,7 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
                 "nome_norma": norma.nome_norma,
                 "codigo_norma": norma.codigo_norma,
                 "versao": norma.versao,
+                "norma_exclusiva": norma.norma_exclusiva,
                 "emitente": norma.emitente,
                 "sistema": str(norma.sistema),
                 "vigencia": (
@@ -5958,6 +5961,7 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
                 'nome_norma': norma.nome_norma,
                 'codigo_norma': norma.codigo_norma,
                 'versao': norma.versao,
+                "norma_exclusiva": norma.norma_exclusiva,
                 'emitente': norma.emitente,
                 'sistema': str(norma.sistema),
                 'vigencia': (

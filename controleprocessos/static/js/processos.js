@@ -363,19 +363,82 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (normaSelect) {
         normaSelect.addEventListener("change", function() {
+
             const opt = this.options[this.selectedIndex];
+            const exclusivaNorma = safeGet("exclusiva_norma");
+
             if (!opt || opt.value === "") {
                 temaNorma.value = "";
                 versaoNorma.value = "";
                 emitenteNorma.value = "";
                 sistemaNorma.value = "";
                 vigenciaNorma.value = "";
+
+                if (exclusivaNorma) {
+                    exclusivaNorma.value = "";
+                    exclusivaNorma.classList.remove(
+                        "bg-blue-100",
+                        "text-blue-700",
+                        "border-blue-300",
+                        "bg-amber-100",
+                        "text-amber-700",
+                        "border-amber-300",
+                        "font-bold"
+                    );
+
+                    exclusivaNorma.classList.add("bg-gray-100");
+                }
+
                 return;
             }
+
             versaoNorma.value = formatarVersao(opt.dataset.versao);
             emitenteNorma.value = opt.dataset.emitente || "";
             sistemaNorma.value = opt.dataset.sistema || "";
-            vigenciaNorma.value = formatarDataISO_para_BR(opt.dataset.vigencia);
+            vigenciaNorma.value = formatarDataISO_para_BR(
+                opt.dataset.vigencia
+            );
+
+            // -------------------------------------------------
+            // NORMA EXCLUSIVA
+            // -------------------------------------------------
+            if (exclusivaNorma) {
+
+                const exclusiva =
+                    opt.dataset.exclusiva === "true" ||
+                    opt.dataset.exclusiva === "1";
+
+                exclusivaNorma.value = exclusiva ? "SIM" : "NÃO";
+
+                exclusivaNorma.classList.remove(
+                    "bg-gray-100",
+                    "bg-blue-100",
+                    "text-blue-700",
+                    "border-blue-300",
+                    "bg-amber-100",
+                    "text-amber-700",
+                    "border-amber-300"
+                );
+
+                if (exclusiva) {
+
+                    exclusivaNorma.classList.add(
+                        "bg-blue-100",
+                        "text-blue-700",
+                        "border-blue-300",
+                        "font-bold"
+                    );
+
+                } else {
+
+                    exclusivaNorma.classList.add(
+                        "bg-amber-100",
+                        "text-amber-700",
+                        "border-amber-300",
+                        "font-bold"
+                    );
+                }
+            }
         });
     }
 
@@ -484,12 +547,67 @@ function hidratarSelect(selectEl, dados) {
     selectEl.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function atualizarCampoExclusiva(block, valor) {
+
+    if (!block) return;
+
+    const campoExclusiva = block.querySelector(
+        '[id^="exclusiva_norma"]'
+    );
+
+    if (!campoExclusiva) return;
+
+    const exclusiva =
+        valor === true ||
+        valor === "true" ||
+        valor === 1 ||
+        valor === "1";
+
+    campoExclusiva.value = exclusiva ? "SIM" : "NÃO";
+
+    // Remove estados visuais anteriores
+    campoExclusiva.classList.remove(
+        "bg-gray-100",
+        "bg-blue-100",
+        "bg-amber-100",
+        "text-blue-700",
+        "text-amber-700",
+        "text-black",
+        "border-gray-300",
+        "border-blue-300",
+        "border-amber-300",
+        "font-bold"
+    );
+
+    // SIM → azul
+    if (exclusiva) {
+
+        campoExclusiva.classList.add(
+            "bg-blue-100",
+            "text-blue-700",
+            "border-blue-300",
+            "font-bold"
+        );
+
+    // NÃO → âmbar
+    } else {
+
+        campoExclusiva.classList.add(
+            "bg-amber-100",
+            "text-amber-700",
+            "border-amber-300",
+            "font-bold"
+        );
+    }
+}
+
 function preencherCamposNorma(block, dados) {
 
     if (!block || !dados) return;
 
     const setValue = (selector, value) => {
         const campo = block.querySelector(selector);
+
         if (campo) {
             campo.value = value ?? "";
         }
@@ -499,7 +617,18 @@ function preencherCamposNorma(block, dados) {
     setValue('[id^="versao_norma"]', formatarVersao(dados.versao));
     setValue('[id^="emitente_norma"]', dados.emitente);
     setValue('[id^="sistema_norma"]', dados.sistema);
-    setValue('[id^="vigencia_norma"]', formatarDataISO_para_BR(dados.vigencia));
+    setValue(
+        '[id^="vigencia_norma"]',
+        formatarDataISO_para_BR(dados.vigencia)
+    );
+
+    // =================================================
+    // NORMA EXCLUSIVA
+    // =================================================
+    atualizarCampoExclusiva(
+        block,
+        dados.norma_exclusiva
+    );
 }
 
 // ==========================================
@@ -545,7 +674,11 @@ function hidratarNormas() {
 
         if (!select) return;
 
-        hidratarSelect(select, dados);
+         hidratarSelect(select, dados);
+
+        // Hidrata os demais campos da Norma,
+        // incluindo Norma Exclusiva.
+        preencherCamposNorma(bloco, dados);
     });
 
     atualizarEstadoBotoes(container);
@@ -705,12 +838,36 @@ function limparBlocoNorma(bloco) {
 // REAÇÃO AO CHANGE DO SELECT
 // ==========================================
 document.addEventListener("change", function (e) {
+
     if (!e.target.matches("#normas_container select")) {
         return;
     }
 
-    const container = e.target.closest("#normas_container");
+    const select = e.target;
+    const container = select.closest("#normas_container");
+
+    if (!container) return;
+
     atualizarEstadoBotoes(container);
+
+    // =================================================
+    // NORMA EXCLUSIVA
+    // =================================================
+    const block = select.closest(".norma-block");
+
+    if (!block) return;
+
+    const option = select.options[select.selectedIndex];
+
+    if (!option || !option.value) {
+        atualizarCampoExclusiva(block, null);
+        return;
+    }
+
+    atualizarCampoExclusiva(
+        block,
+        option.dataset.exclusiva
+    );
 });
 
 

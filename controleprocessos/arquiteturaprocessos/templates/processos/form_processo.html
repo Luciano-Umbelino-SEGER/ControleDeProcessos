@@ -849,7 +849,7 @@
                         <div class="norma-block mb-6" data-uid="base" x-data="normaProcedimentoData()">
 
                             <!-- LINHA 8 – Norma de Procedimento -->
-                            <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+                            <div class="grid grid-cols-[1.7fr_1.3fr_120px_100px] gap-6 mb-6">
 
                                 <!-- Norma (BLOCO BASE) -->
                                 <div>
@@ -933,6 +933,7 @@
                                                             data-emitente="{{ n.emitente }}"
                                                             data-sistema="{{ n.sistema }}"
                                                             data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
+                                                            data-exclusiva="{{ n.norma_exclusiva|yesno:'true,false' }}"
 
                                                             data-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
                                                             data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
@@ -968,6 +969,16 @@
                                            value="{{ form.instance.norma_procedimento.versao|default:'' }}"
                                            class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10
                                                   pointer-events-none text-black">
+                                </div>
+
+                                <!-- Exclusiva -->
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-700">
+                                        Exclusiva
+                                    </label>
+                                    <input id="exclusiva_norma" type="text" disabled tabindex="-1" value=""
+                                           class="w-[100px] bg-blue-100 border border-blue-100 rounded-md px-3 py-2 h-10
+                                                  pointer-events-none text-blue-700 font-bold text-center uppercase">
                                 </div>
 
                             </div>
@@ -1094,7 +1105,7 @@
                             <div class="norma-block mb-6" data-uid="__UID__" x-data="normaProcedimentoData()">
 
                                 <!-- LINHA 8 -->
-                                <div class="grid grid-cols-[1.7fr_1.3fr_120px] gap-6 mb-6">
+                                <div class="grid grid-cols-[1.7fr_1.3fr_120px_100px] gap-6 mb-6">
 
                                     <div class="">
 
@@ -1121,6 +1132,7 @@
                                                                 data-emitente="{{ n.emitente }}"
                                                                 data-sistema="{{ n.sistema }}"
                                                                 data-vigencia="{{ n.vigencia_inicio|date:'Y-m-d' }}"
+                                                                data-exclusiva="{{ n.norma_exclusiva|yesno:'true,false' }}"
 
                                                                 data-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
                                                                 data-nome-link-norma="{% if n.link_documento_norma %}{{ n.link_documento_norma }}{% endif %}"
@@ -1149,6 +1161,18 @@
                                         <label class="block text-sm font-medium text-blue-700">Versão</label>
                                         <input id="versao_norma___UID__" name="versao_norma_extra[]" type="text" readonly tabindex="-1"
                                                class="w-[120px] bg-gray-100 border border-gray-300 rounded-md px-3 py-2 h-10 pointer-events-none text-black" value="">
+                                    </div>
+
+                                    <!-- Exclusiva -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-700">
+                                            Exclusiva
+                                        </label>
+                                        <input id="exclusiva_norma___UID__"
+                                               name="exclusiva_norma_extra[]" type="text" disabled abindex="-1"
+                                               class="w-[100px] bg-blue-100 border border-blue-100 rounded-md px-3 py-2 h-10
+                                                      pointer-events-none text-blue-700 font-bold text-center uppercase"
+                                               value="">
                                     </div>
 
                                 </div>
