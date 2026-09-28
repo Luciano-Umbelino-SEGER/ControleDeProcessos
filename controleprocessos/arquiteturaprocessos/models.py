@@ -14,6 +14,18 @@ from django.core.validators import RegexValidator, MinValueValidator, MaxValueVa
 from django.core.exceptions import ValidationError
 
 # ============================================================
+# CONTROLE DE ACESSO
+# ============================================================
+class Modulo(models.Model):
+    nome = models.CharField(max_length=150)
+    descricao = models.TextField(blank=True)
+    ordem = models.PositiveIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.nome)
+
+# ============================================================
 # PERFIL / USUÁRIO / TELEFONE
 # ============================================================
 
