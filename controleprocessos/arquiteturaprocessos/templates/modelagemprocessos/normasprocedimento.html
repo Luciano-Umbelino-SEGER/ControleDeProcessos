@@ -221,7 +221,7 @@
               Limpar
             </a>
 
-            <a href="{% url 'arquiteturaprocessos:criar_normaprocedimento' %}"
+            <a href="{% url 'arquiteturaprocessos:criar_normaprocedimento' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                class="inline-flex items-center px-3 py-1.5 bg-blue-600
                       text-white rounded-md hover:bg-blue-700 transition">
               + Novo
@@ -402,7 +402,7 @@
               <div class="flex justify-center items-center space-x-1.5">
 
                 <!-- VISUALIZAR -->
-                <a href="{% url 'arquiteturaprocessos:visualizar_normaprocedimento' norma.pk %}"
+                <a href="{% url 'arquiteturaprocessos:visualizar_normaprocedimento' norma.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                    title="Visualizar"
                    class="text-blue-600 hover:text-blue-800">
 
@@ -429,7 +429,7 @@
 
                 {% if request.user.perfil.nome|lower == 'administrador' %}
                 <!-- EDITAR -->
-                <a href="{% url 'arquiteturaprocessos:editar_normaprocedimento' norma.pk %}"
+                <a href="{% url 'arquiteturaprocessos:editar_normaprocedimento' norma.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                    title="Editar"
                    class="text-yellow-600 hover:text-yellow-800">
                   <svg xmlns="http://www.w3.org/2000/svg"
@@ -449,7 +449,7 @@
                 </a>
 
                 <!-- EXCLUIR -->
-                <a href="{% url 'arquiteturaprocessos:excluir_normaprocedimento' norma.pk %}"
+                <a href="{% url 'arquiteturaprocessos:excluir_normaprocedimento' norma.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                    title="Excluir"
                    class="text-red-600 hover:text-red-800">
                   <svg xmlns="http://www.w3.org/2000/svg"
