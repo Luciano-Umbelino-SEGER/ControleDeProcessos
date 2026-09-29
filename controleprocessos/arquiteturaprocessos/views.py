@@ -4650,7 +4650,15 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = "estrutura/form_arearesponsavel.html"
-    success_url = reverse_lazy("arquiteturaprocessos:areasresponsaveis")
+
+    def get_success_url(self):
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = self.request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return url
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.perfil.nome.lower() != 'administrador':
@@ -4692,7 +4700,10 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
 
         messages.success(
             self.request,
-            f"Área Responsável '{area.nome_area}' criada com sucesso!"
+            format_html(
+                'Área Responsável <strong>"{}"</strong> criada com sucesso!',
+                area.nome_area,
+            )
         )
 
         self.object = area
@@ -4760,7 +4771,15 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
-    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+
+    def get_success_url(self):
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = self.request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return url
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.perfil.nome.lower() != 'administrador':
@@ -4816,7 +4835,10 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
 
         messages.success(
             self.request,
-            f"Área Responsável '{area.nome_area}' atualizada com sucesso!"
+            format_html(
+                'Área Responsável <strong>"{}"</strong> atualizada com sucesso!',
+                area.nome_area,
+            )
         )
 
         self.object = area
@@ -4905,10 +4927,19 @@ class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
 
         messages.success(
             request,
-            f"Área Responsável '{area.nome_area}' desativada com sucesso!"
+            format_html(
+                'Área Responsável <strong>"{}"</strong> desativada com sucesso!',
+                area.nome_area,
+            )
         )
 
-        return redirect("arquiteturaprocessos:areasresponsaveis")
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
 # -------------------------------------#
 # Reativar Área Responsável
@@ -4947,13 +4978,22 @@ class ReativarAreasResponsaveis(LoginRequiredMixin, View):
 
             messages.success(
                 request,
-                f"Área Responsável '{area.nome_area}' reativada com sucesso!"
+                format_html(
+                    'Área Responsável <strong>"{}"</strong> reativada com sucesso!',
+                    area.nome_area,
+                )
             )
 
         except ContatoAreaSeger.DoesNotExist:
             messages.error(request, "Área não encontrada.")
 
-        return redirect("arquiteturaprocessos:areasresponsaveis")
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
 # -------------------------------#
 # Listagem - Processos           #

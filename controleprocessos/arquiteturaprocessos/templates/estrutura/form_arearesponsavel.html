@@ -20,13 +20,38 @@
         {% else %}Inclusão de Área Responsável{% endif %}
     </h2>
 
+    {% if form.errors %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-6">
+
+        <strong class="block mb-2">
+            Não foi possível concluir a operação devido às seguintes inconsistências:
+        </strong>
+
+        <ul class="list-disc list-inside space-y-1">
+
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>
+                        <strong>{{ field.label }}:</strong> {{ error }}
+                    </li>
+                {% endfor %}
+            {% endfor %}
+
+        </ul>
+    </div>
+    {% endif %}
+
     {% if modo_edicao and not form.instance.ativo %}
     <div class="mb-6 p-3 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-sm">
         Esta área está <strong>inativa</strong>. Para editar os dados, é necessário ativá-la.
     </div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" novalidate>
         {% csrf_token %}
         <fieldset {% if modo_visualizacao or modo_exclusao or not form.instance.ativo %}disabled{% endif %}>
 
@@ -154,7 +179,7 @@
 
             <button
                 @click="$dispatch('abrir-modal-confirmacao', {
-                    url: '{% url 'arquiteturaprocessos:excluir_areasresponsaveis' form.instance.pk %}',
+                    url: '{% url 'arquiteturaprocessos:excluir_areasresponsaveis' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
                     mensagem: 'Será feita a exclusão lógica de uma Área Responsável.<br><br>Confirma a desativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
                 })"
                 type="button"
@@ -174,7 +199,7 @@
             {% if not form.instance.ativo %}
               <button
                   @click="$dispatch('abrir-modal-confirmacao', {
-                      url: '{% url 'arquiteturaprocessos:reativar_areasresponsaveis' form.instance.pk %}',
+                      url: '{% url 'arquiteturaprocessos:reativar_areasresponsaveis' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
                       mensagem: 'Você está prestes a efetuar a reativação de uma Área Responsável.<br><br>Confirma a ativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
                   })"
                   type="button"
@@ -192,7 +217,7 @@
 
           {% endif %}
 
-          <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}"
+          <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
              class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400">
              {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
           </a>
