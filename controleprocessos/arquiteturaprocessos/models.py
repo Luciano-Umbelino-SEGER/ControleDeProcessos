@@ -25,6 +25,20 @@ class Modulo(models.Model):
     def __str__(self):
         return str(self.nome)
 
+class Funcionalidade(models.Model):
+    modulo = models.ForeignKey(
+        "Modulo",
+        on_delete=models.CASCADE,
+        related_name="funcionalidades",
+    )
+    nome = models.CharField(max_length=150)
+    descricao = models.TextField(blank=True)
+    ordem = models.PositiveIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.nome)
+
 # ============================================================
 # PERFIL / USUÁRIO / TELEFONE
 # ============================================================
