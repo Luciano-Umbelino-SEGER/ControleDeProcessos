@@ -9,6 +9,7 @@ import hashlib
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.storage import default_storage
 from django.utils import timezone
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
 from collections import Counter
@@ -4139,9 +4140,15 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     model = NormaProcedimento
     template_name = "modelagemprocessos/form_normaprocedimento.html"
     form_class = Form_NormaProcedimentoForm
-    success_url = reverse_lazy(
-        "arquiteturaprocessos:normasprocedimento"
-    )
+
+    def get_success_url(self):
+        url = reverse("arquiteturaprocessos:normasprocedimento")
+        query_string = self.request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return url
 
     # ========================================================
     # FORM KWARGS
@@ -4277,9 +4284,14 @@ class EditarNormaProcedimento(
         Form_NormaProcedimentoForm
     )
 
-    success_url = reverse_lazy(
-        "arquiteturaprocessos:normasprocedimento"
-    )
+    def get_success_url(self):
+        url = reverse("arquiteturaprocessos:normasprocedimento")
+        query_string = self.request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return url
 
     def get_form_kwargs(self):
 
@@ -4363,20 +4375,10 @@ class EditarNormaProcedimento(
 # ============================================================
 # EXCLUIR NORMA DE PROCEDIMENTO
 # ============================================================
-class ExcluirNormaProcedimento(
-    LoginRequiredMixin,
-    DetailView
-):
-
+class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
     model = NormaProcedimento
-
-    template_name = (
-        "modelagemprocessos/form_normaprocedimento.html"
-    )
-
-    context_object_name = (
-        "normaprocedimento"
-    )
+    template_name = ("modelagemprocessos/form_normaprocedimento.html")
+    context_object_name = ("normaprocedimento")
 
     # ========================================================
     # CONTEXTO
@@ -4444,62 +4446,49 @@ class ExcluirNormaProcedimento(
         # ====================================================
         # 🔒 REGRA DE DOMÍNIO
         # ====================================================
-        # TODO
-        #
-        # Após a refatoração da entidade Processo,
-        # impedir a exclusão da Norma de Procedimento
-        # quando existirem Processos vinculados.
-        #
-        # A tabela:
-        # arquiteturaprocessos_processodocumento
-        #
-        # atualmente utiliza:
-        #     modelagem_processo_id
-        #
-        # e passará a utilizar:
-        #     norma_procedimento_id
-        #
-        # Exemplo:
-        #
-        # existe_vinculo = ProcessoDocumento.objects.filter(
-        #     norma_procedimento=obj
-        # ).exists()
-        #
-        # if existe_vinculo:
-        #
-        #     messages.error(
-        #         request,
-        #         (
-        #             "Não é possível excluir esta Norma de "
-        #             "Procedimento porque existem Processos "
-        #             "vinculados a ela.\n\n"
-        #             "Remova ou altere esses Processos antes "
-        #             "de tentar excluir a Norma."
-        #         )
-        #     )
-        #
-        #     return redirect(
-        #         "arquiteturaprocessos:normasprocedimento"
-        #     )
+        # Não permite excluir uma Norma de Procedimento
+        # enquanto existirem Processos vinculados.
+
+        existe_vinculo = ProcessoDocumento.objects.filter(
+            norma_procedimento=obj
+        ).exists()
+
+        if existe_vinculo:
+            messages.error(
+                request,
+                format_html(
+                    'Não é possível excluir a Norma de Procedimento '
+                    '<strong>"{}"</strong> porque existem Processos '
+                    'vinculados a ela. '
+                    'Remova ou altere esses Processos antes '
+                    'de tentar excluir a Norma.',
+                    obj.nome_norma,
+                )
+            )
+
+            url = reverse("arquiteturaprocessos:normasprocedimento")
+            query_string = request.GET.urlencode()
+
+            if query_string:
+                url += f"?{query_string}"
+
+            return redirect(url)
 
         nome_norma = obj.nome_norma
-        codigo_norma = obj.codigo_norma
 
         obj.delete()
-
         messages.success(
             request,
-            (
-                f"Norma de Procedimento "
-                f"'{nome_norma}' "
-                f"(Código {codigo_norma}) "
-                f"excluída com sucesso!"
-            )
+            f'Norma de Procedimento "{nome_norma}" excluída com sucesso.'
         )
 
-        return redirect(
-            "arquiteturaprocessos:normasprocedimento"
-        )
+        url = reverse("arquiteturaprocessos:normasprocedimento")
+        query_string = request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
 # -------------------------------#
 # LISTAGEM - Áreas Responsáveis  #
@@ -4661,7 +4650,15 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = "estrutura/form_arearesponsavel.html"
-    success_url = reverse_lazy("arquiteturaprocessos:areasresponsaveis")
+
+    def get_success_url(self):
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = self.request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return url
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.perfil.nome.lower() != 'administrador':
@@ -4703,7 +4700,10 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
 
         messages.success(
             self.request,
-            f"Área Responsável '{area.nome_area}' criada com sucesso!"
+            format_html(
+                'Área Responsável <strong>"{}"</strong> criada com sucesso!',
+                area.nome_area,
+            )
         )
 
         self.object = area
@@ -4771,7 +4771,15 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
-    success_url = reverse_lazy('arquiteturaprocessos:areasresponsaveis')
+
+    def get_success_url(self):
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = self.request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return url
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.perfil.nome.lower() != 'administrador':
@@ -4827,7 +4835,10 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
 
         messages.success(
             self.request,
-            f"Área Responsável '{area.nome_area}' atualizada com sucesso!"
+            format_html(
+                'Área Responsável <strong>"{}"</strong> atualizada com sucesso!',
+                area.nome_area,
+            )
         )
 
         self.object = area
@@ -4916,10 +4927,19 @@ class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
 
         messages.success(
             request,
-            f"Área Responsável '{area.nome_area}' desativada com sucesso!"
+            format_html(
+                'Área Responsável <strong>"{}"</strong> desativada com sucesso!',
+                area.nome_area,
+            )
         )
 
-        return redirect("arquiteturaprocessos:areasresponsaveis")
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
 # -------------------------------------#
 # Reativar Área Responsável
@@ -4958,13 +4978,22 @@ class ReativarAreasResponsaveis(LoginRequiredMixin, View):
 
             messages.success(
                 request,
-                f"Área Responsável '{area.nome_area}' reativada com sucesso!"
+                format_html(
+                    'Área Responsável <strong>"{}"</strong> reativada com sucesso!',
+                    area.nome_area,
+                )
             )
 
         except ContatoAreaSeger.DoesNotExist:
             messages.error(request, "Área não encontrada.")
 
-        return redirect("arquiteturaprocessos:areasresponsaveis")
+        url = reverse("arquiteturaprocessos:areasresponsaveis")
+        query_string = request.GET.urlencode()
+
+        if query_string:
+            url += f"?{query_string}"
+
+        return redirect(url)
 
 # -------------------------------#
 # Listagem - Processos           #

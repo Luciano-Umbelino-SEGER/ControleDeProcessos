@@ -26,28 +26,28 @@
     <!-- ERROS -->
     <!-- ===================================================== -->
     {% if form.errors %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-6">
+        <div class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-6">
 
-        <strong class="block mb-2">
-            Não foi possível salvar a Norma de Procedimento. Corrija os erros abaixo:
-        </strong>
+            <strong class="block mb-2">
+                Não foi possível concluir a operação devido às seguintes inconsistências:
+            </strong>
 
-        <ul class="list-disc list-inside space-y-1">
+            <ul class="list-disc list-inside space-y-1">
 
-            {% for error in form.non_field_errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
-
-            {% for field in form %}
-                {% for error in field.errors %}
-                    <li>
-                        <strong>{{ field.label }}:</strong> {{ error }}
-                    </li>
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
                 {% endfor %}
-            {% endfor %}
 
-        </ul>
-    </div>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>
+                            <strong>{{ field.label }}:</strong> {{ error }}
+                        </li>
+                    {% endfor %}
+                {% endfor %}
+
+            </ul>
+        </div>
     {% endif %}
 
     <!--
@@ -62,7 +62,8 @@
     <form autocomplete="off"
           class="space-y-6"
           enctype="multipart/form-data"
-          method="post">
+          method="post"
+          novalidate>
 
         {% csrf_token %}
 
@@ -742,7 +743,7 @@
                     <button type="button"
                             class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
                             @click="$dispatch('abrir-modal-confirmacao', {
-                                url: '{% url 'arquiteturaprocessos:excluir_normaprocedimento' normaprocedimento.id %}',
+                                url: '{% url 'arquiteturaprocessos:excluir_normaprocedimento' normaprocedimento.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
                                 mensagem: 'Confirma a exclusão da Norma de Procedimento <strong>{{ normaprocedimento.nome_norma }}</strong> (Código {{ normaprocedimento.codigo_norma }})?'
                             })">
                         Confirmar Exclusão
@@ -769,7 +770,7 @@
             {% endif %}
 
             <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
-               href="{% url 'arquiteturaprocessos:normasprocedimento' %}">
+               href="{% url 'arquiteturaprocessos:normasprocedimento' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}">
 
                 {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
             </a>
