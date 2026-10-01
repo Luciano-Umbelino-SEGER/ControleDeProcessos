@@ -39,6 +39,41 @@ class Funcionalidade(models.Model):
     def __str__(self):
         return str(self.nome)
 
+class Acao(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["ordem", "id"]
+
+    def __str__(self):
+        return str(self.nome)
+
+
+class FuncionalidadeAcao(models.Model):
+    funcionalidade = models.ForeignKey(
+        "Funcionalidade",
+        on_delete=models.CASCADE,
+        related_name="acoes",
+    )
+    acao = models.ForeignKey(
+        "Acao",
+        on_delete=models.CASCADE,
+        related_name="funcionalidades",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["funcionalidade", "acao"],
+                name="unique_funcionalidade_acao",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.funcionalidade} - {self.acao}"
+
 # ============================================================
 # PERFIL / USUÁRIO / TELEFONE
 # ============================================================
