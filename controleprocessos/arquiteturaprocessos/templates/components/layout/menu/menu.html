@@ -184,6 +184,8 @@ docs/MENU_SIGEMP.md
                 {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
                 {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
 
+                {% include "components/layout/sidebar_subitem.html" with href="#" title="Perfis" icon="fa-user-shield" %}
+
                 {% url 'auditoria:log_list' as log_url %}
                 {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}
 
