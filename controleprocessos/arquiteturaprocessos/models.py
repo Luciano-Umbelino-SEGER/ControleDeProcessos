@@ -50,7 +50,6 @@ class Acao(models.Model):
     def __str__(self):
         return str(self.nome)
 
-
 class FuncionalidadeAcao(models.Model):
     funcionalidade = models.ForeignKey(
         "Funcionalidade",
@@ -83,6 +82,29 @@ class Perfil(models.Model):
 
     def __str__(self):
         return str(self.nome)
+
+class PerfilPermissao(models.Model):
+    perfil = models.ForeignKey(
+        "Perfil",
+        on_delete=models.CASCADE,
+        related_name="permissoes",
+    )
+    funcionalidade_acao = models.ForeignKey(
+        "FuncionalidadeAcao",
+        on_delete=models.CASCADE,
+        related_name="permissoes_perfil",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["perfil", "funcionalidade_acao"],
+                name="unique_perfil_permissao",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.perfil} - {self.funcionalidade_acao}"
 
 
 class Telefone(models.Model):
