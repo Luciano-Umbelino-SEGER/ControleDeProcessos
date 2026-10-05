@@ -76,9 +76,27 @@ class FuncionalidadeAcao(models.Model):
 # ============================================================
 # PERFIL / USUÁRIO / TELEFONE
 # ============================================================
-
 class Perfil(models.Model):
-    nome = models.CharField(max_length=100, null=True, blank=True)
+
+    CODIGO_ADMINISTRADOR = "ADMINISTRADOR"
+
+    nome = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+
+    codigo = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    protegido = models.BooleanField(
+        default=False,
+    )
 
     def __str__(self):
         return str(self.nome)
