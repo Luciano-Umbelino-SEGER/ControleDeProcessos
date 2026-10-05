@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, CadastroUsuarios, CustomLoginView, CustomPasswordResetConfirmView, alterar_senha,
+from .views import (ArquiteruraProcessos, CadastroUsuarios, CadastroPerfis,
+                    CustomLoginView, CustomPasswordResetConfirmView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     ImagensCadeiaValor, CriarImagemCadeiaValor, VisualizarImagemCadeiaValor, EditarImagemCadeiaValor,
                     AtivarImagemCadeiaValor, VisualizarCadeiaValor,
@@ -53,12 +54,14 @@ urlpatterns = [
     path('processosmapear/<int:pk>/excluir/', ExcluirProcessoMapear.as_view(), name='excluir_processomapear'),
     path("processosmapear/<int:pk>/executar-iniciar/", ExecutarIniciarProcessoMapear.as_view(), name="executar_iniciar_processomapear"),
     path('processosmapear/<int:pk>/finalizar/', FinalizarProcessoMapear.as_view(), name='finalizar_processomapear'),
-    # Usuários
+    # Administração - Usuários
     path('cadastrousuarios/', CadastroUsuarios.as_view(), name='cadastrousuarios'),
     path('usuario/novo/', CriarUsuario.as_view(), name='criar_usuario'),
     path('usuario/<int:pk>/visualizar/', VisualizarUsuario.as_view(), name='visualizar_usuario'),
     path('usuario/<int:pk>/editar/', EditarUsuario.as_view(), name='editar_usuario'),
     path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
+    # Administração - Perfis
+    path('perfis/', CadastroPerfis.as_view(), name='cadastroperfis'),
     # --> Reset de Senha (fluxo por link)
     path("usuario/<int:pk>/resetar-senha/", views.resetar_senha_usuario, name="resetar_senha_usuario",),
     path("senha/reset/<uidb64>/<token>/", CustomPasswordResetConfirmView.as_view(

@@ -1,19 +1,30 @@
 from django.contrib import messages
 from django.shortcuts import redirect
-from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total
 
-class AcessoTotalRequiredMixin:
+from arquiteturaprocessos.utils.utils import tem_permissao
+
+
+class PermissaoRequiredMixin:
     """
-    Permite acesso apenas a usuários com acesso total
-    (Administrador ou Usuário Master)
+    Permite acesso apenas a usuários que possuem
+    a permissão exigida pela funcionalidade.
     """
+
+    permissao_modulo = None
+    permissao_funcionalidade = None
+    permissao_acao = None
 
     def dispatch(self, request, *args, **kwargs):
-        if not usuario_tem_acesso_total(request.user):
+        if not tem_permissao(
+            request.user,
+            self.permissao_modulo,
+            self.permissao_funcionalidade,
+            self.permissao_acao,
+        ):
             messages.warning(
                 request,
                 "Você não tem permissão para acessar esta funcionalidade."
             )
-            return redirect('arquiteturaprocessos:arquiteturaprocessos')
+            return redirect("arquiteturaprocessos:homepage")
 
         return super().dispatch(request, *args, **kwargs)

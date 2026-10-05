@@ -8,20 +8,29 @@ from django.db.models.functions import Concat
 
 from .models import LogAcaoSistema
 from .utils import gerar_diff
-from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total
+from arquiteturaprocessos.utils.utils import tem_permissao
 
-
-# --------------------------------------------------------#
-# 🔐 Restrição de acesso — apenas administradores          #
-# --------------------------------------------------------#
+# --------------------------------------------------------
+# 🔐 Restrição de acesso — apenas usuários autorizados
+# --------------------------------------------------------
 class AdminOnlyMixin(UserPassesTestMixin):
 
     def test_func(self):
-        return usuario_tem_acesso_total(self.request.user)
+        return tem_permissao(
+            self.request.user,
+            "Administração",
+            "Logs",
+            "Visualizar",
+        )
 
     def handle_no_permission(self):
-        messages.error(self.request, "Acesso restrito a administradores.")
-        return redirect("arquiteturaprocessos:arquiteturaprocessos")  # ajuste se necessário
+        messages.error(
+            self.request,
+            "Acesso restrito a usuários autorizados."
+        )
+        return redirect(
+            "arquiteturaprocessos:homepage"
+        )
 
 
 # --------------------------------#

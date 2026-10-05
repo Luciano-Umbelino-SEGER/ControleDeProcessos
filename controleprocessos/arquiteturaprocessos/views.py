@@ -12,7 +12,6 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
-from collections import Counter
 from django.urls import reverse, reverse_lazy
 from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth import update_session_auth_hash
@@ -38,9 +37,9 @@ from urllib.parse import unquote
 from django.http import HttpResponseRedirect
 import mimetypes
 
-from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
+from arquiteturaprocessos.utils.utils import tem_permissao, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
-from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
+from arquiteturaprocessos.utils.mixins import PermissaoRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
 from arquiteturaprocessos.utils.documentos import contar_documentos_associados
 from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, xlsx_exporter, pdf_exporter,)
@@ -350,7 +349,12 @@ def alterar_senha(request):
 # ---------------------------
 @login_required
 def resetar_senha_usuario(request, pk):
-    if not usuario_tem_acesso_total(request.user):
+    if not tem_permissao(
+            request.user,
+            "Administração",
+            "Usuários",
+            "Editar",
+    ):
         messages.error(
             request,
             "Você não tem permissão para reenviar link de senha."
@@ -2719,9 +2723,32 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
         return redirect(url)
 
 # ------------------------------
+# Cadastro / Listagem Perfis
+# ------------------------------
+class CadastroPerfis(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Visualizar"
+    template_name = "perfis/perfis.html"
+    model = Perfil
+    context_object_name = "perfis"
+
+    def get_queryset(self):
+        return (
+            Perfil.objects
+            .annotate(
+                usuarios_count=Count("usuario")
+            )
+            .order_by("nome")
+        )
+
+# ------------------------------
 # Cadastro / Listagem Usuários
 # ------------------------------
-class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
+class CadastroUsuarios(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Visualizar"
     template_name = 'usuario/cadastrousuarios.html'
     model = Usuario
     context_object_name = 'usuarios'
@@ -2830,7 +2857,10 @@ class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
 # ----------------------------------------
 # Criar Usuário (com username automático)
 # ----------------------------------------
-class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
+class CriarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Cadastrar"
     template_name = 'usuario/form_usuario.html'
     form_class = Form_UsuarioForm
 
@@ -2914,7 +2944,10 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
 # ---------------------------
 # Usuário — Visualizar
 # ---------------------------
-class VisualizarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
+class VisualizarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Visualizar"
     template_name = 'usuario/form_usuario.html'
     model = Usuario
     context_object_name = 'usuario'
@@ -2952,7 +2985,10 @@ class VisualizarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView
 # ---------------------------
 # Usuário — Editar
 # ---------------------------
-class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
+class EditarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Editar"
     template_name = 'usuario/form_usuario.html'
     model = Usuario
     form_class = EditarUsuarioForm
@@ -3034,7 +3070,10 @@ class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
 # -------------------------------
 # Usuário — Excluir (desativar)
 # -------------------------------
-class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
+class ExcluirUsuario(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Excluir"
     template_name = 'usuario/form_usuario.html'
     model = Usuario
 

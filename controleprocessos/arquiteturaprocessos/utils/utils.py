@@ -7,25 +7,43 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.urls import reverse
 from datetime import datetime
+from arquiteturaprocessos.models import (PerfilPermissao,)
 
 # ============================================================
 # Controle de acesso
 # ============================================================
-def usuario_tem_acesso_total(user):
+def tem_permissao(usuario, modulo_nome, funcionalidade_nome, acao_nome):
     """
-    Retorna True se o usuário tem acesso total ao sistema.
-    Usuário Master SEMPRE tem acesso.
+    Retorna True se o usuário possui a permissão informada.
+
+    Regras:
+    - Usuário não autenticado não possui permissão.
+    - Usuário Master possui acesso total.
+    - A permissão é verificada no perfil do usuário.
+    - Módulo e funcionalidade precisam estar ativos.
+    - A ação precisa estar vinculada à funcionalidade.
+    - Na ausência da permissão, o acesso é negado.
     """
-    if not user.is_authenticated:
+
+    if not usuario.is_authenticated:
         return False
 
-    if getattr(user, "is_master", False):
+    # Usuário Master possui acesso total.
+    if getattr(usuario, "is_master", False):
         return True
 
-    if user.perfil and user.perfil.nome.casefold() == "administrador":
-        return True
+    # Usuário sem perfil não possui permissão.
+    if not usuario.perfil_id:
+        return False
 
-    return False
+    return PerfilPermissao.objects.filter(
+        perfil_id=usuario.perfil_id,
+        funcionalidade_acao__funcionalidade__modulo__nome=modulo_nome,
+        funcionalidade_acao__funcionalidade__nome=funcionalidade_nome,
+        funcionalidade_acao__acao__nome=acao_nome,
+        funcionalidade_acao__funcionalidade__modulo__ativo=True,
+        funcionalidade_acao__funcionalidade__ativo=True,
+    ).exists()
 
 # ============================================================
 # 🔐 Função pública — definir senha e enviar e-mail
