@@ -48,19 +48,26 @@
                                        bg-white
                                    {% endif %}">
 
-                            <!-- PERFIL -->
-                            <td class="py-2 px-3 font-semibold text-blue-800">
+                           <!-- PERFIL -->
+                           <td class="py-2 px-3 font-semibold text-blue-800">
 
-                                {{ perfil.nome }}
+                               {{ perfil.nome }}
 
-                                {% if perfil.protegido %}
-                                    <span class="ml-1"
-                                          title="Perfil protegido">
-                                        🔒
-                                    </span>
-                                {% endif %}
+                               {% if perfil.protegido %}
+                                   {% if request.user.is_master %}
+                                       <span class="ml-1"
+                                             title="Perfil protegido — administração exclusiva do Master">
+                                           🔓
+                                       </span>
+                                   {% else %}
+                                       <span class="ml-1"
+                                             title="Perfil protegido">
+                                           🔒
+                                       </span>
+                                   {% endif %}
+                               {% endif %}
 
-                            </td>
+                           </td>
 
 
                             <!-- USUÁRIOS -->
