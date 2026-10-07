@@ -47,7 +47,8 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, Processo, SistemasUECI, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
-    Perfil, NormaProcedimento, AbrangenciaChoices, ImagemCadeiaValor,
+    Perfil, NormaProcedimento, AbrangenciaChoices, ImagemCadeiaValor, Modulo, Funcionalidade, FuncionalidadeAcao,
+    PerfilPermissao,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -58,7 +59,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_Sistema_UECIForm, Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm, Form_AreaResponsavelForm, Form_NormaProcedimentoForm,
-    Form_ImagemCadeiaValorForm,
+    Form_ImagemCadeiaValorForm, Form_PerfilForm,
 )
 
 # ---------------------------------------------------
@@ -2740,6 +2741,347 @@ class CadastroPerfis(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
                 usuarios_count=Count("usuario")
             )
             .order_by("nome")
+        )
+# Aqui 1
+# ============================================================
+# PERFIS
+# ============================================================
+def _obter_modulos_com_permissoes():
+    """
+    Monta a árvore de permissões utilizada nas telas de Perfil:
+
+        Módulo
+            └── Funcionalidade
+                    └── Ações
+    """
+
+    acoes_queryset = (
+        FuncionalidadeAcao.objects
+        .select_related("acao")
+        .order_by("acao__ordem", "acao__id")
+    )
+
+    funcionalidades_queryset = (
+        Funcionalidade.objects
+        .filter(ativo=True)
+        .prefetch_related(
+            Prefetch(
+                "acoes",
+                queryset=acoes_queryset,
+            )
+        )
+        .order_by("ordem", "id")
+    )
+
+    return (
+        Modulo.objects
+        .filter(ativo=True)
+        .prefetch_related(
+            Prefetch(
+                "funcionalidades",
+                queryset=funcionalidades_queryset,
+            )
+        )
+        .order_by("ordem", "id")
+    )
+
+
+def _obter_permissoes_selecionadas(request, perfil=None):
+    """
+    Obtém as permissões que devem aparecer marcadas na árvore.
+
+    - Em POST: preserva o que foi enviado pelo usuário, inclusive
+      quando o formulário retorna com erros.
+    - Em GET de edição/visualização: carrega as permissões atuais
+      do Perfil.
+    """
+
+    if request.method == "POST":
+        return {
+            int(valor)
+            for valor in request.POST.getlist("permissoes")
+            if valor.isdigit()
+        }
+
+    if perfil and perfil.pk:
+        return set(
+            PerfilPermissao.objects
+            .filter(perfil=perfil)
+            .values_list(
+                "funcionalidade_acao_id",
+                flat=True,
+            )
+        )
+
+    return set()
+
+# ------------------------------------------------------------
+# Cadastro / Listagem de Perfis
+# ------------------------------------------------------------
+class CadastroPerfis(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    ListView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Visualizar"
+
+    template_name = "perfis/perfis.html"
+    model = Perfil
+    context_object_name = "perfis"
+
+    def get_queryset(self):
+        return (
+            Perfil.objects
+            .annotate(
+                usuarios_count=Count("usuario")
+            )
+            .order_by("nome")
+        )
+
+# ------------------------------------------------------------
+# Criar Perfil
+# ------------------------------------------------------------
+class CriarPerfil(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    CreateView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Cadastrar"
+
+    template_name = "perfis/form_perfil.html"
+    form_class = Form_PerfilForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            "modulos": _obter_modulos_com_permissoes(),
+            "perfil": None,
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request
+            ),
+            "modo_inclusao": True,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            perfil = form.save()
+
+            permissoes = form.cleaned_data["permissoes"]
+
+            PerfilPermissao.objects.bulk_create([
+                PerfilPermissao(
+                    perfil=perfil,
+                    funcionalidade_acao=funcionalidade_acao,
+                )
+                for funcionalidade_acao in permissoes
+            ])
+
+        self.object = perfil
+
+        messages.success(
+            self.request,
+            f"O Perfil '{perfil.nome}' foi criado com sucesso."
+        )
+
+        return redirect("arquiteturaprocessos:cadastroperfis")
+
+# ------------------------------------------------------------
+# Visualizar Perfil
+# ------------------------------------------------------------
+class VisualizarPerfil(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    DetailView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Visualizar"
+
+    template_name = "perfis/form_perfil.html"
+    model = Perfil
+    context_object_name = "perfil"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        perfil = self.object
+
+        context.update({
+            "modulos": _obter_modulos_com_permissoes(),
+            "form": Form_PerfilForm(
+                instance=perfil
+            ),
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request,
+                perfil,
+            ),
+            "modo_inclusao": False,
+            "modo_visualizacao": True,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+# ------------------------------------------------------------
+# Editar Perfil
+# ------------------------------------------------------------
+class EditarPerfil(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    UpdateView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Editar"
+
+    template_name = "perfis/form_perfil.html"
+    model = Perfil
+    form_class = Form_PerfilForm
+    context_object_name = "perfil"
+
+    def get_object(self, queryset=None):
+        perfil = super().get_object(queryset)
+
+        # O Perfil Administrador é protegido.
+        # Somente o Master pode alterá-lo.
+        if perfil.protegido and not self.request.user.is_master:
+            messages.error(
+                self.request,
+                "O Perfil Administrador somente pode ser alterado pelo Master."
+            )
+            raise PermissionDenied
+
+        return perfil
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update({
+            "modulos": _obter_modulos_com_permissoes(),
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request,
+                self.object,
+            ),
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": True,
+        })
+
+        return context
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            perfil = form.save()
+
+            # Reconstruímos as autorizações do Perfil.
+            PerfilPermissao.objects.filter(
+                perfil=perfil
+            ).delete()
+
+            permissoes = form.cleaned_data["permissoes"]
+
+            PerfilPermissao.objects.bulk_create([
+                PerfilPermissao(
+                    perfil=perfil,
+                    funcionalidade_acao=funcionalidade_acao,
+                )
+                for funcionalidade_acao in permissoes
+            ])
+
+        self.object = perfil
+
+        messages.success(
+            self.request,
+            f"O Perfil '{perfil.nome}' foi atualizado com sucesso."
+        )
+
+        return redirect("arquiteturaprocessos:cadastroperfis")
+
+# ------------------------------------------------------------
+# Excluir Perfil
+# ------------------------------------------------------------
+class ExcluirPerfil(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    DetailView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Excluir"
+
+    template_name = "perfis/form_perfil.html"
+    model = Perfil
+    context_object_name = "perfil"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        perfil = self.object
+
+        context.update({
+            "modulos": _obter_modulos_com_permissoes(),
+            "form": Form_PerfilForm(
+                instance=perfil
+            ),
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request,
+                perfil,
+            ),
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": True,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        perfil = self.get_object()
+
+        # O Perfil Administrador nunca pode ser excluído.
+        if perfil.protegido:
+            messages.error(
+                request,
+                "O Perfil Administrador não pode ser excluído."
+            )
+            raise PermissionDenied
+
+        # Não podemos excluir um Perfil que ainda esteja associado
+        # a usuários.
+        if perfil.usuario_set.exists():
+            messages.error(
+                request,
+                "Não é possível excluir este Perfil porque existem "
+                "usuários associados a ele."
+            )
+            return redirect(
+                "arquiteturaprocessos:cadastroperfis"
+            )
+
+        nome_perfil = perfil.nome
+
+        with transaction.atomic():
+            perfil.delete()
+
+        messages.success(
+            request,
+            f"O Perfil '{nome_perfil}' foi excluído com sucesso."
+        )
+
+        return redirect(
+            "arquiteturaprocessos:cadastroperfis"
         )
 
 # ------------------------------

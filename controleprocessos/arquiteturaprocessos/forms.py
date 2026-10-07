@@ -15,9 +15,10 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, Processo,
     TiposDocumento, ProcessoMapear, ContatoAreaSeger, NormaProcedimento, SistemasUECI, AbrangenciaChoices,
-    ImagemCadeiaValor,
+    ImagemCadeiaValor, Perfil, PerfilPermissao, FuncionalidadeAcao,
 )
 from django.db.models import Q
+from django.db.models.functions import Lower
 from arquiteturaprocessos.utils.processos import validar_normas_processo
 
 UserModel = get_user_model()
@@ -133,6 +134,171 @@ class EmailAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
 
+# Aqui 1
+# ============================================================
+# FORMULÁRIO DE PERFIL
+# ============================================================
+class Form_PerfilForm(forms.ModelForm):
+
+    permissoes = forms.ModelMultipleChoiceField(
+        queryset=FuncionalidadeAcao.objects.filter(
+            funcionalidade__ativo=True,
+            funcionalidade__modulo__ativo=True,
+        ).select_related(
+            "funcionalidade",
+            "funcionalidade__modulo",
+            "acao",
+        ),
+        required=True,
+    )
+
+    class Meta:
+        model = Perfil
+        fields = (
+            "nome",
+        )
+
+        labels = {
+            "nome": "Nome do Perfil",
+        }
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        self.label_suffix = ""
+
+        # ====================================================
+        # CONFIGURAÇÃO DO CAMPO NOME
+        # ====================================================
+
+        self.fields["nome"].required = True
+
+        self.fields["nome"].widget.attrs.update({
+            "maxlength": "100",
+            "placeholder": "Nome do Perfil",
+            "autocomplete": "off",
+        })
+
+        # ====================================================
+        # CLASSE PADRÃO
+        # ====================================================
+
+        base_class = (
+            "w-full h-[42px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500"
+        )
+
+        self.fields["nome"].widget.attrs["class"] = base_class
+
+        # ====================================================
+        # PERMISSÕES
+        # ====================================================
+
+        # Na edição, carrega as permissões já existentes.
+        if self.instance and self.instance.pk:
+
+            permissoes_ids = PerfilPermissao.objects.filter(
+                perfil=self.instance
+            ).values_list(
+                "funcionalidade_acao_id",
+                flat=True,
+            )
+
+            self.initial["permissoes"] = permissoes_ids
+
+    # ========================================================
+    # NOME DO PERFIL
+    # ========================================================
+
+    def clean_nome(self):
+
+        nome = self.cleaned_data.get("nome")
+
+        if not nome:
+            raise forms.ValidationError(
+                "O Nome do Perfil é obrigatório."
+            )
+
+        # Remove espaços nas extremidades e transforma
+        # múltiplos espaços internos em apenas um.
+        nome = " ".join(nome.strip().split())
+
+        # ====================================================
+        # MASTER É PALAVRA RESERVADA
+        # ====================================================
+
+        if nome.casefold() == "master":
+            raise forms.ValidationError(
+                "O nome 'Master' é reservado pelo sistema e "
+                "não pode ser utilizado em um Perfil."
+            )
+
+        # ====================================================
+        # DUPLICIDADE LÓGICA
+        # ====================================================
+
+        nome_lower = nome.lower()
+
+        queryset = (
+            Perfil.objects
+            .annotate(nome_lower=Lower("nome"))
+            .filter(nome_lower=nome_lower)
+        )
+
+        # Na edição, não comparar o Perfil consigo mesmo.
+        if self.instance and self.instance.pk:
+            queryset = queryset.exclude(
+                pk=self.instance.pk
+            )
+
+        # ====================================================
+        # NORMALIZAÇÃO FINAL PARA COMPARAÇÃO
+        # ====================================================
+
+        nome_comparacao = " ".join(
+            nome.split()
+        ).casefold()
+
+        for perfil in queryset:
+
+            nome_existente = " ".join(
+                (perfil.nome or "").split()
+            ).casefold()
+
+            if nome_existente == nome_comparacao:
+                raise forms.ValidationError(
+                    "Já existe um Perfil com este nome."
+                )
+
+        return nome
+
+    # ========================================================
+    # VALIDAÇÃO GERAL
+    # ========================================================
+
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        permissoes = cleaned_data.get("permissoes")
+
+        # ====================================================
+        # PELO MENOS UMA PERMISSÃO
+        # ====================================================
+
+        if not permissoes:
+            raise forms.ValidationError(
+                "O Perfil deve possuir pelo menos uma autorização."
+            )
+
+        return cleaned_data
 
 # ============================================================
 # FORMULÁRIO DE USUÁRIO (CRIAÇÃO) — versão estável (username editável)

@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import path, reverse_lazy
 from . import views
-from .views import (ArquiteruraProcessos, CadastroUsuarios, CadastroPerfis,
-                    CustomLoginView, CustomPasswordResetConfirmView, alterar_senha,
+from .views import (ArquiteruraProcessos, CadastroUsuarios, CadastroPerfis, CriarPerfil, VisualizarPerfil, EditarPerfil,
+                    ExcluirPerfil, CustomLoginView, CustomPasswordResetConfirmView, alterar_senha,
                     CriarUsuario, VisualizarUsuario, EditarUsuario, ExcluirUsuario, Classificacoes, CriarClassificacao,
                     ImagensCadeiaValor, CriarImagemCadeiaValor, VisualizarImagemCadeiaValor, EditarImagemCadeiaValor,
                     AtivarImagemCadeiaValor, VisualizarCadeiaValor,
@@ -62,6 +62,10 @@ urlpatterns = [
     path('usuario/<int:pk>/excluir/', ExcluirUsuario.as_view(), name='excluir_usuario'),
     # Administração - Perfis
     path('perfis/', CadastroPerfis.as_view(), name='cadastroperfis'),
+    path('perfil/novo/', CriarPerfil.as_view(), name='criar_perfil'),
+    path('perfil/<int:pk>/', VisualizarPerfil.as_view(), name='visualizar_perfil'),
+    path('perfil/<int:pk>/editar/', EditarPerfil.as_view(), name='editar_perfil'),
+    path('perfil/<int:pk>/excluir/', ExcluirPerfil.as_view(), name='excluir_perfil'),
     # --> Reset de Senha (fluxo por link)
     path("usuario/<int:pk>/resetar-senha/", views.resetar_senha_usuario, name="resetar_senha_usuario",),
     path("senha/reset/<uidb64>/<token>/", CustomPasswordResetConfirmView.as_view(

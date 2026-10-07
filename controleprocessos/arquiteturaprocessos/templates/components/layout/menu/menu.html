@@ -181,11 +181,11 @@ docs/MENU_SIGEMP.md
                  x-transition
                  class="ml-10 mt-0.5 space-y-0.5">
 
-                {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
-
                 {% url 'arquiteturaprocessos:cadastroperfis' as perfis_url %}
                 {% include "components/layout/sidebar_subitem.html" with href=perfis_url title="Perfis" icon="fa-user-shield" %}
+
+                {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
+                {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
 
                 {% url 'auditoria:log_list' as log_url %}
                 {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}

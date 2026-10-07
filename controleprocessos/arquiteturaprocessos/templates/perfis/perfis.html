@@ -17,7 +17,7 @@
             </h2>
 
             <!-- NOVO -->
-            <a href="#"
+            <a href="{% url 'arquiteturaprocessos:criar_perfil' %}" c
                class="filtro-botao filtro-botao-primario whitespace-nowrap">
                 + Novo
             </a>
@@ -81,7 +81,7 @@
                                 <div class="flex justify-end items-center space-x-1.5 pr-2">
 
                                     <!-- VISUALIZAR -->
-                                    <a href="#"
+                                    <a href="{% url 'arquiteturaprocessos:visualizar_perfil' perfil.pk %}"
                                        class="text-blue-600 hover:text-blue-800"
                                        title="Visualizar">
 
@@ -106,8 +106,7 @@
                                     </a>
 
 
-                                    {% if perfil.protegido %}
-
+                                    {% if perfil.protegido and not user.is_master %}
                                         <!-- EDITAR DESABILITADO -->
                                         <span class="text-gray-400 cursor-not-allowed"
                                               title="Perfil protegido"
@@ -126,7 +125,7 @@
                                     {% else %}
 
                                         <!-- EDITAR -->
-                                        <a href="#"
+                                        <a href="{% url 'arquiteturaprocessos:editar_perfil' perfil.pk %}"
                                            class="text-yellow-600 hover:text-yellow-800"
                                            title="Editar">
 
@@ -160,13 +159,11 @@
                                                     stroke-width="2"
                                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
                                             </svg>
-
                                         </span>
 
                                     {% else %}
-
                                         <!-- EXCLUIR -->
-                                        <a href="#"
+                                        <a href="{% url 'arquiteturaprocessos:excluir_perfil' perfil.pk %}"
                                            class="text-red-600 hover:text-red-800"
                                            title="Excluir">
 
@@ -181,15 +178,10 @@
                                                     stroke-width="2"
                                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
                                             </svg>
-
                                         </a>
-
                                     {% endif %}
-
                                 </div>
-
                             </td>
-
                         </tr>
 
                     {% empty %}

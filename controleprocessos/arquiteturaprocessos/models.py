@@ -6,6 +6,7 @@ from uuid import uuid4
 from datetime import datetime
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.text import slugify
 from django.conf import settings
@@ -82,8 +83,6 @@ class Perfil(models.Model):
 
     nome = models.CharField(
         max_length=100,
-        null=True,
-        blank=True,
     )
 
     codigo = models.CharField(
@@ -97,6 +96,14 @@ class Perfil(models.Model):
     protegido = models.BooleanField(
         default=False,
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("nome"),
+                name="unique_perfil_nome_lower",
+            ),
+        ]
 
     def __str__(self):
         return str(self.nome)
