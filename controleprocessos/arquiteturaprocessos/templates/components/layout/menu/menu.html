@@ -19,7 +19,7 @@ docs/MENU_SIGEMP.md
     <!-- MÓDULO CADEIA DE VALOR -->
     <!-- ===================================================== -->
     {% if request.user.is_authenticated %}
-        <!-- Administrador: módulo expansível -->
+        <!-- Usuário autenticado: módulo expansível -->
         <div>
             {% include "components/layout/sidebar_group.html" with title="Cadeia de Valor" icon="fa-image" submenu="submenuCadeiaValor" %}
 
@@ -31,9 +31,28 @@ docs/MENU_SIGEMP.md
                 {% url 'arquiteturaprocessos:tiposdocumento' 'cadeia_valor' as cadeiavalor_url %}
                 {% url 'arquiteturaprocessos:imagens_cadeia_valor' as imagens_cadeia_valor_url %}
 
+                <!-- Consulta pública: sempre disponível -->
                 {% include "components/layout/sidebar_subitem.html" with href=visualizar_cadeia_valor_url title="Cadeia de Valor" icon="fa-image" %}
-                {% include "components/layout/sidebar_subitem.html" with href=cadeiavalor_url title="Definição" icon="fa-file-lines" %}
-                {% include "components/layout/sidebar_subitem.html" with href=imagens_cadeia_valor_url title="Imagens" icon="fa-image" %}
+
+                <!-- Funcionalidades protegidas por permissão -->
+                {% for modulo, funcionalidades in modulos_permitidos.items %}
+                    {% if modulo.nome == "Cadeia de Valor" %}
+
+                        {% for funcionalidade in funcionalidades %}
+
+                            {% if funcionalidade.nome == "Definição" %}
+                                {% include "components/layout/sidebar_subitem.html" with href=cadeiavalor_url title="Definição" icon="fa-file-lines" %}
+                            {% endif %}
+
+                            {% if funcionalidade.nome == "Imagens" %}
+                                {% include "components/layout/sidebar_subitem.html" with href=imagens_cadeia_valor_url title="Imagens" icon="fa-image" %}
+                            {% endif %}
+
+                        {% endfor %}
+
+                    {% endif %}
+                {% endfor %}
+
             </div>
         </div>
     {% else %}
@@ -51,148 +70,207 @@ docs/MENU_SIGEMP.md
 
 
     <!-- ===================================================== -->
-    <!-- A PARTIR DAQUI: SOMENTE ADMINISTRADORES -->
+    <!-- MÓDULOS PROTEGIDOS POR PERMISSÃO -->
     <!-- ===================================================== -->
     {% if request.user.is_authenticated %}
 
         <!-- ================================================= -->
         <!-- MÓDULO PROCESSOS -->
         <!-- ================================================= -->
-        <div>
-            {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
+        {% for modulo, funcionalidades in modulos_permitidos.items %}
+            {% if modulo.nome == "Processos" %}
 
-            <div x-show="submenuProcessos"
-                 x-transition
-                 class="ml-10 mt-0.5 space-y-0.5">
+                <div>
+                    {% include "components/layout/sidebar_group.html" with title="Processos" icon="fa-folder-tree" submenu="submenuProcessos" %}
 
-                {% url 'arquiteturaprocessos:processos' as processos_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
+                    <div x-show="submenuProcessos"
+                         x-transition
+                         class="ml-10 mt-0.5 space-y-0.5">
 
-                {% url 'arquiteturaprocessos:processosmapear' as processos_mapear_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=processos_mapear_url title="A Mapear" icon="fa-list-check" %}
+                        {% url 'arquiteturaprocessos:processos' as processos_url %}
+                        {% url 'arquiteturaprocessos:processosmapear' as processos_mapear_url %}
 
-            </div>
-        </div>
+                        {% for funcionalidade in funcionalidades %}
 
+                            {% if funcionalidade.nome == "Cadastro de Processos" %}
+                                {% include "components/layout/sidebar_subitem.html" with href=processos_url title="Cadastro" icon="fa-folder-open" %}
+                            {% endif %}
+
+                            {% if funcionalidade.nome == "Processos a Mapear" %}
+                                {% include "components/layout/sidebar_subitem.html" with href=processos_mapear_url title="A Mapear" icon="fa-list-check" %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
 
         <!-- ================================================= -->
         <!-- MÓDULO ESTATÍSTICAS -->
         <!-- ================================================= -->
-        <div>
-            {% include "components/layout/sidebar_group.html" with title="Estatísticas" icon="fa-chart-line" submenu="submenuEstatisticas" %}
+        {% if "Estatísticas" in modulos_permitidos_nomes %}
+            <div>
+                {% include "components/layout/sidebar_group.html" with title="Estatísticas" icon="fa-chart-line" submenu="submenuEstatisticas" %}
 
-            <div x-show="submenuEstatisticas"
-                 x-transition
-                 class="ml-10 mt-0.5 space-y-0.5">
+                <div x-show="submenuEstatisticas"
+                     x-transition
+                     class="ml-10 mt-0.5 space-y-0.5">
 
-                {% url 'arquiteturaprocessos:estatisticas_dashboard' as estatisticas_dashboard_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=estatisticas_dashboard_url title="Dashboard" icon="fa-chart-pie" %}
+                    {% url 'arquiteturaprocessos:estatisticas_dashboard' as estatisticas_dashboard_url %}
+                    {% url 'arquiteturaprocessos:estatisticaprocessos_mapear' as estatisticas_mapear_url %}
+                    {% url 'arquiteturaprocessos:estatisticas_processos' as estatisticas_processos_url %}
+                    {% url 'arquiteturaprocessos:estatisticas_comparativos' as comparativos_url %}
 
-                {% url 'arquiteturaprocessos:estatisticaprocessos_mapear' as estatisticas_mapear_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=estatisticas_mapear_url title="Processos a Mapear" icon="fa-list-check" %}
-
-                {% url 'arquiteturaprocessos:estatisticas_processos' as estatisticas_processos_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=estatisticas_processos_url title="Processos" icon="fa-chart-column" %}
-
-                {% url 'arquiteturaprocessos:estatisticas_comparativos' as comparativos_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=comparativos_url title="Comparativos" icon="fa-magnifying-glass-chart" %}
-
+                    {% for modulo, funcionalidades in modulos_permitidos.items %}
+                        {% if modulo.nome == "Estatísticas" %}
+                            {% for funcionalidade in funcionalidades %}
+                                {% if funcionalidade.nome == "Consultas e Indicadores" %}
+                                    {% include "components/layout/sidebar_subitem.html" with href=estatisticas_dashboard_url title="Dashboard" icon="fa-chart-pie" %}
+                                    {% include "components/layout/sidebar_subitem.html" with href=estatisticas_mapear_url title="Processos a Mapear" icon="fa-list-check" %}
+                                    {% include "components/layout/sidebar_subitem.html" with href=estatisticas_processos_url title="Processos" icon="fa-chart-column" %}
+                                    {% include "components/layout/sidebar_subitem.html" with href=comparativos_url title="Comparativos" icon="fa-magnifying-glass-chart" %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
             </div>
-        </div>
+        {% endif %}
 
         <!-- ================================================= -->
         <!-- MÓDULO ESTRUTURA DE DOCUMENTOS -->
         <!-- ================================================= -->
-        <div>
-            {% include "components/layout/sidebar_group.html" with title="Estrutura de Documentos" icon="fa-cogs" submenu="submenuEstrutura" %}
-            <div x-show="submenuEstrutura"
-                 x-transition
-                 class="ml-14 space-y-1">
-
-                <!-- Processos -->
-                {% include "components/layout/sidebar_subgroup.html" with title="Processos" icon="fa-folder-open" submenu="submenuEstruturaProcessos" %}
-
-                <div x-show="submenuEstruturaProcessos" x-transition class="ml-8 mt-0.5 space-y-0.5">
-
-                    <!-- Definição -->
-                    {% include "components/layout/sidebar_subgroup.html" with title="Definição" icon="fa-book" submenu="submenuEstruturaProcessosDefinicao" %}
-
-                    <div x-show="submenuEstruturaProcessosDefinicao" x-transition class="ml-8 mt-0.5 space-y-0.5">
-
-                        <!-- Macroprocesso -->
-                        {% url 'arquiteturaprocessos:tiposdocumento' 'macroprocesso' as macroprocesso_url %}
-                        {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_url title="Macroprocesso" icon="fa-layer-group"%}
-
-                        <!-- Modelo de Processo -->
-                        {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
-                        {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Modelo de Processo" icon="fa-file-lines" %}
-
-                    </div>
-
-                    <!-- Classificação de Macroprocessos -->
-                    {% url 'arquiteturaprocessos:classificacoes' as classificacao_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=classificacao_url title="Classificação de Macroprocessos" icon="fa-tags" %}
-
-                    <!-- Macroprocesso N1 -->
-                    {% url 'arquiteturaprocessos:macroprocessonivel1' as macroprocesso_n1_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n1_url title="Macroprocesso N1" icon="fa-layer-group" %}
-
-                    <!-- Macroprocesso N2 -->
-                    {% url 'arquiteturaprocessos:macroprocessonivel2' as macroprocesso_n2_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n2_url title="Macroprocesso N2" icon="fa-layer-group" %}
-
-                    <!-- Áreas Responsáveis -->
-                    {% url 'arquiteturaprocessos:areasresponsaveis' as areas_responsaveis_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=areas_responsaveis_url title="Áreas Responsáveis" icon="fa-users-gear" %}
-
-                </div>
-
-
-                <!-- Normas de Procedimento -->
-                {% include "components/layout/sidebar_subgroup.html" with title="Normas de Procedimento" icon="fa-file-lines" submenu="submenuEstruturaNormas" %}
-
-                <div x-show="submenuEstruturaNormas"
+        {% if "Estrutura de Documentos → Processos" in modulos_permitidos_nomes or "Estrutura de Documentos → Normas de Procedimento" in modulos_permitidos_nomes %}
+            <div>
+                {% include "components/layout/sidebar_group.html" with title="Estrutura de Documentos" icon="fa-cogs" submenu="submenuEstrutura" %}
+                <div x-show="submenuEstrutura"
                      x-transition
-                     class="ml-8 mt-0.5 space-y-0.5">
+                     class="ml-14 space-y-1">
 
-                    {% url 'arquiteturaprocessos:tiposdocumento' 'norma' as definicao_normas_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=definicao_normas_url title="Definição" icon="fa-book" %}
+                    <!-- ========================================= -->
+                    <!-- PROCESSOS -->
+                    <!-- ========================================= -->
+                    {% if "Estrutura de Documentos → Processos" in modulos_permitidos_nomes %}
+                        {% include "components/layout/sidebar_subgroup.html" with title="Processos" icon="fa-folder-open" submenu="submenuEstruturaProcessos" %}
 
-                    {% url 'arquiteturaprocessos:sistemas_ueci' as sistemas_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=sistemas_url title="Sistemas" icon="fa-desktop" %}
+                        <div x-show="submenuEstruturaProcessos"
+                             x-transition
+                             class="ml-8 mt-0.5 space-y-0.5">
 
-                    {% url 'arquiteturaprocessos:normasprocedimento' as normas_url %}
-                    {% include "components/layout/sidebar_subitem.html" with href=normas_url title="Normas" icon="fa-file-contract" %}
+                            {% for modulo, funcionalidades in modulos_permitidos.items %}
+                                {% if modulo.nome == "Estrutura de Documentos → Processos" %}
 
+                                    {% for funcionalidade in funcionalidades %}
+                                        <!-- Definição -->
+                                        {% if funcionalidade.nome == "Definição" %}
+                                            {% include "components/layout/sidebar_subgroup.html" with title="Definição" icon="fa-book" submenu="submenuEstruturaProcessosDefinicao" %}
+
+                                            <div x-show="submenuEstruturaProcessosDefinicao"
+                                                 x-transition
+                                                 class="ml-8 mt-0.5 space-y-0.5">
+
+                                                {% url 'arquiteturaprocessos:tiposdocumento' 'macroprocesso' as macroprocesso_url %}
+                                                {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_url title="Macroprocesso" icon="fa-layer-group" %}
+
+                                                {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
+                                                {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Modelo de Processo" icon="fa-file-lines" %}
+                                            </div>
+                                        {% endif %}
+
+                                        <!-- Classificação de Macroprocessos -->
+                                        {% if funcionalidade.nome == "Classificação de Macroprocessos" %}
+                                            {% url 'arquiteturaprocessos:classificacoes' as classificacao_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=classificacao_url title="Classificação de Macroprocessos" icon="fa-tags" %}
+                                        {% endif %}
+
+                                        <!-- Macroprocesso N1 -->
+                                        {% if funcionalidade.nome == "Macroprocesso N1" %}
+                                            {% url 'arquiteturaprocessos:macroprocessonivel1' as macroprocesso_n1_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n1_url title="Macroprocesso N1" icon="fa-layer-group" %}
+                                        {% endif %}
+
+                                        <!-- Macroprocesso N2 -->
+                                        {% if funcionalidade.nome == "Macroprocesso N2" %}
+                                            {% url 'arquiteturaprocessos:macroprocessonivel2' as macroprocesso_n2_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_n2_url title="Macroprocesso N2" icon="fa-layer-group" %}
+                                        {% endif %}
+
+                                        <!-- Áreas Responsáveis -->
+                                        {% if funcionalidade.nome == "Áreas Responsáveis" %}
+                                            {% url 'arquiteturaprocessos:areasresponsaveis' as areas_responsaveis_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=areas_responsaveis_url title="Áreas Responsáveis" icon="fa-users-gear" %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- ========================================= -->
+                    <!-- NORMAS DE PROCEDIMENTO -->
+                    <!-- ========================================= -->
+                    {% if "Estrutura de Documentos → Normas de Procedimento" in modulos_permitidos_nomes %}
+                        {% include "components/layout/sidebar_subgroup.html" with title="Normas de Procedimento" icon="fa-file-lines" submenu="submenuEstruturaNormas" %}
+
+                        <div x-show="submenuEstruturaNormas"
+                             x-transition
+                             class="ml-8 mt-0.5 space-y-0.5">
+
+                            {% for modulo, funcionalidades in modulos_permitidos.items %}
+                                {% if modulo.nome == "Estrutura de Documentos → Normas de Procedimento" %}
+                                    {% for funcionalidade in funcionalidades %}
+
+                                        <!-- Definição -->
+                                        {% if funcionalidade.nome == "Definição" %}
+                                            {% url 'arquiteturaprocessos:tiposdocumento' 'norma' as definicao_normas_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=definicao_normas_url title="Definição" icon="fa-book" %}
+                                        {% endif %}
+
+                                        <!-- Sistemas -->
+                                        {% if funcionalidade.nome == "Sistemas" %}
+                                            {% url 'arquiteturaprocessos:sistemas_ueci' as sistemas_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=sistemas_url title="Sistemas" icon="fa-desktop" %}
+                                        {% endif %}
+
+                                        <!-- Normas -->
+                                        {% if funcionalidade.nome == "Normas" %}
+                                            {% url 'arquiteturaprocessos:normasprocedimento' as normas_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=normas_url title="Normas" icon="fa-file-contract" %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
-
             </div>
-        </div>
-
+        {% endif %}
 
         <!-- ================================================= -->
         <!-- MÓDULO ADMINISTRAÇÃO -->
         <!-- ================================================= -->
 
-        <div>
-            {% include "components/layout/sidebar_group.html" with title="Administração" icon="fa-users" submenu="submenuAdministracao" %}
+        {% if request.user.is_master or request.user.perfil.codigo == "ADMINISTRADOR" %}
 
-            <div x-show="submenuAdministracao"
-                 x-transition
-                 class="ml-10 mt-0.5 space-y-0.5">
+            <div>
+                {% include "components/layout/sidebar_group.html" with title="Administração" icon="fa-users" submenu="submenuAdministracao" %}
 
-                {% url 'arquiteturaprocessos:cadastroperfis' as perfis_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=perfis_url title="Perfis" icon="fa-user-shield" %}
+                <div x-show="submenuAdministracao"
+                     x-transition
+                     class="ml-10 mt-0.5 space-y-0.5">
 
-                {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
+                    {% url 'arquiteturaprocessos:cadastroperfis' as perfis_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=perfis_url title="Perfis" icon="fa-user-shield" %}
 
-                {% url 'auditoria:log_list' as log_url %}
-                {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}
+                    {% url 'arquiteturaprocessos:cadastrousuarios' as usuarios_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=usuarios_url title="Usuários" icon="fa-users" %}
 
+                    {% url 'auditoria:log_list' as log_url %}
+                    {% include "components/layout/sidebar_subitem.html" with href=log_url title="Logs" icon="fa-clipboard-list" %}
+
+                </div>
             </div>
-        </div>
 
+        {% endif %}
     {% endif %}
-
 </nav>

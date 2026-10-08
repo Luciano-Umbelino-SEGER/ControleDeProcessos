@@ -91,155 +91,147 @@
 
                     <!-- MÓDULOS -->
                     <div class="space-y-3">
-
                         {% for modulo in modulos %}
+                            {% if modulo.nome != "Administração" or perfil.codigo == "ADMINISTRADOR" %}
+                                <div class="bg-white border border-blue-100
+                                            rounded-lg overflow-hidden">
 
-                            <div class="bg-white border border-blue-100
-                                        rounded-lg overflow-hidden">
+                                    <!-- MÓDULO -->
+                                    <div class="bg-blue-100 px-4 py-2">
 
-                                <!-- MÓDULO -->
-                                <div class="bg-blue-100 px-4 py-2">
+                                        <h4 class="font-bold text-blue-800">
+                                            {{ modulo.nome }}
+                                        </h4>
+                                    </div>
 
-                                    <h4 class="font-bold text-blue-800">
-                                        {{ modulo.nome }}
-                                    </h4>
+                                    <!-- FUNCIONALIDADES -->
+                                    <div>
+                                        {% for funcionalidade in modulo.funcionalidades.all %}
+                                            <div x-data="{
+                                                    aberto: false,
 
-                                </div>
+                                                    acoes: [
+                                                        {% for funcionalidade_acao in funcionalidade.acoes.all %}
+                                                            {
+                                                                id: '{{ funcionalidade_acao.id }}',
+                                                                marcada: {% if funcionalidade_acao.id in permissoes_selecionadas %}true{% else %}false{% endif %}
+                                                            }{% if not forloop.last %},{% endif %}
+                                                        {% endfor %}
+                                                    ],
 
+                                                    get marcada() {
+                                                        return this.acoes.length > 0 &&
+                                                               this.acoes.every(acao => acao.marcada);
+                                                    },
 
-                                <!-- FUNCIONALIDADES -->
-                                <div>
+                                                    marcarTodas() {
+                                                        const novoEstado = !this.marcada;
 
-                                    {% for funcionalidade in modulo.funcionalidades.all %}
+                                                        this.acoes.forEach(
+                                                            acao => acao.marcada = novoEstado
+                                                        );
+                                                    }
+                                                }"
+                                                class="border-t border-gray-100">
 
-                                        <div x-data="{
-                                                aberto: false,
+                                                <!-- FUNCIONALIDADE -->
+                                                <div class="flex items-center
+                                                            min-h-[42px]
+                                                            px-4 py-2
+                                                            hover:bg-blue-50
+                                                            transition-colors">
 
-                                                acoes: [
+                                                    <!-- SETA -->
+                                                    <button type="button"
+                                                            @click="aberto = !aberto"
+                                                            class="w-6 flex-shrink-0
+                                                                   flex items-center justify-center
+                                                                   text-blue-700
+                                                                   hover:text-blue-900"
+                                                            :title="aberto ? 'Recolher ações' : 'Exibir ações'">
+
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                             class="w-5 h-5 transition-transform duration-200"
+                                                             :class="{'rotate-90': aberto}"
+                                                             fill="none"
+                                                             viewBox="0 0 24 24"
+                                                             stroke="currentColor"
+                                                             stroke-width="2">
+
+                                                            <path stroke-linecap="round"
+                                                                  stroke-linejoin="round"
+                                                                  d="M9 5l7 7-7 7"/>
+                                                        </svg>
+                                                    </button>
+
+                                                    <!-- CHECKBOX FUNCIONALIDADE -->
+                                                    <input type="checkbox"
+                                                           class="ml-2 mr-3
+                                                                  h-4 w-4
+                                                                  text-blue-600
+                                                                  accent-blue-600
+                                                                  border-gray-300
+                                                                  rounded
+                                                                  focus:ring-blue-500
+                                                                  {% if modo_visualizacao or modo_exclusao %}
+                                                                      cursor-not-allowed
+                                                                  {% endif %}"
+                                                           :checked="marcada"
+                                                           {% if not modo_visualizacao and not modo_exclusao %}
+                                                               @change="marcarTodas()"
+                                                           {% endif %}
+                                                           {% if modo_visualizacao or modo_exclusao %}
+                                                               disabled
+                                                           {% endif %}>
+
+                                                    <!-- NOME FUNCIONALIDADE -->
+                                                    <span class="text-sm font-medium text-blue-800">
+                                                        {{ funcionalidade.nome }}
+                                                    </span>
+                                                </div>
+
+                                                <!-- AÇÕES -->
+                                                <div x-show="aberto"
+                                                     x-transition
+                                                     class="bg-gray-50 border-t border-gray-100">
+
                                                     {% for funcionalidade_acao in funcionalidade.acoes.all %}
-                                                        {
-                                                            id: '{{ funcionalidade_acao.id }}',
-                                                            marcada: {% if funcionalidade_acao.id in permissoes_selecionadas %}true{% else %}false{% endif %}
-                                                        }{% if not forloop.last %},{% endif %}
+                                                        <label class="flex items-center
+                                                                      min-h-[38px]
+                                                                      pl-14 pr-4
+                                                                      cursor-pointer
+                                                                      hover:bg-blue-50
+                                                                      transition-colors">
+
+                                                            <input type="checkbox"
+                                                                   name="permissoes"
+                                                                   value="{{ funcionalidade_acao.id }}"
+                                                                   x-model="acoes[{{ forloop.counter0 }}].marcada"
+                                                                   class="h-4 w-4
+                                                                          text-blue-600
+                                                                          accent-blue-600
+                                                                          border-gray-300
+                                                                          rounded
+                                                                          focus:ring-blue-500
+                                                                          {% if modo_visualizacao or modo_exclusao %}
+                                                                              cursor-not-allowed
+                                                                          {% endif %}"
+                                                                   {% if modo_visualizacao or modo_exclusao %}
+                                                                       disabled
+                                                                   {% endif %}>
+
+                                                            <span class="ml-3 text-sm text-gray-700">
+                                                                {{ funcionalidade_acao.acao.nome }}
+                                                            </span>
+                                                        </label>
                                                     {% endfor %}
-                                                ],
 
-                                                get marcada() {
-                                                    return this.acoes.length > 0 &&
-                                                           this.acoes.every(acao => acao.marcada);
-                                                },
-
-                                                marcarTodas() {
-                                                    const novoEstado = !this.marcada;
-
-                                                    this.acoes.forEach(
-                                                        acao => acao.marcada = novoEstado
-                                                    );
-                                                }
-                                            }"
-                                            class="border-t border-gray-100">
-
-
-                                            <!-- FUNCIONALIDADE -->
-                                            <div class="flex items-center
-                                                        min-h-[42px]
-                                                        px-4 py-2
-                                                        hover:bg-blue-50
-                                                        transition-colors">
-
-                                                <!-- SETA -->
-                                                <button type="button"
-                                                        @click="aberto = !aberto"
-                                                        class="w-6 flex-shrink-0
-                                                               flex items-center justify-center
-                                                               text-blue-700
-                                                               hover:text-blue-900"
-                                                        :title="aberto ? 'Recolher ações' : 'Exibir ações'">
-
-                                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                                         class="w-5 h-5 transition-transform duration-200"
-                                                         :class="{'rotate-90': aberto}"
-                                                         fill="none"
-                                                         viewBox="0 0 24 24"
-                                                         stroke="currentColor"
-                                                         stroke-width="2">
-
-                                                        <path stroke-linecap="round"
-                                                              stroke-linejoin="round"
-                                                              d="M9 5l7 7-7 7"/>
-
-                                                    </svg>
-
-                                                </button>
-
-                                                <!-- CHECKBOX FUNCIONALIDADE -->
-                                                <input type="checkbox"
-                                                       class="ml-2 mr-3
-                                                              h-4 w-4
-                                                              text-blue-600
-                                                              accent-blue-600
-                                                              border-gray-300
-                                                              rounded
-                                                              focus:ring-blue-500
-                                                              {% if modo_visualizacao or modo_exclusao %}
-                                                                  cursor-not-allowed
-                                                              {% endif %}"
-                                                       :checked="marcada"
-                                                       {% if not modo_visualizacao and not modo_exclusao %}
-                                                           @change="marcarTodas()"
-                                                       {% endif %}
-                                                       {% if modo_visualizacao or modo_exclusao %}
-                                                           disabled
-                                                       {% endif %}>
-
-                                                <!-- NOME FUNCIONALIDADE -->
-                                                <span class="text-sm font-medium text-blue-800">
-                                                    {{ funcionalidade.nome }}
-                                                </span>
-
+                                                </div>
                                             </div>
-
-                                            <!-- AÇÕES -->
-                                            <div x-show="aberto"
-                                                 x-transition
-                                                 class="bg-gray-50 border-t border-gray-100">
-
-                                                {% for funcionalidade_acao in funcionalidade.acoes.all %}
-
-                                                    <label class="flex items-center
-                                                                  min-h-[38px]
-                                                                  pl-14 pr-4
-                                                                  cursor-pointer
-                                                                  hover:bg-blue-50
-                                                                  transition-colors">
-
-                                                        <input type="checkbox"
-                                                               name="permissoes"
-                                                               value="{{ funcionalidade_acao.id }}"
-                                                               x-model="acoes[{{ forloop.counter0 }}].marcada"
-                                                               class="h-4 w-4
-                                                                      text-blue-600
-                                                                      accent-blue-600
-                                                                      border-gray-300
-                                                                      rounded
-                                                                      focus:ring-blue-500
-                                                                      {% if modo_visualizacao or modo_exclusao %}
-                                                                          cursor-not-allowed
-                                                                      {% endif %}"
-                                                               {% if modo_visualizacao or modo_exclusao %}
-                                                                   disabled
-                                                               {% endif %}>
-
-                                                        <span class="ml-3 text-sm text-gray-700">
-                                                            {{ funcionalidade_acao.acao.nome }}
-                                                        </span>
-                                                    </label>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    {% endfor %}
+                                        {% endfor %}
+                                    </div>
                                 </div>
-                            </div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                 </div>

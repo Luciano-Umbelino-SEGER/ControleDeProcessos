@@ -414,13 +414,21 @@ def calcular_hash_imagem(imagem):
 # ============================================================
 # CLASSIFICAÇÕES CRUD
 # ============================================================
-class Classificacoes(LoginRequiredMixin, ListView):
+class Classificacoes(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Visualizar"
+
     model = Classificacao
     template_name = 'estrutura/classificacoes.html'
     context_object_name = 'classificacoes'
     queryset = Classificacao.objects.order_by('ordem')
 
-class CriarClassificacao(LoginRequiredMixin, CreateView):
+class CriarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Cadastrar"
+
     template_name = 'estrutura/form_classificacao.html'
     form_class = Form_ClassificacaoForm
 
@@ -457,7 +465,11 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
             'arquiteturaprocessos:classificacoes'
         )
 
-class VisualizarClassificacao(LoginRequiredMixin, DetailView):
+class VisualizarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Visualizar"
+
     template_name = 'estrutura/form_classificacao.html'
     model = Classificacao
     context_object_name = 'classificacao'
@@ -480,7 +492,11 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
 
         return context
 
-class EditarClassificacao(LoginRequiredMixin, UpdateView):
+class EditarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Editar"
+
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
     context_object_name = 'classificacao'
@@ -684,7 +700,11 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
             'arquiteturaprocessos:classificacoes'
         )
 
-class ExcluirClassificacao(LoginRequiredMixin, DetailView):
+class ExcluirClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Excluir"
+
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
     context_object_name = 'classificacao'

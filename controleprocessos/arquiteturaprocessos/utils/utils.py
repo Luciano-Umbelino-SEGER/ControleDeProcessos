@@ -1,17 +1,21 @@
 import secrets
 import string
+
 from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.urls import reverse
+
 from datetime import datetime
-from arquiteturaprocessos.models import (PerfilPermissao,)
+
+from arquiteturaprocessos.models import (PerfilPermissao, Funcionalidade,)
 
 # ============================================================
 # Controle de acesso
 # ============================================================
+
 def tem_permissao(usuario, modulo_nome, funcionalidade_nome, acao_nome):
     """
     Retorna True se o usuário possui a permissão informada.
@@ -45,9 +49,70 @@ def tem_permissao(usuario, modulo_nome, funcionalidade_nome, acao_nome):
         funcionalidade_acao__funcionalidade__ativo=True,
     ).exists()
 
+
+def obter_funcionalidades_permitidas(usuario):
+    """
+    Retorna as funcionalidades que o usuário pode visualizar.
+
+    Regras:
+    - Usuário não autenticado não possui funcionalidades.
+    - Usuário Master visualiza todas as funcionalidades ativas.
+    - Usuário sem perfil não possui funcionalidades.
+    - Demais usuários visualizam somente as funcionalidades
+      autorizadas pelo seu perfil.
+    - Nesta etapa, a verificação considera apenas a existência
+      de autorização para a funcionalidade, independentemente
+      da ação.
+    """
+
+    if not usuario.is_authenticated:
+        return Funcionalidade.objects.none()
+
+    # Usuário Master visualiza todas as funcionalidades ativas.
+    if getattr(usuario, "is_master", False):
+        return (
+            Funcionalidade.objects
+            .filter(
+                ativo=True,
+                modulo__ativo=True,
+            )
+            .select_related("modulo")
+            .order_by(
+                "modulo__ordem",
+                "modulo__id",
+                "ordem",
+                "id",
+            )
+        )
+
+    # Usuário sem perfil não possui funcionalidades.
+    if not usuario.perfil_id:
+        return Funcionalidade.objects.none()
+
+    # Demais usuários visualizam somente as funcionalidades
+    # autorizadas pelo seu perfil.
+    return (
+        Funcionalidade.objects
+        .filter(
+            ativo=True,
+            modulo__ativo=True,
+            acoes__permissoes_perfil__perfil_id=usuario.perfil_id,
+        )
+        .select_related("modulo")
+        .distinct()
+        .order_by(
+            "modulo__ordem",
+            "modulo__id",
+            "ordem",
+            "id",
+        )
+    )
+
+
 # ============================================================
 # 🔐 Função pública — definir senha e enviar e-mail
 # ============================================================
+
 def definir_senha_e_enviar_email(usuario, *, reset=False):
     uid = urlsafe_base64_encode(force_bytes(usuario.pk))
     token = default_token_generator.make_token(usuario)
@@ -60,34 +125,42 @@ def definir_senha_e_enviar_email(usuario, *, reset=False):
     nome = usuario.get_full_name() or usuario.username
 
     if reset:
-        assunto = "SIGEMP - Sistema de Gestão de Monitoramento de Processos — Redefinição de senha"
-        mensagem = f"""
-    Olá {nome},
-
-    Recebemos uma solicitação para redefinição da sua senha no SIGEMP - Sistema de Gestão de Monitoramento de Processos.
-
-    Dados da conta:
-    Usuário: {usuario.username}
-    Perfil : {usuario.perfil}
-
-    Para criar uma nova senha, acesse o link abaixo:
-    {link}
-
-    Atenção:
-    Este link deve ser acessado a partir do navegador da máquina
-    onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
-
-    Caso esteja acessando de outra máquina, copie o link e abra
-    no navegador da máquina virtual.
-
-    Se você não solicitou essa ação, ignore este e-mail.
-    """
-    else:
-        assunto = "SIGEMP - Sistema de Gestão de Monitoramento de Processos — Acesso criado com sucesso"
+        assunto = (
+            "SIGEMP - Sistema de Gestão de Monitoramento de Processos "
+            "— Redefinição de senha"
+        )
         mensagem = f"""
 Olá {nome},
 
-Seu acesso ao SIGEMP - Sistema de Gestão de Monitoramento de Processos, foi criado com sucesso.
+Recebemos uma solicitação para redefinição da sua senha no SIGEMP -
+Sistema de Gestão de Monitoramento de Processos.
+
+Dados da conta:
+Usuário: {usuario.username}
+Perfil : {usuario.perfil}
+
+Para criar uma nova senha, acesse o link abaixo:
+{link}
+
+Atenção:
+Este link deve ser acessado a partir do navegador da máquina
+onde o sistema SIGEMP está em execução (ambiente interno - máquina virtual).
+
+Caso esteja acessando de outra máquina, copie o link e abra
+no navegador da máquina virtual.
+
+Se você não solicitou essa ação, ignore este e-mail.
+"""
+    else:
+        assunto = (
+            "SIGEMP - Sistema de Gestão de Monitoramento de Processos "
+            "— Acesso criado com sucesso"
+        )
+        mensagem = f"""
+Olá {nome},
+
+Seu acesso ao SIGEMP - Sistema de Gestão de Monitoramento de Processos,
+foi criado com sucesso.
 
 Usuário: {usuario.username}
 Setor  : {usuario.setor}
@@ -114,6 +187,7 @@ no navegador da máquina virtual.
         fail_silently=False,
     )
 
+
 # -----------------------------------------------------------
 # Função utilitária para conversão segura de datas (filtros)
 # -----------------------------------------------------------
@@ -134,9 +208,11 @@ no navegador da máquina virtual.
 # Essa função foi criada para reutilização em múltiplas views
 # que utilizam filtros por intervalo de datas.
 # -----------------------------------------------------------
+
 def parse_date(value):
     if not value:
         return None
+
     try:
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
