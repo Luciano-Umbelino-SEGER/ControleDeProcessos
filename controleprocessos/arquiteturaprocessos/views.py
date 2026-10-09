@@ -424,6 +424,40 @@ class Classificacoes(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
     context_object_name = 'classificacoes'
     queryset = Classificacao.objects.order_by('ordem')
 
+    def tem_acesso_permitido(self, usuario):
+        acoes = ("Cadastrar", "Visualizar", "Editar", "Excluir")
+
+        return any(
+            tem_permissao(
+                usuario,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
+            for acao in acoes
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        acoes = {
+            'pode_cadastrar': 'Cadastrar',
+            'pode_visualizar': 'Visualizar',
+            'pode_editar': 'Editar',
+            'pode_excluir': 'Excluir',
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
+
+        return context
+
+
 class CriarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
     permissao_modulo = "Estrutura de Documentos → Processos"
     permissao_funcionalidade = "Classificação de Macroprocessos"
@@ -465,7 +499,11 @@ class CriarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, CreateView)
             'arquiteturaprocessos:classificacoes'
         )
 
-class VisualizarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+class VisualizarClassificacao(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    DetailView
+):
     permissao_modulo = "Estrutura de Documentos → Processos"
     permissao_funcionalidade = "Classificação de Macroprocessos"
     permissao_acao = "Visualizar"
@@ -476,10 +514,9 @@ class VisualizarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, Detail
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        classificacao = self.get_object()
 
         context['form'] = Form_ClassificacaoForm(
-            instance=classificacao,
+            instance=self.object,
             modo_visualizacao=True
         )
 
@@ -513,21 +550,19 @@ class EditarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView
         return context
 
     def form_valid(self, form):
-        classificacao = self.get_object()
-
-        # ========================================================
-        # DADOS ANTERIORES
-        # ========================================================
-        nome_classificacao_anterior = classificacao.nome
-
-        imagem_anterior = classificacao.imagem
-        nome_imagem_anterior = (
-            imagem_anterior.name
-            if imagem_anterior
-            else None
+        # Recupera do banco os dados anteriores à edição.
+        classificacao_anterior = Classificacao.objects.get(
+            pk=self.object.pk
         )
 
-        hash_imagem_anterior = classificacao.imagem_hash
+        nome_classificacao_anterior = classificacao_anterior.nome
+
+        imagem_anterior = classificacao_anterior.imagem
+        nome_imagem_anterior = (
+            imagem_anterior.name if imagem_anterior else None
+        )
+
+        hash_imagem_anterior = classificacao_anterior.imagem_hash
 
         # ========================================================
         # NOVA IMAGEM
