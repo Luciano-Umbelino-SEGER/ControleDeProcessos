@@ -3139,6 +3139,100 @@ class ExcluirPerfil(
             "arquiteturaprocessos:cadastroperfis"
         )
 
+# ------------------------------------------------------------
+# ADMININISTRAÇÃO - PERMISSÃO INDIVIDUAL
+# ------------------------------------------------------------
+class PermissoesIndividuaisBaseMixin(PermissaoRequiredMixin):
+    """
+    Compartilha as regras básicas de acesso às views
+    de permissões individuais.
+    """
+
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Permissões Individuais"
+
+    def dispatch(self, request, *args, **kwargs):
+        usuario = request.user
+
+        eh_administrador = (
+            usuario.perfil_id is not None
+            and usuario.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        if not usuario.is_master and not eh_administrador:
+            messages.warning(
+                request,
+                "Você não tem autorização para administrar "
+                "permissões individuais."
+            )
+            return redirect("arquiteturaprocessos:homepage")
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_usuario_alvo(self):
+        """
+        Impede que o usuário Master seja tratado como
+        um usuário-alvo desta funcionalidade.
+        """
+        return get_object_or_404(
+            Usuario,
+            pk=self.kwargs["pk"],
+            is_master=False,
+        )
+
+
+class VisualizarPermissoesIndividuaisUsuario(
+    LoginRequiredMixin,
+    PermissoesIndividuaisBaseMixin,
+    DetailView,
+):
+    permissao_acao = "Visualizar"
+
+    model = Usuario
+    template_name = "usuario/permissoes_individuais.html"
+    context_object_name = "usuario"
+
+    def get_object(self, queryset=None):
+        return self.get_usuario_alvo()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["modo_visualizacao"] = True
+        context["modo_edicao"] = False
+
+        return context
+
+
+class EditarPermissoesIndividuaisUsuario(
+    LoginRequiredMixin,
+    PermissoesIndividuaisBaseMixin,
+    DetailView,
+):
+    permissao_acao = "Editar"
+
+    model = Usuario
+    template_name = "usuario/permissoes_individuais.html"
+    context_object_name = "usuario"
+
+    def get_object(self, queryset=None):
+        usuario_alvo = self.get_usuario_alvo()
+
+        if self.request.user.pk == usuario_alvo.pk:
+            raise PermissionDenied(
+                "Você não pode alterar suas próprias permissões."
+            )
+
+        return usuario_alvo
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["modo_visualizacao"] = False
+        context["modo_edicao"] = True
+
+        return context
+
 # ------------------------------
 # Cadastro / Listagem Usuários
 # ------------------------------
@@ -3239,8 +3333,22 @@ class CadastroUsuarios(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
         )
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
+
+        acoes = {
+            'pode_cadastrar': 'Cadastrar',
+            'pode_visualizar': 'Visualizar',
+            'pode_editar': 'Editar',
+            'pode_excluir': 'Excluir',
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
 
         perfis = Perfil.objects.order_by('nome')
 

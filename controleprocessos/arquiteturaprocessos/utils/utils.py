@@ -15,7 +15,6 @@ from arquiteturaprocessos.models import (PerfilPermissao, Funcionalidade,Funcion
 # ============================================================
 # Controle de acesso
 # ============================================================
-
 def tem_permissao(usuario, modulo_nome, funcionalidade_nome, acao_nome):
     """
     Retorna True se o usuário possui a permissão informada.

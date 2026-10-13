@@ -13,7 +13,6 @@
         </span>
     </h2>
 
-    {% if request.user.perfil.nome|lower == 'administrador' %}
     <form method="GET" class="mb-0.5">
         <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
             <div class="flex items-end gap-4 flex-wrap w-full">
@@ -161,20 +160,18 @@
                       Limpar
                     </a>
 
+                    {% if pode_cadastrar %}
                     <a href="{% url 'arquiteturaprocessos:criar_usuario' %}"
                        class="inline-flex items-center px-3 py-1.5
                               bg-blue-600 text-white rounded-md
                               hover:bg-blue-700 transition">
                         + Novo
                     </a>
+                    {% endif %}
                 </div>
-
             </div>
-
         </div>
-
     </form>
-    {% endif %}
 
     <div class="flex justify-end mb-0.5">
         {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='usuarios' %}
@@ -242,7 +239,7 @@
                             </svg>
                         </a>
 
-                        {% if request.user.perfil.nome|lower == 'administrador' %}
+                        {% if pode_editar %}
                         <!-- Ícone Editar -->
                         <a href="{% url 'arquiteturaprocessos:editar_usuario' usuario.pk %}"
                            class="text-yellow-600 hover:text-yellow-800" title="Editar">
@@ -254,16 +251,38 @@
                                       clip-rule="evenodd"/>
                             </svg>
                         </a>
-                            {% if usuario.is_active %}
-                                <!-- Ícone Excluir -->
-                                <a href="{% url 'arquiteturaprocessos:excluir_usuario' usuario.pk %}"
-                                   class="text-red-600 hover:text-red-800" title="Excluir">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline text-red-600 hover:text-red-800"
-                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
-                                    </svg>
-                                </a>
+                        {% endif %}
+
+                        {% if pode_excluir and usuario.is_active %}
+                        <!-- Ícone Excluir -->
+                        <a href="{% url 'arquiteturaprocessos:excluir_usuario' usuario.pk %}"
+                           class="text-red-600 hover:text-red-800" title="Excluir">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline text-red-600 hover:text-red-800"
+                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 00-2-2H9a2 2 0 00-2 2h10z"/>
+                            </svg>
+                        </a>
+                        {% endif %}
+
+                        {% if pode_administrar_permissoes_individuais %}
+                            {% if request.user.pk != usuario.pk and not usuario.is_master %}
+                            <!-- Ícone Permissões Individuais -->
+                            <a href="{% url 'arquiteturaprocessos:permissoes_individuais_usuario' usuario.pk %}"
+                               class="text-purple-600 hover:text-purple-800"
+                               title="Permissões Individuais"
+                               aria-label="Administrar permissões individuais de {{ usuario.get_full_name }}">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="h-5 w-5 inline"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="2"
+                                          d="M12 15v2m-6 4h12a2 2 0 002-2v-7a2 2 0 00-2-2H6a2 2 0 00-2 2v7a2 2 0 002 2zm10-11V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </a>
                             {% endif %}
                         {% endif %}
                     </div>
