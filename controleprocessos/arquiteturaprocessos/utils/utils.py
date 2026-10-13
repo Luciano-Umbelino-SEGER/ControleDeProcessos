@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from datetime import datetime
 
-from arquiteturaprocessos.models import (PerfilPermissao, Funcionalidade,)
+from arquiteturaprocessos.models import (PerfilPermissao, Funcionalidade,FuncionalidadeAcao, UsuarioPermissao,)
 
 # ============================================================
 # Controle de acesso
@@ -20,15 +20,12 @@ def tem_permissao(usuario, modulo_nome, funcionalidade_nome, acao_nome):
     """
     Retorna True se o usuário possui a permissão informada.
 
-    Regras:
-    - Usuário não autenticado não possui permissão.
-    - Usuário Master possui acesso total.
-    - A permissão é verificada no perfil do usuário.
-    - Módulo e funcionalidade precisam estar ativos.
-    - A ação precisa estar vinculada à funcionalidade.
-    - Na ausência da permissão, o acesso é negado.
+    Precedência:
+    1. Usuário Master possui acesso total.
+    2. Decisão individual explícita prevalece sobre o perfil.
+    3. Na ausência de exceção individual, consulta o perfil.
+    4. Na ausência de autorização, nega o acesso.
     """
-
     if not usuario.is_authenticated:
         return False
 
@@ -36,35 +33,54 @@ def tem_permissao(usuario, modulo_nome, funcionalidade_nome, acao_nome):
     if getattr(usuario, "is_master", False):
         return True
 
-    # Usuário sem perfil não possui permissão.
+    # Identifica a ação da funcionalidade solicitada,
+    # garantindo que módulo e funcionalidade estejam ativos.
+    funcionalidade_acao = FuncionalidadeAcao.objects.filter(
+        funcionalidade__modulo__nome=modulo_nome,
+        funcionalidade__nome=funcionalidade_nome,
+        acao__nome=acao_nome,
+        funcionalidade__modulo__ativo=True,
+        funcionalidade__ativo=True,
+    ).first()
+
+    if not funcionalidade_acao:
+        return False
+
+    # 1. Verifica primeiro a exceção individual.
+    permissao_individual = UsuarioPermissao.objects.filter(
+        usuario=usuario,
+        funcionalidade_acao=funcionalidade_acao,
+    ).first()
+
+    if permissao_individual:
+        return (
+            permissao_individual.decisao
+            == UsuarioPermissao.Decisao.PERMITIR
+        )
+
+    # 2. Sem exceção individual, consulta o perfil.
     if not usuario.perfil_id:
         return False
 
     return PerfilPermissao.objects.filter(
         perfil_id=usuario.perfil_id,
-        funcionalidade_acao__funcionalidade__modulo__nome=modulo_nome,
-        funcionalidade_acao__funcionalidade__nome=funcionalidade_nome,
-        funcionalidade_acao__acao__nome=acao_nome,
-        funcionalidade_acao__funcionalidade__modulo__ativo=True,
-        funcionalidade_acao__funcionalidade__ativo=True,
+        funcionalidade_acao=funcionalidade_acao,
     ).exists()
 
 
 def obter_funcionalidades_permitidas(usuario):
     """
-    Retorna as funcionalidades que o usuário pode visualizar.
+    Retorna as funcionalidades que o usuário pode acessar.
 
     Regras:
     - Usuário não autenticado não possui funcionalidades.
     - Usuário Master visualiza todas as funcionalidades ativas.
-    - Usuário sem perfil não possui funcionalidades.
-    - Demais usuários visualizam somente as funcionalidades
-      autorizadas pelo seu perfil.
-    - Nesta etapa, a verificação considera apenas a existência
-      de autorização para a funcionalidade, independentemente
-      da ação.
+    - Demais usuários visualizam funcionalidades que tenham
+      pelo menos uma ação efetivamente autorizada.
+    - A permissão individual prevalece sobre a permissão do perfil.
+    - Sem decisão individual, utiliza a permissão do perfil.
+    - Módulo e funcionalidade precisam estar ativos.
     """
-
     if not usuario.is_authenticated:
         return Funcionalidade.objects.none()
 
@@ -85,21 +101,14 @@ def obter_funcionalidades_permitidas(usuario):
             )
         )
 
-    # Usuário sem perfil não possui funcionalidades.
-    if not usuario.perfil_id:
-        return Funcionalidade.objects.none()
-
-    # Demais usuários visualizam somente as funcionalidades
-    # autorizadas pelo seu perfil.
-    return (
+    funcionalidades = (
         Funcionalidade.objects
         .filter(
             ativo=True,
             modulo__ativo=True,
-            acoes__permissoes_perfil__perfil_id=usuario.perfil_id,
         )
         .select_related("modulo")
-        .distinct()
+        .prefetch_related("acoes__acao")
         .order_by(
             "modulo__ordem",
             "modulo__id",
@@ -108,6 +117,20 @@ def obter_funcionalidades_permitidas(usuario):
         )
     )
 
+    ids_permitidos = []
+
+    for funcionalidade in funcionalidades:
+        for vinculo in funcionalidade.acoes.all():
+            if tem_permissao(
+                usuario,
+                funcionalidade.modulo.nome,
+                funcionalidade.nome,
+                vinculo.acao.nome,
+            ):
+                ids_permitidos.append(funcionalidade.pk)
+                break
+
+    return funcionalidades.filter(pk__in=ids_permitidos)
 
 # ============================================================
 # 🔐 Função pública — definir senha e enviar e-mail

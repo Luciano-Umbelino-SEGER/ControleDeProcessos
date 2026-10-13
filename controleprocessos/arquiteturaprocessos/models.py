@@ -132,6 +132,45 @@ class PerfilPermissao(models.Model):
         return f"{self.perfil} - {self.funcionalidade_acao}"
 
 
+class UsuarioPermissao(models.Model):
+
+    class Decisao(models.TextChoices):
+        PERMITIR = "PERMITIR", "Permitir"
+        NEGAR = "NEGAR", "Negar"
+
+    usuario = models.ForeignKey(
+        "Usuario",
+        on_delete=models.CASCADE,
+        related_name="permissoes_individuais",
+    )
+
+    funcionalidade_acao = models.ForeignKey(
+        "FuncionalidadeAcao",
+        on_delete=models.CASCADE,
+        related_name="permissoes_usuario",
+    )
+
+    decisao = models.CharField(
+        max_length=10,
+        choices=Decisao.choices,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["usuario", "funcionalidade_acao"],
+                name="unique_usuario_permissao",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.usuario} - "
+            f"{self.funcionalidade_acao} - "
+            f"{self.get_decisao_display()}"
+        )
+
+
 class Telefone(models.Model):
     usuario = models.ForeignKey("Usuario", related_name="telefones", on_delete=models.CASCADE)
     ddd = models.CharField(max_length=3, null=True, blank=True)
@@ -149,7 +188,6 @@ class Telefone(models.Model):
 
     def __str__(self):
         return f"{self.ddd} - {self.numero} - {self.ramal}"
-
 
 # ============================================================
 # Usuários
