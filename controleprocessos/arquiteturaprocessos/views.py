@@ -48,7 +48,7 @@ from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, Processo, SistemasUECI, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
     Perfil, NormaProcedimento, AbrangenciaChoices, ImagemCadeiaValor, Modulo, Funcionalidade, FuncionalidadeAcao,
-    PerfilPermissao,
+    PerfilPermissao, UsuarioPermissao,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -3180,6 +3180,78 @@ class PermissoesIndividuaisBaseMixin(PermissaoRequiredMixin):
             is_master=False,
         )
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        usuario_alvo = self.object
+
+        # Módulos e funcionalidades ativos, com suas ações.
+        modulos = Modulo.objects.filter(
+            ativo=True
+        ).order_by(
+            "ordem"
+        ).prefetch_related(
+            Prefetch(
+                "funcionalidades",
+                queryset=Funcionalidade.objects.filter(
+                    ativo=True
+                ).order_by(
+                    "ordem"
+                ).prefetch_related(
+                    Prefetch(
+                        "acoes",
+                        queryset=FuncionalidadeAcao.objects.select_related(
+                            "acao"
+                        ).order_by(
+                            "acao__ordem"
+                        ),
+                    )
+                ),
+            )
+        )
+
+        # IDs das ações concedidas diretamente pelo perfil.
+        permissoes_perfil = set()
+
+        if usuario_alvo.perfil_id:
+            permissoes_perfil = set(
+                PerfilPermissao.objects.filter(
+                    perfil_id=usuario_alvo.perfil_id,
+                ).values_list(
+                    "funcionalidade_acao_id",
+                    flat=True,
+                )
+            )
+
+        # Decisões individuais: PERMITIR ou NEGAR.
+        permissoes_individuais = dict(
+            UsuarioPermissao.objects.filter(
+                usuario=usuario_alvo,
+            ).values_list(
+                "funcionalidade_acao_id",
+                "decisao",
+            )
+        )
+
+        # Prepara os dados de cada ação para o template.
+        for modulo in modulos:
+            for funcionalidade in modulo.funcionalidades.all():
+                for funcionalidade_acao in funcionalidade.acoes.all():
+                    funcionalidade_acao.permitida_pelo_perfil = (
+                            funcionalidade_acao.id in permissoes_perfil
+                    )
+
+                    funcionalidade_acao.decisao_individual = (
+                        permissoes_individuais.get(
+                            funcionalidade_acao.id,
+                            "",
+                        )
+                    )
+
+        context["modulos"] = modulos
+
+        return context
+
 
 class VisualizarPermissoesIndividuaisUsuario(
     LoginRequiredMixin,
@@ -3341,6 +3413,24 @@ class CadastroUsuarios(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
             'pode_editar': 'Editar',
             'pode_excluir': 'Excluir',
         }
+
+        # Permissões Individuais
+        usuario_logado = self.request.user
+
+        eh_administrador = (
+                usuario_logado.perfil_id is not None
+                and usuario_logado.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        context["pode_administrar_permissoes_individuais"] = (
+                (usuario_logado.is_master or eh_administrador)
+                and tem_permissao(
+            usuario_logado,
+            "Administração",
+            "Permissões Individuais",
+            "Visualizar",
+            )
+        )
 
         for variavel, acao in acoes.items():
             context[variavel] = tem_permissao(

@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+
+<div class="py-5 px-2 flex justify-center">
+    <div class="w-full max-w-5xl">
+        <div class="bg-blue-50 border-2 border-blue-700 rounded-lg shadow-md p-4 sm:p-5">
+
+            <!-- Título -->
+            <h2 class="text-center text-base font-bold text-blue-800 mb-4">
+                Administração de Permissões Individuais -
+                {% if modo_visualizacao %}Visualizar{% else %}Editar{% endif %}
+            </h2>
+
+            <!-- Dados do usuário -->
+            <section class="bg-white border border-gray-300 rounded-md overflow-hidden mb-5">
+
+                <div class="bg-blue-100 px-3 py-2">
+                    <h3 class="text-sm font-semibold text-blue-800">
+                        Dados do Usuário
+                    </h3>
+                </div>
+
+                <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Usuário
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.username }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Nome
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.get_full_name }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Perfil
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.perfil|default_if_none:'' }}"
+                            disabled
+                            class="w-full rounded-md border border-blue-200 bg-blue-100 px-2 py-1.5 text-xs text-blue-800 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Setor
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.setor|default_if_none:'' }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Cargo / Função
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.cargo|default_if_none:'' }}{% if usuario.cargo and usuario.funcao %} / {% endif %}{{ usuario.funcao|default_if_none:'' }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Título e legenda -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+
+                <h3 class="text-sm font-bold text-blue-800">
+                    Permissões
+                </h3>
+
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-600">
+
+                    <span class="inline-flex items-center gap-1">
+                        <input
+                            type="checkbox"
+                            checked
+                            disabled
+                            aria-hidden="true"
+                            tabindex="-1"
+                            class="h-3 w-3 accent-gray-400 disabled:opacity-100"
+                        >
+                        Permitido pelo perfil
+                    </span>
+
+                    <span class="inline-flex items-center gap-1">
+                        <span class="inline-block h-2 w-2 rounded-full bg-green-600"></span>
+                        Permitir individualmente
+                    </span>
+
+                    <span class="inline-flex items-center gap-1">
+                        <span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>
+                        Negar individualmente
+                    </span>
+
+                </div>
+            </div>
+
+            <!-- Módulos e funcionalidades -->
+            <div class="space-y-3">
+
+                {% for modulo in modulos %}
+
+                    <section
+                        x-data="{ aberto: false }"
+                        class="bg-white border border-gray-300 rounded-md overflow-hidden"
+                    >
+
+                        <!-- Cabeçalho do módulo -->
+                        <button
+                            type="button"
+                            @click="aberto = !aberto"
+                            :aria-expanded="aberto.toString()"
+                            class="w-full flex items-center gap-2 bg-blue-100 hover:bg-blue-200 px-3 py-2 text-left text-sm font-semibold text-blue-800"
+                        >
+                            <svg
+                                class="h-4 w-4 flex-shrink-0 transition-transform duration-200"
+                                :class="{ 'rotate-90': aberto }"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+
+                            <span>{{ modulo.nome }}</span>
+                        </button>
+
+                        <!-- Conteúdo do módulo -->
+                        <div
+                            x-show="aberto"
+                            x-transition
+                            x-cloak
+                            class="divide-y divide-gray-200"
+                        >
+
+                            {% for funcionalidade in modulo.funcionalidades.all %}
+
+                                <section
+                                    x-data="{ funcionalidadeAberta: false }"
+                                    class="w-full"
+                                >
+
+                                    <!--
+                                        Cabeçalho da funcionalidade e da tabela.
+                                        A faixa permanece alinhada com as colunas
+                                        Perfil, Permitir e Negar.
+                                    -->
+                                    <div class="overflow-x-auto">
+
+                                        <div class="min-w-[600px]">
+
+                                            <div class="grid grid-cols-[minmax(0,1fr)_76px_160px] bg-blue-50 border-b border-gray-200">
+
+                                                <!-- Funcionalidade -->
+                                                <button
+                                                    type="button"
+                                                    @click="funcionalidadeAberta = !funcionalidadeAberta"
+                                                    :aria-expanded="funcionalidadeAberta.toString()"
+                                                    class="flex items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-blue-800 hover:bg-blue-100"
+                                                >
+                                                    <svg
+                                                        class="h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200"
+                                                        :class="{ 'rotate-90': funcionalidadeAberta }"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M9 5l7 7-7 7"
+                                                        />
+                                                    </svg>
+
+                                                    <span>{{ funcionalidade.nome }}</span>
+                                                </button>
+
+                                                <!-- Perfil -->
+                                                <div class="flex items-center justify-center border-l border-gray-200 px-1 py-2 text-xs font-semibold text-blue-800">
+                                                    Perfil
+                                                </div>
+
+                                                <!-- Permissão Individual -->
+                                                <div class="border-l border-gray-200 text-center">
+
+                                                    <div class="px-1 pt-1.5 pb-1 text-[11px] font-semibold text-blue-800">
+                                                        Permissão Individual
+                                                    </div>
+
+                                                    <div class="grid grid-cols-2 border-t border-gray-200">
+
+                                                        <div class="py-1 text-[10px] font-semibold text-green-700">
+                                                            Permitir
+                                                        </div>
+
+                                                        <div class="border-l border-gray-200 py-1 text-[10px] font-semibold text-red-700">
+                                                            Negar
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Ações da funcionalidade -->
+                                            <div
+                                                x-show="funcionalidadeAberta"
+                                                x-transition
+                                                x-cloak
+                                                class="divide-y divide-gray-100"
+                                            >
+
+                                                {% for funcionalidade_acao in funcionalidade.acoes.all %}
+
+                                                    <div class="grid grid-cols-[minmax(0,1fr)_76px_160px] min-w-[600px] bg-white hover:bg-gray-50">
+
+                                                        <!-- Nome da ação -->
+                                                        <div class="flex items-center px-3 py-2 pl-8 text-xs text-gray-700">
+                                                            {{ funcionalidade_acao.acao.nome }}
+                                                        </div>
+
+                                                        <!-- Permissão herdada do perfil -->
+                                                        <div class="flex items-center justify-center border-l border-gray-100 px-1 py-2">
+
+                                                            <input
+                                                                type="checkbox"
+                                                                {% if funcionalidade_acao.permitida_pelo_perfil %}checked{% endif %}
+                                                                aria-readonly="true"
+                                                                aria-label="Permissão do perfil para {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                tabindex="-1"
+                                                                @click.prevent
+                                                                @keydown.prevent
+                                                                class="h-3.5 w-3.5 accent-blue-600 cursor-default"
+                                                            />
+
+                                                        </div>
+
+                                                        <!-- Decisões individuais -->
+                                                        <div class="grid grid-cols-2 border-l border-gray-100">
+
+                                                            <!-- Permitir -->
+                                                            <div class="flex items-center justify-center py-2">
+
+                                                                <input
+                                                                    type="radio"
+                                                                    name="decisao_{{ funcionalidade_acao.id }}"
+                                                                    value="PERMITIR"
+                                                                    {% if funcionalidade_acao.decisao_individual == "PERMITIR" %}checked{% endif %}
+                                                                    disabled
+                                                                    aria-label="Permitir individualmente: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                    class="h-3.5 w-3.5 accent-green-600 cursor-not-allowed"
+                                                                >
+
+                                                            </div>
+
+                                                            <!-- Negar -->
+                                                            <div class="flex items-center justify-center border-l border-gray-100 py-2">
+
+                                                                <input
+                                                                    type="radio"
+                                                                    name="decisao_{{ funcionalidade_acao.id }}"
+                                                                    value="NEGAR"
+                                                                    {% if funcionalidade_acao.decisao_individual == "NEGAR" %}checked{% endif %}
+                                                                    disabled
+                                                                    aria-label="Negar individualmente: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                    class="h-3.5 w-3.5 accent-red-600 cursor-not-allowed"
+                                                                >
+
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+
+                                                {% empty %}
+
+                                                    <div class="px-4 py-3 text-xs text-gray-500">
+                                                        Nenhuma ação cadastrada para esta funcionalidade.
+                                                    </div>
+
+                                                {% endfor %}
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </section>
+
+                            {% empty %}
+
+                                <div class="px-4 py-3 text-xs text-gray-500">
+                                    Nenhuma funcionalidade cadastrada neste módulo.
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+                    </section>
+
+                {% empty %}
+
+                    <div class="rounded-md border border-gray-300 bg-white p-4 text-sm text-gray-500">
+                        Nenhum módulo ativo encontrado.
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+            <!-- Botões -->
+            <div class="flex flex-wrap justify-end gap-2 mt-5">
+
+                {% if modo_edicao %}
+                    <button
+                        type="button"
+                        disabled
+                        title="A gravação das permissões individuais será habilitada em uma próxima etapa."
+                        class="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white opacity-60 cursor-not-allowed"
+                    >
+                        Salvar Alterações
+                    </button>
+                {% endif %}
+
+                <a
+                    href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
+                    class="inline-flex items-center justify-center rounded-md bg-gray-300 hover:bg-gray-400 px-4 py-2 text-xs font-medium text-gray-800"
+                >
+                    {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+                </a>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
