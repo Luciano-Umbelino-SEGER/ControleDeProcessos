@@ -268,7 +268,7 @@
                         {% if pode_administrar_permissoes_individuais %}
                             {% if request.user.pk != usuario.pk and not usuario.is_master %}
                                 <!-- Ícone Permissões Individuais -->
-                                <a href="{% url 'arquiteturaprocessos:permissoes_individuais_usuario' usuario.pk %}"
+                                <a href="{% url 'arquiteturaprocessos:editar_permissoes_individuais_usuario' usuario.pk %}"
                                    class="text-green-600 hover:text-green-800"
                                    title="Permissões Individuais"
                                    aria-label="Administrar permissões individuais de {{ usuario.get_full_name }}">

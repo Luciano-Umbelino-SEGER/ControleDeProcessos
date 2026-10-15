@@ -9,8 +9,7 @@
 
             <!-- Título -->
             <h2 class="text-center text-base font-bold text-blue-800 mb-4">
-                Administração de Permissões Individuais -
-                {% if modo_visualizacao %}Visualizar{% else %}Editar{% endif %}
+                Administração de Permissões Individuais - Editar
             </h2>
 
             <!-- Dados do usuário -->
@@ -95,15 +94,16 @@
                 </h3>
 
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-600">
-
+                    
                     <span class="inline-flex items-center gap-1">
                         <input
                             type="checkbox"
                             checked
-                            disabled
                             aria-hidden="true"
                             tabindex="-1"
-                            class="h-3 w-3 accent-gray-400 disabled:opacity-100"
+                            onclick="return false;"
+                            onkeydown="return false;"
+                            class="h-3 w-3 accent-blue-600 cursor-default"
                         >
                         Permitido pelo perfil
                     </span>
@@ -181,7 +181,7 @@
 
                                         <div class="min-w-[600px]">
 
-                                            <div class="grid grid-cols-[minmax(0,1fr)_76px_160px] bg-blue-50 border-b border-gray-200">
+                                            <div class="grid grid-cols-[minmax(0,1fr)_76px_192px] bg-blue-50 border-b border-gray-200">
 
                                                 <!-- Funcionalidade -->
                                                 <button
@@ -221,7 +221,7 @@
                                                         Permissão Individual
                                                     </div>
 
-                                                    <div class="grid grid-cols-2 border-t border-gray-200">
+                                                    <div class="grid grid-cols-3 border-t border-gray-200">
 
                                                         <div class="py-1 text-[10px] font-semibold text-green-700">
                                                             Permitir
@@ -229,6 +229,10 @@
 
                                                         <div class="border-l border-gray-200 py-1 text-[10px] font-semibold text-red-700">
                                                             Negar
+                                                        </div>
+
+                                                        <div class="border-l border-gray-200 py-1 text-[10px] font-semibold text-orange-700">
+                                                            Limpar
                                                         </div>
 
                                                     </div>
@@ -245,7 +249,7 @@
 
                                                 {% for funcionalidade_acao in funcionalidade.acoes.all %}
 
-                                                    <div class="grid grid-cols-[minmax(0,1fr)_76px_160px] min-w-[600px] bg-white hover:bg-gray-50">
+                                                    <div class="grid grid-cols-[minmax(0,1fr)_76px_192px] min-w-[600px] bg-white hover:bg-gray-50">
 
                                                         <!-- Nome da ação -->
                                                         <div class="flex items-center px-3 py-2 pl-8 text-xs text-gray-700">
@@ -269,7 +273,12 @@
                                                         </div>
 
                                                         <!-- Decisões individuais -->
-                                                        <div class="grid grid-cols-2 border-l border-gray-100">
+                                                        <div
+                                                            class="grid grid-cols-3 border-l border-gray-100"
+                                                            data-permissao-individual
+                                                            data-perfil-permite="{% if funcionalidade_acao.permitida_pelo_perfil %}true{% else %}false{% endif %}"
+                                                            data-decisao-original="{{ funcionalidade_acao.decisao_individual }}"
+                                                        >
 
                                                             <!-- Permitir -->
                                                             <div class="flex items-center justify-center py-2">
@@ -279,9 +288,8 @@
                                                                     name="decisao_{{ funcionalidade_acao.id }}"
                                                                     value="PERMITIR"
                                                                     {% if funcionalidade_acao.decisao_individual == "PERMITIR" %}checked{% endif %}
-                                                                    disabled
                                                                     aria-label="Permitir individualmente: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
-                                                                    class="h-3.5 w-3.5 accent-green-600 cursor-not-allowed"
+                                                                    class="h-3.5 w-3.5 accent-green-600 cursor-pointer"
                                                                 >
 
                                                             </div>
@@ -294,10 +302,25 @@
                                                                     name="decisao_{{ funcionalidade_acao.id }}"
                                                                     value="NEGAR"
                                                                     {% if funcionalidade_acao.decisao_individual == "NEGAR" %}checked{% endif %}
-                                                                    disabled
                                                                     aria-label="Negar individualmente: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
-                                                                    class="h-3.5 w-3.5 accent-red-600 cursor-not-allowed"
+                                                                    class="h-3.5 w-3.5 accent-red-600 cursor-pointer"
                                                                 >
+
+                                                            </div>
+
+                                                            <!-- Limpar decisão individual -->
+                                                            <div class="flex items-center justify-center border-l border-gray-100 py-2">
+
+                                                                <button
+                                                                    type="button"
+                                                                    data-limpar-decisao
+                                                                    title="Limpar decisão individual"
+                                                                    aria-label="Limpar decisão individual: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                    class="hidden text-red-600 hover:text-red-800
+                                                                           text-base font-bold leading-none"
+                                                                >
+                                                                    ×
+                                                                </button>
 
                                                             </div>
 
@@ -341,29 +364,106 @@
 
             <!-- Botões -->
             <div class="flex flex-wrap justify-end gap-2 mt-5">
-
                 {% if modo_edicao %}
                     <button
                         type="button"
                         disabled
                         title="A gravação das permissões individuais será habilitada em uma próxima etapa."
-                        class="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white opacity-60 cursor-not-allowed"
-                    >
+                        class="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white opacity-60 cursor-not-allowed">
                         Salvar Alterações
                     </button>
                 {% endif %}
 
                 <a
                     href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
-                    class="inline-flex items-center justify-center rounded-md bg-gray-300 hover:bg-gray-400 px-4 py-2 text-xs font-medium text-gray-800"
-                >
-                    {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+                    class="inline-flex items-center justify-center rounded-md bg-gray-300 hover:bg-gray-400 px-4 py-2 text-xs font-medium text-gray-800">
+                    Cancelar
                 </a>
-
             </div>
-
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const decisoes = document.querySelectorAll(
+        "[data-permissao-individual]"
+    );
+
+    decisoes.forEach(function (grupo) {
+        const radios = grupo.querySelectorAll(
+            'input[type="radio"]'
+        );
+
+        const botaoLimpar = grupo.querySelector(
+            "[data-limpar-decisao]"
+        );
+
+        const perfilPermite =
+            grupo.dataset.perfilPermite === "true";
+
+        const decisaoOriginal =
+            grupo.dataset.decisaoOriginal || "";
+
+        function atualizarControles() {
+            const selecionado = grupo.querySelector(
+                'input[type="radio"]:checked'
+            );
+
+            /*
+             * Uma decisão que já existia no banco pode ser
+             * revisada. Não a desabilitamos por ser redundante
+             * em relação à permissão atual do perfil.
+             */
+            const existeExcecaoOriginal =
+                decisaoOriginal === "PERMITIR" ||
+                decisaoOriginal === "NEGAR";
+
+            radios.forEach(function (radio) {
+                if (existeExcecaoOriginal) {
+                    radio.disabled = false;
+                } else {
+                    radio.disabled = (
+                        (perfilPermite &&
+                         radio.value === "PERMITIR") ||
+                        (!perfilPermite &&
+                         radio.value === "NEGAR")
+                    );
+                }
+            });
+
+            if (botaoLimpar) {
+                botaoLimpar.classList.toggle(
+                    "hidden",
+                    !selecionado
+                );
+            }
+        }
+
+        radios.forEach(function (radio) {
+            radio.addEventListener(
+                "change",
+                atualizarControles
+            );
+        });
+
+        if (botaoLimpar) {
+            botaoLimpar.addEventListener("click", function () {
+                /*
+                 * A limpeza é explícita e restrita à tela.
+                 * Nenhuma alteração é feita no banco aqui.
+                 */
+                radios.forEach(function (radio) {
+                    radio.checked = false;
+                });
+
+                atualizarControles();
+            });
+        }
+
+        atualizarControles();
+    });
+});
+</script>
 
 {% endblock %}

@@ -3252,30 +3252,6 @@ class PermissoesIndividuaisBaseMixin(PermissaoRequiredMixin):
 
         return context
 
-
-class VisualizarPermissoesIndividuaisUsuario(
-    LoginRequiredMixin,
-    PermissoesIndividuaisBaseMixin,
-    DetailView,
-):
-    permissao_acao = "Visualizar"
-
-    model = Usuario
-    template_name = "usuario/permissoes_individuais.html"
-    context_object_name = "usuario"
-
-    def get_object(self, queryset=None):
-        return self.get_usuario_alvo()
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        context["modo_visualizacao"] = True
-        context["modo_edicao"] = False
-
-        return context
-
-
 class EditarPermissoesIndividuaisUsuario(
     LoginRequiredMixin,
     PermissoesIndividuaisBaseMixin,
@@ -3300,7 +3276,6 @@ class EditarPermissoesIndividuaisUsuario(
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context["modo_visualizacao"] = False
         context["modo_edicao"] = True
 
         return context
