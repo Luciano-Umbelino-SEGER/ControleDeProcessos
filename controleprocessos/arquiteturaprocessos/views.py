@@ -59,7 +59,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_Sistema_UECIForm, Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm, Form_AreaResponsavelForm, Form_NormaProcedimentoForm,
-    Form_ImagemCadeiaValorForm, Form_PerfilForm,
+    Form_ImagemCadeiaValorForm, Form_PerfilForm, Form_Permissoes_IndividuaisForm,
 )
 
 # ---------------------------------------------------
@@ -2797,7 +2797,7 @@ class CadastroPerfis(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
             )
             .order_by("nome")
         )
-# Aqui 1
+
 # ============================================================
 # PERFIS
 # ============================================================
@@ -3138,7 +3138,7 @@ class ExcluirPerfil(
         return redirect(
             "arquiteturaprocessos:cadastroperfis"
         )
-
+# aqui 1
 # ------------------------------------------------------------
 # ADMININISTRAÇÃO - PERMISSÃO INDIVIDUAL
 # ------------------------------------------------------------
@@ -3185,10 +3185,26 @@ class PermissoesIndividuaisBaseMixin(PermissaoRequiredMixin):
 
         usuario_alvo = self.object
 
+        # Define se o usuário-alvo pode receber permissões
+        # individuais do módulo Administração.
+        usuario_alvo_eh_administrador = (
+            usuario_alvo.perfil_id is not None
+            and usuario_alvo.perfil.codigo == "ADMINISTRADOR"
+        )
+
         # Módulos e funcionalidades ativos, com suas ações.
-        modulos = Modulo.objects.filter(
+        # O módulo Administração só aparece quando o usuário-alvo
+        # possui o perfil ADMINISTRADOR.
+        queryset_modulos = Modulo.objects.filter(
             ativo=True
-        ).order_by(
+        )
+
+        if not usuario_alvo_eh_administrador:
+            queryset_modulos = queryset_modulos.exclude(
+                nome="Administração"
+            )
+
+        modulos = queryset_modulos.order_by(
             "ordem"
         ).prefetch_related(
             Prefetch(
@@ -3252,13 +3268,8 @@ class PermissoesIndividuaisBaseMixin(PermissaoRequiredMixin):
 
         return context
 
-class EditarPermissoesIndividuaisUsuario(
-    LoginRequiredMixin,
-    PermissoesIndividuaisBaseMixin,
-    DetailView,
-):
+class EditarPermissoesIndividuaisUsuario(LoginRequiredMixin, PermissoesIndividuaisBaseMixin, DetailView,):
     permissao_acao = "Editar"
-
     model = Usuario
     template_name = "usuario/permissoes_individuais.html"
     context_object_name = "usuario"
@@ -3275,10 +3286,215 @@ class EditarPermissoesIndividuaisUsuario(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
         context["modo_edicao"] = True
-
         return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        usuario_alvo = self.object
+
+        form = Form_Permissoes_IndividuaisForm(
+            request.POST
+        )
+
+        if not form.is_valid():
+            context = self.get_context_data()
+            context["form"] = form
+            return self.render_to_response(context)
+
+        decisoes = form.cleaned_data["decisoes"]
+
+        # O conjunto de ações aceitas deve corresponder às
+        # funcionalidades disponíveis para o usuário-alvo.
+        usuario_alvo_eh_administrador = (
+            usuario_alvo.perfil_id is not None
+            and usuario_alvo.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        modulos_permitidos = Modulo.objects.filter(
+            ativo=True
+        )
+
+        if not usuario_alvo_eh_administrador:
+            modulos_permitidos = modulos_permitidos.exclude(
+                nome="Administração"
+            )
+
+        ids_esperados = set(
+            FuncionalidadeAcao.objects.filter(
+                funcionalidade__ativo=True,
+                funcionalidade__modulo__in=modulos_permitidos,
+                funcionalidade__modulo__ativo=True,
+            ).values_list(
+                "id",
+                flat=True,
+            )
+        )
+
+
+        ids_recebidos = set(decisoes.keys())
+
+        if ids_recebidos != ids_esperados:
+            form.add_error(
+                "decisoes",
+                "O conjunto de ações enviado é inválido ou está "
+                "incompleto. Recarregue a página e tente novamente.",
+            )
+            context = self.get_context_data()
+            context["form"] = form
+            return self.render_to_response(context)
+
+        # Permissões herdadas do perfil: somente os registros
+        # concedidos diretamente ao perfil do usuário-alvo.
+        permissoes_perfil = set()
+
+        if usuario_alvo.perfil_id:
+            permissoes_perfil = set(
+                PerfilPermissao.objects.filter(
+                    perfil_id=usuario_alvo.perfil_id,
+                ).values_list(
+                    "funcionalidade_acao_id",
+                    flat=True,
+                )
+            )
+
+        alteracoes = []
+
+        with transaction.atomic():
+            permissoes_existentes = {
+                permissao.funcionalidade_acao_id: permissao
+                for permissao in UsuarioPermissao.objects.filter(
+                    usuario=usuario_alvo,
+                    funcionalidade_acao_id__in=ids_esperados,
+                ).select_for_update()
+            }
+
+            for funcionalidade_acao_id, decisao in decisoes.items():
+                permissao_existente = permissoes_existentes.get(
+                    funcionalidade_acao_id
+                )
+
+                decisao_anterior = (
+                    permissao_existente.decisao
+                    if permissao_existente
+                    else None
+                )
+
+                # A ausência de decisão significa retornar à
+                # herança do perfil.
+                #
+                # Uma decisão igual à do perfil é redundante.
+                if (
+                    decisao is None
+                    or (
+                        decisao == "PERMITIR"
+                        and funcionalidade_acao_id in permissoes_perfil
+                    )
+                    or (
+                        decisao == "NEGAR"
+                        and funcionalidade_acao_id not in permissoes_perfil
+                    )
+                ):
+                    decisao_final = None
+                else:
+                    decisao_final = decisao
+
+                # Não registrar nem auditar operações sem mudança.
+                if decisao_anterior == decisao_final:
+                    continue
+
+                if decisao_final is None:
+                    if permissao_existente:
+                        permissao_existente.delete()
+
+                        alteracoes.append({
+                            "funcionalidade_acao_id": (
+                                funcionalidade_acao_id
+                            ),
+                            "decisao_anterior": decisao_anterior,
+                            "decisao_nova": None,
+                            "operacao": "DELETE",
+                        })
+
+                elif permissao_existente:
+                    permissao_existente.decisao = decisao_final
+                    permissao_existente.save(
+                        update_fields=["decisao"]
+                    )
+
+                    alteracoes.append({
+                        "funcionalidade_acao_id": (
+                            funcionalidade_acao_id
+                        ),
+                        "decisao_anterior": decisao_anterior,
+                        "decisao_nova": decisao_final,
+                        "operacao": "UPDATE",
+                    })
+
+                else:
+                    UsuarioPermissao.objects.create(
+                        usuario=usuario_alvo,
+                        funcionalidade_acao_id=funcionalidade_acao_id,
+                        decisao=decisao_final,
+                    )
+
+                    alteracoes.append({
+                        "funcionalidade_acao_id": (
+                            funcionalidade_acao_id
+                        ),
+                        "decisao_anterior": None,
+                        "decisao_nova": decisao_final,
+                        "operacao": "CREATE",
+                    })
+
+            # Cada alteração efetiva recebe seu próprio registro
+            # de auditoria, dentro da mesma transação.
+            for alteracao in alteracoes:
+                operacao = alteracao["operacao"]
+
+                registrar_log(
+                    request=request,
+                    acao=operacao,
+                    modelo="UsuarioPermissao",
+                    objeto_id=str(usuario_alvo.pk),
+                    descricao=(
+                        "Permissão individual do usuário "
+                        f"{usuario_alvo.username} alterada. "
+                        f"Ação de funcionalidade: "
+                        f"{alteracao['funcionalidade_acao_id']}. "
+                        f"Decisão anterior: "
+                        f"{alteracao['decisao_anterior'] or 'Herdada do perfil'}. "
+                        f"Nova decisão: "
+                        f"{alteracao['decisao_nova'] or 'Herdada do perfil'}."
+                    ),
+                    dados_antes={
+                        "usuario_id": usuario_alvo.pk,
+                        "funcionalidade_acao_id": (
+                            alteracao["funcionalidade_acao_id"]
+                        ),
+                        "decisao": alteracao["decisao_anterior"],
+                    },
+                    dados_depois={
+                        "usuario_id": usuario_alvo.pk,
+                        "funcionalidade_acao_id": (
+                            alteracao["funcionalidade_acao_id"]
+                        ),
+                        "decisao": alteracao["decisao_nova"],
+                    },
+                    propagar_erro=True,
+                )
+
+        messages.success(
+            request,
+            "Permissões individuais atualizadas com sucesso."
+            if alteracoes
+            else "Nenhuma alteração nas permissões individuais foi necessária.",
+        )
+
+        return redirect(
+            "arquiteturaprocessos:editar_permissoes_individuais_usuario",
+            pk=usuario_alvo.pk,
+        )
 
 # ------------------------------
 # Cadastro / Listagem Usuários

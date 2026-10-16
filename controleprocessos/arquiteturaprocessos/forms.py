@@ -15,7 +15,7 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, Processo,
     TiposDocumento, ProcessoMapear, ContatoAreaSeger, NormaProcedimento, SistemasUECI, AbrangenciaChoices,
-    ImagemCadeiaValor, Perfil, PerfilPermissao, FuncionalidadeAcao,
+    ImagemCadeiaValor, Perfil, PerfilPermissao, FuncionalidadeAcao, UsuarioPermissao,
 )
 from django.db.models import Q
 from django.db.models.functions import Lower
@@ -416,6 +416,80 @@ class EditarUsuarioForm(forms.ModelForm):
                 choices = list(f.choices)
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
+
+# ============================================================
+# FORMULÁRIO — PERMISSÕES INDIVIDUAIS
+# ============================================================
+class Form_Permissoes_IndividuaisForm(forms.Form):
+    """
+    Valida as decisões individuais de permissão de um usuário.
+
+    A persistência é responsabilidade da view.
+    Uma decisão None representa a remoção de eventual exceção
+    individual, restaurando a herança do perfil.
+    """
+
+    decisoes = forms.JSONField(
+        required=False,
+        error_messages={
+            "invalid": (
+                "Os dados das decisões individuais são inválidos."
+            ),
+        },
+    )
+
+    def clean_decisoes(self):
+        decisoes = self.cleaned_data.get("decisoes")
+
+        if not isinstance(decisoes, dict):
+            raise forms.ValidationError(
+                "O formato das decisões individuais é inválido."
+            )
+
+        decisoes_validas = {
+            UsuarioPermissao.Decisao.PERMITIR,
+            UsuarioPermissao.Decisao.NEGAR,
+        }
+
+        decisoes_validadas = {}
+
+        for funcionalidade_acao_id, decisao in decisoes.items():
+            try:
+                funcionalidade_acao_id = int(
+                    funcionalidade_acao_id
+                )
+            except (TypeError, ValueError):
+                raise forms.ValidationError(
+                    "Foi identificada uma ação inválida."
+                )
+
+            if funcionalidade_acao_id <= 0:
+                raise forms.ValidationError(
+                    "Foi identificada uma ação inválida."
+                )
+
+            if funcionalidade_acao_id in decisoes_validadas:
+                raise forms.ValidationError(
+                    "Foi identificada uma ação duplicada."
+                )
+
+            if decisao is None or decisao == "":
+                decisoes_validadas[funcionalidade_acao_id] = None
+                continue
+
+            if (
+                not isinstance(decisao, str)
+                or decisao not in decisoes_validas
+            ):
+                raise forms.ValidationError(
+                    "Foi identificada uma decisão individual inválida."
+                )
+
+            decisoes_validadas[funcionalidade_acao_id] = decisao
+
+        return decisoes_validadas
+
+
 
 # ============================================================
 # TELEFONE + FORMSET
