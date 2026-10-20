@@ -162,16 +162,15 @@ class Form_PerfilForm(forms.ModelForm):
             "nome": "Nome do Perfil",
         }
 
-    def __init__(self, *args, **kwargs):
-
+    def __init__(self, *args, usuario_logado=None, **kwargs,):
         super().__init__(*args, **kwargs)
 
+        self.usuario_logado = usuario_logado
         self.label_suffix = ""
 
         # ====================================================
         # CONFIGURAÇÃO DO CAMPO NOME
         # ====================================================
-
         self.fields["nome"].required = True
 
         self.fields["nome"].widget.attrs.update({
@@ -183,7 +182,6 @@ class Form_PerfilForm(forms.ModelForm):
         # ====================================================
         # CLASSE PADRÃO
         # ====================================================
-
         base_class = (
             "w-full h-[42px] "
             "border border-gray-300 rounded-md "
@@ -200,7 +198,6 @@ class Form_PerfilForm(forms.ModelForm):
         # ====================================================
         # PERMISSÕES
         # ====================================================
-
         # Na edição, carrega as permissões já existentes.
         if self.instance and self.instance.pk:
 
@@ -282,16 +279,46 @@ class Form_PerfilForm(forms.ModelForm):
     # ========================================================
     # VALIDAÇÃO GERAL
     # ========================================================
-
     def clean(self):
-
         cleaned_data = super().clean()
-
         permissoes = cleaned_data.get("permissoes")
 
-        # ====================================================
-        # PELO MENOS UMA PERMISSÃO
-        # ====================================================
+        if permissoes is not None:
+            if self.instance.codigo != "ADMINISTRADOR":
+                # Perfis comuns não podem receber novas permissões ADM.
+                permissoes_gerais = permissoes.exclude(
+                    funcionalidade__modulo__escopo=(
+                        Modulo.Escopo.ADMINISTRATIVO
+                    )
+                )
+
+                permissoes_ids = set(
+                    permissoes_gerais.values_list("id", flat=True)
+                )
+
+                # Na edição, preservamos as permissões ADM existentes.
+                if self.instance.pk:
+                    permissoes_administrativas_atuais = (
+                        PerfilPermissao.objects.filter(
+                            perfil=self.instance,
+                            funcionalidade_acao__funcionalidade__modulo__escopo=(
+                                Modulo.Escopo.ADMINISTRATIVO
+                            ),
+                        ).values_list(
+                            "funcionalidade_acao_id",
+                            flat=True,
+                        )
+                    )
+
+                    permissoes_ids.update(
+                        permissoes_administrativas_atuais
+                    )
+
+                permissoes = FuncionalidadeAcao.objects.filter(
+                    id__in=permissoes_ids
+                )
+
+                cleaned_data["permissoes"] = permissoes
 
         if not permissoes:
             raise forms.ValidationError(
@@ -299,6 +326,7 @@ class Form_PerfilForm(forms.ModelForm):
             )
 
         return cleaned_data
+
 
 # ============================================================
 # FORMULÁRIO DE USUÁRIO (CRIAÇÃO) — versão estável (username editável)

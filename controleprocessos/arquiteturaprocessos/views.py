@@ -499,11 +499,7 @@ class CriarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, CreateView)
             'arquiteturaprocessos:classificacoes'
         )
 
-class VisualizarClassificacao(
-    LoginRequiredMixin,
-    PermissaoRequiredMixin,
-    DetailView
-):
+class VisualizarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     permissao_modulo = "Estrutura de Documentos → Processos"
     permissao_funcionalidade = "Classificação de Macroprocessos"
     permissao_acao = "Visualizar"
@@ -808,7 +804,11 @@ class ExcluirClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailVie
 # ============================================================
 # IMAGENS DA CADEIA DE VALOR - CRUD
 # ============================================================
-class ImagensCadeiaValor(LoginRequiredMixin, ListView):
+class ImagensCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Visualizar"
+
     model = ImagemCadeiaValor
     template_name = 'cadeiavalor/imagens_cadeia_valor.html'
     context_object_name = 'imagens'
@@ -835,7 +835,11 @@ class ImagensCadeiaValor(LoginRequiredMixin, ListView):
 # ============================================================
 # INCLUSÃO – IMAGEM DA CADEIA DE VALOR
 # ============================================================
-class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
+class CriarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, CreateView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Cadastrar"
+
     template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
     form_class = Form_ImagemCadeiaValorForm
     context_object_name = 'imagem_cadeia_valor'
@@ -880,7 +884,10 @@ class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
 # ============================================================
 # VISUALIZAÇÃO - IMAGEM DA CADEIA DE VALOR
 # ============================================================
-class VisualizarImagemCadeiaValor(LoginRequiredMixin, DetailView):
+class VisualizarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Visualizar"
 
     model = ImagemCadeiaValor
     template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
@@ -907,7 +914,11 @@ class VisualizarImagemCadeiaValor(LoginRequiredMixin, DetailView):
 # ============================================================
 # IMAGEM DA CADEIA DE VALOR - EDIÇÃO
 # ============================================================
-class EditarImagemCadeiaValor(LoginRequiredMixin, UpdateView):
+class EditarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Editar"
+
     model = ImagemCadeiaValor
     template_name = "cadeiavalor/form_imagem_cadeia_valor.html"
     form_class = Form_ImagemCadeiaValorForm
@@ -1018,11 +1029,16 @@ class EditarImagemCadeiaValor(LoginRequiredMixin, UpdateView):
 # ============================================================
 # ATIVAÇÃO – IMAGEM DA CADEIA DE VALOR
 # ============================================================
-class AtivarImagemCadeiaValor(LoginRequiredMixin, View):
+class AtivarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, View,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Editar"
+
     http_method_names = ['post']
 
     def post(self, request, pk):
         with transaction.atomic():
+            # Mantenha aqui o restante do código atual.
             # ====================================================
             # BLOQUEIA AS IMAGENS DURANTE A OPERAÇÃO
             # ====================================================
@@ -2873,11 +2889,7 @@ def _obter_permissoes_selecionadas(request, perfil=None):
 # ------------------------------------------------------------
 # Cadastro / Listagem de Perfis
 # ------------------------------------------------------------
-class CadastroPerfis(
-    LoginRequiredMixin,
-    PermissaoRequiredMixin,
-    ListView,
-):
+class CadastroPerfis(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
     permissao_modulo = "Administração"
     permissao_funcionalidade = "Perfis"
     permissao_acao = "Visualizar"
@@ -2991,11 +3003,7 @@ class VisualizarPerfil(
 # ------------------------------------------------------------
 # Editar Perfil
 # ------------------------------------------------------------
-class EditarPerfil(
-    LoginRequiredMixin,
-    PermissaoRequiredMixin,
-    UpdateView,
-):
+class EditarPerfil(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
     permissao_modulo = "Administração"
     permissao_funcionalidade = "Perfis"
     permissao_acao = "Editar"
@@ -3019,15 +3027,34 @@ class EditarPerfil(
 
         return perfil
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["usuario_logado"] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        perfil_administrador = (
+                self.object.codigo == "ADMINISTRADOR"
+        )
+
+        modulos = _obter_modulos_com_permissoes()
+
+        for modulo in modulos:
+            modulo.bloqueado_para_perfil = (
+                    modulo.escopo == Modulo.Escopo.ADMINISTRATIVO
+                    and not perfil_administrador
+            )
+
         context.update({
-            "modulos": _obter_modulos_com_permissoes(),
+            "modulos": modulos,
             "permissoes_selecionadas": _obter_permissoes_selecionadas(
                 self.request,
                 self.object,
             ),
+            "usuario_eh_master": self.request.user.is_master,
+            "perfil_administrador": perfil_administrador,
             "modo_inclusao": False,
             "modo_visualizacao": False,
             "modo_exclusao": False,
@@ -3038,40 +3065,67 @@ class EditarPerfil(
 
     def form_valid(self, form):
         with transaction.atomic():
-            perfil = form.save()
+            perfil = form.save(commit=False)
+            permissoes_enviadas = form.cleaned_data["permissoes"]
 
-            # Reconstruímos as autorizações do Perfil.
-            PerfilPermissao.objects.filter(
-                perfil=perfil
-            ).delete()
+            # Identifica as permissões administrativas já atribuídas.
+            permissoes_administrativas_atuais = list(
+                PerfilPermissao.objects.filter(
+                    perfil=self.object,
+                    funcionalidade_acao__funcionalidade__modulo__escopo=(
+                        Modulo.Escopo.ADMINISTRATIVO
+                    ),
+                ).values_list(
+                    "funcionalidade_acao_id",
+                    flat=True,
+                )
+            )
 
-            permissoes = form.cleaned_data["permissoes"]
+            if perfil.codigo != "ADMINISTRADOR":
+                # Outros perfis não podem alterar permissões administrativas.
+                permissoes_gerais = permissoes_enviadas.exclude(
+                    funcionalidade__modulo__escopo=(
+                        Modulo.Escopo.ADMINISTRATIVO
+                    )
+                )
+
+                permissoes_ids = set(
+                    permissoes_gerais.values_list("id", flat=True)
+                )
+                permissoes_ids.update(permissoes_administrativas_atuais)
+
+                permissoes_finais = FuncionalidadeAcao.objects.filter(
+                    id__in=permissoes_ids
+                )
+            else:
+                permissoes_finais = permissoes_enviadas
+
+            perfil.save()
+
+            PerfilPermissao.objects.filter(perfil=perfil).delete()
 
             PerfilPermissao.objects.bulk_create([
                 PerfilPermissao(
                     perfil=perfil,
                     funcionalidade_acao=funcionalidade_acao,
                 )
-                for funcionalidade_acao in permissoes
+                for funcionalidade_acao in permissoes_finais
             ])
 
         self.object = perfil
 
         messages.success(
             self.request,
-            f"O Perfil '{perfil.nome}' foi atualizado com sucesso."
+            f"O Perfil '{perfil.nome}' foi atualizado com sucesso.",
         )
 
         return redirect("arquiteturaprocessos:cadastroperfis")
 
+
 # ------------------------------------------------------------
 # Excluir Perfil
 # ------------------------------------------------------------
-class ExcluirPerfil(
-    LoginRequiredMixin,
-    PermissaoRequiredMixin,
-    DetailView,
-):
+class ExcluirPerfil(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
     permissao_modulo = "Administração"
     permissao_funcionalidade = "Perfis"
     permissao_acao = "Excluir"

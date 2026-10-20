@@ -18,10 +18,20 @@ from django.core.exceptions import ValidationError
 # CONTROLE DE ACESSO
 # ============================================================
 class Modulo(models.Model):
+
+    class Escopo(models.TextChoices):
+        GERAL = "GERAL", "Geral"
+        ADMINISTRATIVO = "ADM", "Administrativo"
+
     nome = models.CharField(max_length=150)
     descricao = models.TextField(blank=True)
     ordem = models.PositiveIntegerField(default=0)
     ativo = models.BooleanField(default=True)
+    escopo = models.CharField(
+        max_length=10,
+        choices=Escopo.choices,
+        default=Escopo.GERAL,
+    )
 
     def __str__(self):
         return str(self.nome)
