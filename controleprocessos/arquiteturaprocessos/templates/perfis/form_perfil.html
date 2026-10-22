@@ -14,18 +14,18 @@
         <!-- CARD PRINCIPAL -->
         <div class="bg-blue-50 border-2 border-blue-700 rounded-lg shadow-md p-6">
 
-
-            <h2 class="text-base font-bold text-blue-800 text-center mb-8">
-                {% if modo_visualizacao %}
-                    Administração de Perfil - Visualizar
-                {% elif modo_edicao %}
-                    Administração de Perfil - Editar
-                {% elif modo_exclusao %}
-                    Administração de Perfil - Excluir
-                {% else %}
-                    Administração de Perfil
-                {% endif %}
-            </h2>
+        <h2 class="text-center text-base font-bold text-blue-800 mb-8">
+            Administração de Perfil
+            {% if modo_inclusao %}
+                - Incluir
+            {% elif modo_visualizacao %}
+                - Visualizar
+            {% elif modo_edicao %}
+                - Editar
+            {% elif modo_exclusao %}
+                - Excluir
+            {% endif %}
+        </h2>
 
             <!-- CAIXA DE ERROS -->
             {% if form.errors %}
@@ -144,14 +144,49 @@
                                                         {% for funcionalidade_acao in funcionalidade.acoes.all %}
                                                             {
                                                                 id: '{{ funcionalidade_acao.id }}',
+                                                                nome: '{{ funcionalidade_acao.acao.nome|escapejs }}'.trim().toUpperCase(),
                                                                 marcada: {% if funcionalidade_acao.id in permissoes_selecionadas %}true{% else %}false{% endif %}
                                                             }{% if not forloop.last %},{% endif %}
                                                         {% endfor %}
                                                     ],
 
+                                                    get idAcaoVisualizar() {
+                                                        return this.acoes.find(
+                                                            acao => acao.nome === 'VISUALIZAR'
+                                                        )?.id;
+                                                    },
+
                                                     get marcada() {
                                                         return this.acoes.length > 0 &&
                                                                this.acoes.every(acao => acao.marcada);
+                                                    },
+
+                                                    alterarAcao(indice) {
+                                                        const acao = this.acoes[indice];
+
+                                                        if (acao.marcada && acao.id !== this.idAcaoVisualizar) {
+                                                            const visualizar = this.acoes.find(
+                                                                item => item.id === this.idAcaoVisualizar
+                                                            );
+
+                                                            if (visualizar) {
+                                                                visualizar.marcada = true;
+                                                            }
+                                                        }
+
+                                                        const visualizar = this.acoes.find(
+                                                            item => item.id === this.idAcaoVisualizar
+                                                        );
+
+                                                        if (
+                                                            visualizar &&
+                                                            !visualizar.marcada &&
+                                                            this.acoes.some(
+                                                                item => item.id !== this.idAcaoVisualizar && item.marcada
+                                                            )
+                                                        ) {
+                                                            visualizar.marcada = true;
+                                                        }
                                                     },
 
                                                     marcarTodas() {
@@ -206,7 +241,7 @@
                                                            {% endif %}
                                                            {% if modo_visualizacao or modo_exclusao or modulo.bloqueado_para_perfil %}
                                                                disabled
-                                                           {% endif %}
+                                                           {% endif %}>
 
                                                     <!-- NOME FUNCIONALIDADE -->
                                                     <span class="text-xs font-semibold text-blue-800">
@@ -227,6 +262,7 @@
                                                                    name="permissoes"
                                                                    value="{{ funcionalidade_acao.id }}"
                                                                    x-model="acoes[{{ forloop.counter0 }}].marcada"
+                                                                   @change="alterarAcao({{ forloop.counter0 }})"
                                                                    class="h-4 w-4 text-blue-600 accent-blue-600 border-gray-300 rounded focus:ring-blue-500
                                                                           {% if modo_visualizacao or modo_exclusao %}
                                                                               cursor-not-allowed
@@ -234,7 +270,7 @@
 
                                                                           {% if modo_visualizacao or modo_exclusao or modulo.bloqueado_para_perfil %}
                                                                               disabled
-                                                                          {% endif %}
+                                                                          {% endif %}>
 
                                                             <span class="ml-3 text-xs text-gray-700">
                                                                 {{ funcionalidade_acao.acao.nome }}

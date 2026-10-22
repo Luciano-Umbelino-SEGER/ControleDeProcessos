@@ -15,7 +15,7 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, Processo,
     TiposDocumento, ProcessoMapear, ContatoAreaSeger, NormaProcedimento, SistemasUECI, AbrangenciaChoices,
-    ImagemCadeiaValor, Perfil, PerfilPermissao, FuncionalidadeAcao, UsuarioPermissao,
+    ImagemCadeiaValor, Perfil, PerfilPermissao, FuncionalidadeAcao, UsuarioPermissao, Modulo,
 )
 from django.db.models import Q
 from django.db.models.functions import Lower
@@ -134,7 +134,6 @@ class EmailAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
 
-# Aqui 1
 # ============================================================
 # FORMULÁRIO DE PERFIL
 # ============================================================
@@ -283,44 +282,51 @@ class Form_PerfilForm(forms.ModelForm):
         cleaned_data = super().clean()
         permissoes = cleaned_data.get("permissoes")
 
-        if permissoes is not None:
-            if self.instance.codigo != "ADMINISTRADOR":
-                # Perfis comuns não podem receber novas permissões ADM.
-                permissoes_gerais = permissoes.exclude(
-                    funcionalidade__modulo__escopo=(
-                        Modulo.Escopo.ADMINISTRATIVO
+        if permissoes is None:
+            return cleaned_data
+
+        eh_administrador = (
+                self.instance.pk is not None
+                and self.instance.codigo == "ADMINISTRADOR"
+        )
+
+        if not eh_administrador:
+            # Perfis comuns não recebem permissões de módulos ADM.
+            permissoes_gerais = permissoes.exclude(
+                funcionalidade__modulo__escopo=(
+                    Modulo.Escopo.ADMINISTRATIVO
+                )
+            )
+
+            permissoes_ids = set(
+                permissoes_gerais.values_list("id", flat=True)
+            )
+
+            # Na edição, preservamos as permissões ADM existentes.
+            if self.instance.pk:
+                permissoes_administrativas_atuais = (
+                    PerfilPermissao.objects.filter(
+                        perfil=self.instance,
+                        funcionalidade_acao__funcionalidade__modulo__escopo=(
+                            Modulo.Escopo.ADMINISTRATIVO
+                        ),
+                    ).values_list(
+                        "funcionalidade_acao_id",
+                        flat=True,
                     )
                 )
 
-                permissoes_ids = set(
-                    permissoes_gerais.values_list("id", flat=True)
+                permissoes_ids.update(
+                    permissoes_administrativas_atuais
                 )
 
-                # Na edição, preservamos as permissões ADM existentes.
-                if self.instance.pk:
-                    permissoes_administrativas_atuais = (
-                        PerfilPermissao.objects.filter(
-                            perfil=self.instance,
-                            funcionalidade_acao__funcionalidade__modulo__escopo=(
-                                Modulo.Escopo.ADMINISTRATIVO
-                            ),
-                        ).values_list(
-                            "funcionalidade_acao_id",
-                            flat=True,
-                        )
-                    )
+            permissoes = FuncionalidadeAcao.objects.filter(
+                id__in=permissoes_ids
+            )
 
-                    permissoes_ids.update(
-                        permissoes_administrativas_atuais
-                    )
+            cleaned_data["permissoes"] = permissoes
 
-                permissoes = FuncionalidadeAcao.objects.filter(
-                    id__in=permissoes_ids
-                )
-
-                cleaned_data["permissoes"] = permissoes
-
-        if not permissoes:
+        if not permissoes.exists():
             raise forms.ValidationError(
                 "O Perfil deve possuir pelo menos uma autorização."
             )

@@ -2925,8 +2925,15 @@ class CriarPerfil(
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        modulos = _obter_modulos_com_permissoes()
+
+        for modulo in modulos:
+            modulo.bloqueado_para_perfil = (
+                    modulo.escopo == Modulo.Escopo.ADMINISTRATIVO
+            )
+
         context.update({
-            "modulos": _obter_modulos_com_permissoes(),
+            "modulos": modulos,
             "perfil": None,
             "permissoes_selecionadas": _obter_permissoes_selecionadas(
                 self.request
@@ -2941,9 +2948,10 @@ class CriarPerfil(
 
     def form_valid(self, form):
         with transaction.atomic():
-            perfil = form.save()
-
+            perfil = form.save(commit=False)
             permissoes = form.cleaned_data["permissoes"]
+
+            perfil.save()
 
             PerfilPermissao.objects.bulk_create([
                 PerfilPermissao(
@@ -2957,7 +2965,7 @@ class CriarPerfil(
 
         messages.success(
             self.request,
-            f"O Perfil '{perfil.nome}' foi criado com sucesso."
+            f"O Perfil '{perfil.nome}' foi criado com sucesso.",
         )
 
         return redirect("arquiteturaprocessos:cadastroperfis")
@@ -3066,43 +3074,13 @@ class EditarPerfil(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
     def form_valid(self, form):
         with transaction.atomic():
             perfil = form.save(commit=False)
-            permissoes_enviadas = form.cleaned_data["permissoes"]
-
-            # Identifica as permissões administrativas já atribuídas.
-            permissoes_administrativas_atuais = list(
-                PerfilPermissao.objects.filter(
-                    perfil=self.object,
-                    funcionalidade_acao__funcionalidade__modulo__escopo=(
-                        Modulo.Escopo.ADMINISTRATIVO
-                    ),
-                ).values_list(
-                    "funcionalidade_acao_id",
-                    flat=True,
-                )
-            )
-
-            if perfil.codigo != "ADMINISTRADOR":
-                # Outros perfis não podem alterar permissões administrativas.
-                permissoes_gerais = permissoes_enviadas.exclude(
-                    funcionalidade__modulo__escopo=(
-                        Modulo.Escopo.ADMINISTRATIVO
-                    )
-                )
-
-                permissoes_ids = set(
-                    permissoes_gerais.values_list("id", flat=True)
-                )
-                permissoes_ids.update(permissoes_administrativas_atuais)
-
-                permissoes_finais = FuncionalidadeAcao.objects.filter(
-                    id__in=permissoes_ids
-                )
-            else:
-                permissoes_finais = permissoes_enviadas
+            permissoes_finais = form.cleaned_data["permissoes"]
 
             perfil.save()
 
-            PerfilPermissao.objects.filter(perfil=perfil).delete()
+            PerfilPermissao.objects.filter(
+                perfil=perfil
+            ).delete()
 
             PerfilPermissao.objects.bulk_create([
                 PerfilPermissao(
@@ -5877,7 +5855,11 @@ class ReativarAreasResponsaveis(LoginRequiredMixin, View):
 # -------------------------------#
 # Listagem - Processos           #
 # -------------------------------#
-class ProcessoView(LoginRequiredMixin, ListView):
+class ProcessoView(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Visualizar"
+
     model = Processo
     template_name = 'processos/processos.html'
     context_object_name = 'processos'
@@ -6051,12 +6033,34 @@ class ProcessoView(LoginRequiredMixin, ListView):
         context["query_string"] = query_params_no_page.urlencode()
         context["query_string_full"] = query_params.urlencode()
 
+        # ================================================
+        # PERMISSÕES DAS AÇÕES DA LISTAGEM
+        # ================================================
+        acoes = {
+            "pode_cadastrar": "Cadastrar",
+            "pode_visualizar": "Visualizar",
+            "pode_editar": "Editar",
+            "pode_excluir": "Excluir",
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
+
         return context
 
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
-class CriarProcesso(LoginRequiredMixin, CreateView):
+class CriarProcesso(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Cadastrar"
+
     model = Processo
     template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
@@ -6268,15 +6272,14 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Processo             #
 # --------------------------------#
-class VisualizarProcesso(LoginRequiredMixin, DetailView):
+class VisualizarProcesso(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Visualizar"
+
     model = Processo
     template_name = "processos/form_processo.html"
     context_object_name = "processo"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         return (
@@ -6392,7 +6395,11 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
-class EditarProcesso(LoginRequiredMixin, UpdateView):
+class EditarProcesso(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Editar"
+
     model = Processo
     template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
@@ -6805,7 +6812,11 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 # --------------------------------#
 # Excluir Processo                 #
 # --------------------------------#
-class ExcluirProcesso(LoginRequiredMixin, DetailView):
+class ExcluirProcesso(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Excluir"
+
     model = Processo
     template_name = 'processos/form_processo.html'
     context_object_name = 'processo'
@@ -7088,9 +7099,30 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Concluir Processo               #
 # --------------------------------#
-
 @login_required
 def concluir_processo(request, pk):
+    # ---------------------------------------------
+    # Segurança: permissões para concluir processo
+    # ---------------------------------------------
+    if not (
+        tem_permissao(
+            request.user,
+            "Processos",
+            "Cadastro de Processos",
+            "Visualizar",
+        )
+        and tem_permissao(
+            request.user,
+            "Processos",
+            "Cadastro de Processos",
+            "Editar",
+        )
+    ):
+        messages.warning(
+            request,
+            "Você não tem permissão para concluir este processo.",
+        )
+        return redirect("arquiteturaprocessos:homepage")
 
     query_string = request.GET.urlencode()
 
