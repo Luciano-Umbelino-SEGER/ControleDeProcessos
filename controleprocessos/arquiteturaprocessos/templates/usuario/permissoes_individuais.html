@@ -300,9 +300,10 @@
                                                                 class="grid grid-cols-3 border-l border-gray-100"
                                                                 data-permissao-individual
                                                                 data-funcionalidade-acao-id="{{ funcionalidade_acao.id }}"
+                                                                data-funcionalidade-id="{{ funcionalidade.id }}"
+                                                                data-acao-nome="{{ funcionalidade_acao.acao.nome|upper }}"
                                                                 data-perfil-permite="{% if funcionalidade_acao.permitida_pelo_perfil %}true{% else %}false{% endif %}"
-                                                                data-decisao-original="{{ funcionalidade_acao.decisao_individual }}"
-                                                            >
+                                                                data-decisao-original="{{ funcionalidade_acao.decisao_individual }}">
 
                                                                 <!-- Permitir -->
                                                                 <div class="flex items-center justify-center py-2">
@@ -346,7 +347,6 @@
                                                                     </button>
 
                                                                 </div>
-
                                                             </div>
                                                         </div>
 
@@ -412,139 +412,268 @@
     </div>
 </div>
 
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const grupos = document.querySelectorAll(
-        "[data-permissao-individual]"
-    );
+document.addEventListener("DOMContentLoaded", () => {
+    const grupos = [
+        ...document.querySelectorAll("[data-permissao-individual]")
+    ];
 
-    /*
-     * Controla os rádios e o botão Limpar de cada ação.
-     */
-    grupos.forEach(function (grupo) {
-        const radios = grupo.querySelectorAll(
-            'input[type="radio"]'
-        );
+    const funcionalidades = new Map();
 
-        const botaoLimpar = grupo.querySelector(
-            "[data-limpar-decisao]"
+    // Agrupa as ações por funcionalidade.
+    grupos.forEach((grupo) => {
+        const funcionalidadeId = grupo.dataset.funcionalidadeId;
+
+        if (!funcionalidadeId) {
+            console.error(
+                "Grupo de permissão sem data-funcionalidade-id:",
+                grupo
+            );
+            return;
+        }
+
+        if (!funcionalidades.has(funcionalidadeId)) {
+            funcionalidades.set(funcionalidadeId, []);
+        }
+
+        funcionalidades.get(funcionalidadeId).push(grupo);
+    });
+
+    function obterRadio(grupo, valor) {
+        return grupo.querySelector(
+            `input[type="radio"][value="${valor}"]`
         );
+    }
+
+    function obterDecisao(grupo) {
+        if (obterRadio(grupo, "PERMITIR")?.checked) {
+            return "PERMITIR";
+        }
+
+        if (obterRadio(grupo, "NEGAR")?.checked) {
+            return "NEGAR";
+        }
+
+        return null;
+    }
+
+    function obterPermissaoEfetiva(grupo) {
+        const decisao = obterDecisao(grupo);
+
+        if (decisao === "PERMITIR") return true;
+        if (decisao === "NEGAR") return false;
+
+        // Sem decisão individual: herda do perfil.
+        return grupo.dataset.perfilPermite === "true";
+    }
+
+    function atualizarControles(grupo, visualizarObrigatorio = false) {
+        const permitir = obterRadio(grupo, "PERMITIR");
+        const negar = obterRadio(grupo, "NEGAR");
+        const limpar = grupo.querySelector("[data-limpar-decisao]");
 
         const perfilPermite =
             grupo.dataset.perfilPermite === "true";
 
-        const decisaoOriginal =
-            grupo.dataset.decisaoOriginal || "";
+        const decisaoAtual = obterDecisao(grupo);
 
-        function atualizarControles() {
-            const selecionado = grupo.querySelector(
-                'input[type="radio"]:checked'
-            );
+        // Visualizar é obrigatória enquanto outra ação
+        // estiver efetivamente permitida.
+        if (visualizarObrigatorio) {
+            if (perfilPermite) {
+                // O perfil já concede Visualizar:
+                // mantém a herança, sem decisão redundante.
+                if (permitir) permitir.checked = false;
+                if (negar) negar.checked = false;
+            } else {
+                // O perfil não concede Visualizar:
+                // exige a concessão individual.
+                if (permitir) permitir.checked = true;
+                if (negar) negar.checked = false;
+            }
 
-            /*
-             * Se já existe uma exceção individual, ambas as
-             * opções ficam disponíveis para revisão.
-             *
-             * Sem exceção, não permitimos selecionar uma decisão
-             * redundante em relação à permissão herdada do perfil.
-             */
-            const existeExcecaoOriginal =
-                decisaoOriginal === "PERMITIR" ||
-                decisaoOriginal === "NEGAR";
+            // Mantém a aparência verde normal do rádio Permitir.
+            if (permitir) permitir.disabled = false;
 
-            radios.forEach(function (radio) {
-                if (existeExcecaoOriginal) {
-                    radio.disabled = false;
-                } else {
-                    radio.disabled = (
-                        (perfilPermite &&
-                         radio.value === "PERMITIR") ||
-                        (!perfilPermite &&
-                         radio.value === "NEGAR")
-                    );
-                }
-            });
+            // Não permite negar Visualizar enquanto obrigatória.
+            if (negar) negar.disabled = true;
 
-            if (botaoLimpar) {
-                botaoLimpar.classList.toggle(
-                    "hidden",
-                    !selecionado
-                );
+            // Oculta Limpar somente para Visualizar obrigatória.
+            if (limpar) {
+                limpar.classList.add("hidden");
+                limpar.disabled = true;
+            }
+
+            return;
+        }
+
+        // Comportamento normal das demais ações e de Visualizar
+        // quando nenhuma outra ação exige sua concessão.
+        const temDecisaoIndividual = decisaoAtual !== null;
+
+        if (temDecisaoIndividual) {
+            if (permitir) permitir.disabled = false;
+            if (negar) negar.disabled = false;
+        } else {
+            // Evita decisões individuais redundantes ao perfil.
+            if (permitir) {
+                permitir.disabled = perfilPermite;
+            }
+
+            if (negar) {
+                negar.disabled = !perfilPermite;
             }
         }
 
-        radios.forEach(function (radio) {
-            radio.addEventListener(
-                "change",
-                atualizarControles
+        // IMPORTANTE: o botão já possui a classe Tailwind "hidden".
+        // Portanto, precisamos alternar a classe, não apenas
+        // alterar a propriedade HTML hidden.
+        if (limpar) {
+            limpar.disabled = false;
+            limpar.classList.toggle(
+                "hidden",
+                decisaoAtual === null
             );
+        }
+    }
+
+    function sincronizarVisualizar() {
+        funcionalidades.forEach((acoes) => {
+            const visualizar = acoes.find(
+                (grupo) =>
+                    (grupo.dataset.acaoNome || "")
+                        .trim()
+                        .toUpperCase() === "VISUALIZAR"
+            );
+
+            if (!visualizar) {
+                acoes.forEach((grupo) => {
+                    atualizarControles(grupo);
+                });
+                return;
+            }
+
+            const outraAcaoPermitida = acoes.some(
+                (grupo) =>
+                    grupo !== visualizar &&
+                    obterPermissaoEfetiva(grupo)
+            );
+
+            acoes.forEach((grupo) => {
+                atualizarControles(
+                    grupo,
+                    grupo === visualizar && outraAcaoPermitida
+                );
+            });
+        });
+    }
+
+    grupos.forEach((grupo) => {
+        const radios = grupo.querySelectorAll(
+            'input[type="radio"]'
+        );
+
+        const limpar = grupo.querySelector(
+            "[data-limpar-decisao]"
+        );
+
+        radios.forEach((radio) => {
+            radio.addEventListener("change", () => {
+                sincronizarVisualizar();
+            });
         });
 
-        if (botaoLimpar) {
-            botaoLimpar.addEventListener("click", function () {
-                /*
-                 * Limpa apenas o estado visual.
-                 * A remoção do registro será realizada pela view
-                 * quando as alterações forem salvas.
-                 */
-                radios.forEach(function (radio) {
+        if (limpar) {
+            limpar.addEventListener("click", () => {
+                const funcionalidadeId =
+                    grupo.dataset.funcionalidadeId;
+
+                const acoes =
+                    funcionalidades.get(funcionalidadeId) || [];
+
+                const ehVisualizar =
+                    (grupo.dataset.acaoNome || "")
+                        .trim()
+                        .toUpperCase() === "VISUALIZAR";
+
+                const outraAcaoPermitida = acoes.some(
+                    (acao) =>
+                        acao !== grupo &&
+                        obterPermissaoEfetiva(acao)
+                );
+
+                // Não permite limpar Visualizar enquanto outra
+                // ação efetivamente permitida depender dela.
+                if (ehVisualizar && outraAcaoPermitida) {
+                    sincronizarVisualizar();
+                    return;
+                }
+
+                radios.forEach((radio) => {
                     radio.checked = false;
                 });
 
-                atualizarControles();
+                sincronizarVisualizar();
             });
         }
-
-        atualizarControles();
     });
 
-    /*
-     * Antes do envio, monta o JSON com TODAS as ações
-     * apresentadas na tela.
-     *
-     * Uma ação sem rádio marcado é enviada como null,
-     * indicando ausência de exceção individual.
-     */
+    // Corrige as combinações existentes ao abrir a página.
+    sincronizarVisualizar();
+
     const formulario = document.getElementById(
         "form-permissoes-individuais"
     );
 
-    const campoDecisoes = document.getElementById(
-        "id_decisoes"
-    );
+    if (formulario) {
+        formulario.addEventListener("submit", (evento) => {
+            sincronizarVisualizar();
 
-    if (formulario && campoDecisoes) {
-        formulario.addEventListener("submit", function (event) {
             const decisoes = {};
-            const idsEncontrados = new Set();
+            let idsInvalidos = false;
 
-            for (const grupo of grupos) {
+            grupos.forEach((grupo) => {
                 const id = grupo.dataset.funcionalidadeAcaoId;
 
-                /*
-                 * Não permite enviar IDs ausentes ou duplicados.
-                 * A view também deverá validar os IDs no servidor.
-                 */
-                if (!id || idsEncontrados.has(id)) {
-                    event.preventDefault();
-
-                    alert(
-                        "Não foi possível preparar as permissões. " +
-                        "Recarregue a página e tente novamente."
-                    );
-
+                if (
+                    !id ||
+                    Object.prototype.hasOwnProperty.call(decisoes, id)
+                ) {
+                    idsInvalidos = true;
                     return;
                 }
 
-                idsEncontrados.add(id);
+                decisoes[id] = obterDecisao(grupo);
+            });
 
-                const selecionado = grupo.querySelector(
-                    'input[type="radio"]:checked'
+            if (idsInvalidos) {
+                evento.preventDefault();
+
+                const areaErros = document.getElementById(
+                    "erros-permissoes-individuais"
                 );
 
-                decisoes[id] = selecionado
-                    ? selecionado.value
-                    : null;
+                if (areaErros) {
+                    areaErros.textContent =
+                        "Não foi possível salvar: existem identificadores de ações ausentes ou duplicados.";
+                }
+
+                return;
+            }
+
+            const campoDecisoes = document.getElementById(
+                "id_decisoes"
+            );
+
+            if (!campoDecisoes) {
+                evento.preventDefault();
+
+                console.error(
+                    "Campo id_decisoes não encontrado no formulário."
+                );
+
+                return;
             }
 
             campoDecisoes.value = JSON.stringify(decisoes);
@@ -552,5 +681,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 </script>
+
 
 {% endblock %}

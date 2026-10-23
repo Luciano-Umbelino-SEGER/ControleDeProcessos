@@ -523,8 +523,6 @@ class Form_Permissoes_IndividuaisForm(forms.Form):
 
         return decisoes_validadas
 
-
-
 # ============================================================
 # TELEFONE + FORMSET
 # ============================================================

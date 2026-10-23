@@ -828,7 +828,34 @@ class ImagensCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # ====================================================
+        # TOTAL DE REGISTROS
+        # ====================================================
         context["total_registros"] = self.object_list.count()
+
+        # ====================================================
+        # PERMISSÕES EFETIVAS DO USUÁRIO
+        # ====================================================
+        context["pode_cadastrar"] = tem_permissao(
+            self.request.user,
+            "Cadeia de Valor",
+            "Imagens",
+            "Cadastrar",
+        )
+
+        context["pode_visualizar"] = tem_permissao(
+            self.request.user,
+            "Cadeia de Valor",
+            "Imagens",
+            "Visualizar",
+        )
+
+        context["pode_editar"] = tem_permissao(
+            self.request.user,
+            "Cadeia de Valor",
+            "Imagens",
+            "Editar",
+        )
 
         return context
 
@@ -856,19 +883,50 @@ class CriarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, CreateV
         return context
 
     def form_valid(self, form):
+        with transaction.atomic():
+            # ====================================================
+            # AUDITORIA — INCLUSÃO
+            # ====================================================
+            form.instance.responsavel_inclusao = self.request.user
+
+            # ====================================================
+            # SITUAÇÃO INICIAL
+            # ====================================================
+            form.instance.situacao = "Inativa"
+
+            # ====================================================
+            # SALVAR IMAGEM
+            # ====================================================
+            response = super().form_valid(form)
+
+            imagem = self.object
+
+            # ====================================================
+            # LOG DA INCLUSÃO
+            # ====================================================
+            registrar_log(
+                request=self.request,
+                acao="CREATE",
+                modelo="ImagemCadeiaValor",
+                objeto_id=str(imagem.id),
+                descricao=(
+                    f"Imagem da Cadeia de Valor "
+                    f"'{imagem.nome}' criada"
+                ),
+                dados_antes={},
+                dados_depois={
+                    "nome": imagem.nome,
+                    "descricao": imagem.descricao,
+                    "situacao": imagem.situacao,
+                    "responsavel_inclusao_id": (
+                        imagem.responsavel_inclusao_id
+                    ),
+                },
+            )
 
         # ====================================================
-        # AUDITORIA – INCLUSÃO
+        # MENSAGEM DE SUCESSO
         # ====================================================
-        form.instance.responsavel_inclusao = self.request.user
-
-        # ====================================================
-        # SITUAÇÃO INICIAL
-        # ====================================================
-        form.instance.situacao = "Inativa"
-
-        response = super().form_valid(form)
-
         messages.success(
             self.request,
             f"Imagem '{self.object.nome}' criada com sucesso!"
@@ -3363,7 +3421,6 @@ class EditarPermissoesIndividuaisUsuario(LoginRequiredMixin, PermissoesIndividua
             )
         )
 
-
         ids_recebidos = set(decisoes.keys())
 
         if ids_recebidos != ids_esperados:
@@ -3389,6 +3446,74 @@ class EditarPermissoesIndividuaisUsuario(LoginRequiredMixin, PermissoesIndividua
                     flat=True,
                 )
             )
+
+        # Garante que Visualizar seja permitido sempre que
+        # outra ação da mesma funcionalidade estiver efetivamente permitida.
+        acoes_funcionalidades = list(
+            FuncionalidadeAcao.objects.filter(
+                id__in=ids_esperados
+            ).select_related(
+                "funcionalidade",
+                "acao",
+            )
+        )
+
+        acoes_por_funcionalidade = {}
+
+        for funcionalidade_acao in acoes_funcionalidades:
+            funcionalidade_id = funcionalidade_acao.funcionalidade_id
+
+            acoes_por_funcionalidade.setdefault(
+                funcionalidade_id, []
+            ).append(funcionalidade_acao)
+
+        for acoes in acoes_por_funcionalidade.values():
+            acao_visualizar = next(
+                (
+                    acao for acao in acoes
+                    if acao.acao.nome.strip().upper() == "VISUALIZAR"
+                ),
+                None,
+            )
+
+            if acao_visualizar is None:
+                continue
+
+            def permissao_efetiva(acao):
+                decisao = decisoes.get(acao.id)
+
+                # Decisões redundantes equivalem à herança do perfil.
+                if (
+                    decisao is None
+                    or (
+                        decisao == "PERMITIR"
+                        and acao.id in permissoes_perfil
+                    )
+                    or (
+                        decisao == "NEGAR"
+                        and acao.id not in permissoes_perfil
+                    )
+                ):
+                    return acao.id in permissoes_perfil
+
+                return decisao == "PERMITIR"
+
+            outra_acao_permitida = any(
+                acao.id != acao_visualizar.id
+                and permissao_efetiva(acao)
+                for acao in acoes
+            )
+
+            if outra_acao_permitida:
+                if acao_visualizar.id in permissoes_perfil:
+                    # O perfil já permite Visualizar.
+                    # Remove eventual decisão individual redundante
+                    # ou contrária, restabelecendo a herança.
+                    decisoes[acao_visualizar.id] = None
+                else:
+                    # O perfil não permite Visualizar:
+                    # precisamos conceder a permissão individual.
+                    decisoes[acao_visualizar.id] = "PERMITIR"
 
         alteracoes = []
 
