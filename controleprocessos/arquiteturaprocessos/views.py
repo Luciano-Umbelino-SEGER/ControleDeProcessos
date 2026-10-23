@@ -1770,26 +1770,14 @@ class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
 # -------------------------------
 # Listagem de Processos a Mapear
 # -------------------------------
-class ProcessosMapear(LoginRequiredMixin, ListView):
+class ProcessosMapear(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Visualizar"
+
     model = ProcessoMapear
     template_name = "processosmapear/processosmapear.html"
     context_object_name = "processosmapear"
-
-    def dispatch(self, request, *args, **kwargs):
-
-        # Usuário não autenticado:
-        # deixa o LoginRequiredMixin tratar o acesso.
-        if not request.user.is_authenticated:
-            return super().dispatch(request, *args, **kwargs)
-
-        # Usuário autenticado:
-        # verifica o perfil de acesso.
-        perfil = getattr(request.user, "perfil", None)
-
-        if not perfil or perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     # ------------------------------------------------
     # PAGINAÇÃO DINÂMICA
@@ -1807,6 +1795,34 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
     # ------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        context["pode_cadastrar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Cadastrar",
+        )
+
+        context["pode_visualizar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Visualizar",
+        )
+
+        context["pode_editar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Editar",
+        )
+
+        context["pode_excluir"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Excluir",
+        )
 
         req = self.request.GET
 

@@ -18,7 +18,7 @@
     <!-- ============================================================
          FILTROS
          ============================================================ -->
-    {% if request.user.perfil.nome|lower == 'administrador' %}
+    {% if pode_visualizar %}
     <form method="GET" class="mb-0.5">
       <div class="filtro-container">
         <div class="filtro-wrapper">
@@ -185,10 +185,12 @@
               Limpar
             </a>
 
-            <a href="{% url 'arquiteturaprocessos:criar_processomapear' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
-               class="filtro-botao filtro-botao-primario whitespace-nowrap">
-              + Novo
-            </a>
+            {% if pode_cadastrar %}
+              <a href="{% url 'arquiteturaprocessos:criar_processomapear' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+                 class="filtro-botao filtro-botao-primario whitespace-nowrap">
+                + Novo
+              </a>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -328,6 +330,7 @@
               <div class="flex justify-center items-center space-x-1.5">
 
                 <!-- VISUALIZAR -->
+                {% if pode_visualizar %}
                 <a href="{% url 'arquiteturaprocessos:visualizar_processomapear' processomapear.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                    class="text-blue-600 hover:text-blue-800"
                    title="Visualizar">
@@ -349,11 +352,10 @@
                           d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                   </svg>
                 </a>
+                {% endif %}
 
-                {% if request.user.perfil.nome|lower == 'administrador' %}
-                  <!-- ==================================================
-                       EDITAR
-                       ================================================== -->
+                <!-- EDITAR -->
+                {% if pode_editar %}
                   {% if processomapear.status == "ativo" %}
                     <a href="{% url 'arquiteturaprocessos:editar_processomapear' processomapear.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                       class="text-yellow-600 hover:text-yellow-800" title="Editar">
@@ -384,10 +386,10 @@
                       </svg>
                     </span>
                   {% endif %}
+                {% endif %}
 
-                  <!-- ==================================================
-                   EXCLUIR
-                  ================================================== -->
+                <!-- EXCLUIR -->
+                {% if pode_excluir %}
                   <a href="{% url 'arquiteturaprocessos:excluir_processomapear' processomapear.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                      class="text-red-600 hover:text-red-800"
                      title="Excluir">
