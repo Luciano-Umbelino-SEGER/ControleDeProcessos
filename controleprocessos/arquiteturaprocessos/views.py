@@ -1504,20 +1504,27 @@ class ArquiteruraProcessos(ListView):
 
         return ctx
 
+
 # --------------------------------
 # Dashboard
 # --------------------------------
-class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
+class EstatisticasDashboard(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    TemplateView,
+):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/dashboard.html"
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         processos = Processo.objects.all()
 
-        # 🔥 STATUS PADRONIZADO
+        # STATUS PADRONIZADO
         status_data = contar_status(processos)
 
         context["status_labels"] = ["Iniciado", "Ativo", "Concluído"]
@@ -1536,8 +1543,12 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
             .annotate(total=Count("id"))
         )
 
-        context["class_labels"] = [c["classificacao__nome"] for c in classificacao]
-        context["class_valores"] = [c["total"] for c in classificacao]
+        context["class_labels"] = [
+            c["classificacao__nome"] for c in classificacao
+        ]
+        context["class_valores"] = [
+            c["total"] for c in classificacao
+        ]
 
         # ---------------------------
         # Área
@@ -1548,8 +1559,12 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
             .annotate(total=Count("id"))
         )
 
-        context["area_labels"] = [a["area_responsavel__nome_area"] for a in area]
-        context["area_valores"] = [a["total"] for a in area]
+        context["area_labels"] = [
+            a["area_responsavel__nome_area"] for a in area
+        ]
+        context["area_valores"] = [
+            a["total"] for a in area
+        ]
 
         # ---------------------------
         # Mês
@@ -1565,13 +1580,17 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
             .annotate(total=Count("id"))
         )
 
-        dados_dict = {d["mes"].month: d["total"] for d in dados}
+        dados_dict = {
+            d["mes"].month: d["total"] for d in dados
+        }
 
         mes_labels = []
         mes_valores = []
 
         for m in range(1, mes_atual + 1):
-            mes_labels.append(datetime(ano_atual, m, 1).strftime("%b"))
+            mes_labels.append(
+                datetime(ano_atual, m, 1).strftime("%b")
+            )
             mes_valores.append(dados_dict.get(m, 0))
 
         context["mes_labels"] = mes_labels
@@ -1625,10 +1644,10 @@ def obter_dados_processo(request, pk):
     except Processo.DoesNotExist:
         return JsonResponse({"erro": "Processo não encontrado"}, status=404)
 
-# --------------------------------
-# Processos a Mapear
-# --------------------------------
-class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
+class EstatisticasProcessosMapear(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/estatisticaprocessos_mapear.html"
 
@@ -1647,10 +1666,10 @@ class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
 
         return context
 
-# --------------------------------
-# Estatísticas de Processos
-# --------------------------------
-class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
+class EstatisticasProcessos(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/estatisticaprocessos.html"
 
@@ -1718,10 +1737,10 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
 
         return context
 
-# --------------------------------
-# Comparativos
-# --------------------------------
-class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
+class EstatisticaComparativos(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/comparativos.html"
 
