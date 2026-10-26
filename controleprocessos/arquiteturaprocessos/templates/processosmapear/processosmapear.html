@@ -200,9 +200,11 @@
     <!-- ============================================================
          EXPORTAÇÃO
          ============================================================ -->
-    <div class="flex justify-end mb-0.5">
-      {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='processosmapear' %}
-    </div>
+    {% if pode_visualizar %}
+      <div class="flex justify-end mb-0.5">
+        {% include 'components/exportacao/export_dropdown.html' with exportacao_habilitada=True export_resource='processosmapear' %}
+      </div>
+    {% endif %}
 
     <!-- ============================================================
      TABELA

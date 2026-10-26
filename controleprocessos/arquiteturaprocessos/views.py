@@ -2045,17 +2045,15 @@ class ProcessosMapear(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
 # --------------------------------#
 # Criar Processo a Mapear         #
 # --------------------------------#
-class CriarProcessoMapear(LoginRequiredMixin, CreateView):
+class CriarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, CreateView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Cadastrar"
+
     model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2124,16 +2122,14 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Processo a Mapear    #
 # --------------------------------#
-class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
+class VisualizarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Visualizar"
+
     model = ProcessoMapear
     template_name = "processosmapear/form_processomapear.html"
     context_object_name = "processomapear"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2287,25 +2283,33 @@ def transformar_processo_mapear_em_processo(
 # --------------------------------#
 # Editar Processo a Mapear        #
 # --------------------------------#
-class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
+class EditarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Editar"
+
     model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
 
-        context["form"] = Form_ProcessoMapearForm(
-            instance=processomapear,
-            modo_edicao=True
+        context["pode_editar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Editar",
         )
+
+        # Mantém o formulário recebido quando houver POST inválido.
+        if "form" not in kwargs:
+            context["form"] = Form_ProcessoMapearForm(
+                instance=processomapear,
+                modo_edicao=True,
+            )
 
         context.update({
             "modo_edicao": True,
@@ -2316,6 +2320,7 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             "cadastro_data": (
                 timezone.localtime(processomapear.data_criacao)
                 .strftime("%d/%m/%Y %H:%M")
+                if processomapear.data_criacao else ""
             ),
 
             "cadastro_user": (
@@ -2357,12 +2362,21 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
 
         acao = self.request.POST.get("acao", "").strip()
 
+        # =========================================
+        # HERANÇA DOS DADOS DO PROCESSO PAI
+        # =========================================
         if processomapear.parent:
             processomapear.abrangencia = processomapear.parent.abrangencia
             processomapear.classificacao = processomapear.parent.classificacao
-            processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
-            processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
-            processomapear.area_responsavel = processomapear.parent.area_responsavel
+            processomapear.macroprocesso_nivel1 = (
+                processomapear.parent.macroprocesso_nivel1
+            )
+            processomapear.macroprocesso_nivel2 = (
+                processomapear.parent.macroprocesso_nivel2
+            )
+            processomapear.area_responsavel = (
+                processomapear.parent.area_responsavel
+            )
             processomapear.gestor = processomapear.parent.gestor
             processomapear.telefone = processomapear.parent.telefone
             processomapear.email = processomapear.parent.email
@@ -2372,14 +2386,32 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         # =========================================
         if acao == "iniciar":
 
-            erros = processomapear.validar_para_iniciar()
+            # Validar status e tipo antes de iniciar.
+            if processomapear.status != "ativo":
+                form.add_error(
+                    None,
+                    "Somente Processos a Mapear ativos podem ser iniciados.",
+                )
 
-            if erros:
+            elif processomapear.tipo not in (
+                ProcessoMapear.TIPO_PROCESSO,
+                ProcessoMapear.TIPO_SUBPROCESSO,
+            ):
+                form.add_error(
+                    None,
+                    "Somente Processos e Subprocessos podem ser iniciados.",
+                )
+
+            # Executar as validações de negócio existentes.
+            if not form.errors:
+                erros = processomapear.validar_para_iniciar()
+
                 for erro in erros:
                     form.add_error(None, erro)
 
-                context = self.get_context_data()
-                context["form"] = form
+            # Retornar ao formulário se houver erros.
+            if form.errors:
+                context = self.get_context_data(form=form)
                 return self.render_to_response(context)
 
             # =========================================
@@ -2401,12 +2433,8 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 )
 
             except ValueError as erro:
-
                 form.add_error(None, str(erro))
-
-                context = self.get_context_data()
-                context["form"] = form
-
+                context = self.get_context_data(form=form)
                 return self.render_to_response(context)
 
             # =========================================
@@ -2420,45 +2448,39 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
 
             messages.success(
                 self.request,
-                f"{mensagem_tipo} "
-                f"'{processo.nome}' criado com sucesso!"
+                f"{mensagem_tipo} '{processo.nome}' criado com sucesso!",
             )
 
-            return redirect(
-                "arquiteturaprocessos:processos"
-            )
+            return redirect("arquiteturaprocessos:processos")
 
-        # 🔵 fluxo normal (salvar sem iniciar)
+        # =========================================
+        # FLUXO NORMAL — SALVAR SEM INICIAR
+        # =========================================
         processomapear.usuario_atualizacao = self.request.user
         processomapear.data_atualizacao = timezone.now()
         processomapear.save()
 
         messages.success(
             self.request,
-            f"Processo a Mapear '{processomapear.nome}' atualizado com sucesso!"
+            f"Processo a Mapear '{processomapear.nome}' atualizado com sucesso!",
         )
 
         query_string = self.request.GET.urlencode()
-
-        url = reverse(
-            'arquiteturaprocessos:processosmapear'
-        )
+        url = reverse("arquiteturaprocessos:processosmapear")
 
         if query_string:
-            url += f'?{query_string}'
+            url += f"?{query_string}"
 
         return HttpResponseRedirect(url)
+
 
 # --------------------------------------------------#
 # Iniciar Processo - Processo a Mapear --> Processo #
 # --------------------------------------------------#
-class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
+class ExecutarIniciarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, View,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Editar"
 
     def post(self, request, pk):
 
@@ -2655,7 +2677,10 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
 # ---------------------------------------#
 # Finalizar Tarefa - Processo a Mapear   #
 # ---------------------------------------#
-class FinalizarProcessoMapear(LoginRequiredMixin, View):
+class FinalizarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, View,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Editar"
 
     def post(self, request, pk):
         obj = get_object_or_404(
@@ -2664,21 +2689,6 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
         )
 
         query_string = request.GET.urlencode()
-
-        if request.user.perfil.nome.lower() != "administrador":
-            messages.error(
-                request,
-                "Você não tem permissão para finalizar esta tarefa."
-            )
-
-            url = reverse(
-                'arquiteturaprocessos:processosmapear'
-            )
-
-            if query_string:
-                url += f'?{query_string}'
-
-            return redirect(url)
 
         # =========================================
         # EVITA REPROCESSAR
@@ -2729,16 +2739,14 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
 # --------------------------------#
 # Excluir Processo a Mapear       #
 # --------------------------------#
-class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
+class ExcluirProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Excluir"
+
     model = ProcessoMapear
     template_name = "processosmapear/form_processomapear.html"
     context_object_name = "processomapear"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         return (
@@ -2757,6 +2765,13 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
+
+        context["pode_excluir"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Excluir",
+        )
 
         context["form"] = Form_ProcessoMapearForm(
             instance=processomapear,

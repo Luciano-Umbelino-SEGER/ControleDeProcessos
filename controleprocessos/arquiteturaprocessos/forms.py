@@ -2441,22 +2441,15 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         # ------------------------------------------------
         if not nome:
             nome_post = (
-                self.data.get("nome")
-                or self.data.get("id_nome")
-            )
-
-            if not nome_post:
-                nome_post = (
-                    self.data.get(
-                        "subprocesso_input_visible"
-                    )
-                    or self.data.get(
-                        "processo_input_visible"
-                    )
-                )
+                    self.data.get("nome")
+                    or self.data.get("id_nome")
+                    or self.data.get("subprocesso_input_visible")
+                    or self.data.get("processo_input_visible")
+                    or ""
+            ).strip()
 
             if nome_post:
-                cleaned["nome"] = nome_post.strip()
+                cleaned["nome"] = nome_post
             else:
                 self.add_error(
                     "nome",
