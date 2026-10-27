@@ -1598,16 +1598,28 @@ class EstatisticasDashboard(
 
         return context
 
+
 # --------------------------------
 # Selecionar Processos Pai
 # --------------------------------
 def buscar_processos(request):
-    termo = request.GET.get('q', '')
+    if not tem_permissao(
+        request.user,
+        "Processos",
+        "Cadastro de Processos",
+        "Visualizar",
+    ):
+        return JsonResponse(
+            {"erro": "Você não tem permissão para consultar os processos."},
+            status=403,
+        )
+
+    termo = request.GET.get("q", "")
 
     processos = Processo.objects.filter(
         parent__isnull=True,
-        nome__icontains=termo
-    ).order_by('nome')[:20]
+        nome__icontains=termo,
+    ).order_by("nome")[:20]
 
     data = [
         {"id": p.id, "text": p.nome}
@@ -1615,6 +1627,64 @@ def buscar_processos(request):
     ]
 
     return JsonResponse(data, safe=False)
+
+# ------------------------------------------------------------
+# Recuperar Dados do Processo Pai para Herança de Subprocesso
+# ------------------------------------------------------------
+def obter_dados_processo(request, pk):
+    tem_acesso_processos = tem_permissao(
+        request.user,
+        "Processos",
+        "Cadastro de Processos",
+        "Visualizar",
+    )
+
+    tem_acesso_mapear = tem_permissao(
+        request.user,
+        "Processos",
+        "Processos a Mapear",
+        "Visualizar",
+    )
+
+    if not (tem_acesso_processos or tem_acesso_mapear):
+        return JsonResponse(
+            {
+                "erro": (
+                    "Você não tem permissão para consultar "
+                    "os dados do processo."
+                )
+            },
+            status=403,
+        )
+
+    try:
+        processo = Processo.objects.select_related(
+            "classificacao",
+            "macroprocesso_nivel1",
+            "macroprocesso_nivel2",
+            "area_responsavel",
+        ).get(pk=pk)
+
+        data = {
+            "abrangencia": processo.abrangencia,
+            "classificacao": processo.classificacao_id,
+            "macro1": processo.macroprocesso_nivel1_id,
+            "macro2": processo.macroprocesso_nivel2_id,
+            "area": processo.area_responsavel_id,
+            "gestor": processo.gestor,
+            "telefone": processo.telefone,
+            "email": processo.email,
+        }
+
+        return JsonResponse(data)
+
+    except Processo.DoesNotExist:
+        return JsonResponse(
+            {"erro": "Processo não encontrado"},
+            status=404,
+        )
+
+
 
 # ------------------------------------------------------------
 # Recuperar Dados do Processo Pai para Herança de Subprocesso
