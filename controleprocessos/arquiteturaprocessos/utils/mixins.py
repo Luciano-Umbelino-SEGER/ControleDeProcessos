@@ -14,9 +14,15 @@ class PermissaoRequiredMixin:
     permissao_funcionalidade = None
     permissao_acao = None
 
+    def get_permissao_modulo(self):
+        return self.permissao_modulo
+
+    def get_permissao_funcionalidade(self):
+        return self.permissao_funcionalidade
+
     def tem_acesso_permitido(self, usuario):
-        modulo = self.permissao_modulo
-        funcionalidade = self.permissao_funcionalidade
+        modulo = self.get_permissao_modulo()
+        funcionalidade = self.get_permissao_funcionalidade()
         acao = self.permissao_acao
 
         if not modulo or not funcionalidade or not acao:

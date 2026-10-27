@@ -4791,7 +4791,24 @@ class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
 class DefinicaoDocumentoMixin:
 
     def get_contexto(self):
-        return self.kwargs["contexto"]
+        contexto = self.kwargs.get("contexto")
+
+        contextos_validos = {
+            "processo",
+            "norma",
+            "macroprocesso",
+            "cadeia_valor",
+        }
+
+        if contexto not in contextos_validos:
+            raise Http404("Contexto de definição não encontrado.")
+
+        return contexto
+
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            contexto=self.get_contexto()
+        )
 
     def get_nome_documento(self):
         nomes = {
@@ -4806,6 +4823,26 @@ class DefinicaoDocumentoMixin:
     def get_titulo(self):
         return f"Definição de {self.get_nome_documento()}"
 
+    def get_permissao_modulo(self):
+        modulos = {
+            "processo": "Estrutura de Documentos → Processos",
+            "macroprocesso": "Estrutura de Documentos → Processos",
+            "norma": "Estrutura de Documentos → Normas de Procedimento",
+            "cadeia_valor": "Cadeia de Valor",
+        }
+
+        return modulos.get(self.get_contexto())
+
+    def get_permissao_funcionalidade(self):
+        funcionalidades = {
+            "processo": "Definição",
+            "macroprocesso": "Definição",
+            "norma": "Definição",
+            "cadeia_valor": "Definição",
+        }
+
+        return funcionalidades.get(self.get_contexto())
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
@@ -4818,7 +4855,8 @@ class DefinicaoDocumentoMixin:
 # ---------------------------
 # Definição de Documento
 # ---------------------------
-class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, ListView):
+class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, ListView,):
+    permissao_acao = "Visualizar"
     model = TiposDocumento
     template_name = 'estrutura/tiposdocumento.html'
     context_object_name = 'tiposdocumento'
@@ -4831,17 +4869,79 @@ class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
+        pode_cadastrar = tem_permissao(
+            self.request.user,
+            self.get_permissao_modulo(),
+            self.get_permissao_funcionalidade(),
+            "Cadastrar",
+        )
+
         ctx.update({
-            'permite_inclusao': not self.get_queryset().exists(),
+            "permite_inclusao": (
+                    not self.get_queryset().exists()
+                    and pode_cadastrar
+            ),
+            "pode_visualizar": tem_permissao(
+                self.request.user,
+                self.get_permissao_modulo(),
+                self.get_permissao_funcionalidade(),
+                "Visualizar",
+            ),
+            "pode_editar": tem_permissao(
+                self.request.user,
+                self.get_permissao_modulo(),
+                self.get_permissao_funcionalidade(),
+                "Editar",
+            ),
+            "pode_excluir": tem_permissao(
+                self.request.user,
+                self.get_permissao_modulo(),
+                self.get_permissao_funcionalidade(),
+                "Excluir",
+            ),
         })
 
         return ctx
 
-
-class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView):
+class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, CreateView,):
+    permissao_acao = "Cadastrar"
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
+
+    def redirecionar_se_existente(self):
+        if TiposDocumento.objects.filter(
+                contexto=self.get_contexto()
+        ).exists():
+            messages.warning(
+                self.request,
+                (
+                    f"A definição de {self.get_nome_documento()} "
+                    "já existe para este contexto."
+                ),
+            )
+            return redirect(
+                "arquiteturaprocessos:tiposdocumento",
+                contexto=self.get_contexto(),
+            )
+
+        return None
+
+    def get(self, request, *args, **kwargs):
+        resposta = self.redirecionar_se_existente()
+
+        if resposta:
+            return resposta
+
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        resposta = self.redirecionar_se_existente()
+
+        if resposta:
+            return resposta
+
+        return super().post(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -4885,11 +4985,8 @@ class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView
         )
 
 
-class VisualizarTipoDocumento(
-    LoginRequiredMixin,
-    DefinicaoDocumentoMixin,
-    DetailView
-):
+class VisualizarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_acao = "Visualizar"
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -4912,12 +5009,8 @@ class VisualizarTipoDocumento(
 
         return ctx
 
-
-class EditarTipoDocumento(
-    LoginRequiredMixin,
-    DefinicaoDocumentoMixin,
-    UpdateView
-):
+class EditarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_acao = "Editar"
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
@@ -4964,12 +5057,8 @@ class EditarTipoDocumento(
             }
         )
 
-
-class ExcluirTipoDocumento(
-    LoginRequiredMixin,
-    DefinicaoDocumentoMixin,
-    DetailView
-):
+class ExcluirTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_acao = "Excluir"
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
