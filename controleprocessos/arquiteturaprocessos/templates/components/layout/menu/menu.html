@@ -161,20 +161,16 @@ docs/MENU_SIGEMP.md
                                 {% if modulo.nome == "Estrutura de Documentos → Processos" %}
 
                                     {% for funcionalidade in funcionalidades %}
-                                        <!-- Definição -->
-                                        {% if funcionalidade.nome == "Definição" %}
-                                            {% include "components/layout/sidebar_subgroup.html" with title="Definição" icon="fa-book" submenu="submenuEstruturaProcessosDefinicao" %}
+                                        <!-- Definição de Macroprocessos -->
+                                        {% if funcionalidade.nome == "Definição → Macroprocessos" %}
+                                            {% url 'arquiteturaprocessos:tiposdocumento' 'macroprocesso' as macroprocesso_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_url title="Definição → Macroprocessos" icon="fa-layer-group" %}
+                                        {% endif %}
 
-                                            <div x-show="submenuEstruturaProcessosDefinicao"
-                                                 x-transition
-                                                 class="ml-8 mt-0.5 space-y-0.5">
-
-                                                {% url 'arquiteturaprocessos:tiposdocumento' 'macroprocesso' as macroprocesso_url %}
-                                                {% include "components/layout/sidebar_subitem.html" with href=macroprocesso_url title="Macroprocesso" icon="fa-layer-group" %}
-
-                                                {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
-                                                {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Modelo de Processo" icon="fa-file-lines" %}
-                                            </div>
+                                        <!-- Definição de Modelos de Processo -->
+                                        {% if funcionalidade.nome == "Definição → Modelos de Processo" %}
+                                            {% url 'arquiteturaprocessos:tiposdocumento' 'processo' as definicao_url %}
+                                            {% include "components/layout/sidebar_subitem.html" with href=definicao_url title="Definição → Modelos de Processo" icon="fa-file-lines" %}
                                         {% endif %}
 
                                         <!-- Classificação de Macroprocessos -->
