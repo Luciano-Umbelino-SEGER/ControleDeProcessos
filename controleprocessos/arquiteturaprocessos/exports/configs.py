@@ -6,9 +6,10 @@ from django.contrib import messages
 from django.utils.dateparse import parse_date
 from datetime import datetime, time
 from urllib.parse import unquote
+from reportlab.lib.pagesizes import A3, landscape
 
 from arquiteturaprocessos.models import (ContatoAreaSeger, Usuario, Processo, ProcessoMapear,
-                                         MacroprocessoNivel1, MacroprocessoNivel2,)
+                                         MacroprocessoNivel1, MacroprocessoNivel2, NormaProcedimento,)
 from auditoria.models import LogAcaoSistema
 from arquiteturaprocessos.exports.registry import (register_export,)
 from arquiteturaprocessos.utils.documentos import contar_documentos_associados
@@ -1448,6 +1449,231 @@ class MacroprocessoNivel2ExportConfig:
             obj.descricao or '----',
         ]
 
+# -----------------------------------------------------#
+# Exportação de Normas de Procedimento
+# -----------------------------------------------------#
+class NormasProcedimentoExportConfig:
+    filename = 'normas_procedimento'
+    titulo_pdf = 'Normas de Procedimento'
+    pdf_pagesize = landscape(A3)
+
+    headers = [
+        'Nome da Norma',
+        'Sistema',
+        'Exclusiva',
+        'Código',
+        'Versão',
+        'Emitente',
+        'Data Elaboração',
+        'Portaria Aprovação',
+        'Data Aprovação',
+        'Início Vigência',
+        'Fim Vigência',
+        'Documento PDF',
+        'Link Documento',
+        'Data Cadastro',
+        'Usuário Cadastro',
+        'Data Atualização',
+        'Usuário Atualização',
+    ]
+
+    pdf_col_widths = [
+        110,  # Nome da Norma
+        85,  # Sistema
+        38,  # Exclusiva
+        60,  # Código
+        35,  # Versão
+        80,  # Emitente
+        55,  # Data Elaboração
+        70,  # Portaria
+        55,  # Data Aprovação
+        55,  # Início Vigência
+        55,  # Fim Vigência
+        80,  # Documento PDF
+        80,  # Link Documento
+        70,  # Data Cadastro
+        65,  # Usuário Cadastro
+        70,  # Data Atualização
+        65,  # Usuário Atualização
+    ]
+
+    def get_queryset(self, request):
+
+        req = request.GET
+
+        queryset = (
+            NormaProcedimento.objects
+            .select_related(
+                'sistema',
+                'usuario_cadastro',
+                'usuario_atualizacao',
+            )
+        )
+
+        # -------------------------------------------------
+        # Filtros: mesmos critérios da listagem
+        # -------------------------------------------------
+
+        nome_norma = req.get(
+            'nome_norma', ''
+        ).strip()
+
+        sistema = req.get(
+            'sistema', ''
+        ).strip()
+
+        norma_exclusiva = req.get(
+            'norma_exclusiva', ''
+        ).strip().lower()
+
+        emitente = req.get(
+            'emitente', ''
+        ).strip()
+
+        codigo_norma = req.get(
+            'codigo_norma', ''
+        ).strip()
+
+        vigencia_de = req.get(
+            'vigencia_de', ''
+        ).strip()
+
+        vigencia_ate = req.get(
+            'vigencia_ate', ''
+        ).strip()
+
+        # -------------------------------------------------
+        # Aplicação dos filtros
+        # -------------------------------------------------
+
+        if nome_norma:
+            queryset = queryset.filter(
+                nome_norma__icontains=nome_norma
+            )
+
+        if sistema:
+            queryset = queryset.filter(
+                sistema_id=sistema
+            )
+
+        if norma_exclusiva in ('true', 'false'):
+            queryset = queryset.filter(
+                norma_exclusiva=(
+                    norma_exclusiva == 'true'
+                )
+            )
+
+        if emitente:
+            queryset = queryset.filter(
+                emitente__icontains=emitente
+            )
+
+        if codigo_norma:
+            queryset = queryset.filter(
+                codigo_norma__icontains=codigo_norma
+            )
+
+        if vigencia_de:
+            queryset = queryset.filter(
+                vigencia_inicio__gte=vigencia_de
+            )
+
+        if vigencia_ate:
+            queryset = queryset.filter(
+                vigencia_fim__lte=vigencia_ate
+            )
+
+        return queryset
+
+    @staticmethod
+    def formatar_data(valor, incluir_hora=False):
+
+        if not valor:
+            return '----'
+
+        formato = (
+            '%d/%m/%Y %H:%M:%S'
+            if incluir_hora
+            else '%d/%m/%Y'
+        )
+
+        return valor.strftime(formato)
+
+    @staticmethod
+    def nome_documento(valor):
+
+        if not valor:
+            return '----'
+
+        nome = getattr(valor, 'name', None) or str(valor)
+
+        # Decodifica caracteres URL-encoded:
+        # %20 -> espaço; %C2%BA -> º; %C3%A3 -> ã
+        nome = unquote(nome)
+
+        # Mantém somente o nome do arquivo.
+        nome = nome.split('#', 1)[0]
+        nome = nome.split('?', 1)[0]
+        nome = nome.replace('\\', '/')
+        nome = nome.rstrip('/').rsplit('/', 1)[-1]
+
+        return nome or '----'
+
+    def row_builder(self, obj):
+
+        sistema = (
+            obj.sistema.sistema_completo
+            if obj.sistema
+            else '----'
+        )
+
+        usuario_cadastro = (
+            obj.usuario_cadastro.get_full_name()
+            or obj.usuario_cadastro.username
+            if obj.usuario_cadastro
+            else '----'
+        )
+
+        usuario_atualizacao = (
+            (
+                obj.usuario_atualizacao.get_full_name()
+                or obj.usuario_atualizacao.username
+            )
+            if obj.usuario_atualizacao
+            else '----'
+        )
+
+        return [
+            obj.nome_norma or '----',
+            sistema,
+            'Sim' if obj.norma_exclusiva else 'Não',
+            obj.codigo_norma or '----',
+            obj.versao or '----',
+            obj.emitente or '----',
+            self.formatar_data(obj.data_elaboracao),
+            obj.portaria_aprovacao or '----',
+            self.formatar_data(obj.data_aprovacao),
+            self.formatar_data(obj.vigencia_inicio),
+            self.formatar_data(obj.vigencia_fim),
+            self.nome_documento(
+                obj.documento_norma_procedimento
+            ),
+            self.nome_documento(
+                obj.link_documento_norma
+            ),
+            self.formatar_data(
+                obj.data_cadastro,
+                incluir_hora=True,
+            ),
+            usuario_cadastro,
+            self.formatar_data(
+                obj.data_atualizacao,
+                incluir_hora=True,
+            ),
+            usuario_atualizacao,
+        ]
+
+
 # ============================================================
 # REGISTRO DA EXPORTAÇÃO
 # ============================================================
@@ -1489,4 +1715,9 @@ register_export(
 register_export(
     key='macroprocessonivel2',
     config=MacroprocessoNivel2ExportConfig(),
+)
+
+register_export(
+    key='normasprocedimento',
+    config=NormasProcedimentoExportConfig(),
 )

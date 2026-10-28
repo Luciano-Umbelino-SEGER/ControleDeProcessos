@@ -73,8 +73,10 @@ def exportar_generico(
         'rows': rows,
     }
 
+
     # PDF possui parâmetros extras
     if formato == 'pdf':
+
         export_kwargs['titulo'] = (
             getattr(
                 config,
@@ -98,5 +100,10 @@ def exportar_generico(
                 []
             )
         )
+
+        # Tamanho de página específico, quando configurado
+        if hasattr(config, 'pdf_pagesize'):
+            export_kwargs['pagesize'] = config.pdf_pagesize
+
 
     return exporter(**export_kwargs)
