@@ -198,7 +198,7 @@ def adicionar_rodape(canvas, doc):
 
     canvas.saveState()
 
-    largura, altura = landscape(A4)
+    largura, altura = canvas._pagesize
 
     texto_esquerda = (
         'SIGEMP – Sistema de Gestão de Monitoramento de Processos '
@@ -265,6 +265,7 @@ def pdf_exporter(
     col_widths=None,
     center_columns=None,
     rows=None,
+    pagesize=None,
 ):
     """
     Exportador PDF genérico do SIGEMP.
@@ -285,7 +286,7 @@ def pdf_exporter(
 
     doc = SimpleDocTemplate(
         response,
-        pagesize=landscape(A4),
+        pagesize=pagesize or landscape(A4),
         leftMargin=5,
         rightMargin=5,
         topMargin=20,
