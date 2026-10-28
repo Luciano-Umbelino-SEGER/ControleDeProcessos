@@ -4833,10 +4833,11 @@ class DefinicaoDocumentoMixin:
 
         return modulos.get(self.get_contexto())
 
+
     def get_permissao_funcionalidade(self):
         funcionalidades = {
-            "processo": "Definição",
-            "macroprocesso": "Definição",
+            "processo": "Definição → Modelos de Processo",
+            "macroprocesso": "Definição → Macroprocessos",
             "norma": "Definição",
             "cadeia_valor": "Definição",
         }
