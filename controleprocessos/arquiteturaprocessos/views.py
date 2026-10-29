@@ -4211,7 +4211,10 @@ class MacroProcessoView(TemplateView):
 # ---------------------------------------------------
 # LISTAGEM DE MACROPROCESSO NIVEL 1
 # ---------------------------------------------------
-class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
+class MacroProcessoNivel1View(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Visualizar"
     model = MacroprocessoNivel1
     template_name = 'estrutura/macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
@@ -4291,7 +4294,6 @@ class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
             query_params_no_page.pop("page")
 
         context["query_string"] = query_params_no_page.urlencode()
-
         context["query_string_full"] = query_params.urlencode()
 
         # ---------------------------------------------------
@@ -4299,9 +4301,30 @@ class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
         # ---------------------------------------------------
         context["total_registros"] = context["page_obj"].paginator.count
 
+        # ---------------------------------------------------
+        # PERMISSÕES DE ACESSO
+        # ---------------------------------------------------
+        acoes = {
+            "pode_cadastrar": "Cadastrar",
+            "pode_visualizar": "Visualizar",
+            "pode_editar": "Editar",
+            "pode_excluir": "Excluir",
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                "Estrutura de Documentos → Processos",
+                "Macroprocesso N1",
+                acao,
+            )
+
         return context
 
-class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
+class CriarMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Cadastrar"
     template_name = 'estrutura/form_macroprocessonivel1.html'
     form_class = Form_MacroProcessoNivel1Form
 
@@ -4327,7 +4350,10 @@ class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
 
-class VisualizarMacroProcessoNivel1(LoginRequiredMixin, DetailView):
+class VisualizarMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Visualizar"
     template_name = 'estrutura/form_macroprocessonivel1.html'
     model = MacroprocessoNivel1
     context_object_name = 'macroprocessonivel1'
@@ -4344,7 +4370,10 @@ class VisualizarMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         })
         return context
 
-class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
+class EditarMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Editar"
     model = MacroprocessoNivel1
     template_name = 'estrutura/form_macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
@@ -4372,7 +4401,10 @@ class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
 
-class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
+class ExcluirMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Excluir"
     model = MacroprocessoNivel1
     template_name = 'estrutura/form_macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'

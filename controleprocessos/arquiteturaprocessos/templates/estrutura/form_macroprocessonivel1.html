@@ -86,26 +86,24 @@
         </fieldset>
 
         <div class="flex justify-end mt-8 space-x-4">
-            {% if not modo_visualizacao %}
-                {% if modo_exclusao %}
-                    <button
-                        type="button"
-                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                        @click="$dispatch('abrir-modal-confirmacao', {
-                            url: '{% url 'arquiteturaprocessos:excluir_macroprocessonivel1' macroprocessonivel1.id %}',
-                            mensagem: 'Confirma a exclusão do Macroprocesso Nivel 1 <strong>{{ macroprocessonivel1.nome }}</strong>?'
-                        })">
-                        Confirmar Exclusão
-                    </button>
-                {% elif modo_edicao %}
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-                        Salvar Alterações
-                    </button>
-                {% else %}
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-                        Adicionar Macroprocesso N1
-                    </button>
-                {% endif %}
+            {% if modo_exclusao %}
+                <button
+                    type="button"
+                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                    @click="$dispatch('abrir-modal-confirmacao', {
+                        url: '{% url 'arquiteturaprocessos:excluir_macroprocessonivel1' macroprocessonivel1.id %}',
+                        mensagem: 'Confirma a exclusão do Macroprocesso Nivel 1 <strong>{{ macroprocessonivel1.nome }}</strong>?'
+                    })">
+                    Confirmar Exclusão
+                </button>
+            {% elif modo_edicao %}
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                    Salvar Alterações
+                </button>
+            {% elif not modo_visualizacao %}
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                    Adicionar Macroprocesso N1
+                </button>
             {% endif %}
 
             <a class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400 transition"
@@ -117,6 +115,7 @@
                {% endif %}
             </a>
         </div>
+
     </form>
 </div>
 
