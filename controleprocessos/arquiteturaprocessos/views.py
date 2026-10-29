@@ -457,7 +457,6 @@ class Classificacoes(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
 
         return context
 
-
 class CriarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
     permissao_modulo = "Estrutura de Documentos → Processos"
     permissao_funcionalidade = "Classificação de Macroprocessos"
