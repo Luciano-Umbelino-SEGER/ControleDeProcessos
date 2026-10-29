@@ -175,52 +175,47 @@
         <!-- BOTÕES -->
         <div class="flex justify-end mt-8 space-x-4">
 
-          {% if modo_exclusao %}
+            {% if modo_exclusao and form.instance.ativo %}
+                <button
+                    @click="$dispatch('abrir-modal-confirmacao', {
+                        url: '{% url 'arquiteturaprocessos:excluir_areasresponsaveis' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
+                        mensagem: 'Será feita a exclusão lógica de uma Área Responsável.<br><br>Confirma a desativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
+                    })"
+                    type="button"
+                    class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
+                    Desativar Área
+                </button>
 
-            <button
-                @click="$dispatch('abrir-modal-confirmacao', {
-                    url: '{% url 'arquiteturaprocessos:excluir_areasresponsaveis' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
-                    mensagem: 'Será feita a exclusão lógica de uma Área Responsável.<br><br>Confirma a desativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
-                })"
-                type="button"
-                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
-              Desativar Área
-            </button>
+            {% elif modo_edicao %}
 
-          {% elif modo_edicao %}
+                {% if form.instance.ativo %}
+                    <button type="submit"
+                            class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                        Salvar Alterações
+                    </button>
+                {% else %}
+                    <button
+                        @click="$dispatch('abrir-modal-confirmacao', {
+                            url: '{% url 'arquiteturaprocessos:reativar_areasresponsaveis' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
+                            mensagem: 'Você está prestes a efetuar a reativação de uma Área Responsável.<br><br>Confirma a ativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
+                        })"
+                        type="button"
+                        class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                        Ativar Área
+                    </button>
+                {% endif %}
 
-            {% if form.instance.ativo %}
-            <button type="submit"
-                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                Salvar Alterações
-            </button>
+            {% elif modo_inclusao %}
+                <button type="submit"
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    Adicionar Área
+                </button>
             {% endif %}
 
-            {% if not form.instance.ativo %}
-              <button
-                  @click="$dispatch('abrir-modal-confirmacao', {
-                      url: '{% url 'arquiteturaprocessos:reativar_areasresponsaveis' form.instance.pk %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}',
-                      mensagem: 'Você está prestes a efetuar a reativação de uma Área Responsável.<br><br>Confirma a ativação da Área Responsável <strong>{{ form.instance.nome_area }}</strong>?'
-                  })"
-                  type="button"
-                  class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
-                Ativar Área
-              </button>
-            {% endif %}
-
-          {% elif modo_inclusao %}
-
-            <button type="submit"
-                    class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-              Adicionar Área
-            </button>
-
-          {% endif %}
-
-          <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
-             class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400">
-             {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
-          </a>
+            <a href="{% url 'arquiteturaprocessos:areasresponsaveis' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+               class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400">
+                {% if modo_visualizacao %}Voltar{% else %}Cancelar{% endif %}
+            </a>
 
         </div>
 

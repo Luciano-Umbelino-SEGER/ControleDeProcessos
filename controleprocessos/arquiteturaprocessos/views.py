@@ -5740,16 +5740,13 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
 # -------------------------------#
 # LISTAGEM - Áreas Responsáveis  #
 # -------------------------------#
-class AreasResponsaveisList(LoginRequiredMixin, ListView):
+class AreasResponsaveisList(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Visualizar"
     model = ContatoAreaSeger
     template_name =  'estrutura/areasresponsaveis.html'
     context_object_name = 'areas'
-
-    # 🔒 CONTROLE DE ACESSO (mantendo seu padrão)
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO SIGEMP)
     def get_paginate_by(self, queryset):
@@ -5783,6 +5780,18 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
 
         context["query_string"] = query_params_no_page.urlencode()
         context["query_string_full"] = query_params.urlencode()
+
+        # ---------------------------------------------------
+        # PERMISSÕES DE ACESSO
+        # ---------------------------------------------------
+        modulo = "Estrutura de Documentos → Processos"
+        funcionalidade = "Áreas Responsáveis"
+
+        context["pode_cadastrar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Cadastrar")
+        context["pode_visualizar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Visualizar")
+        context["pode_editar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Editar")
+        context["pode_excluir"] = tem_permissao(self.request.user, modulo, funcionalidade, "Excluir")
+        context["pode_atualizar_contatos"] = tem_permissao(self.request.user, modulo, funcionalidade, "Atualizar Contatos")
 
         return context
 
@@ -5862,17 +5871,16 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
 # -----------------------------------------------------#
 # Importação de - Áreas Responsáveis - Contatos SEGER  #
 # -----------------------------------------------------#
-class ImportarContatosSeger(LoginRequiredMixin, View):
+class ImportarContatosSeger(LoginRequiredMixin, PermissaoRequiredMixin, View):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Atualizar Contatos"
 
     def get(self, request, *args, **kwargs):
         # 🔒 Bloqueia acesso direto via URL
         return redirect('arquiteturaprocessos:areasresponsaveis')
 
     def post(self, request, *args, **kwargs):
-
-        if request.user.perfil.nome.lower() != 'administrador':
-            messages.error(request, "Você não tem permissão para executar esta ação.")
-            return redirect('arquiteturaprocessos:areasresponsaveis')
 
         try:
             total = atualizar_contatos_seger(usuario=request.user)
@@ -5893,7 +5901,10 @@ class ImportarContatosSeger(LoginRequiredMixin, View):
 # --------------------------------#
 # Criar Área Responsável          #
 # --------------------------------#
-class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
+class CriarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Cadastrar"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = "estrutura/form_arearesponsavel.html"
@@ -5906,11 +5917,6 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
             url += f"?{query_string}"
 
         return url
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -5959,16 +5965,14 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Área Responsável     #
 # --------------------------------#
-class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
+class VisualizarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Visualizar"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
     context_object_name = 'area'
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -6014,7 +6018,10 @@ class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Editar Área Responsável         #
 # --------------------------------#
-class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
+class EditarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Editar"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
@@ -6027,11 +6034,6 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
             url += f"?{query_string}"
 
         return url
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -6094,16 +6096,14 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
 # -------------------------------------#
 # Desativar Área Responsável (Soft Delete)
 # -------------------------------------#
-class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
+class ExcluirAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Excluir"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
     context_object_name = 'area'
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -6191,12 +6191,10 @@ class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
 # -------------------------------------#
 # Reativar Área Responsável
 # -------------------------------------#
-class ReativarAreasResponsaveis(LoginRequiredMixin, View):
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
+class ReativarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, View):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Editar"
 
     def post(self, request, pk):
         try:
