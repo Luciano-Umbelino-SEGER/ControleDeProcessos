@@ -14,7 +14,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CadastroPerfis, Cria
                     EditarSistema_UECI, ExcluirSistema_UECI, TipoDocumentoList, CriarTipoDocumento,
                     VisualizarTipoDocumento,EditarTipoDocumento, ExcluirTipoDocumento,  NormasProcedimentoView, CriarNormaProcedimento,
                     VisualizarNormaProcedimento, EditarNormaProcedimento, ExcluirNormaProcedimento,
-                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso, SubProcessoView,
+                    ProcessoView, CriarProcesso, VisualizarProcesso, EditarProcesso, ExcluirProcesso,
                     ProcessosMapear, CriarProcessoMapear, VisualizarProcessoMapear, EditarProcessoMapear, ExcluirProcessoMapear,
                     ExecutarIniciarProcessoMapear, FinalizarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear,
                     EstatisticaComparativos, AreasResponsaveisList, CriarAreasResponsaveis, VisualizarAreasResponsaveis,
@@ -106,7 +106,6 @@ urlpatterns = [
     path('macroprocessonivel2/<int:pk>/visualizar/', VisualizarMacroProcessoNivel2.as_view(), name='visualizar_macroprocessonivel2'),
     path('macroprocessonivel2/<int:pk>/editar/', EditarMacroProcessoNivel2.as_view(), name='editar_macroprocessonivel2'),
     path('macroprocessonivel2/<int:pk>/excluir/', ExcluirMacroProcessoNivel2.as_view(), name='excluir_macroprocessonivel2'),
-    path('estrutura/subprocesso/', SubProcessoView.as_view(), name='subprocesso'),
     # Sistemas UECI
     path('sistemas_ueci/', Sistemas_UECIList.as_view(), name='sistemas_ueci'),
     path('sistemas_ueci/novo/', CriarSistema_UECI.as_view(), name='criar_sistema_ueci'),

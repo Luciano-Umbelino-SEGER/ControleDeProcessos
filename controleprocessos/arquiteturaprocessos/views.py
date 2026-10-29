@@ -4448,7 +4448,10 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, Det
 # ---------------------------------------------------
 # LISTAGEM DE MACROPROCESSO NIVEL 2
 # ---------------------------------------------------
-class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
+class MacroProcessoNivel2View(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Visualizar"
     model = MacroprocessoNivel2
     template_name = 'estrutura/macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
@@ -4556,9 +4559,23 @@ class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
         # ---------------------------------------------------
         context["total_registros"] = context["page_obj"].paginator.count
 
+        # ---------------------------------------------------
+        # PERMISSÕES DE ACESSO
+        # ---------------------------------------------------
+        modulo = "Estrutura de Documentos → Processos"
+        funcionalidade = "Macroprocesso N2"
+
+        context["pode_cadastrar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Cadastrar")
+        context["pode_visualizar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Visualizar")
+        context["pode_editar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Editar")
+        context["pode_excluir"] = tem_permissao(self.request.user, modulo, funcionalidade, "Excluir")
+
         return context
 
-class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
+class CriarMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Cadastrar"
     template_name = 'estrutura/form_macroprocessonivel2.html'
     form_class = Form_MacroProcessoNivel2Form
 
@@ -4584,7 +4601,10 @@ class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel2')
 
-class VisualizarMacroProcessoNivel2(LoginRequiredMixin, DetailView):
+class VisualizarMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Visualizar"
     template_name = 'estrutura/form_macroprocessonivel2.html'
     model = MacroprocessoNivel2
     context_object_name = 'macroprocessonivel2'
@@ -4601,7 +4621,10 @@ class VisualizarMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         })
         return context
 
-class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
+class EditarMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Editar"
     model = MacroprocessoNivel2
     template_name = 'estrutura/form_macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
@@ -4629,7 +4652,10 @@ class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel2')
 
-class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
+class ExcluirMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Excluir"
     model = MacroprocessoNivel2
     template_name = 'estrutura/form_macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
@@ -4646,7 +4672,8 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         })
         return context
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request,
+             *args, **kwargs):
         macroprocessonivel2 = self.get_object()
         processo_associado = Processo.objects.filter(macroprocesso_nivel2=macroprocessonivel2).first()
         if processo_associado:
@@ -4658,9 +4685,6 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         macroprocessonivel2.delete()
         messages.success(request, f"Macroprocesso Nível 2 '{macroprocessonivel2.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:macroprocessonivel2')
-
-class SubProcessoView(TemplateView):
-    template_name = 'arquitetura/estrutura/subprocesso.html'
 
 # ---------------------------
 # SISTEMAS UECI

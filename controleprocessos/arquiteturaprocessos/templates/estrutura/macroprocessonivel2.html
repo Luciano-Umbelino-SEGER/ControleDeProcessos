@@ -12,7 +12,7 @@
             </span>
         </h2>
 
-        {% if request.user.perfil.nome|lower == 'administrador' %}
+        {% if pode_visualizar %}
         <form method="GET" class="mb-0.5">
 
             <div class="w-full bg-[#f3f8ff] border border-blue-200 rounded-lg p-3 shadow-sm">
@@ -123,11 +123,12 @@
                             Limpar
                         </a>
 
+                        {% if pode_cadastrar %}
                         <a href="{% url 'arquiteturaprocessos:criar_macroprocessonivel2' %}"
                            class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
                             + Novo
                         </a>
-
+                        {% endif %}
                     </div>
 
                 </div>
@@ -161,6 +162,8 @@
                         <td class="py-3 px-4 whitespace-pre-line break-words align-top">{{ macroprocesso.descricao }}</td>
                         <td class="py-3 px-2 text-center align-middle">
                             <div class="flex justify-center items-center space-x-1.5">
+
+                                {% if pode_visualizar %}
                                 <a href="{% url 'arquiteturaprocessos:visualizar_macroprocessonivel2' macroprocesso.pk %}" title="Visualizar" class="text-blue-600 hover:text-blue-800">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                          stroke="currentColor">
@@ -170,8 +173,9 @@
                                               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </a>
+                                {% endif %}
 
-                                {% if request.user.perfil.nome|lower == 'administrador' %}
+                                {% if pode_editar %}
                                 <a href="{% url 'arquiteturaprocessos:editar_macroprocessonivel2' macroprocesso.pk %}"
                                    class="text-yellow-600 hover:text-yellow-800" title="Editar">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,7 +185,9 @@
                                               clip-rule="evenodd"/>
                                     </svg>
                                 </a>
+                                {% endif %}
 
+                                {% if pode_excluir %}
                                 <a href="{% url 'arquiteturaprocessos:excluir_macroprocessonivel2' macroprocesso.pk %}" title="Excluir" class="text-red-600 hover:text-red-800">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                          stroke="currentColor">
