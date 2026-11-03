@@ -7,7 +7,7 @@
     <div class="w-full max-w-5xl">
         <h2 class="text-2xl font-bold text-blue-800 mb-6">Sistemas UECI</h2>
 
-        {% if request.user.perfil.nome|lower == 'administrador' %}
+        {% if pode_cadastrar %}
             <div class="flex justify-end mb-4">
                 <a href="{% url 'arquiteturaprocessos:criar_sistema_ueci' %}"
                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition">
@@ -39,6 +39,7 @@
                             <div class="flex justify-center items-center gap-2">
 
                                 <!-- Visualizar -->
+                                {% if pode_visualizar %}
                                 <a href="{% url 'arquiteturaprocessos:visualizar_sistema_ueci' sistema_ueci.pk %}"
                                    title="Visualizar" class="text-blue-600 hover:text-blue-800">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -49,10 +50,10 @@
                                               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </a>
-
-                                {% if request.user.perfil.nome|lower == 'administrador' %}
+                                {% endif %}
 
                                 <!-- Editar -->
+                                {% if pode_editar %}
                                 <a href="{% url 'arquiteturaprocessos:editar_sistema_ueci' sistema_ueci.pk %}"
                                    class="text-yellow-600 hover:text-yellow-800" title="Editar">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -63,8 +64,10 @@
                                               clip-rule="evenodd"/>
                                     </svg>
                                 </a>
+                                {% endif %}
 
                                 <!-- Excluir -->
+                                {% if pode_excluir %}
                                 <a href="{% url 'arquiteturaprocessos:excluir_sistema_ueci' sistema_ueci.pk %}"
                                    title="Excluir" class="text-red-600 hover:text-red-800">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -73,7 +76,6 @@
                                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2h10z"/>
                                     </svg>
                                 </a>
-
                                 {% endif %}
                             </div>
                         </td>

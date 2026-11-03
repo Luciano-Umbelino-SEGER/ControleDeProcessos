@@ -4689,24 +4689,60 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, Det
 # ---------------------------
 # SISTEMAS UECI
 # ---------------------------
-class Sistemas_UECIList(LoginRequiredMixin, ListView):
-
+class Sistemas_UECIList(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
     model = SistemasUECI
     template_name = 'estrutura/sistemas_ueci.html'
     context_object_name = 'sistemas_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Visualizar"
 
     def get_queryset(self):
-
         return (
             SistemasUECI.objects
             .all()
             .order_by('nome_sistema')
         )
 
-class CriarSistema_UECI(LoginRequiredMixin, CreateView):
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        ctx.update({
+            'pode_cadastrar': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Cadastrar"
+            ),
+            'pode_visualizar': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Visualizar"
+            ),
+            'pode_editar': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Editar"
+            ),
+            'pode_excluir': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Excluir"
+            ),
+        })
+
+        return ctx
+
+class CriarSistema_UECI(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
     model = SistemasUECI
     form_class = Form_Sistema_UECIForm
     template_name = 'estrutura/form_sistema_ueci.html'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Cadastrar"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -4726,21 +4762,30 @@ class CriarSistema_UECI(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Sistema UECI '{self.object.sistema_completo}' cadastrado com sucesso!")
+        messages.success(
+            self.request,
+            f"Sistema UECI '{self.object.sistema_completo}' cadastrado com sucesso!"
+        )
         return response
 
     success_url = reverse_lazy(
         'arquiteturaprocessos:sistemas_ueci'
     )
 
-class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
+class VisualizarSistema_UECI( LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = SistemasUECI
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Visualizar"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['form'] = Form_Sistema_UECIForm(instance=self.get_object(), modo_visualizacao=True)
+        ctx['form'] = Form_Sistema_UECIForm(
+            instance=self.get_object(),
+            modo_visualizacao=True
+        )
         ctx.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
@@ -4749,11 +4794,14 @@ class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
         })
         return ctx
 
-class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
+class EditarSistema_UECI(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
     model = SistemasUECI
     form_class = Form_Sistema_UECIForm
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Editar"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -4773,17 +4821,23 @@ class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Sistema UECI '{self.object.sistema_completo}' atualizado com sucesso!")
+        messages.success(
+            self.request,
+            f"Sistema UECI '{self.object.sistema_completo}' atualizado com sucesso!"
+        )
         return response
 
     success_url = reverse_lazy(
         'arquiteturaprocessos:sistemas_ueci'
     )
 
-class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
+class ExcluirSistema_UECI(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = SistemasUECI
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Excluir"
 
     def post(self, request, *args, **kwargs):
         sistema_ueci = self.get_object()
@@ -5155,25 +5209,20 @@ class ExcluirTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, Permissa
 # ============================================================
 # LISTAGEM DE NORMAS DE PROCEDIMENTO
 # ============================================================
-class NormasProcedimentoView(LoginRequiredMixin, ListView):
-
+class NormasProcedimentoView(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
     model = NormaProcedimento
-    template_name = (
-        "modelagemprocessos/normasprocedimento.html"
-    )
-    context_object_name = (
-        "normas_procedimento"
-    )
+    template_name = ("modelagemprocessos/normasprocedimento.html")
+    context_object_name = ("normas_procedimento")
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Visualizar"
 
     def get_paginate_by(self, queryset):
 
-        page_size = self.request.GET.get(
-            "page_size"
-        )
+        page_size = self.request.GET.get("page_size")
 
         try:
             return int(page_size)
-
         except (
             TypeError,
             ValueError
@@ -5196,61 +5245,24 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
         # ====================================================
         # FILTROS
         # ====================================================
-        nome_norma = req.get(
-            "nome_norma",
-            ""
-        ).strip()
-
-        sistema = req.get(
-            "sistema",
-            ""
-        ).strip()
-
-        norma_exclusiva = req.get(
-            "norma_exclusiva",
-            ""
-        ).strip().lower()
-
-        emitente = req.get(
-            "emitente",
-            ""
-        ).strip()
-
-        codigo_norma = req.get(
-            "codigo_norma",
-            ""
-        ).strip()
-
-        vigencia_de = req.get(
-            "vigencia_de",
-            ""
-        ).strip()
-
-        vigencia_ate = req.get(
-            "vigencia_ate",
-            ""
-        ).strip()
+        nome_norma = req.get("nome_norma","").strip()
+        sistema = req.get("sistema","").strip()
+        norma_exclusiva = req.get("norma_exclusiva","").strip().lower()
+        emitente = req.get("emitente", "").strip()
+        codigo_norma = req.get("codigo_norma", "").strip()
+        vigencia_de = req.get("vigencia_de", "").strip()
+        vigencia_ate = req.get("vigencia_ate", "").strip()
 
         # ====================================================
         # APLICAÇÃO DOS FILTROS
         # ====================================================
         if nome_norma:
-
-            queryset = queryset.filter(
-                nome_norma__icontains=nome_norma
-            )
+            queryset = queryset.filter(nome_norma__icontains=nome_norma)
 
         if sistema:
+            queryset = queryset.filter(sistema_id=sistema)
 
-            queryset = queryset.filter(
-                sistema_id=sistema
-            )
-
-        if norma_exclusiva in (
-            "true",
-            "false"
-        ):
-
+        if norma_exclusiva in ("true", "false"):
             queryset = queryset.filter(
                 norma_exclusiva=(
                     norma_exclusiva == "true"
@@ -5258,115 +5270,59 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             )
 
         if emitente:
-
-            queryset = queryset.filter(
-                emitente__icontains=emitente
-            )
+            queryset = queryset.filter(emitente__icontains=emitente)
 
         if codigo_norma:
-
-            queryset = queryset.filter(
-                codigo_norma__icontains=codigo_norma
-            )
+            queryset = queryset.filter(codigo_norma__icontains=codigo_norma)
 
         if vigencia_de:
-
-            queryset = queryset.filter(
-                vigencia_inicio__gte=vigencia_de
-            )
+            queryset = queryset.filter(vigencia_inicio__gte=vigencia_de)
 
         if vigencia_ate:
-
-            queryset = queryset.filter(
-                vigencia_fim__lte=vigencia_ate
-            )
+            queryset = queryset.filter(vigencia_fim__lte=vigencia_ate)
 
         return queryset
 
-    def get_context_data(
-        self,
-        **kwargs
-    ):
-
-        context = (
-            super()
-            .get_context_data(**kwargs)
-        )
+    def get_context_data(self, **kwargs):
+        context = (super().get_context_data(**kwargs))
 
         req = self.request.GET
 
         # ====================================================
         # VALORES DOS FILTROS
         # ====================================================
-        context["nome_norma_busca"] = (
-            req.get("nome_norma", "")
-        )
+        context["nome_norma_busca"] = (req.get("nome_norma", ""))
 
-        context["norma_exclusiva_busca"] = (
-            req.get("norma_exclusiva", "")
-        )
+        context["norma_exclusiva_busca"] = (req.get("norma_exclusiva", ""))
 
         try:
-
-            context["sistema_busca"] = int(
-                req.get("sistema")
-            )
-
-        except (
-            TypeError,
-            ValueError
-        ):
-
+            context["sistema_busca"] = int(req.get("sistema"))
+        except (TypeError, ValueError):
             context["sistema_busca"] = None
 
-        context["emitente_busca"] = (
-            req.get("emitente", "")
-        )
-
-        context["codigo_norma_busca"] = (
-            req.get("codigo_norma", "")
-        )
-
-        context["vigencia_de"] = (
-            req.get("vigencia_de", "")
-        )
-
-        context["vigencia_ate"] = (
-            req.get("vigencia_ate", "")
-        )
+        context["emitente_busca"] = (req.get("emitente", ""))
+        context["codigo_norma_busca"] = (req.get("codigo_norma", ""))
+        context["vigencia_de"] = (req.get("vigencia_de", ""))
+        context["vigencia_ate"] = (req.get("vigencia_ate", ""))
 
         # ====================================================
         # SISTEMAS
         # ====================================================
-        context["sistemas"] = (
-            SistemasUECI.objects
-            .order_by("nome_sistema")
-        )
+        context["sistemas"] = (SistemasUECI.objects.order_by("nome_sistema"))
 
         # ====================================================
         # QUERY STRING
         # ====================================================
-        query_params = (
-            self.request.GET.copy()
-        )
-
-        query_params_no_page = (
-            query_params.copy()
-        )
+        query_params = (self.request.GET.copy())
+        query_params_no_page = (query_params.copy())
 
         if "page" in query_params_no_page:
-
             query_params_no_page.pop(
                 "page"
             )
 
-        context["query_string"] = (
-            query_params_no_page.urlencode()
-        )
-
-        context["query_string_full"] = (
-            query_params.urlencode()
-        )
+        context["query_string"] = (query_params_no_page.urlencode())
+        context["query_string_full"] = (query_params.urlencode())
 
         # ====================================================
         # TOTAL DE REGISTROS
@@ -5377,16 +5333,48 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             .count
         )
 
+        # ====================================================
+        # PERMISSÕES
+        # ====================================================
+        context.update({
+            "pode_cadastrar": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Cadastrar"
+            ),
+            "pode_visualizar": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Visualizar"
+            ),
+            "pode_editar": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Editar"
+            ),
+            "pode_excluir": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Excluir"
+            ),
+        })
+
         return context
 
 # ============================================================
 # CRIAR NORMA DE PROCEDIMENTO
 # ============================================================
-class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
-
+class CriarNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
     model = NormaProcedimento
     template_name = "modelagemprocessos/form_normaprocedimento.html"
     form_class = Form_NormaProcedimentoForm
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Cadastrar"
 
     def get_success_url(self):
         url = reverse("arquiteturaprocessos:normasprocedimento")
@@ -5401,12 +5389,9 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     # FORM KWARGS
     # ========================================================
     def get_form_kwargs(self):
-
         kwargs = super().get_form_kwargs()
 
-        kwargs.update({
-            "modo_inclusao": True,
-        })
+        kwargs.update({ "modo_inclusao": True,})
 
         return kwargs
 
@@ -5452,14 +5437,13 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
 # ============================================================
 # VISUALIZAR NORMA DE PROCEDIMENTO
 # ============================================================
-class VisualizarNormaProcedimento(
-    LoginRequiredMixin,
-    DetailView
-):
-
+class VisualizarNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = NormaProcedimento
     template_name = "modelagemprocessos/form_normaprocedimento.html"
     context_object_name = "normaprocedimento"
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Visualizar"
 
     def get_context_data(self, **kwargs):
 
@@ -5467,13 +5451,9 @@ class VisualizarNormaProcedimento(
 
         obj = self.get_object()
 
-        context["form"] = Form_NormaProcedimentoForm(
-            instance=obj,
-            modo_visualizacao=True,
-        )
+        context["form"] = Form_NormaProcedimentoForm(instance=obj, modo_visualizacao=True,)
 
         context.update({
-
             "modo_visualizacao": True,
             "modo_inclusao": False,
             "modo_edicao": False,
@@ -5512,24 +5492,14 @@ class VisualizarNormaProcedimento(
 # ============================================================
 # EDITAR NORMA DE PROCEDIMENTO
 # ============================================================
-class EditarNormaProcedimento(
-    LoginRequiredMixin,
-    UpdateView
-):
-
+class EditarNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
     model = NormaProcedimento
-
-    template_name = (
-        "modelagemprocessos/form_normaprocedimento.html"
-    )
-
-    context_object_name = (
-        "normaprocedimento"
-    )
-
-    form_class = (
-        Form_NormaProcedimentoForm
-    )
+    template_name = ("modelagemprocessos/form_normaprocedimento.html" )
+    context_object_name = ("normaprocedimento")
+    form_class = (Form_NormaProcedimentoForm)
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Editar"
 
     def get_success_url(self):
         url = reverse("arquiteturaprocessos:normasprocedimento")
@@ -5541,12 +5511,8 @@ class EditarNormaProcedimento(
         return url
 
     def get_form_kwargs(self):
-
         kwargs = super().get_form_kwargs()
-
-        kwargs.update({
-            "modo_edicao": True,
-        })
+        kwargs.update({"modo_edicao": True,})
 
         return kwargs
 
@@ -5557,7 +5523,6 @@ class EditarNormaProcedimento(
         obj = self.object
 
         context.update({
-
             "modo_edicao": True,
             "modo_visualizacao": False,
             "modo_inclusao": False,
@@ -5622,10 +5587,13 @@ class EditarNormaProcedimento(
 # ============================================================
 # EXCLUIR NORMA DE PROCEDIMENTO
 # ============================================================
-class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
+class ExcluirNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = NormaProcedimento
     template_name = ("modelagemprocessos/form_normaprocedimento.html")
-    context_object_name = ("normaprocedimento")
+    context_object_name = "normaprocedimento"
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Excluir"
 
     # ========================================================
     # CONTEXTO
@@ -5645,7 +5613,6 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
         )
 
         context.update({
-
             "modo_inclusao": False,
             "modo_visualizacao": False,
             "modo_edicao": False,
@@ -5724,6 +5691,7 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
         nome_norma = obj.nome_norma
 
         obj.delete()
+
         messages.success(
             request,
             f'Norma de Procedimento "{nome_norma}" excluída com sucesso.'

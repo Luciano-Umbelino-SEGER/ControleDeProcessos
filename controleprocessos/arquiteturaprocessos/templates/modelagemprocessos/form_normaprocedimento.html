@@ -497,7 +497,8 @@
                                                         error = '';
 
                                                         const inp =
-                                                            $el.querySelector('input[type=file]');
+                                                            $el.closest('.pdf-dropzone')
+                                                               ?.querySelector('input[type=file]');
 
                                                         if (inp) {
                                                             inp.value = '';
