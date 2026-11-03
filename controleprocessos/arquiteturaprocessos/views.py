@@ -182,13 +182,41 @@ def extrair_normas_processo(post_data):
 # Obter Responsável Contatos Area SEGER
 # --------------------------------------
 def buscar_contato_area(request):
+    tem_acesso_processos = tem_permissao(
+        request.user,
+        "Processos",
+        "Cadastro de Processos",
+        "Visualizar",
+    )
+
+    tem_acesso_mapear = tem_permissao(
+        request.user,
+        "Processos",
+        "Processos a Mapear",
+        "Visualizar",
+    )
+
+    if not (tem_acesso_processos or tem_acesso_mapear):
+        return JsonResponse(
+            {
+                "erro": (
+                    "Você não tem permissão para consultar "
+                    "os dados do contato da área."
+                )
+            },
+            status=403,
+        )
+
     area_id = request.GET.get("area_id")
 
     if not area_id:
         return JsonResponse({}, status=400)
 
     try:
-        contato = ContatoAreaSeger.objects.get(id=area_id, ativo=True)
+        contato = ContatoAreaSeger.objects.get(
+            id=area_id,
+            ativo=True,
+        )
 
         return JsonResponse({
             "titular": contato.titular or "",
@@ -1682,36 +1710,6 @@ def obter_dados_processo(request, pk):
             {"erro": "Processo não encontrado"},
             status=404,
         )
-
-
-
-# ------------------------------------------------------------
-# Recuperar Dados do Processo Pai para Herança de Subprocesso
-# ------------------------------------------------------------
-def obter_dados_processo(request, pk):
-    try:
-        processo = Processo.objects.select_related(
-            "classificacao",
-            "macroprocesso_nivel1",
-            "macroprocesso_nivel2",
-            "area_responsavel"
-        ).get(pk=pk)
-
-        data = {
-            "abrangencia": processo.abrangencia,
-            "classificacao": processo.classificacao_id,
-            "macro1": processo.macroprocesso_nivel1_id,
-            "macro2": processo.macroprocesso_nivel2_id,
-            "area": processo.area_responsavel_id,
-            "gestor": processo.gestor,
-            "telefone": processo.telefone,
-            "email": processo.email,
-        }
-
-        return JsonResponse(data)
-
-    except Processo.DoesNotExist:
-        return JsonResponse({"erro": "Processo não encontrado"}, status=404)
 
 class EstatisticasProcessosMapear(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
     permissao_modulo = "Estatísticas"
