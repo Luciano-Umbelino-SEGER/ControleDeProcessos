@@ -82,7 +82,10 @@ def visualizar_pdf(request, path):
     media_root = Path(settings.MEDIA_ROOT).resolve()
     file_path = (media_root / path).resolve()
 
-    if not str(file_path).startswith(str(media_root)) or not file_path.exists() or not file_path.is_file():
+    if (not file_path.is_relative_to(media_root)
+        or not file_path.exists()
+        or not file_path.is_file()
+    ):
         raise Http404("Arquivo não encontrado")
 
     ctype, _ = mimetypes.guess_type(str(file_path))
