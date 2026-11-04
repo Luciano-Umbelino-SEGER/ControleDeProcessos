@@ -118,23 +118,6 @@ def get_normas_procedimento_ativas():
         )
     )
 
-# -----------------------------------------------
-# Recuperar Normas de Procedimento dos Processos
-# -----------------------------------------------
-def get_normas_por_processo(processo):
-
-    return (
-        NormaProcedimento.objects
-        .filter(
-            processos__processo=processo
-        )
-        .select_related("sistema")
-        .order_by(
-            "nome_norma",
-            "codigo_norma",
-        )
-    )
-
 # =========================================
 # UTIL – Persistência de Normas do Processo
 # =========================================
@@ -1538,11 +1521,7 @@ class ArquiteruraProcessos(ListView):
 # --------------------------------
 # Dashboard
 # --------------------------------
-class EstatisticasDashboard(
-    LoginRequiredMixin,
-    PermissaoRequiredMixin,
-    TemplateView,
-):
+class EstatisticasDashboard(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
     permissao_modulo = "Estatísticas"
     permissao_funcionalidade = "Consultas e Indicadores"
     permissao_acao = "Visualizar"
@@ -2972,26 +2951,6 @@ class ExcluirProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, DetailVi
 
         return redirect(url)
 
-# ------------------------------
-# Cadastro / Listagem Perfis
-# ------------------------------
-class CadastroPerfis(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
-    permissao_modulo = "Administração"
-    permissao_funcionalidade = "Perfis"
-    permissao_acao = "Visualizar"
-    template_name = "perfis/perfis.html"
-    model = Perfil
-    context_object_name = "perfis"
-
-    def get_queryset(self):
-        return (
-            Perfil.objects
-            .annotate(
-                usuarios_count=Count("usuario")
-            )
-            .order_by("nome")
-        )
-
 # ============================================================
 # PERFIS
 # ============================================================
@@ -3277,7 +3236,6 @@ class EditarPerfil(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
 
         return redirect("arquiteturaprocessos:cadastroperfis")
 
-
 # ------------------------------------------------------------
 # Excluir Perfil
 # ------------------------------------------------------------
@@ -3348,7 +3306,7 @@ class ExcluirPerfil(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
         return redirect(
             "arquiteturaprocessos:cadastroperfis"
         )
-# aqui 1
+
 # ------------------------------------------------------------
 # ADMININISTRAÇÃO - PERMISSÃO INDIVIDUAL
 # ------------------------------------------------------------
@@ -4202,12 +4160,6 @@ class ExcluirUsuario(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
             'modo_edicao': False,
         })
         return context
-
-# ---------------------------
-# Macroprocessos N1 / N2
-# ---------------------------
-class MacroProcessoView(TemplateView):
-    template_name = 'arquitetura/estrutura/macroprocesso.html'
 
 # ---------------------------------------------------
 # LISTAGEM DE MACROPROCESSO NIVEL 1

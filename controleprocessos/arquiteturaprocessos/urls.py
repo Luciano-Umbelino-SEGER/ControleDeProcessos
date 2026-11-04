@@ -19,8 +19,7 @@ from .views import (ArquiteruraProcessos, CadastroUsuarios, CadastroPerfis, Cria
                     ExecutarIniciarProcessoMapear, FinalizarProcessoMapear, EstatisticasDashboard, EstatisticasProcessosMapear,
                     EstatisticaComparativos, AreasResponsaveisList, CriarAreasResponsaveis, VisualizarAreasResponsaveis,
                     EditarAreasResponsaveis, ExcluirAreasResponsaveis, ImportarContatosSeger, ReativarAreasResponsaveis,)
-from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, macro2_por_macro1,
-                        macro1_e_classificacao_por_macro2, macro1_todos, macro2_todos, processos_pai)
+from .api_views import (classificacao_por_macro1, macroprocessos_por_classificacao, processos_pai)
 from .utils_views import verificar_similaridade
 from .exports.views import (exportar_generico,)
 
@@ -146,14 +145,6 @@ urlpatterns = [
     path('api/classificacao_por_macro1/<int:macro1_id>/', classificacao_por_macro1, name='classificacao_por_macro1'),
     # --> Macro1 → Classificação
     path('api/macroprocessos_por_classificacao/<int:classificacao_id>/', macroprocessos_por_classificacao, name='macroprocessos_por_classificacao'),
-    # --> Macro1 → Macro2
-    path('api/macro2_por_macro1/<int:macro1_id>/', macro2_por_macro1, name='macro2_por_macro1'),
-    # --> Macro2 → Macro1 + Classificação
-    path('api/macro1_e_classificacao_por_macro2/<int:macro2_id>/', macro1_e_classificacao_por_macro2, name='macro1_e_classificacao_por_macro2'),
-    # --> Macro1 → Tods
-    path('api/macro1_todos/', macro1_todos, name='macro1_todos'),
-    # --> Macro2 → Tods
-    path('api/macro2_todos/', macro2_todos, name='macro2_todos'),
     # --> Todos Processos Pai
     path('api/processos_pai/', processos_pai, name='processos_pai'),
     # --> Utilitários
