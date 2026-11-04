@@ -12,7 +12,6 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect, get_object_or_404
-from collections import Counter
 from django.urls import reverse, reverse_lazy
 from django.views.generic import View, TemplateView, ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth import update_session_auth_hash
@@ -38,9 +37,9 @@ from urllib.parse import unquote
 from django.http import HttpResponseRedirect
 import mimetypes
 
-from arquiteturaprocessos.utils.utils import usuario_tem_acesso_total, definir_senha_e_enviar_email, parse_date
+from arquiteturaprocessos.utils.utils import tem_permissao, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
-from arquiteturaprocessos.utils.mixins import AcessoTotalRequiredMixin
+from arquiteturaprocessos.utils.mixins import PermissaoRequiredMixin
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
 from arquiteturaprocessos.utils.documentos import contar_documentos_associados
 from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, xlsx_exporter, pdf_exporter,)
@@ -48,7 +47,8 @@ from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, x
 from .models import (
     Usuario, Telefone, MacroprocessoNivel1, MacroprocessoNivel2,
     Classificacao, Processo, SistemasUECI, TiposDocumento,  ProcessoDocumento, ProcessoMapear,  ContatoAreaSeger,
-    Perfil, NormaProcedimento, AbrangenciaChoices, ImagemCadeiaValor,
+    Perfil, NormaProcedimento, AbrangenciaChoices, ImagemCadeiaValor, Modulo, Funcionalidade, FuncionalidadeAcao,
+    PerfilPermissao, UsuarioPermissao,
 )
 from arquiteturaprocessos.services.contatos_seger import atualizar_contatos_seger
 from auditoria.models import LogAcaoSistema
@@ -59,7 +59,7 @@ from .forms import (
     Form_UsuarioForm, EditarUsuarioForm, TelefoneForm, TelefoneFormSet, CustomAuthenticationForm,
     Form_Sistema_UECIForm, Form_ClassificacaoForm, Form_MacroProcessoNivel1Form, Form_MacroProcessoNivel2Form,
     Form_ProcessoForm, Form_TipoDocumentoForm, Form_ProcessoMapearForm, Form_AreaResponsavelForm, Form_NormaProcedimentoForm,
-    Form_ImagemCadeiaValorForm,
+    Form_ImagemCadeiaValorForm, Form_PerfilForm, Form_Permissoes_IndividuaisForm,
 )
 
 # ---------------------------------------------------
@@ -82,7 +82,10 @@ def visualizar_pdf(request, path):
     media_root = Path(settings.MEDIA_ROOT).resolve()
     file_path = (media_root / path).resolve()
 
-    if not str(file_path).startswith(str(media_root)) or not file_path.exists() or not file_path.is_file():
+    if (not file_path.is_relative_to(media_root)
+        or not file_path.exists()
+        or not file_path.is_file()
+    ):
         raise Http404("Arquivo não encontrado")
 
     ctype, _ = mimetypes.guess_type(str(file_path))
@@ -112,23 +115,6 @@ def get_normas_procedimento_ativas():
             "nome_norma",
             "codigo_norma",
             "versao",
-        )
-    )
-
-# -----------------------------------------------
-# Recuperar Normas de Procedimento dos Processos
-# -----------------------------------------------
-def get_normas_por_processo(processo):
-
-    return (
-        NormaProcedimento.objects
-        .filter(
-            processos__processo=processo
-        )
-        .select_related("sistema")
-        .order_by(
-            "nome_norma",
-            "codigo_norma",
         )
     )
 
@@ -182,13 +168,41 @@ def extrair_normas_processo(post_data):
 # Obter Responsável Contatos Area SEGER
 # --------------------------------------
 def buscar_contato_area(request):
+    tem_acesso_processos = tem_permissao(
+        request.user,
+        "Processos",
+        "Cadastro de Processos",
+        "Visualizar",
+    )
+
+    tem_acesso_mapear = tem_permissao(
+        request.user,
+        "Processos",
+        "Processos a Mapear",
+        "Visualizar",
+    )
+
+    if not (tem_acesso_processos or tem_acesso_mapear):
+        return JsonResponse(
+            {
+                "erro": (
+                    "Você não tem permissão para consultar "
+                    "os dados do contato da área."
+                )
+            },
+            status=403,
+        )
+
     area_id = request.GET.get("area_id")
 
     if not area_id:
         return JsonResponse({}, status=400)
 
     try:
-        contato = ContatoAreaSeger.objects.get(id=area_id, ativo=True)
+        contato = ContatoAreaSeger.objects.get(
+            id=area_id,
+            ativo=True,
+        )
 
         return JsonResponse({
             "titular": contato.titular or "",
@@ -350,7 +364,12 @@ def alterar_senha(request):
 # ---------------------------
 @login_required
 def resetar_senha_usuario(request, pk):
-    if not usuario_tem_acesso_total(request.user):
+    if not tem_permissao(
+            request.user,
+            "Administração",
+            "Usuários",
+            "Editar",
+    ):
         messages.error(
             request,
             "Você não tem permissão para reenviar link de senha."
@@ -409,13 +428,54 @@ def calcular_hash_imagem(imagem):
 # ============================================================
 # CLASSIFICAÇÕES CRUD
 # ============================================================
-class Classificacoes(LoginRequiredMixin, ListView):
+class Classificacoes(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Visualizar"
+
     model = Classificacao
     template_name = 'estrutura/classificacoes.html'
     context_object_name = 'classificacoes'
     queryset = Classificacao.objects.order_by('ordem')
 
-class CriarClassificacao(LoginRequiredMixin, CreateView):
+    def tem_acesso_permitido(self, usuario):
+        acoes = ("Cadastrar", "Visualizar", "Editar", "Excluir")
+
+        return any(
+            tem_permissao(
+                usuario,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
+            for acao in acoes
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        acoes = {
+            'pode_cadastrar': 'Cadastrar',
+            'pode_visualizar': 'Visualizar',
+            'pode_editar': 'Editar',
+            'pode_excluir': 'Excluir',
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
+
+        return context
+
+class CriarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Cadastrar"
+
     template_name = 'estrutura/form_classificacao.html'
     form_class = Form_ClassificacaoForm
 
@@ -452,17 +512,20 @@ class CriarClassificacao(LoginRequiredMixin, CreateView):
             'arquiteturaprocessos:classificacoes'
         )
 
-class VisualizarClassificacao(LoginRequiredMixin, DetailView):
+class VisualizarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Visualizar"
+
     template_name = 'estrutura/form_classificacao.html'
     model = Classificacao
     context_object_name = 'classificacao'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        classificacao = self.get_object()
 
         context['form'] = Form_ClassificacaoForm(
-            instance=classificacao,
+            instance=self.object,
             modo_visualizacao=True
         )
 
@@ -475,7 +538,11 @@ class VisualizarClassificacao(LoginRequiredMixin, DetailView):
 
         return context
 
-class EditarClassificacao(LoginRequiredMixin, UpdateView):
+class EditarClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Editar"
+
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
     context_object_name = 'classificacao'
@@ -492,21 +559,19 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        classificacao = self.get_object()
-
-        # ========================================================
-        # DADOS ANTERIORES
-        # ========================================================
-        nome_classificacao_anterior = classificacao.nome
-
-        imagem_anterior = classificacao.imagem
-        nome_imagem_anterior = (
-            imagem_anterior.name
-            if imagem_anterior
-            else None
+        # Recupera do banco os dados anteriores à edição.
+        classificacao_anterior = Classificacao.objects.get(
+            pk=self.object.pk
         )
 
-        hash_imagem_anterior = classificacao.imagem_hash
+        nome_classificacao_anterior = classificacao_anterior.nome
+
+        imagem_anterior = classificacao_anterior.imagem
+        nome_imagem_anterior = (
+            imagem_anterior.name if imagem_anterior else None
+        )
+
+        hash_imagem_anterior = classificacao_anterior.imagem_hash
 
         # ========================================================
         # NOVA IMAGEM
@@ -679,7 +744,11 @@ class EditarClassificacao(LoginRequiredMixin, UpdateView):
             'arquiteturaprocessos:classificacoes'
         )
 
-class ExcluirClassificacao(LoginRequiredMixin, DetailView):
+class ExcluirClassificacao(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Classificação de Macroprocessos"
+    permissao_acao = "Excluir"
+
     model = Classificacao
     template_name = 'estrutura/form_classificacao.html'
     context_object_name = 'classificacao'
@@ -748,7 +817,11 @@ class ExcluirClassificacao(LoginRequiredMixin, DetailView):
 # ============================================================
 # IMAGENS DA CADEIA DE VALOR - CRUD
 # ============================================================
-class ImagensCadeiaValor(LoginRequiredMixin, ListView):
+class ImagensCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Visualizar"
+
     model = ImagemCadeiaValor
     template_name = 'cadeiavalor/imagens_cadeia_valor.html'
     context_object_name = 'imagens'
@@ -768,14 +841,45 @@ class ImagensCadeiaValor(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # ====================================================
+        # TOTAL DE REGISTROS
+        # ====================================================
         context["total_registros"] = self.object_list.count()
+
+        # ====================================================
+        # PERMISSÕES EFETIVAS DO USUÁRIO
+        # ====================================================
+        context["pode_cadastrar"] = tem_permissao(
+            self.request.user,
+            "Cadeia de Valor",
+            "Imagens",
+            "Cadastrar",
+        )
+
+        context["pode_visualizar"] = tem_permissao(
+            self.request.user,
+            "Cadeia de Valor",
+            "Imagens",
+            "Visualizar",
+        )
+
+        context["pode_editar"] = tem_permissao(
+            self.request.user,
+            "Cadeia de Valor",
+            "Imagens",
+            "Editar",
+        )
 
         return context
 
 # ============================================================
 # INCLUSÃO – IMAGEM DA CADEIA DE VALOR
 # ============================================================
-class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
+class CriarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, CreateView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Cadastrar"
+
     template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
     form_class = Form_ImagemCadeiaValorForm
     context_object_name = 'imagem_cadeia_valor'
@@ -792,19 +896,50 @@ class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        with transaction.atomic():
+            # ====================================================
+            # AUDITORIA — INCLUSÃO
+            # ====================================================
+            form.instance.responsavel_inclusao = self.request.user
+
+            # ====================================================
+            # SITUAÇÃO INICIAL
+            # ====================================================
+            form.instance.situacao = "Inativa"
+
+            # ====================================================
+            # SALVAR IMAGEM
+            # ====================================================
+            response = super().form_valid(form)
+
+            imagem = self.object
+
+            # ====================================================
+            # LOG DA INCLUSÃO
+            # ====================================================
+            registrar_log(
+                request=self.request,
+                acao="CREATE",
+                modelo="ImagemCadeiaValor",
+                objeto_id=str(imagem.id),
+                descricao=(
+                    f"Imagem da Cadeia de Valor "
+                    f"'{imagem.nome}' criada"
+                ),
+                dados_antes={},
+                dados_depois={
+                    "nome": imagem.nome,
+                    "descricao": imagem.descricao,
+                    "situacao": imagem.situacao,
+                    "responsavel_inclusao_id": (
+                        imagem.responsavel_inclusao_id
+                    ),
+                },
+            )
 
         # ====================================================
-        # AUDITORIA – INCLUSÃO
+        # MENSAGEM DE SUCESSO
         # ====================================================
-        form.instance.responsavel_inclusao = self.request.user
-
-        # ====================================================
-        # SITUAÇÃO INICIAL
-        # ====================================================
-        form.instance.situacao = "Inativa"
-
-        response = super().form_valid(form)
-
         messages.success(
             self.request,
             f"Imagem '{self.object.nome}' criada com sucesso!"
@@ -820,7 +955,10 @@ class CriarImagemCadeiaValor(LoginRequiredMixin, CreateView):
 # ============================================================
 # VISUALIZAÇÃO - IMAGEM DA CADEIA DE VALOR
 # ============================================================
-class VisualizarImagemCadeiaValor(LoginRequiredMixin, DetailView):
+class VisualizarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Visualizar"
 
     model = ImagemCadeiaValor
     template_name = 'cadeiavalor/form_imagem_cadeia_valor.html'
@@ -847,7 +985,11 @@ class VisualizarImagemCadeiaValor(LoginRequiredMixin, DetailView):
 # ============================================================
 # IMAGEM DA CADEIA DE VALOR - EDIÇÃO
 # ============================================================
-class EditarImagemCadeiaValor(LoginRequiredMixin, UpdateView):
+class EditarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Editar"
+
     model = ImagemCadeiaValor
     template_name = "cadeiavalor/form_imagem_cadeia_valor.html"
     form_class = Form_ImagemCadeiaValorForm
@@ -958,11 +1100,16 @@ class EditarImagemCadeiaValor(LoginRequiredMixin, UpdateView):
 # ============================================================
 # ATIVAÇÃO – IMAGEM DA CADEIA DE VALOR
 # ============================================================
-class AtivarImagemCadeiaValor(LoginRequiredMixin, View):
+class AtivarImagemCadeiaValor(LoginRequiredMixin, PermissaoRequiredMixin, View,):
+    permissao_modulo = "Cadeia de Valor"
+    permissao_funcionalidade = "Imagens"
+    permissao_acao = "Editar"
+
     http_method_names = ['post']
 
     def post(self, request, pk):
         with transaction.atomic():
+            # Mantenha aqui o restante do código atual.
             # ====================================================
             # BLOQUEIA AS IMAGENS DURANTE A OPERAÇÃO
             # ====================================================
@@ -1370,20 +1517,23 @@ class ArquiteruraProcessos(ListView):
 
         return ctx
 
+
 # --------------------------------
 # Dashboard
 # --------------------------------
-class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
+class EstatisticasDashboard(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/dashboard.html"
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
 
         processos = Processo.objects.all()
 
-        # 🔥 STATUS PADRONIZADO
+        # STATUS PADRONIZADO
         status_data = contar_status(processos)
 
         context["status_labels"] = ["Iniciado", "Ativo", "Concluído"]
@@ -1402,8 +1552,12 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
             .annotate(total=Count("id"))
         )
 
-        context["class_labels"] = [c["classificacao__nome"] for c in classificacao]
-        context["class_valores"] = [c["total"] for c in classificacao]
+        context["class_labels"] = [
+            c["classificacao__nome"] for c in classificacao
+        ]
+        context["class_valores"] = [
+            c["total"] for c in classificacao
+        ]
 
         # ---------------------------
         # Área
@@ -1414,8 +1568,12 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
             .annotate(total=Count("id"))
         )
 
-        context["area_labels"] = [a["area_responsavel__nome_area"] for a in area]
-        context["area_valores"] = [a["total"] for a in area]
+        context["area_labels"] = [
+            a["area_responsavel__nome_area"] for a in area
+        ]
+        context["area_valores"] = [
+            a["total"] for a in area
+        ]
 
         # ---------------------------
         # Mês
@@ -1431,13 +1589,17 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
             .annotate(total=Count("id"))
         )
 
-        dados_dict = {d["mes"].month: d["total"] for d in dados}
+        dados_dict = {
+            d["mes"].month: d["total"] for d in dados
+        }
 
         mes_labels = []
         mes_valores = []
 
         for m in range(1, mes_atual + 1):
-            mes_labels.append(datetime(ano_atual, m, 1).strftime("%b"))
+            mes_labels.append(
+                datetime(ano_atual, m, 1).strftime("%b")
+            )
             mes_valores.append(dados_dict.get(m, 0))
 
         context["mes_labels"] = mes_labels
@@ -1445,16 +1607,28 @@ class EstatisticasDashboard(LoginRequiredMixin, TemplateView):
 
         return context
 
+
 # --------------------------------
 # Selecionar Processos Pai
 # --------------------------------
 def buscar_processos(request):
-    termo = request.GET.get('q', '')
+    if not tem_permissao(
+        request.user,
+        "Processos",
+        "Cadastro de Processos",
+        "Visualizar",
+    ):
+        return JsonResponse(
+            {"erro": "Você não tem permissão para consultar os processos."},
+            status=403,
+        )
+
+    termo = request.GET.get("q", "")
 
     processos = Processo.objects.filter(
         parent__isnull=True,
-        nome__icontains=termo
-    ).order_by('nome')[:20]
+        nome__icontains=termo,
+    ).order_by("nome")[:20]
 
     data = [
         {"id": p.id, "text": p.nome}
@@ -1467,12 +1641,37 @@ def buscar_processos(request):
 # Recuperar Dados do Processo Pai para Herança de Subprocesso
 # ------------------------------------------------------------
 def obter_dados_processo(request, pk):
+    tem_acesso_processos = tem_permissao(
+        request.user,
+        "Processos",
+        "Cadastro de Processos",
+        "Visualizar",
+    )
+
+    tem_acesso_mapear = tem_permissao(
+        request.user,
+        "Processos",
+        "Processos a Mapear",
+        "Visualizar",
+    )
+
+    if not (tem_acesso_processos or tem_acesso_mapear):
+        return JsonResponse(
+            {
+                "erro": (
+                    "Você não tem permissão para consultar "
+                    "os dados do processo."
+                )
+            },
+            status=403,
+        )
+
     try:
         processo = Processo.objects.select_related(
             "classificacao",
             "macroprocesso_nivel1",
             "macroprocesso_nivel2",
-            "area_responsavel"
+            "area_responsavel",
         ).get(pk=pk)
 
         data = {
@@ -1489,12 +1688,15 @@ def obter_dados_processo(request, pk):
         return JsonResponse(data)
 
     except Processo.DoesNotExist:
-        return JsonResponse({"erro": "Processo não encontrado"}, status=404)
+        return JsonResponse(
+            {"erro": "Processo não encontrado"},
+            status=404,
+        )
 
-# --------------------------------
-# Processos a Mapear
-# --------------------------------
-class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
+class EstatisticasProcessosMapear(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/estatisticaprocessos_mapear.html"
 
@@ -1513,10 +1715,10 @@ class EstatisticasProcessosMapear(LoginRequiredMixin, TemplateView):
 
         return context
 
-# --------------------------------
-# Estatísticas de Processos
-# --------------------------------
-class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
+class EstatisticasProcessos(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/estatisticaprocessos.html"
 
@@ -1584,10 +1786,10 @@ class EstatisticasProcessos(LoginRequiredMixin, TemplateView):
 
         return context
 
-# --------------------------------
-# Comparativos
-# --------------------------------
-class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
+class EstatisticaComparativos(LoginRequiredMixin, PermissaoRequiredMixin, TemplateView,):
+    permissao_modulo = "Estatísticas"
+    permissao_funcionalidade = "Consultas e Indicadores"
+    permissao_acao = "Visualizar"
 
     template_name = "estatisticas/comparativos.html"
 
@@ -1636,26 +1838,14 @@ class EstatisticaComparativos(LoginRequiredMixin, TemplateView):
 # -------------------------------
 # Listagem de Processos a Mapear
 # -------------------------------
-class ProcessosMapear(LoginRequiredMixin, ListView):
+class ProcessosMapear(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Visualizar"
+
     model = ProcessoMapear
     template_name = "processosmapear/processosmapear.html"
     context_object_name = "processosmapear"
-
-    def dispatch(self, request, *args, **kwargs):
-
-        # Usuário não autenticado:
-        # deixa o LoginRequiredMixin tratar o acesso.
-        if not request.user.is_authenticated:
-            return super().dispatch(request, *args, **kwargs)
-
-        # Usuário autenticado:
-        # verifica o perfil de acesso.
-        perfil = getattr(request.user, "perfil", None)
-
-        if not perfil or perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     # ------------------------------------------------
     # PAGINAÇÃO DINÂMICA
@@ -1673,6 +1863,34 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
     # ------------------------------------------------
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        context["pode_cadastrar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Cadastrar",
+        )
+
+        context["pode_visualizar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Visualizar",
+        )
+
+        context["pode_editar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Editar",
+        )
+
+        context["pode_excluir"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Excluir",
+        )
 
         req = self.request.GET
 
@@ -1895,17 +2113,15 @@ class ProcessosMapear(LoginRequiredMixin, ListView):
 # --------------------------------#
 # Criar Processo a Mapear         #
 # --------------------------------#
-class CriarProcessoMapear(LoginRequiredMixin, CreateView):
+class CriarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, CreateView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Cadastrar"
+
     model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1974,16 +2190,14 @@ class CriarProcessoMapear(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Processo a Mapear    #
 # --------------------------------#
-class VisualizarProcessoMapear(LoginRequiredMixin, DetailView):
+class VisualizarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Visualizar"
+
     model = ProcessoMapear
     template_name = "processosmapear/form_processomapear.html"
     context_object_name = "processomapear"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2137,25 +2351,33 @@ def transformar_processo_mapear_em_processo(
 # --------------------------------#
 # Editar Processo a Mapear        #
 # --------------------------------#
-class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
+class EditarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Editar"
+
     model = ProcessoMapear
     form_class = Form_ProcessoMapearForm
     template_name = "processosmapear/form_processomapear.html"
     success_url = reverse_lazy("arquiteturaprocessos:processosmapear")
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
 
-        context["form"] = Form_ProcessoMapearForm(
-            instance=processomapear,
-            modo_edicao=True
+        context["pode_editar"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Editar",
         )
+
+        # Mantém o formulário recebido quando houver POST inválido.
+        if "form" not in kwargs:
+            context["form"] = Form_ProcessoMapearForm(
+                instance=processomapear,
+                modo_edicao=True,
+            )
 
         context.update({
             "modo_edicao": True,
@@ -2166,6 +2388,7 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
             "cadastro_data": (
                 timezone.localtime(processomapear.data_criacao)
                 .strftime("%d/%m/%Y %H:%M")
+                if processomapear.data_criacao else ""
             ),
 
             "cadastro_user": (
@@ -2207,12 +2430,21 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
 
         acao = self.request.POST.get("acao", "").strip()
 
+        # =========================================
+        # HERANÇA DOS DADOS DO PROCESSO PAI
+        # =========================================
         if processomapear.parent:
             processomapear.abrangencia = processomapear.parent.abrangencia
             processomapear.classificacao = processomapear.parent.classificacao
-            processomapear.macroprocesso_nivel1 = processomapear.parent.macroprocesso_nivel1
-            processomapear.macroprocesso_nivel2 = processomapear.parent.macroprocesso_nivel2
-            processomapear.area_responsavel = processomapear.parent.area_responsavel
+            processomapear.macroprocesso_nivel1 = (
+                processomapear.parent.macroprocesso_nivel1
+            )
+            processomapear.macroprocesso_nivel2 = (
+                processomapear.parent.macroprocesso_nivel2
+            )
+            processomapear.area_responsavel = (
+                processomapear.parent.area_responsavel
+            )
             processomapear.gestor = processomapear.parent.gestor
             processomapear.telefone = processomapear.parent.telefone
             processomapear.email = processomapear.parent.email
@@ -2222,14 +2454,32 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
         # =========================================
         if acao == "iniciar":
 
-            erros = processomapear.validar_para_iniciar()
+            # Validar status e tipo antes de iniciar.
+            if processomapear.status != "ativo":
+                form.add_error(
+                    None,
+                    "Somente Processos a Mapear ativos podem ser iniciados.",
+                )
 
-            if erros:
+            elif processomapear.tipo not in (
+                ProcessoMapear.TIPO_PROCESSO,
+                ProcessoMapear.TIPO_SUBPROCESSO,
+            ):
+                form.add_error(
+                    None,
+                    "Somente Processos e Subprocessos podem ser iniciados.",
+                )
+
+            # Executar as validações de negócio existentes.
+            if not form.errors:
+                erros = processomapear.validar_para_iniciar()
+
                 for erro in erros:
                     form.add_error(None, erro)
 
-                context = self.get_context_data()
-                context["form"] = form
+            # Retornar ao formulário se houver erros.
+            if form.errors:
+                context = self.get_context_data(form=form)
                 return self.render_to_response(context)
 
             # =========================================
@@ -2251,12 +2501,8 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
                 )
 
             except ValueError as erro:
-
                 form.add_error(None, str(erro))
-
-                context = self.get_context_data()
-                context["form"] = form
-
+                context = self.get_context_data(form=form)
                 return self.render_to_response(context)
 
             # =========================================
@@ -2270,45 +2516,39 @@ class EditarProcessoMapear(LoginRequiredMixin, UpdateView):
 
             messages.success(
                 self.request,
-                f"{mensagem_tipo} "
-                f"'{processo.nome}' criado com sucesso!"
+                f"{mensagem_tipo} '{processo.nome}' criado com sucesso!",
             )
 
-            return redirect(
-                "arquiteturaprocessos:processos"
-            )
+            return redirect("arquiteturaprocessos:processos")
 
-        # 🔵 fluxo normal (salvar sem iniciar)
+        # =========================================
+        # FLUXO NORMAL — SALVAR SEM INICIAR
+        # =========================================
         processomapear.usuario_atualizacao = self.request.user
         processomapear.data_atualizacao = timezone.now()
         processomapear.save()
 
         messages.success(
             self.request,
-            f"Processo a Mapear '{processomapear.nome}' atualizado com sucesso!"
+            f"Processo a Mapear '{processomapear.nome}' atualizado com sucesso!",
         )
 
         query_string = self.request.GET.urlencode()
-
-        url = reverse(
-            'arquiteturaprocessos:processosmapear'
-        )
+        url = reverse("arquiteturaprocessos:processosmapear")
 
         if query_string:
-            url += f'?{query_string}'
+            url += f"?{query_string}"
 
         return HttpResponseRedirect(url)
+
 
 # --------------------------------------------------#
 # Iniciar Processo - Processo a Mapear --> Processo #
 # --------------------------------------------------#
-class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
+class ExecutarIniciarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, View,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Editar"
 
     def post(self, request, pk):
 
@@ -2505,7 +2745,10 @@ class ExecutarIniciarProcessoMapear(LoginRequiredMixin, View):
 # ---------------------------------------#
 # Finalizar Tarefa - Processo a Mapear   #
 # ---------------------------------------#
-class FinalizarProcessoMapear(LoginRequiredMixin, View):
+class FinalizarProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, View,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Editar"
 
     def post(self, request, pk):
         obj = get_object_or_404(
@@ -2514,21 +2757,6 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
         )
 
         query_string = request.GET.urlencode()
-
-        if request.user.perfil.nome.lower() != "administrador":
-            messages.error(
-                request,
-                "Você não tem permissão para finalizar esta tarefa."
-            )
-
-            url = reverse(
-                'arquiteturaprocessos:processosmapear'
-            )
-
-            if query_string:
-                url += f'?{query_string}'
-
-            return redirect(url)
 
         # =========================================
         # EVITA REPROCESSAR
@@ -2579,16 +2807,14 @@ class FinalizarProcessoMapear(LoginRequiredMixin, View):
 # --------------------------------#
 # Excluir Processo a Mapear       #
 # --------------------------------#
-class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
+class ExcluirProcessoMapear(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Processos a Mapear"
+    permissao_acao = "Excluir"
+
     model = ProcessoMapear
     template_name = "processosmapear/form_processomapear.html"
     context_object_name = "processomapear"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != "administrador":
-            raise PermissionDenied
-
-        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         return (
@@ -2607,6 +2833,13 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         processomapear = self.object
+
+        context["pode_excluir"] = tem_permissao(
+            self.request.user,
+            "Processos",
+            "Processos a Mapear",
+            "Excluir",
+        )
 
         context["form"] = Form_ProcessoMapearForm(
             instance=processomapear,
@@ -2718,10 +2951,793 @@ class ExcluirProcessoMapear(LoginRequiredMixin, DetailView):
 
         return redirect(url)
 
+# ============================================================
+# PERFIS
+# ============================================================
+def _obter_modulos_com_permissoes():
+    """
+    Monta a árvore de permissões utilizada nas telas de Perfil:
+
+        Módulo
+            └── Funcionalidade
+                    └── Ações
+    """
+
+    acoes_queryset = (
+        FuncionalidadeAcao.objects
+        .select_related("acao")
+        .order_by("acao__ordem", "acao__id")
+    )
+
+    funcionalidades_queryset = (
+        Funcionalidade.objects
+        .filter(ativo=True)
+        .prefetch_related(
+            Prefetch(
+                "acoes",
+                queryset=acoes_queryset,
+            )
+        )
+        .order_by("ordem", "id")
+    )
+
+    return (
+        Modulo.objects
+        .filter(ativo=True)
+        .prefetch_related(
+            Prefetch(
+                "funcionalidades",
+                queryset=funcionalidades_queryset,
+            )
+        )
+        .order_by("ordem", "id")
+    )
+
+
+def _obter_permissoes_selecionadas(request, perfil=None):
+    """
+    Obtém as permissões que devem aparecer marcadas na árvore.
+
+    - Em POST: preserva o que foi enviado pelo usuário, inclusive
+      quando o formulário retorna com erros.
+    - Em GET de edição/visualização: carrega as permissões atuais
+      do Perfil.
+    """
+
+    if request.method == "POST":
+        return {
+            int(valor)
+            for valor in request.POST.getlist("permissoes")
+            if valor.isdigit()
+        }
+
+    if perfil and perfil.pk:
+        return set(
+            PerfilPermissao.objects
+            .filter(perfil=perfil)
+            .values_list(
+                "funcionalidade_acao_id",
+                flat=True,
+            )
+        )
+
+    return set()
+
+# ------------------------------------------------------------
+# Cadastro / Listagem de Perfis
+# ------------------------------------------------------------
+class CadastroPerfis(LoginRequiredMixin, PermissaoRequiredMixin, ListView,):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Visualizar"
+
+    template_name = "perfis/perfis.html"
+    model = Perfil
+    context_object_name = "perfis"
+
+    def get_queryset(self):
+        return (
+            Perfil.objects
+            .annotate(
+                usuarios_count=Count("usuario")
+            )
+            .order_by("nome")
+        )
+
+# ------------------------------------------------------------
+# Criar Perfil
+# ------------------------------------------------------------
+class CriarPerfil(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    CreateView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Cadastrar"
+
+    template_name = "perfis/form_perfil.html"
+    form_class = Form_PerfilForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        modulos = _obter_modulos_com_permissoes()
+
+        for modulo in modulos:
+            modulo.bloqueado_para_perfil = (
+                    modulo.escopo == Modulo.Escopo.ADMINISTRATIVO
+            )
+
+        context.update({
+            "modulos": modulos,
+            "perfil": None,
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request
+            ),
+            "modo_inclusao": True,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            perfil = form.save(commit=False)
+            permissoes = form.cleaned_data["permissoes"]
+
+            perfil.save()
+
+            PerfilPermissao.objects.bulk_create([
+                PerfilPermissao(
+                    perfil=perfil,
+                    funcionalidade_acao=funcionalidade_acao,
+                )
+                for funcionalidade_acao in permissoes
+            ])
+
+        self.object = perfil
+
+        messages.success(
+            self.request,
+            f"O Perfil '{perfil.nome}' foi criado com sucesso.",
+        )
+
+        return redirect("arquiteturaprocessos:cadastroperfis")
+
+# ------------------------------------------------------------
+# Visualizar Perfil
+# ------------------------------------------------------------
+class VisualizarPerfil(
+    LoginRequiredMixin,
+    PermissaoRequiredMixin,
+    DetailView,
+):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Visualizar"
+
+    template_name = "perfis/form_perfil.html"
+    model = Perfil
+    context_object_name = "perfil"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        perfil = self.object
+
+        context.update({
+            "modulos": _obter_modulos_com_permissoes(),
+            "form": Form_PerfilForm(
+                instance=perfil
+            ),
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request,
+                perfil,
+            ),
+            "modo_inclusao": False,
+            "modo_visualizacao": True,
+            "modo_exclusao": False,
+            "modo_edicao": False,
+        })
+
+        return context
+
+# ------------------------------------------------------------
+# Editar Perfil
+# ------------------------------------------------------------
+class EditarPerfil(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Editar"
+
+    template_name = "perfis/form_perfil.html"
+    model = Perfil
+    form_class = Form_PerfilForm
+    context_object_name = "perfil"
+
+    def get_object(self, queryset=None):
+        perfil = super().get_object(queryset)
+
+        # O Perfil Administrador é protegido.
+        # Somente o Master pode alterá-lo.
+        if perfil.protegido and not self.request.user.is_master:
+            messages.error(
+                self.request,
+                "O Perfil Administrador somente pode ser alterado pelo Master."
+            )
+            raise PermissionDenied
+
+        return perfil
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["usuario_logado"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        perfil_administrador = (
+                self.object.codigo == "ADMINISTRADOR"
+        )
+
+        modulos = _obter_modulos_com_permissoes()
+
+        for modulo in modulos:
+            modulo.bloqueado_para_perfil = (
+                    modulo.escopo == Modulo.Escopo.ADMINISTRATIVO
+                    and not perfil_administrador
+            )
+
+        context.update({
+            "modulos": modulos,
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request,
+                self.object,
+            ),
+            "usuario_eh_master": self.request.user.is_master,
+            "perfil_administrador": perfil_administrador,
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": False,
+            "modo_edicao": True,
+        })
+
+        return context
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            perfil = form.save(commit=False)
+            permissoes_finais = form.cleaned_data["permissoes"]
+
+            perfil.save()
+
+            PerfilPermissao.objects.filter(
+                perfil=perfil
+            ).delete()
+
+            PerfilPermissao.objects.bulk_create([
+                PerfilPermissao(
+                    perfil=perfil,
+                    funcionalidade_acao=funcionalidade_acao,
+                )
+                for funcionalidade_acao in permissoes_finais
+            ])
+
+        self.object = perfil
+
+        messages.success(
+            self.request,
+            f"O Perfil '{perfil.nome}' foi atualizado com sucesso.",
+        )
+
+        return redirect("arquiteturaprocessos:cadastroperfis")
+
+# ------------------------------------------------------------
+# Excluir Perfil
+# ------------------------------------------------------------
+class ExcluirPerfil(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Perfis"
+    permissao_acao = "Excluir"
+
+    template_name = "perfis/form_perfil.html"
+    model = Perfil
+    context_object_name = "perfil"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        perfil = self.object
+
+        context.update({
+            "modulos": _obter_modulos_com_permissoes(),
+            "form": Form_PerfilForm(
+                instance=perfil
+            ),
+            "permissoes_selecionadas": _obter_permissoes_selecionadas(
+                self.request,
+                perfil,
+            ),
+            "modo_inclusao": False,
+            "modo_visualizacao": False,
+            "modo_exclusao": True,
+            "modo_edicao": False,
+        })
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        perfil = self.get_object()
+
+        # O Perfil Administrador nunca pode ser excluído.
+        if perfil.protegido:
+            messages.error(
+                request,
+                "O Perfil Administrador não pode ser excluído."
+            )
+            raise PermissionDenied
+
+        # Não podemos excluir um Perfil que ainda esteja associado
+        # a usuários.
+        if perfil.usuario_set.exists():
+            messages.error(
+                request,
+                "Não é possível excluir este Perfil porque existem "
+                "usuários associados a ele."
+            )
+            return redirect(
+                "arquiteturaprocessos:cadastroperfis"
+            )
+
+        nome_perfil = perfil.nome
+
+        with transaction.atomic():
+            perfil.delete()
+
+        messages.success(
+            request,
+            f"O Perfil '{nome_perfil}' foi excluído com sucesso."
+        )
+
+        return redirect(
+            "arquiteturaprocessos:cadastroperfis"
+        )
+
+# ------------------------------------------------------------
+# ADMININISTRAÇÃO - PERMISSÃO INDIVIDUAL
+# ------------------------------------------------------------
+class PermissoesIndividuaisBaseMixin(PermissaoRequiredMixin):
+    """
+    Compartilha as regras básicas de acesso às views
+    de permissões individuais.
+    """
+
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Permissões Individuais"
+
+    def dispatch(self, request, *args, **kwargs):
+        usuario = request.user
+
+        eh_administrador = (
+            usuario.perfil_id is not None
+            and usuario.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        if not usuario.is_master and not eh_administrador:
+            messages.warning(
+                request,
+                "Você não tem autorização para administrar "
+                "permissões individuais."
+            )
+            return redirect("arquiteturaprocessos:homepage")
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_usuario_alvo(self):
+        """
+        Impede que o usuário Master seja tratado como
+        um usuário-alvo desta funcionalidade.
+        """
+        return get_object_or_404(
+            Usuario,
+            pk=self.kwargs["pk"],
+            is_master=False,
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        usuario_alvo = self.object
+
+        # Define se o usuário-alvo pode receber permissões
+        # individuais do módulo Administração.
+        usuario_alvo_eh_administrador = (
+            usuario_alvo.perfil_id is not None
+            and usuario_alvo.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        # Módulos e funcionalidades ativos, com suas ações.
+        # O módulo Administração só aparece quando o usuário-alvo
+        # possui o perfil ADMINISTRADOR.
+        queryset_modulos = Modulo.objects.filter(
+            ativo=True
+        )
+
+        if not usuario_alvo_eh_administrador:
+            queryset_modulos = queryset_modulos.exclude(
+                nome="Administração"
+            )
+
+        modulos = queryset_modulos.order_by(
+            "ordem"
+        ).prefetch_related(
+            Prefetch(
+                "funcionalidades",
+                queryset=Funcionalidade.objects.filter(
+                    ativo=True
+                ).order_by(
+                    "ordem"
+                ).prefetch_related(
+                    Prefetch(
+                        "acoes",
+                        queryset=FuncionalidadeAcao.objects.select_related(
+                            "acao"
+                        ).order_by(
+                            "acao__ordem"
+                        ),
+                    )
+                ),
+            )
+        )
+
+        # IDs das ações concedidas diretamente pelo perfil.
+        permissoes_perfil = set()
+
+        if usuario_alvo.perfil_id:
+            permissoes_perfil = set(
+                PerfilPermissao.objects.filter(
+                    perfil_id=usuario_alvo.perfil_id,
+                ).values_list(
+                    "funcionalidade_acao_id",
+                    flat=True,
+                )
+            )
+
+        # Decisões individuais: PERMITIR ou NEGAR.
+        permissoes_individuais = dict(
+            UsuarioPermissao.objects.filter(
+                usuario=usuario_alvo,
+            ).values_list(
+                "funcionalidade_acao_id",
+                "decisao",
+            )
+        )
+
+        # Prepara os dados de cada ação para o template.
+        for modulo in modulos:
+            for funcionalidade in modulo.funcionalidades.all():
+                for funcionalidade_acao in funcionalidade.acoes.all():
+                    funcionalidade_acao.permitida_pelo_perfil = (
+                            funcionalidade_acao.id in permissoes_perfil
+                    )
+
+                    funcionalidade_acao.decisao_individual = (
+                        permissoes_individuais.get(
+                            funcionalidade_acao.id,
+                            "",
+                        )
+                    )
+
+        context["modulos"] = modulos
+
+        return context
+
+class EditarPermissoesIndividuaisUsuario(LoginRequiredMixin, PermissoesIndividuaisBaseMixin, DetailView,):
+    permissao_acao = "Editar"
+    model = Usuario
+    template_name = "usuario/permissoes_individuais.html"
+    context_object_name = "usuario"
+
+    def get_object(self, queryset=None):
+        usuario_alvo = self.get_usuario_alvo()
+
+        if self.request.user.pk == usuario_alvo.pk:
+            raise PermissionDenied(
+                "Você não pode alterar suas próprias permissões."
+            )
+
+        return usuario_alvo
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["modo_edicao"] = True
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        usuario_alvo = self.object
+
+        form = Form_Permissoes_IndividuaisForm(
+            request.POST
+        )
+
+        if not form.is_valid():
+            context = self.get_context_data()
+            context["form"] = form
+            return self.render_to_response(context)
+
+        decisoes = form.cleaned_data["decisoes"]
+
+        # O conjunto de ações aceitas deve corresponder às
+        # funcionalidades disponíveis para o usuário-alvo.
+        usuario_alvo_eh_administrador = (
+            usuario_alvo.perfil_id is not None
+            and usuario_alvo.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        modulos_permitidos = Modulo.objects.filter(
+            ativo=True
+        )
+
+        if not usuario_alvo_eh_administrador:
+            modulos_permitidos = modulos_permitidos.exclude(
+                nome="Administração"
+            )
+
+        ids_esperados = set(
+            FuncionalidadeAcao.objects.filter(
+                funcionalidade__ativo=True,
+                funcionalidade__modulo__in=modulos_permitidos,
+                funcionalidade__modulo__ativo=True,
+            ).values_list(
+                "id",
+                flat=True,
+            )
+        )
+
+        ids_recebidos = set(decisoes.keys())
+
+        if ids_recebidos != ids_esperados:
+            form.add_error(
+                "decisoes",
+                "O conjunto de ações enviado é inválido ou está "
+                "incompleto. Recarregue a página e tente novamente.",
+            )
+            context = self.get_context_data()
+            context["form"] = form
+            return self.render_to_response(context)
+
+        # Permissões herdadas do perfil: somente os registros
+        # concedidos diretamente ao perfil do usuário-alvo.
+        permissoes_perfil = set()
+
+        if usuario_alvo.perfil_id:
+            permissoes_perfil = set(
+                PerfilPermissao.objects.filter(
+                    perfil_id=usuario_alvo.perfil_id,
+                ).values_list(
+                    "funcionalidade_acao_id",
+                    flat=True,
+                )
+            )
+
+        # Garante que Visualizar seja permitido sempre que
+        # outra ação da mesma funcionalidade estiver efetivamente permitida.
+        acoes_funcionalidades = list(
+            FuncionalidadeAcao.objects.filter(
+                id__in=ids_esperados
+            ).select_related(
+                "funcionalidade",
+                "acao",
+            )
+        )
+
+        acoes_por_funcionalidade = {}
+
+        for funcionalidade_acao in acoes_funcionalidades:
+            funcionalidade_id = funcionalidade_acao.funcionalidade_id
+
+            acoes_por_funcionalidade.setdefault(
+                funcionalidade_id, []
+            ).append(funcionalidade_acao)
+
+        for acoes in acoes_por_funcionalidade.values():
+            acao_visualizar = next(
+                (
+                    acao for acao in acoes
+                    if acao.acao.nome.strip().upper() == "VISUALIZAR"
+                ),
+                None,
+            )
+
+            if acao_visualizar is None:
+                continue
+
+            def permissao_efetiva(acao):
+                decisao = decisoes.get(acao.id)
+
+                # Decisões redundantes equivalem à herança do perfil.
+                if (
+                    decisao is None
+                    or (
+                        decisao == "PERMITIR"
+                        and acao.id in permissoes_perfil
+                    )
+                    or (
+                        decisao == "NEGAR"
+                        and acao.id not in permissoes_perfil
+                    )
+                ):
+                    return acao.id in permissoes_perfil
+
+                return decisao == "PERMITIR"
+
+            outra_acao_permitida = any(
+                acao.id != acao_visualizar.id
+                and permissao_efetiva(acao)
+                for acao in acoes
+            )
+
+            if outra_acao_permitida:
+                if acao_visualizar.id in permissoes_perfil:
+                    # O perfil já permite Visualizar.
+                    # Remove eventual decisão individual redundante
+                    # ou contrária, restabelecendo a herança.
+                    decisoes[acao_visualizar.id] = None
+                else:
+                    # O perfil não permite Visualizar:
+                    # precisamos conceder a permissão individual.
+                    decisoes[acao_visualizar.id] = "PERMITIR"
+
+        alteracoes = []
+
+        with transaction.atomic():
+            permissoes_existentes = {
+                permissao.funcionalidade_acao_id: permissao
+                for permissao in UsuarioPermissao.objects.filter(
+                    usuario=usuario_alvo,
+                    funcionalidade_acao_id__in=ids_esperados,
+                ).select_for_update()
+            }
+
+            for funcionalidade_acao_id, decisao in decisoes.items():
+                permissao_existente = permissoes_existentes.get(
+                    funcionalidade_acao_id
+                )
+
+                decisao_anterior = (
+                    permissao_existente.decisao
+                    if permissao_existente
+                    else None
+                )
+
+                # A ausência de decisão significa retornar à
+                # herança do perfil.
+                #
+                # Uma decisão igual à do perfil é redundante.
+                if (
+                    decisao is None
+                    or (
+                        decisao == "PERMITIR"
+                        and funcionalidade_acao_id in permissoes_perfil
+                    )
+                    or (
+                        decisao == "NEGAR"
+                        and funcionalidade_acao_id not in permissoes_perfil
+                    )
+                ):
+                    decisao_final = None
+                else:
+                    decisao_final = decisao
+
+                # Não registrar nem auditar operações sem mudança.
+                if decisao_anterior == decisao_final:
+                    continue
+
+                if decisao_final is None:
+                    if permissao_existente:
+                        permissao_existente.delete()
+
+                        alteracoes.append({
+                            "funcionalidade_acao_id": (
+                                funcionalidade_acao_id
+                            ),
+                            "decisao_anterior": decisao_anterior,
+                            "decisao_nova": None,
+                            "operacao": "DELETE",
+                        })
+
+                elif permissao_existente:
+                    permissao_existente.decisao = decisao_final
+                    permissao_existente.save(
+                        update_fields=["decisao"]
+                    )
+
+                    alteracoes.append({
+                        "funcionalidade_acao_id": (
+                            funcionalidade_acao_id
+                        ),
+                        "decisao_anterior": decisao_anterior,
+                        "decisao_nova": decisao_final,
+                        "operacao": "UPDATE",
+                    })
+
+                else:
+                    UsuarioPermissao.objects.create(
+                        usuario=usuario_alvo,
+                        funcionalidade_acao_id=funcionalidade_acao_id,
+                        decisao=decisao_final,
+                    )
+
+                    alteracoes.append({
+                        "funcionalidade_acao_id": (
+                            funcionalidade_acao_id
+                        ),
+                        "decisao_anterior": None,
+                        "decisao_nova": decisao_final,
+                        "operacao": "CREATE",
+                    })
+
+            # Cada alteração efetiva recebe seu próprio registro
+            # de auditoria, dentro da mesma transação.
+            for alteracao in alteracoes:
+                operacao = alteracao["operacao"]
+
+                registrar_log(
+                    request=request,
+                    acao=operacao,
+                    modelo="UsuarioPermissao",
+                    objeto_id=str(usuario_alvo.pk),
+                    descricao=(
+                        "Permissão individual do usuário "
+                        f"{usuario_alvo.username} alterada. "
+                        f"Ação de funcionalidade: "
+                        f"{alteracao['funcionalidade_acao_id']}. "
+                        f"Decisão anterior: "
+                        f"{alteracao['decisao_anterior'] or 'Herdada do perfil'}. "
+                        f"Nova decisão: "
+                        f"{alteracao['decisao_nova'] or 'Herdada do perfil'}."
+                    ),
+                    dados_antes={
+                        "usuario_id": usuario_alvo.pk,
+                        "funcionalidade_acao_id": (
+                            alteracao["funcionalidade_acao_id"]
+                        ),
+                        "decisao": alteracao["decisao_anterior"],
+                    },
+                    dados_depois={
+                        "usuario_id": usuario_alvo.pk,
+                        "funcionalidade_acao_id": (
+                            alteracao["funcionalidade_acao_id"]
+                        ),
+                        "decisao": alteracao["decisao_nova"],
+                    },
+                    propagar_erro=True,
+                )
+
+        messages.success(
+            request,
+            "Permissões individuais atualizadas com sucesso."
+            if alteracoes
+            else "Nenhuma alteração nas permissões individuais foi necessária.",
+        )
+
+        return redirect(
+            "arquiteturaprocessos:editar_permissoes_individuais_usuario",
+            pk=usuario_alvo.pk,
+        )
+
 # ------------------------------
 # Cadastro / Listagem Usuários
 # ------------------------------
-class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
+class CadastroUsuarios(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Visualizar"
     template_name = 'usuario/cadastrousuarios.html'
     model = Usuario
     context_object_name = 'usuarios'
@@ -2815,8 +3831,40 @@ class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
         )
 
     def get_context_data(self, **kwargs):
-
         context = super().get_context_data(**kwargs)
+
+        acoes = {
+            'pode_cadastrar': 'Cadastrar',
+            'pode_visualizar': 'Visualizar',
+            'pode_editar': 'Editar',
+            'pode_excluir': 'Excluir',
+        }
+
+        # Permissões Individuais
+        usuario_logado = self.request.user
+
+        eh_administrador = (
+                usuario_logado.perfil_id is not None
+                and usuario_logado.perfil.codigo == "ADMINISTRADOR"
+        )
+
+        context["pode_administrar_permissoes_individuais"] = (
+                (usuario_logado.is_master or eh_administrador)
+                and tem_permissao(
+            usuario_logado,
+            "Administração",
+            "Permissões Individuais",
+            "Visualizar",
+            )
+        )
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
 
         perfis = Perfil.objects.order_by('nome')
 
@@ -2830,7 +3878,10 @@ class CadastroUsuarios(LoginRequiredMixin, AcessoTotalRequiredMixin, ListView):
 # ----------------------------------------
 # Criar Usuário (com username automático)
 # ----------------------------------------
-class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
+class CriarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Cadastrar"
     template_name = 'usuario/form_usuario.html'
     form_class = Form_UsuarioForm
 
@@ -2914,7 +3965,10 @@ class CriarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, CreateView):
 # ---------------------------
 # Usuário — Visualizar
 # ---------------------------
-class VisualizarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
+class VisualizarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Visualizar"
     template_name = 'usuario/form_usuario.html'
     model = Usuario
     context_object_name = 'usuario'
@@ -2952,7 +4006,10 @@ class VisualizarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView
 # ---------------------------
 # Usuário — Editar
 # ---------------------------
-class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
+class EditarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Editar"
     template_name = 'usuario/form_usuario.html'
     model = Usuario
     form_class = EditarUsuarioForm
@@ -3034,7 +4091,10 @@ class EditarUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, UpdateView):
 # -------------------------------
 # Usuário — Excluir (desativar)
 # -------------------------------
-class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
+class ExcluirUsuario(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Administração"
+    permissao_funcionalidade = "Usuários"
+    permissao_acao = "Excluir"
     template_name = 'usuario/form_usuario.html'
     model = Usuario
 
@@ -3101,16 +4161,13 @@ class ExcluirUsuario(LoginRequiredMixin, AcessoTotalRequiredMixin, DetailView):
         })
         return context
 
-# ---------------------------
-# Macroprocessos N1 / N2
-# ---------------------------
-class MacroProcessoView(TemplateView):
-    template_name = 'arquitetura/estrutura/macroprocesso.html'
-
 # ---------------------------------------------------
 # LISTAGEM DE MACROPROCESSO NIVEL 1
 # ---------------------------------------------------
-class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
+class MacroProcessoNivel1View(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Visualizar"
     model = MacroprocessoNivel1
     template_name = 'estrutura/macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
@@ -3190,7 +4247,6 @@ class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
             query_params_no_page.pop("page")
 
         context["query_string"] = query_params_no_page.urlencode()
-
         context["query_string_full"] = query_params.urlencode()
 
         # ---------------------------------------------------
@@ -3198,9 +4254,30 @@ class MacroProcessoNivel1View(LoginRequiredMixin, ListView):
         # ---------------------------------------------------
         context["total_registros"] = context["page_obj"].paginator.count
 
+        # ---------------------------------------------------
+        # PERMISSÕES DE ACESSO
+        # ---------------------------------------------------
+        acoes = {
+            "pode_cadastrar": "Cadastrar",
+            "pode_visualizar": "Visualizar",
+            "pode_editar": "Editar",
+            "pode_excluir": "Excluir",
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                "Estrutura de Documentos → Processos",
+                "Macroprocesso N1",
+                acao,
+            )
+
         return context
 
-class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
+class CriarMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Cadastrar"
     template_name = 'estrutura/form_macroprocessonivel1.html'
     form_class = Form_MacroProcessoNivel1Form
 
@@ -3226,7 +4303,10 @@ class CriarMacroProcessoNivel1(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
 
-class VisualizarMacroProcessoNivel1(LoginRequiredMixin, DetailView):
+class VisualizarMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Visualizar"
     template_name = 'estrutura/form_macroprocessonivel1.html'
     model = MacroprocessoNivel1
     context_object_name = 'macroprocessonivel1'
@@ -3243,7 +4323,10 @@ class VisualizarMacroProcessoNivel1(LoginRequiredMixin, DetailView):
         })
         return context
 
-class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
+class EditarMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Editar"
     model = MacroprocessoNivel1
     template_name = 'estrutura/form_macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
@@ -3271,7 +4354,10 @@ class EditarMacroProcessoNivel1(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel1')
 
-class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
+class ExcluirMacroProcessoNivel1(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N1"
+    permissao_acao = "Excluir"
     model = MacroprocessoNivel1
     template_name = 'estrutura/form_macroprocessonivel1.html'
     context_object_name = 'macroprocessonivel1'
@@ -3315,7 +4401,10 @@ class ExcluirMacroProcessoNivel1(LoginRequiredMixin, DetailView):
 # ---------------------------------------------------
 # LISTAGEM DE MACROPROCESSO NIVEL 2
 # ---------------------------------------------------
-class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
+class MacroProcessoNivel2View(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Visualizar"
     model = MacroprocessoNivel2
     template_name = 'estrutura/macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
@@ -3423,9 +4512,23 @@ class MacroProcessoNivel2View(LoginRequiredMixin, ListView):
         # ---------------------------------------------------
         context["total_registros"] = context["page_obj"].paginator.count
 
+        # ---------------------------------------------------
+        # PERMISSÕES DE ACESSO
+        # ---------------------------------------------------
+        modulo = "Estrutura de Documentos → Processos"
+        funcionalidade = "Macroprocesso N2"
+
+        context["pode_cadastrar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Cadastrar")
+        context["pode_visualizar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Visualizar")
+        context["pode_editar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Editar")
+        context["pode_excluir"] = tem_permissao(self.request.user, modulo, funcionalidade, "Excluir")
+
         return context
 
-class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
+class CriarMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Cadastrar"
     template_name = 'estrutura/form_macroprocessonivel2.html'
     form_class = Form_MacroProcessoNivel2Form
 
@@ -3451,7 +4554,10 @@ class CriarMacroProcessoNivel2(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel2')
 
-class VisualizarMacroProcessoNivel2(LoginRequiredMixin, DetailView):
+class VisualizarMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Visualizar"
     template_name = 'estrutura/form_macroprocessonivel2.html'
     model = MacroprocessoNivel2
     context_object_name = 'macroprocessonivel2'
@@ -3468,7 +4574,10 @@ class VisualizarMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         })
         return context
 
-class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
+class EditarMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Editar"
     model = MacroprocessoNivel2
     template_name = 'estrutura/form_macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
@@ -3496,7 +4605,10 @@ class EditarMacroProcessoNivel2(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('arquiteturaprocessos:macroprocessonivel2')
 
-class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
+class ExcluirMacroProcessoNivel2(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Macroprocesso N2"
+    permissao_acao = "Excluir"
     model = MacroprocessoNivel2
     template_name = 'estrutura/form_macroprocessonivel2.html'
     context_object_name = 'macroprocessonivel2'
@@ -3513,7 +4625,8 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         })
         return context
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request,
+             *args, **kwargs):
         macroprocessonivel2 = self.get_object()
         processo_associado = Processo.objects.filter(macroprocesso_nivel2=macroprocessonivel2).first()
         if processo_associado:
@@ -3526,30 +4639,63 @@ class ExcluirMacroProcessoNivel2(LoginRequiredMixin, DetailView):
         messages.success(request, f"Macroprocesso Nível 2 '{macroprocessonivel2.nome}' excluído com sucesso!")
         return redirect('arquiteturaprocessos:macroprocessonivel2')
 
-class SubProcessoView(TemplateView):
-    template_name = 'arquitetura/estrutura/subprocesso.html'
-
 # ---------------------------
 # SISTEMAS UECI
 # ---------------------------
-class Sistemas_UECIList(LoginRequiredMixin, ListView):
-
+class Sistemas_UECIList(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
     model = SistemasUECI
     template_name = 'estrutura/sistemas_ueci.html'
     context_object_name = 'sistemas_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Visualizar"
 
     def get_queryset(self):
-
         return (
             SistemasUECI.objects
             .all()
             .order_by('nome_sistema')
         )
 
-class CriarSistema_UECI(LoginRequiredMixin, CreateView):
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        ctx.update({
+            'pode_cadastrar': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Cadastrar"
+            ),
+            'pode_visualizar': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Visualizar"
+            ),
+            'pode_editar': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Editar"
+            ),
+            'pode_excluir': tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Excluir"
+            ),
+        })
+
+        return ctx
+
+class CriarSistema_UECI(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
     model = SistemasUECI
     form_class = Form_Sistema_UECIForm
     template_name = 'estrutura/form_sistema_ueci.html'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Cadastrar"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3569,21 +4715,30 @@ class CriarSistema_UECI(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Sistema UECI '{self.object.sistema_completo}' cadastrado com sucesso!")
+        messages.success(
+            self.request,
+            f"Sistema UECI '{self.object.sistema_completo}' cadastrado com sucesso!"
+        )
         return response
 
     success_url = reverse_lazy(
         'arquiteturaprocessos:sistemas_ueci'
     )
 
-class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
+class VisualizarSistema_UECI( LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = SistemasUECI
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Visualizar"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['form'] = Form_Sistema_UECIForm(instance=self.get_object(), modo_visualizacao=True)
+        ctx['form'] = Form_Sistema_UECIForm(
+            instance=self.get_object(),
+            modo_visualizacao=True
+        )
         ctx.update({
             'modo_visualizacao': True,
             'modo_inclusao': False,
@@ -3592,11 +4747,14 @@ class VisualizarSistema_UECI(LoginRequiredMixin, DetailView):
         })
         return ctx
 
-class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
+class EditarSistema_UECI(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
     model = SistemasUECI
     form_class = Form_Sistema_UECIForm
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Editar"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3616,17 +4774,23 @@ class EditarSistema_UECI(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Sistema UECI '{self.object.sistema_completo}' atualizado com sucesso!")
+        messages.success(
+            self.request,
+            f"Sistema UECI '{self.object.sistema_completo}' atualizado com sucesso!"
+        )
         return response
 
     success_url = reverse_lazy(
         'arquiteturaprocessos:sistemas_ueci'
     )
 
-class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
+class ExcluirSistema_UECI(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = SistemasUECI
     template_name = 'estrutura/form_sistema_ueci.html'
     context_object_name = 'sistema_ueci'
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Sistemas"
+    permissao_acao = "Excluir"
 
     def post(self, request, *args, **kwargs):
         sistema_ueci = self.get_object()
@@ -3689,7 +4853,24 @@ class ExcluirSistema_UECI(LoginRequiredMixin, DetailView):
 class DefinicaoDocumentoMixin:
 
     def get_contexto(self):
-        return self.kwargs["contexto"]
+        contexto = self.kwargs.get("contexto")
+
+        contextos_validos = {
+            "processo",
+            "norma",
+            "macroprocesso",
+            "cadeia_valor",
+        }
+
+        if contexto not in contextos_validos:
+            raise Http404("Contexto de definição não encontrado.")
+
+        return contexto
+
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            contexto=self.get_contexto()
+        )
 
     def get_nome_documento(self):
         nomes = {
@@ -3704,6 +4885,27 @@ class DefinicaoDocumentoMixin:
     def get_titulo(self):
         return f"Definição de {self.get_nome_documento()}"
 
+    def get_permissao_modulo(self):
+        modulos = {
+            "processo": "Estrutura de Documentos → Processos",
+            "macroprocesso": "Estrutura de Documentos → Processos",
+            "norma": "Estrutura de Documentos → Normas de Procedimento",
+            "cadeia_valor": "Cadeia de Valor",
+        }
+
+        return modulos.get(self.get_contexto())
+
+
+    def get_permissao_funcionalidade(self):
+        funcionalidades = {
+            "processo": "Definição → Modelos de Processo",
+            "macroprocesso": "Definição → Macroprocessos",
+            "norma": "Definição",
+            "cadeia_valor": "Definição",
+        }
+
+        return funcionalidades.get(self.get_contexto())
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
@@ -3716,7 +4918,8 @@ class DefinicaoDocumentoMixin:
 # ---------------------------
 # Definição de Documento
 # ---------------------------
-class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, ListView):
+class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, ListView,):
+    permissao_acao = "Visualizar"
     model = TiposDocumento
     template_name = 'estrutura/tiposdocumento.html'
     context_object_name = 'tiposdocumento'
@@ -3729,17 +4932,79 @@ class TipoDocumentoList(LoginRequiredMixin, DefinicaoDocumentoMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
+        pode_cadastrar = tem_permissao(
+            self.request.user,
+            self.get_permissao_modulo(),
+            self.get_permissao_funcionalidade(),
+            "Cadastrar",
+        )
+
         ctx.update({
-            'permite_inclusao': not self.get_queryset().exists(),
+            "permite_inclusao": (
+                    not self.get_queryset().exists()
+                    and pode_cadastrar
+            ),
+            "pode_visualizar": tem_permissao(
+                self.request.user,
+                self.get_permissao_modulo(),
+                self.get_permissao_funcionalidade(),
+                "Visualizar",
+            ),
+            "pode_editar": tem_permissao(
+                self.request.user,
+                self.get_permissao_modulo(),
+                self.get_permissao_funcionalidade(),
+                "Editar",
+            ),
+            "pode_excluir": tem_permissao(
+                self.request.user,
+                self.get_permissao_modulo(),
+                self.get_permissao_funcionalidade(),
+                "Excluir",
+            ),
         })
 
         return ctx
 
-
-class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView):
+class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, CreateView,):
+    permissao_acao = "Cadastrar"
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
+
+    def redirecionar_se_existente(self):
+        if TiposDocumento.objects.filter(
+                contexto=self.get_contexto()
+        ).exists():
+            messages.warning(
+                self.request,
+                (
+                    f"A definição de {self.get_nome_documento()} "
+                    "já existe para este contexto."
+                ),
+            )
+            return redirect(
+                "arquiteturaprocessos:tiposdocumento",
+                contexto=self.get_contexto(),
+            )
+
+        return None
+
+    def get(self, request, *args, **kwargs):
+        resposta = self.redirecionar_se_existente()
+
+        if resposta:
+            return resposta
+
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        resposta = self.redirecionar_se_existente()
+
+        if resposta:
+            return resposta
+
+        return super().post(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3783,11 +5048,8 @@ class CriarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, CreateView
         )
 
 
-class VisualizarTipoDocumento(
-    LoginRequiredMixin,
-    DefinicaoDocumentoMixin,
-    DetailView
-):
+class VisualizarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_acao = "Visualizar"
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -3810,12 +5072,8 @@ class VisualizarTipoDocumento(
 
         return ctx
 
-
-class EditarTipoDocumento(
-    LoginRequiredMixin,
-    DefinicaoDocumentoMixin,
-    UpdateView
-):
+class EditarTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_acao = "Editar"
     model = TiposDocumento
     form_class = Form_TipoDocumentoForm
     template_name = 'estrutura/form_tipodocumento.html'
@@ -3862,12 +5120,8 @@ class EditarTipoDocumento(
             }
         )
 
-
-class ExcluirTipoDocumento(
-    LoginRequiredMixin,
-    DefinicaoDocumentoMixin,
-    DetailView
-):
+class ExcluirTipoDocumento(LoginRequiredMixin, DefinicaoDocumentoMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_acao = "Excluir"
     model = TiposDocumento
     template_name = 'estrutura/form_tipodocumento.html'
     context_object_name = 'tipodocumento'
@@ -3908,25 +5162,20 @@ class ExcluirTipoDocumento(
 # ============================================================
 # LISTAGEM DE NORMAS DE PROCEDIMENTO
 # ============================================================
-class NormasProcedimentoView(LoginRequiredMixin, ListView):
-
+class NormasProcedimentoView(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
     model = NormaProcedimento
-    template_name = (
-        "modelagemprocessos/normasprocedimento.html"
-    )
-    context_object_name = (
-        "normas_procedimento"
-    )
+    template_name = ("modelagemprocessos/normasprocedimento.html")
+    context_object_name = ("normas_procedimento")
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Visualizar"
 
     def get_paginate_by(self, queryset):
 
-        page_size = self.request.GET.get(
-            "page_size"
-        )
+        page_size = self.request.GET.get("page_size")
 
         try:
             return int(page_size)
-
         except (
             TypeError,
             ValueError
@@ -3949,61 +5198,24 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
         # ====================================================
         # FILTROS
         # ====================================================
-        nome_norma = req.get(
-            "nome_norma",
-            ""
-        ).strip()
-
-        sistema = req.get(
-            "sistema",
-            ""
-        ).strip()
-
-        norma_exclusiva = req.get(
-            "norma_exclusiva",
-            ""
-        ).strip().lower()
-
-        emitente = req.get(
-            "emitente",
-            ""
-        ).strip()
-
-        codigo_norma = req.get(
-            "codigo_norma",
-            ""
-        ).strip()
-
-        vigencia_de = req.get(
-            "vigencia_de",
-            ""
-        ).strip()
-
-        vigencia_ate = req.get(
-            "vigencia_ate",
-            ""
-        ).strip()
+        nome_norma = req.get("nome_norma","").strip()
+        sistema = req.get("sistema","").strip()
+        norma_exclusiva = req.get("norma_exclusiva","").strip().lower()
+        emitente = req.get("emitente", "").strip()
+        codigo_norma = req.get("codigo_norma", "").strip()
+        vigencia_de = req.get("vigencia_de", "").strip()
+        vigencia_ate = req.get("vigencia_ate", "").strip()
 
         # ====================================================
         # APLICAÇÃO DOS FILTROS
         # ====================================================
         if nome_norma:
-
-            queryset = queryset.filter(
-                nome_norma__icontains=nome_norma
-            )
+            queryset = queryset.filter(nome_norma__icontains=nome_norma)
 
         if sistema:
+            queryset = queryset.filter(sistema_id=sistema)
 
-            queryset = queryset.filter(
-                sistema_id=sistema
-            )
-
-        if norma_exclusiva in (
-            "true",
-            "false"
-        ):
-
+        if norma_exclusiva in ("true", "false"):
             queryset = queryset.filter(
                 norma_exclusiva=(
                     norma_exclusiva == "true"
@@ -4011,115 +5223,59 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             )
 
         if emitente:
-
-            queryset = queryset.filter(
-                emitente__icontains=emitente
-            )
+            queryset = queryset.filter(emitente__icontains=emitente)
 
         if codigo_norma:
-
-            queryset = queryset.filter(
-                codigo_norma__icontains=codigo_norma
-            )
+            queryset = queryset.filter(codigo_norma__icontains=codigo_norma)
 
         if vigencia_de:
-
-            queryset = queryset.filter(
-                vigencia_inicio__gte=vigencia_de
-            )
+            queryset = queryset.filter(vigencia_inicio__gte=vigencia_de)
 
         if vigencia_ate:
-
-            queryset = queryset.filter(
-                vigencia_fim__lte=vigencia_ate
-            )
+            queryset = queryset.filter(vigencia_fim__lte=vigencia_ate)
 
         return queryset
 
-    def get_context_data(
-        self,
-        **kwargs
-    ):
-
-        context = (
-            super()
-            .get_context_data(**kwargs)
-        )
+    def get_context_data(self, **kwargs):
+        context = (super().get_context_data(**kwargs))
 
         req = self.request.GET
 
         # ====================================================
         # VALORES DOS FILTROS
         # ====================================================
-        context["nome_norma_busca"] = (
-            req.get("nome_norma", "")
-        )
+        context["nome_norma_busca"] = (req.get("nome_norma", ""))
 
-        context["norma_exclusiva_busca"] = (
-            req.get("norma_exclusiva", "")
-        )
+        context["norma_exclusiva_busca"] = (req.get("norma_exclusiva", ""))
 
         try:
-
-            context["sistema_busca"] = int(
-                req.get("sistema")
-            )
-
-        except (
-            TypeError,
-            ValueError
-        ):
-
+            context["sistema_busca"] = int(req.get("sistema"))
+        except (TypeError, ValueError):
             context["sistema_busca"] = None
 
-        context["emitente_busca"] = (
-            req.get("emitente", "")
-        )
-
-        context["codigo_norma_busca"] = (
-            req.get("codigo_norma", "")
-        )
-
-        context["vigencia_de"] = (
-            req.get("vigencia_de", "")
-        )
-
-        context["vigencia_ate"] = (
-            req.get("vigencia_ate", "")
-        )
+        context["emitente_busca"] = (req.get("emitente", ""))
+        context["codigo_norma_busca"] = (req.get("codigo_norma", ""))
+        context["vigencia_de"] = (req.get("vigencia_de", ""))
+        context["vigencia_ate"] = (req.get("vigencia_ate", ""))
 
         # ====================================================
         # SISTEMAS
         # ====================================================
-        context["sistemas"] = (
-            SistemasUECI.objects
-            .order_by("nome_sistema")
-        )
+        context["sistemas"] = (SistemasUECI.objects.order_by("nome_sistema"))
 
         # ====================================================
         # QUERY STRING
         # ====================================================
-        query_params = (
-            self.request.GET.copy()
-        )
-
-        query_params_no_page = (
-            query_params.copy()
-        )
+        query_params = (self.request.GET.copy())
+        query_params_no_page = (query_params.copy())
 
         if "page" in query_params_no_page:
-
             query_params_no_page.pop(
                 "page"
             )
 
-        context["query_string"] = (
-            query_params_no_page.urlencode()
-        )
-
-        context["query_string_full"] = (
-            query_params.urlencode()
-        )
+        context["query_string"] = (query_params_no_page.urlencode())
+        context["query_string_full"] = (query_params.urlencode())
 
         # ====================================================
         # TOTAL DE REGISTROS
@@ -4130,16 +5286,48 @@ class NormasProcedimentoView(LoginRequiredMixin, ListView):
             .count
         )
 
+        # ====================================================
+        # PERMISSÕES
+        # ====================================================
+        context.update({
+            "pode_cadastrar": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Cadastrar"
+            ),
+            "pode_visualizar": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Visualizar"
+            ),
+            "pode_editar": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Editar"
+            ),
+            "pode_excluir": tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                "Excluir"
+            ),
+        })
+
         return context
 
 # ============================================================
 # CRIAR NORMA DE PROCEDIMENTO
 # ============================================================
-class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
-
+class CriarNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
     model = NormaProcedimento
     template_name = "modelagemprocessos/form_normaprocedimento.html"
     form_class = Form_NormaProcedimentoForm
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Cadastrar"
 
     def get_success_url(self):
         url = reverse("arquiteturaprocessos:normasprocedimento")
@@ -4154,12 +5342,9 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
     # FORM KWARGS
     # ========================================================
     def get_form_kwargs(self):
-
         kwargs = super().get_form_kwargs()
 
-        kwargs.update({
-            "modo_inclusao": True,
-        })
+        kwargs.update({ "modo_inclusao": True,})
 
         return kwargs
 
@@ -4205,14 +5390,13 @@ class CriarNormaProcedimento(LoginRequiredMixin, CreateView):
 # ============================================================
 # VISUALIZAR NORMA DE PROCEDIMENTO
 # ============================================================
-class VisualizarNormaProcedimento(
-    LoginRequiredMixin,
-    DetailView
-):
-
+class VisualizarNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = NormaProcedimento
     template_name = "modelagemprocessos/form_normaprocedimento.html"
     context_object_name = "normaprocedimento"
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Visualizar"
 
     def get_context_data(self, **kwargs):
 
@@ -4220,13 +5404,9 @@ class VisualizarNormaProcedimento(
 
         obj = self.get_object()
 
-        context["form"] = Form_NormaProcedimentoForm(
-            instance=obj,
-            modo_visualizacao=True,
-        )
+        context["form"] = Form_NormaProcedimentoForm(instance=obj, modo_visualizacao=True,)
 
         context.update({
-
             "modo_visualizacao": True,
             "modo_inclusao": False,
             "modo_edicao": False,
@@ -4265,24 +5445,14 @@ class VisualizarNormaProcedimento(
 # ============================================================
 # EDITAR NORMA DE PROCEDIMENTO
 # ============================================================
-class EditarNormaProcedimento(
-    LoginRequiredMixin,
-    UpdateView
-):
-
+class EditarNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
     model = NormaProcedimento
-
-    template_name = (
-        "modelagemprocessos/form_normaprocedimento.html"
-    )
-
-    context_object_name = (
-        "normaprocedimento"
-    )
-
-    form_class = (
-        Form_NormaProcedimentoForm
-    )
+    template_name = ("modelagemprocessos/form_normaprocedimento.html" )
+    context_object_name = ("normaprocedimento")
+    form_class = (Form_NormaProcedimentoForm)
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Editar"
 
     def get_success_url(self):
         url = reverse("arquiteturaprocessos:normasprocedimento")
@@ -4294,12 +5464,8 @@ class EditarNormaProcedimento(
         return url
 
     def get_form_kwargs(self):
-
         kwargs = super().get_form_kwargs()
-
-        kwargs.update({
-            "modo_edicao": True,
-        })
+        kwargs.update({"modo_edicao": True,})
 
         return kwargs
 
@@ -4310,7 +5476,6 @@ class EditarNormaProcedimento(
         obj = self.object
 
         context.update({
-
             "modo_edicao": True,
             "modo_visualizacao": False,
             "modo_inclusao": False,
@@ -4375,10 +5540,13 @@ class EditarNormaProcedimento(
 # ============================================================
 # EXCLUIR NORMA DE PROCEDIMENTO
 # ============================================================
-class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
+class ExcluirNormaProcedimento(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
     model = NormaProcedimento
     template_name = ("modelagemprocessos/form_normaprocedimento.html")
-    context_object_name = ("normaprocedimento")
+    context_object_name = "normaprocedimento"
+    permissao_modulo = "Estrutura de Documentos → Normas de Procedimento"
+    permissao_funcionalidade = "Normas"
+    permissao_acao = "Excluir"
 
     # ========================================================
     # CONTEXTO
@@ -4398,7 +5566,6 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
         )
 
         context.update({
-
             "modo_inclusao": False,
             "modo_visualizacao": False,
             "modo_edicao": False,
@@ -4477,6 +5644,7 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
         nome_norma = obj.nome_norma
 
         obj.delete()
+
         messages.success(
             request,
             f'Norma de Procedimento "{nome_norma}" excluída com sucesso.'
@@ -4493,16 +5661,13 @@ class ExcluirNormaProcedimento(LoginRequiredMixin, DetailView):
 # -------------------------------#
 # LISTAGEM - Áreas Responsáveis  #
 # -------------------------------#
-class AreasResponsaveisList(LoginRequiredMixin, ListView):
+class AreasResponsaveisList(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Visualizar"
     model = ContatoAreaSeger
     template_name =  'estrutura/areasresponsaveis.html'
     context_object_name = 'areas'
-
-    # 🔒 CONTROLE DE ACESSO (mantendo seu padrão)
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     # 🔥 PAGINAÇÃO DINÂMICA (PADRÃO SIGEMP)
     def get_paginate_by(self, queryset):
@@ -4536,6 +5701,18 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
 
         context["query_string"] = query_params_no_page.urlencode()
         context["query_string_full"] = query_params.urlencode()
+
+        # ---------------------------------------------------
+        # PERMISSÕES DE ACESSO
+        # ---------------------------------------------------
+        modulo = "Estrutura de Documentos → Processos"
+        funcionalidade = "Áreas Responsáveis"
+
+        context["pode_cadastrar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Cadastrar")
+        context["pode_visualizar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Visualizar")
+        context["pode_editar"] = tem_permissao(self.request.user, modulo, funcionalidade, "Editar")
+        context["pode_excluir"] = tem_permissao(self.request.user, modulo, funcionalidade, "Excluir")
+        context["pode_atualizar_contatos"] = tem_permissao(self.request.user, modulo, funcionalidade, "Atualizar Contatos")
 
         return context
 
@@ -4615,17 +5792,16 @@ class AreasResponsaveisList(LoginRequiredMixin, ListView):
 # -----------------------------------------------------#
 # Importação de - Áreas Responsáveis - Contatos SEGER  #
 # -----------------------------------------------------#
-class ImportarContatosSeger(LoginRequiredMixin, View):
+class ImportarContatosSeger(LoginRequiredMixin, PermissaoRequiredMixin, View):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Atualizar Contatos"
 
     def get(self, request, *args, **kwargs):
         # 🔒 Bloqueia acesso direto via URL
         return redirect('arquiteturaprocessos:areasresponsaveis')
 
     def post(self, request, *args, **kwargs):
-
-        if request.user.perfil.nome.lower() != 'administrador':
-            messages.error(request, "Você não tem permissão para executar esta ação.")
-            return redirect('arquiteturaprocessos:areasresponsaveis')
 
         try:
             total = atualizar_contatos_seger(usuario=request.user)
@@ -4646,7 +5822,10 @@ class ImportarContatosSeger(LoginRequiredMixin, View):
 # --------------------------------#
 # Criar Área Responsável          #
 # --------------------------------#
-class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
+class CriarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Cadastrar"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = "estrutura/form_arearesponsavel.html"
@@ -4659,11 +5838,6 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
             url += f"?{query_string}"
 
         return url
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -4712,16 +5886,14 @@ class CriarAreasResponsaveis(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Área Responsável     #
 # --------------------------------#
-class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
+class VisualizarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Visualizar"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
     context_object_name = 'area'
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -4767,7 +5939,10 @@ class VisualizarAreasResponsaveis(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Editar Área Responsável         #
 # --------------------------------#
-class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
+class EditarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Editar"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
@@ -4780,11 +5955,6 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
             url += f"?{query_string}"
 
         return url
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -4847,16 +6017,14 @@ class EditarAreasResponsaveis(LoginRequiredMixin, UpdateView):
 # -------------------------------------#
 # Desativar Área Responsável (Soft Delete)
 # -------------------------------------#
-class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
+class ExcluirAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, DetailView):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Excluir"
     model = ContatoAreaSeger
     form_class = Form_AreaResponsavelForm
     template_name = 'estrutura/form_arearesponsavel.html'
     context_object_name = 'area'
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -4944,12 +6112,10 @@ class ExcluirAreasResponsaveis(LoginRequiredMixin, DetailView):
 # -------------------------------------#
 # Reativar Área Responsável
 # -------------------------------------#
-class ReativarAreasResponsaveis(LoginRequiredMixin, View):
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
+class ReativarAreasResponsaveis(LoginRequiredMixin, PermissaoRequiredMixin, View):
+    permissao_modulo = "Estrutura de Documentos → Processos"
+    permissao_funcionalidade = "Áreas Responsáveis"
+    permissao_acao = "Editar"
 
     def post(self, request, pk):
         try:
@@ -4998,7 +6164,11 @@ class ReativarAreasResponsaveis(LoginRequiredMixin, View):
 # -------------------------------#
 # Listagem - Processos           #
 # -------------------------------#
-class ProcessoView(LoginRequiredMixin, ListView):
+class ProcessoView(LoginRequiredMixin, PermissaoRequiredMixin, ListView):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Visualizar"
+
     model = Processo
     template_name = 'processos/processos.html'
     context_object_name = 'processos'
@@ -5172,12 +6342,34 @@ class ProcessoView(LoginRequiredMixin, ListView):
         context["query_string"] = query_params_no_page.urlencode()
         context["query_string_full"] = query_params.urlencode()
 
+        # ================================================
+        # PERMISSÕES DAS AÇÕES DA LISTAGEM
+        # ================================================
+        acoes = {
+            "pode_cadastrar": "Cadastrar",
+            "pode_visualizar": "Visualizar",
+            "pode_editar": "Editar",
+            "pode_excluir": "Excluir",
+        }
+
+        for variavel, acao in acoes.items():
+            context[variavel] = tem_permissao(
+                self.request.user,
+                self.permissao_modulo,
+                self.permissao_funcionalidade,
+                acao,
+            )
+
         return context
 
 # --------------------------------#
 # Criar Processo                  #
 # --------------------------------#
-class CriarProcesso(LoginRequiredMixin, CreateView):
+class CriarProcesso(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Cadastrar"
+
     model = Processo
     template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
@@ -5389,15 +6581,14 @@ class CriarProcesso(LoginRequiredMixin, CreateView):
 # --------------------------------#
 # Visualizar Processo             #
 # --------------------------------#
-class VisualizarProcesso(LoginRequiredMixin, DetailView):
+class VisualizarProcesso(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Visualizar"
+
     model = Processo
     template_name = "processos/form_processo.html"
     context_object_name = "processo"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.perfil.nome.lower() != 'administrador':
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         return (
@@ -5513,7 +6704,11 @@ class VisualizarProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Editar Processo                 #
 # --------------------------------#
-class EditarProcesso(LoginRequiredMixin, UpdateView):
+class EditarProcesso(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Editar"
+
     model = Processo
     template_name = "processos/form_processo.html"
     form_class = Form_ProcessoForm
@@ -5926,7 +7121,11 @@ class EditarProcesso(LoginRequiredMixin, UpdateView):
 # --------------------------------#
 # Excluir Processo                 #
 # --------------------------------#
-class ExcluirProcesso(LoginRequiredMixin, DetailView):
+class ExcluirProcesso(LoginRequiredMixin, PermissaoRequiredMixin, DetailView,):
+    permissao_modulo = "Processos"
+    permissao_funcionalidade = "Cadastro de Processos"
+    permissao_acao = "Excluir"
+
     model = Processo
     template_name = 'processos/form_processo.html'
     context_object_name = 'processo'
@@ -6209,9 +7408,30 @@ class ExcluirProcesso(LoginRequiredMixin, DetailView):
 # --------------------------------#
 # Concluir Processo               #
 # --------------------------------#
-
 @login_required
 def concluir_processo(request, pk):
+    # ---------------------------------------------
+    # Segurança: permissões para concluir processo
+    # ---------------------------------------------
+    if not (
+        tem_permissao(
+            request.user,
+            "Processos",
+            "Cadastro de Processos",
+            "Visualizar",
+        )
+        and tem_permissao(
+            request.user,
+            "Processos",
+            "Cadastro de Processos",
+            "Editar",
+        )
+    ):
+        messages.warning(
+            request,
+            "Você não tem permissão para concluir este processo.",
+        )
+        return redirect("arquiteturaprocessos:homepage")
 
     query_string = request.GET.urlencode()
 

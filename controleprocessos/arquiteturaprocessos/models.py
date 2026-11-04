@@ -6,6 +6,7 @@ from uuid import uuid4
 from datetime import datetime
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.text import slugify
 from django.conf import settings
@@ -14,14 +15,170 @@ from django.core.validators import RegexValidator, MinValueValidator, MaxValueVa
 from django.core.exceptions import ValidationError
 
 # ============================================================
-# PERFIL / USUÁRIO / TELEFONE
+# CONTROLE DE ACESSO
 # ============================================================
+class Modulo(models.Model):
 
-class Perfil(models.Model):
-    nome = models.CharField(max_length=100, null=True, blank=True)
+    class Escopo(models.TextChoices):
+        GERAL = "GERAL", "Geral"
+        ADMINISTRATIVO = "ADM", "Administrativo"
+
+    nome = models.CharField(max_length=150)
+    descricao = models.TextField(blank=True)
+    ordem = models.PositiveIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+    escopo = models.CharField(
+        max_length=10,
+        choices=Escopo.choices,
+        default=Escopo.GERAL,
+    )
 
     def __str__(self):
         return str(self.nome)
+
+class Funcionalidade(models.Model):
+    modulo = models.ForeignKey(
+        "Modulo",
+        on_delete=models.CASCADE,
+        related_name="funcionalidades",
+    )
+    nome = models.CharField(max_length=150)
+    descricao = models.TextField(blank=True)
+    ordem = models.PositiveIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.nome)
+
+class Acao(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["ordem", "id"]
+
+    def __str__(self):
+        return str(self.nome)
+
+class FuncionalidadeAcao(models.Model):
+    funcionalidade = models.ForeignKey(
+        "Funcionalidade",
+        on_delete=models.CASCADE,
+        related_name="acoes",
+    )
+    acao = models.ForeignKey(
+        "Acao",
+        on_delete=models.CASCADE,
+        related_name="funcionalidades",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["funcionalidade", "acao"],
+                name="unique_funcionalidade_acao",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.funcionalidade} - {self.acao}"
+
+# ============================================================
+# PERFIL / USUÁRIO / TELEFONE
+# ============================================================
+class Perfil(models.Model):
+
+    CODIGO_ADMINISTRADOR = "ADMINISTRADOR"
+
+    nome = models.CharField(
+        max_length=100,
+    )
+
+    codigo = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+
+    protegido = models.BooleanField(
+        default=False,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("nome"),
+                name="unique_perfil_nome_lower",
+            ),
+        ]
+
+    def __str__(self):
+        return str(self.nome)
+
+class PerfilPermissao(models.Model):
+    perfil = models.ForeignKey(
+        "Perfil",
+        on_delete=models.CASCADE,
+        related_name="permissoes",
+    )
+    funcionalidade_acao = models.ForeignKey(
+        "FuncionalidadeAcao",
+        on_delete=models.CASCADE,
+        related_name="permissoes_perfil",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["perfil", "funcionalidade_acao"],
+                name="unique_perfil_permissao",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.perfil} - {self.funcionalidade_acao}"
+
+
+class UsuarioPermissao(models.Model):
+
+    class Decisao(models.TextChoices):
+        PERMITIR = "PERMITIR", "Permitir"
+        NEGAR = "NEGAR", "Negar"
+
+    usuario = models.ForeignKey(
+        "Usuario",
+        on_delete=models.CASCADE,
+        related_name="permissoes_individuais",
+    )
+
+    funcionalidade_acao = models.ForeignKey(
+        "FuncionalidadeAcao",
+        on_delete=models.CASCADE,
+        related_name="permissoes_usuario",
+    )
+
+    decisao = models.CharField(
+        max_length=10,
+        choices=Decisao.choices,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["usuario", "funcionalidade_acao"],
+                name="unique_usuario_permissao",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.usuario} - "
+            f"{self.funcionalidade_acao} - "
+            f"{self.get_decisao_display()}"
+        )
 
 
 class Telefone(models.Model):
@@ -41,7 +198,6 @@ class Telefone(models.Model):
 
     def __str__(self):
         return f"{self.ddd} - {self.numero} - {self.ramal}"
-
 
 # ============================================================
 # Usuários

@@ -24,6 +24,7 @@ def registrar_log(
     dados_depois=None,
     sucesso=True,
     usuario=None,
+    propagar_erro=False,
 ):
     """
     Função robusta:
@@ -58,3 +59,6 @@ def registrar_log(
     except Exception as e:
         # ⚠️ Log nunca pode quebrar o sistema
         print(f"Erro ao registrar log: {e}")
+
+        if propagar_erro:
+            raise

@@ -1,0 +1,686 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+
+<div class="py-5 px-2 flex justify-center">
+    <div class="w-full max-w-5xl">
+        <div class="bg-blue-50 border-2 border-blue-700 rounded-lg shadow-md p-4 sm:p-5">
+
+            <!-- Título -->
+            <h2 class="text-center text-base font-bold text-blue-800 mb-4">
+                Administração de Permissões Individuais - Editar
+            </h2>
+
+            <!-- Dados do usuário -->
+            <section class="bg-white border border-gray-300 rounded-md overflow-hidden mb-5">
+
+                <div class="bg-blue-100 px-3 py-2">
+                    <h3 class="text-sm font-semibold text-blue-800">
+                        Dados do Usuário
+                    </h3>
+                </div>
+
+                <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Usuário
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.username }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Nome
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.get_full_name }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Perfil
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.perfil|default_if_none:'' }}"
+                            disabled
+                            class="w-full rounded-md border border-blue-200 bg-blue-100 px-2 py-1.5 text-xs text-blue-800 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Setor
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.setor|default_if_none:'' }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-blue-800 mb-1">
+                            Cargo / Função
+                        </label>
+                        <input
+                            type="text"
+                            value="{{ usuario.cargo|default_if_none:'' }}{% if usuario.cargo and usuario.funcao %} / {% endif %}{{ usuario.funcao|default_if_none:'' }}"
+                            disabled
+                            class="w-full rounded-md border border-gray-300 bg-gray-100 px-2 py-1.5 text-xs text-gray-600 cursor-not-allowed disabled:opacity-100"
+                        >
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Título e legenda -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+
+                <h3 class="text-sm font-bold text-blue-800">
+                    Permissões
+                </h3>
+
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-600">
+
+                    <span class="inline-flex items-center gap-1">
+                        <input
+                            type="checkbox"
+                            checked
+                            aria-hidden="true"
+                            tabindex="-1"
+                            onclick="return false;"
+                            onkeydown="return false;"
+                            class="h-3 w-3 accent-blue-600 cursor-default"
+                        >
+                        Permitido pelo perfil
+                    </span>
+
+                    <span class="inline-flex items-center gap-1">
+                        <span class="inline-block h-2 w-2 rounded-full bg-green-600"></span>
+                        Permitir individualmente
+                    </span>
+
+                    <span class="inline-flex items-center gap-1">
+                        <span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>
+                        Negar individualmente
+                    </span>
+
+                </div>
+            </div>
+
+            <!-- Formulário de permissões individuais -->
+            <form
+                method="post"
+                id="form-permissoes-individuais"
+            >
+                {% csrf_token %}
+
+                <!--
+                    O JavaScript preencherá este campo com um JSON
+                    contendo todas as ações apresentadas na tela.
+                    Uma decisão limpa será representada por null.
+                -->
+                <input
+                    type="hidden"
+                    name="decisoes"
+                    id="id_decisoes"
+                    value="{}">
+
+                {% if form and form.decisoes.errors %}
+                    <div role="alert"
+                         class="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        {% for erro in form.decisoes.errors %}
+                            <p>{{ erro }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Módulos e funcionalidades -->
+                <div class="space-y-3">
+
+                    {% for modulo in modulos %}
+
+                        <section
+                            x-data="{ aberto: false }"
+                            class="bg-white border border-gray-300 rounded-md overflow-hidden"
+                        >
+
+                            <!-- Cabeçalho do módulo -->
+                            <button
+                                type="button"
+                                @click="aberto = !aberto"
+                                :aria-expanded="aberto.toString()"
+                                class="w-full flex items-center gap-2 bg-blue-100 hover:bg-blue-200 px-3 py-2 text-left text-sm font-semibold text-blue-800"
+                            >
+                                <svg
+                                    class="h-4 w-4 flex-shrink-0 transition-transform duration-200"
+                                    :class="{ 'rotate-90': aberto }"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M9 5l7 7-7 7"
+                                    />
+                                </svg>
+
+                                <span>{{ modulo.nome }}</span>
+                            </button>
+
+                            <!-- Conteúdo do módulo -->
+                            <div
+                                x-show="aberto"
+                                x-transition
+                                x-cloak
+                                class="divide-y divide-gray-200"
+                            >
+
+                                {% for funcionalidade in modulo.funcionalidades.all %}
+
+                                    <section
+                                        x-data="{ funcionalidadeAberta: false }"
+                                        class="w-full"
+                                    >
+
+                                        <!-- Cabeçalho da funcionalidade -->
+                                        <div class="overflow-x-auto">
+
+                                            <div class="min-w-[600px]">
+
+                                                <div class="grid grid-cols-[minmax(0,1fr)_76px_192px] bg-blue-50 border-b border-gray-200">
+
+                                                    <!-- Funcionalidade -->
+                                                    <button
+                                                        type="button"
+                                                        @click="funcionalidadeAberta = !funcionalidadeAberta"
+                                                        :aria-expanded="funcionalidadeAberta.toString()"
+                                                        class="flex items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-blue-800 hover:bg-blue-100"
+                                                    >
+                                                        <svg
+                                                            class="h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200"
+                                                            :class="{ 'rotate-90': funcionalidadeAberta }"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="2"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M9 5l7 7-7 7"
+                                                            />
+                                                        </svg>
+
+                                                        <span>{{ funcionalidade.nome }}</span>
+                                                    </button>
+
+                                                    <!-- Perfil -->
+                                                    <div class="flex items-center justify-center border-l border-gray-200 px-1 py-2 text-xs font-semibold text-blue-800">
+                                                        Perfil
+                                                    </div>
+
+                                                    <!-- Permissão Individual -->
+                                                    <div class="border-l border-gray-200 text-center">
+
+                                                        <div class="px-1 pt-1.5 pb-1 text-[11px] font-semibold text-blue-800">
+                                                            Permissão Individual
+                                                        </div>
+
+                                                        <div class="grid grid-cols-3 border-t border-gray-200">
+
+                                                            <div class="py-1 text-[10px] font-semibold text-green-700">
+                                                                Permitir
+                                                            </div>
+
+                                                            <div class="border-l border-gray-200 py-1 text-[10px] font-semibold text-red-700">
+                                                                Negar
+                                                            </div>
+
+                                                            <div class="border-l border-gray-200 py-1 text-[10px] font-semibold text-orange-700">
+                                                                Limpar
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Ações da funcionalidade -->
+                                                <div
+                                                    x-show="funcionalidadeAberta"
+                                                    x-transition
+                                                    x-cloak
+                                                    class="divide-y divide-gray-100"
+                                                >
+
+                                                    {% for funcionalidade_acao in funcionalidade.acoes.all %}
+
+                                                        <div class="grid grid-cols-[minmax(0,1fr)_76px_192px] min-w-[600px] bg-white hover:bg-gray-50">
+
+                                                            <!-- Nome da ação -->
+                                                            <div class="flex items-center px-3 py-2 pl-8 text-xs text-gray-700">
+                                                                {{ funcionalidade_acao.acao.nome }}
+                                                            </div>
+
+                                                            <!-- Permissão herdada do perfil -->
+                                                            <div class="flex items-center justify-center border-l border-gray-100 px-1 py-2">
+
+                                                                <input
+                                                                    type="checkbox"
+                                                                    {% if funcionalidade_acao.permitida_pelo_perfil %}checked{% endif %}
+                                                                    aria-readonly="true"
+                                                                    aria-label="Permissão do perfil para {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                    tabindex="-1"
+                                                                    @click.prevent
+                                                                    @keydown.prevent
+                                                                    class="h-3.5 w-3.5 accent-blue-600 cursor-default"
+                                                                >
+
+                                                            </div>
+
+                                                            <!-- Decisões individuais -->
+                                                            <div
+                                                                class="grid grid-cols-3 border-l border-gray-100"
+                                                                data-permissao-individual
+                                                                data-funcionalidade-acao-id="{{ funcionalidade_acao.id }}"
+                                                                data-funcionalidade-id="{{ funcionalidade.id }}"
+                                                                data-acao-nome="{{ funcionalidade_acao.acao.nome|upper }}"
+                                                                data-perfil-permite="{% if funcionalidade_acao.permitida_pelo_perfil %}true{% else %}false{% endif %}"
+                                                                data-decisao-original="{{ funcionalidade_acao.decisao_individual }}">
+
+                                                                <!-- Permitir -->
+                                                                <div class="flex items-center justify-center py-2">
+
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="decisao_{{ funcionalidade_acao.id }}"
+                                                                        value="PERMITIR"
+                                                                        {% if funcionalidade_acao.decisao_individual == "PERMITIR" %}checked{% endif %}
+                                                                        aria-label="Permitir individualmente: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                        class="h-3.5 w-3.5 accent-green-600 cursor-pointer"
+                                                                    >
+
+                                                                </div>
+
+                                                                <!-- Negar -->
+                                                                <div class="flex items-center justify-center border-l border-gray-100 py-2">
+
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="decisao_{{ funcionalidade_acao.id }}"
+                                                                        value="NEGAR"
+                                                                        {% if funcionalidade_acao.decisao_individual == "NEGAR" %}checked{% endif %}
+                                                                        aria-label="Negar individualmente: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                        class="h-3.5 w-3.5 accent-red-600 cursor-pointer"
+                                                                    >
+
+                                                                </div>
+
+                                                                <!-- Limpar decisão individual -->
+                                                                <div class="flex items-center justify-center border-l border-gray-100 py-2">
+
+                                                                    <button
+                                                                        type="button"
+                                                                        data-limpar-decisao
+                                                                        title="Limpar decisão individual"
+                                                                        aria-label="Limpar decisão individual: {{ funcionalidade.nome }} - {{ funcionalidade_acao.acao.nome }}"
+                                                                        class="hidden text-red-600 hover:text-red-800 text-base font-bold leading-none"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                    {% empty %}
+
+                                                        <div class="px-4 py-3 text-xs text-gray-500">
+                                                            Nenhuma ação cadastrada para esta funcionalidade.
+                                                        </div>
+
+                                                    {% endfor %}
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </section>
+
+                                {% empty %}
+
+                                    <div class="px-4 py-3 text-xs text-gray-500">
+                                        Nenhuma funcionalidade cadastrada neste módulo.
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+                        </section>
+
+                    {% empty %}
+
+                        <div class="rounded-md border border-gray-300 bg-white p-4 text-sm text-gray-500">
+                            Nenhum módulo ativo encontrado.
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+                <!-- Botões -->
+                <div class="flex flex-wrap justify-end gap-2 mt-5">
+
+                    {% if modo_edicao %}
+                        <button
+                            type="submit"
+                            class="rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-medium text-white"
+                        >
+                            Salvar Alterações
+                        </button>
+                    {% endif %}
+
+                    <a
+                        href="{% url 'arquiteturaprocessos:cadastrousuarios' %}"
+                        class="inline-flex items-center justify-center rounded-md bg-gray-300 hover:bg-gray-400 px-4 py-2 text-xs font-medium text-gray-800"
+                    >
+                        Cancelar
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const grupos = [
+        ...document.querySelectorAll("[data-permissao-individual]")
+    ];
+
+    const funcionalidades = new Map();
+
+    // Agrupa as ações por funcionalidade.
+    grupos.forEach((grupo) => {
+        const funcionalidadeId = grupo.dataset.funcionalidadeId;
+
+        if (!funcionalidadeId) {
+            console.error(
+                "Grupo de permissão sem data-funcionalidade-id:",
+                grupo
+            );
+            return;
+        }
+
+        if (!funcionalidades.has(funcionalidadeId)) {
+            funcionalidades.set(funcionalidadeId, []);
+        }
+
+        funcionalidades.get(funcionalidadeId).push(grupo);
+    });
+
+    function obterRadio(grupo, valor) {
+        return grupo.querySelector(
+            `input[type="radio"][value="${valor}"]`
+        );
+    }
+
+    function obterDecisao(grupo) {
+        if (obterRadio(grupo, "PERMITIR")?.checked) {
+            return "PERMITIR";
+        }
+
+        if (obterRadio(grupo, "NEGAR")?.checked) {
+            return "NEGAR";
+        }
+
+        return null;
+    }
+
+    function obterPermissaoEfetiva(grupo) {
+        const decisao = obterDecisao(grupo);
+
+        if (decisao === "PERMITIR") return true;
+        if (decisao === "NEGAR") return false;
+
+        // Sem decisão individual: herda do perfil.
+        return grupo.dataset.perfilPermite === "true";
+    }
+
+    function atualizarControles(grupo, visualizarObrigatorio = false) {
+        const permitir = obterRadio(grupo, "PERMITIR");
+        const negar = obterRadio(grupo, "NEGAR");
+        const limpar = grupo.querySelector("[data-limpar-decisao]");
+
+        const perfilPermite =
+            grupo.dataset.perfilPermite === "true";
+
+        const decisaoAtual = obterDecisao(grupo);
+
+        // Visualizar é obrigatória enquanto outra ação
+        // estiver efetivamente permitida.
+        if (visualizarObrigatorio) {
+            if (perfilPermite) {
+                // O perfil já concede Visualizar:
+                // mantém a herança, sem decisão redundante.
+                if (permitir) permitir.checked = false;
+                if (negar) negar.checked = false;
+            } else {
+                // O perfil não concede Visualizar:
+                // exige a concessão individual.
+                if (permitir) permitir.checked = true;
+                if (negar) negar.checked = false;
+            }
+
+            // Mantém a aparência verde normal do rádio Permitir.
+            if (permitir) permitir.disabled = false;
+
+            // Não permite negar Visualizar enquanto obrigatória.
+            if (negar) negar.disabled = true;
+
+            // Oculta Limpar somente para Visualizar obrigatória.
+            if (limpar) {
+                limpar.classList.add("hidden");
+                limpar.disabled = true;
+            }
+
+            return;
+        }
+
+        // Comportamento normal das demais ações e de Visualizar
+        // quando nenhuma outra ação exige sua concessão.
+        const temDecisaoIndividual = decisaoAtual !== null;
+
+        if (temDecisaoIndividual) {
+            if (permitir) permitir.disabled = false;
+            if (negar) negar.disabled = false;
+        } else {
+            // Evita decisões individuais redundantes ao perfil.
+            if (permitir) {
+                permitir.disabled = perfilPermite;
+            }
+
+            if (negar) {
+                negar.disabled = !perfilPermite;
+            }
+        }
+
+        // IMPORTANTE: o botão já possui a classe Tailwind "hidden".
+        // Portanto, precisamos alternar a classe, não apenas
+        // alterar a propriedade HTML hidden.
+        if (limpar) {
+            limpar.disabled = false;
+            limpar.classList.toggle(
+                "hidden",
+                decisaoAtual === null
+            );
+        }
+    }
+
+    function sincronizarVisualizar() {
+        funcionalidades.forEach((acoes) => {
+            const visualizar = acoes.find(
+                (grupo) =>
+                    (grupo.dataset.acaoNome || "")
+                        .trim()
+                        .toUpperCase() === "VISUALIZAR"
+            );
+
+            if (!visualizar) {
+                acoes.forEach((grupo) => {
+                    atualizarControles(grupo);
+                });
+                return;
+            }
+
+            const outraAcaoPermitida = acoes.some(
+                (grupo) =>
+                    grupo !== visualizar &&
+                    obterPermissaoEfetiva(grupo)
+            );
+
+            acoes.forEach((grupo) => {
+                atualizarControles(
+                    grupo,
+                    grupo === visualizar && outraAcaoPermitida
+                );
+            });
+        });
+    }
+
+    grupos.forEach((grupo) => {
+        const radios = grupo.querySelectorAll(
+            'input[type="radio"]'
+        );
+
+        const limpar = grupo.querySelector(
+            "[data-limpar-decisao]"
+        );
+
+        radios.forEach((radio) => {
+            radio.addEventListener("change", () => {
+                sincronizarVisualizar();
+            });
+        });
+
+        if (limpar) {
+            limpar.addEventListener("click", () => {
+                const funcionalidadeId =
+                    grupo.dataset.funcionalidadeId;
+
+                const acoes =
+                    funcionalidades.get(funcionalidadeId) || [];
+
+                const ehVisualizar =
+                    (grupo.dataset.acaoNome || "")
+                        .trim()
+                        .toUpperCase() === "VISUALIZAR";
+
+                const outraAcaoPermitida = acoes.some(
+                    (acao) =>
+                        acao !== grupo &&
+                        obterPermissaoEfetiva(acao)
+                );
+
+                // Não permite limpar Visualizar enquanto outra
+                // ação efetivamente permitida depender dela.
+                if (ehVisualizar && outraAcaoPermitida) {
+                    sincronizarVisualizar();
+                    return;
+                }
+
+                radios.forEach((radio) => {
+                    radio.checked = false;
+                });
+
+                sincronizarVisualizar();
+            });
+        }
+    });
+
+    // Corrige as combinações existentes ao abrir a página.
+    sincronizarVisualizar();
+
+    const formulario = document.getElementById(
+        "form-permissoes-individuais"
+    );
+
+    if (formulario) {
+        formulario.addEventListener("submit", (evento) => {
+            sincronizarVisualizar();
+
+            const decisoes = {};
+            let idsInvalidos = false;
+
+            grupos.forEach((grupo) => {
+                const id = grupo.dataset.funcionalidadeAcaoId;
+
+                if (
+                    !id ||
+                    Object.prototype.hasOwnProperty.call(decisoes, id)
+                ) {
+                    idsInvalidos = true;
+                    return;
+                }
+
+                decisoes[id] = obterDecisao(grupo);
+            });
+
+            if (idsInvalidos) {
+                evento.preventDefault();
+
+                const areaErros = document.getElementById(
+                    "erros-permissoes-individuais"
+                );
+
+                if (areaErros) {
+                    areaErros.textContent =
+                        "Não foi possível salvar: existem identificadores de ações ausentes ou duplicados.";
+                }
+
+                return;
+            }
+
+            const campoDecisoes = document.getElementById(
+                "id_decisoes"
+            );
+
+            if (!campoDecisoes) {
+                evento.preventDefault();
+
+                console.error(
+                    "Campo id_decisoes não encontrado no formulário."
+                );
+
+                return;
+            }
+
+            campoDecisoes.value = JSON.stringify(decisoes);
+        });
+    }
+});
+</script>
+
+
+{% endblock %}

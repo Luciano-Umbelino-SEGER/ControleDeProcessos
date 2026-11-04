@@ -73,8 +73,12 @@
 
                     <div id="imagem-dropzone"
                          class="relative w-full h-[205px] border-2 border-dashed border-blue-300 rounded-lg bg-white
-                                flex items-center justify-center overflow-hidden cursor-pointer transition duration-200
-                                hover:border-blue-500 hover:bg-blue-50">
+                                flex items-center justify-center overflow-hidden transition duration-200
+                                {% if not modo_visualizacao and not modo_exclusao %}
+                                    cursor-pointer hover:border-blue-500 hover:bg-blue-50
+                                {% else %}
+                                    cursor-default
+                                {% endif %}">
 
                         <!-- CAMPO REAL DO DJANGO -->
                         {{ form.imagem|add_attr:"class:hidden" }}

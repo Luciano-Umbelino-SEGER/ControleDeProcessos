@@ -15,9 +15,10 @@ from urllib.parse import (urlparse, unquote,)
 from .models import (
     Usuario, Telefone, Classificacao, MacroprocessoNivel1, MacroprocessoNivel2, Processo,
     TiposDocumento, ProcessoMapear, ContatoAreaSeger, NormaProcedimento, SistemasUECI, AbrangenciaChoices,
-    ImagemCadeiaValor,
+    ImagemCadeiaValor, Perfil, PerfilPermissao, FuncionalidadeAcao, UsuarioPermissao, Modulo,
 )
 from django.db.models import Q
+from django.db.models.functions import Lower
 from arquiteturaprocessos.utils.processos import validar_normas_processo
 
 UserModel = get_user_model()
@@ -132,6 +133,205 @@ class EmailAuthenticationForm(AuthenticationForm):
             else:
                 raise forms.ValidationError(_("Usuário ou senha inválidos."))
         return self.cleaned_data
+
+# ============================================================
+# FORMULÁRIO DE PERFIL
+# ============================================================
+class Form_PerfilForm(forms.ModelForm):
+
+    permissoes = forms.ModelMultipleChoiceField(
+        queryset=FuncionalidadeAcao.objects.filter(
+            funcionalidade__ativo=True,
+            funcionalidade__modulo__ativo=True,
+        ).select_related(
+            "funcionalidade",
+            "funcionalidade__modulo",
+            "acao",
+        ),
+        required=True,
+    )
+
+    class Meta:
+        model = Perfil
+        fields = (
+            "nome",
+        )
+
+        labels = {
+            "nome": "Nome do Perfil",
+        }
+
+    def __init__(self, *args, usuario_logado=None, **kwargs,):
+        super().__init__(*args, **kwargs)
+
+        self.usuario_logado = usuario_logado
+        self.label_suffix = ""
+
+        # ====================================================
+        # CONFIGURAÇÃO DO CAMPO NOME
+        # ====================================================
+        self.fields["nome"].required = True
+
+        self.fields["nome"].widget.attrs.update({
+            "maxlength": "100",
+            "placeholder": "Nome do Perfil",
+            "autocomplete": "off",
+        })
+
+        # ====================================================
+        # CLASSE PADRÃO
+        # ====================================================
+        base_class = (
+            "w-full h-[42px] "
+            "border border-gray-300 rounded-md "
+            "px-3 py-2 "
+            "text-black "
+            "placeholder-gray-400 "
+            "focus:outline-none "
+            "focus:ring-2 "
+            "focus:ring-blue-500"
+        )
+
+        self.fields["nome"].widget.attrs["class"] = base_class
+
+        # ====================================================
+        # PERMISSÕES
+        # ====================================================
+        # Na edição, carrega as permissões já existentes.
+        if self.instance and self.instance.pk:
+
+            permissoes_ids = PerfilPermissao.objects.filter(
+                perfil=self.instance
+            ).values_list(
+                "funcionalidade_acao_id",
+                flat=True,
+            )
+
+            self.initial["permissoes"] = permissoes_ids
+
+    # ========================================================
+    # NOME DO PERFIL
+    # ========================================================
+
+    def clean_nome(self):
+
+        nome = self.cleaned_data.get("nome")
+
+        if not nome:
+            raise forms.ValidationError(
+                "O Nome do Perfil é obrigatório."
+            )
+
+        # Remove espaços nas extremidades e transforma
+        # múltiplos espaços internos em apenas um.
+        nome = " ".join(nome.strip().split())
+
+        # ====================================================
+        # MASTER É PALAVRA RESERVADA
+        # ====================================================
+
+        if nome.casefold() == "master":
+            raise forms.ValidationError(
+                "O nome 'Master' é reservado pelo sistema e "
+                "não pode ser utilizado em um Perfil."
+            )
+
+        # ====================================================
+        # DUPLICIDADE LÓGICA
+        # ====================================================
+
+        nome_lower = nome.lower()
+
+        queryset = (
+            Perfil.objects
+            .annotate(nome_lower=Lower("nome"))
+            .filter(nome_lower=nome_lower)
+        )
+
+        # Na edição, não comparar o Perfil consigo mesmo.
+        if self.instance and self.instance.pk:
+            queryset = queryset.exclude(
+                pk=self.instance.pk
+            )
+
+        # ====================================================
+        # NORMALIZAÇÃO FINAL PARA COMPARAÇÃO
+        # ====================================================
+
+        nome_comparacao = " ".join(
+            nome.split()
+        ).casefold()
+
+        for perfil in queryset:
+
+            nome_existente = " ".join(
+                (perfil.nome or "").split()
+            ).casefold()
+
+            if nome_existente == nome_comparacao:
+                raise forms.ValidationError(
+                    "Já existe um Perfil com este nome."
+                )
+
+        return nome
+
+    # ========================================================
+    # VALIDAÇÃO GERAL
+    # ========================================================
+    def clean(self):
+        cleaned_data = super().clean()
+        permissoes = cleaned_data.get("permissoes")
+
+        if permissoes is None:
+            return cleaned_data
+
+        eh_administrador = (
+                self.instance.pk is not None
+                and self.instance.codigo == "ADMINISTRADOR"
+        )
+
+        if not eh_administrador:
+            # Perfis comuns não recebem permissões de módulos ADM.
+            permissoes_gerais = permissoes.exclude(
+                funcionalidade__modulo__escopo=(
+                    Modulo.Escopo.ADMINISTRATIVO
+                )
+            )
+
+            permissoes_ids = set(
+                permissoes_gerais.values_list("id", flat=True)
+            )
+
+            # Na edição, preservamos as permissões ADM existentes.
+            if self.instance.pk:
+                permissoes_administrativas_atuais = (
+                    PerfilPermissao.objects.filter(
+                        perfil=self.instance,
+                        funcionalidade_acao__funcionalidade__modulo__escopo=(
+                            Modulo.Escopo.ADMINISTRATIVO
+                        ),
+                    ).values_list(
+                        "funcionalidade_acao_id",
+                        flat=True,
+                    )
+                )
+
+                permissoes_ids.update(
+                    permissoes_administrativas_atuais
+                )
+
+            permissoes = FuncionalidadeAcao.objects.filter(
+                id__in=permissoes_ids
+            )
+
+            cleaned_data["permissoes"] = permissoes
+
+        if not permissoes.exists():
+            raise forms.ValidationError(
+                "O Perfil deve possuir pelo menos uma autorização."
+            )
+
+        return cleaned_data
 
 
 # ============================================================
@@ -250,6 +450,78 @@ class EditarUsuarioForm(forms.ModelForm):
                 choices = list(f.choices)
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
+
+# ============================================================
+# FORMULÁRIO — PERMISSÕES INDIVIDUAIS
+# ============================================================
+class Form_Permissoes_IndividuaisForm(forms.Form):
+    """
+    Valida as decisões individuais de permissão de um usuário.
+
+    A persistência é responsabilidade da view.
+    Uma decisão None representa a remoção de eventual exceção
+    individual, restaurando a herança do perfil.
+    """
+
+    decisoes = forms.JSONField(
+        required=False,
+        error_messages={
+            "invalid": (
+                "Os dados das decisões individuais são inválidos."
+            ),
+        },
+    )
+
+    def clean_decisoes(self):
+        decisoes = self.cleaned_data.get("decisoes")
+
+        if not isinstance(decisoes, dict):
+            raise forms.ValidationError(
+                "O formato das decisões individuais é inválido."
+            )
+
+        decisoes_validas = {
+            UsuarioPermissao.Decisao.PERMITIR,
+            UsuarioPermissao.Decisao.NEGAR,
+        }
+
+        decisoes_validadas = {}
+
+        for funcionalidade_acao_id, decisao in decisoes.items():
+            try:
+                funcionalidade_acao_id = int(
+                    funcionalidade_acao_id
+                )
+            except (TypeError, ValueError):
+                raise forms.ValidationError(
+                    "Foi identificada uma ação inválida."
+                )
+
+            if funcionalidade_acao_id <= 0:
+                raise forms.ValidationError(
+                    "Foi identificada uma ação inválida."
+                )
+
+            if funcionalidade_acao_id in decisoes_validadas:
+                raise forms.ValidationError(
+                    "Foi identificada uma ação duplicada."
+                )
+
+            if decisao is None or decisao == "":
+                decisoes_validadas[funcionalidade_acao_id] = None
+                continue
+
+            if (
+                not isinstance(decisao, str)
+                or decisao not in decisoes_validas
+            ):
+                raise forms.ValidationError(
+                    "Foi identificada uma decisão individual inválida."
+                )
+
+            decisoes_validadas[funcionalidade_acao_id] = decisao
+
+        return decisoes_validadas
 
 # ============================================================
 # TELEFONE + FORMSET
@@ -2169,22 +2441,15 @@ class Form_ProcessoMapearForm(forms.ModelForm):
         # ------------------------------------------------
         if not nome:
             nome_post = (
-                self.data.get("nome")
-                or self.data.get("id_nome")
-            )
-
-            if not nome_post:
-                nome_post = (
-                    self.data.get(
-                        "subprocesso_input_visible"
-                    )
-                    or self.data.get(
-                        "processo_input_visible"
-                    )
-                )
+                    self.data.get("nome")
+                    or self.data.get("id_nome")
+                    or self.data.get("subprocesso_input_visible")
+                    or self.data.get("processo_input_visible")
+                    or ""
+            ).strip()
 
             if nome_post:
-                cleaned["nome"] = nome_post.strip()
+                cleaned["nome"] = nome_post
             else:
                 self.add_error(
                     "nome",
