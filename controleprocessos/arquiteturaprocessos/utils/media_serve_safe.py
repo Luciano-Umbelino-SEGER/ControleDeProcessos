@@ -1,6 +1,4 @@
 from django.views.static import serve
-from django.utils.decorators import decorator_from_middleware
-from django.middleware.clickjacking import XFrameOptionsMiddleware
 from django.http import HttpResponse
 
 

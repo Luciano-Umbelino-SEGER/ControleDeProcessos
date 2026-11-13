@@ -21,13 +21,11 @@ urlpatterns = [
     path("", include("auditoria.urls")),
 ]
 
-
-# --- Servindo arquivos de mídia em modo DEBUG com permissão para iframe ---
-if settings.DEBUG:
-    urlpatterns += [
-        path(
-            'media/<path:path>',
-            media_serve_allow_iframe,
-            {'document_root': settings.MEDIA_ROOT},
-        ),
-    ]
+# --- Servindo arquivos de mídia com permissão para iframe ---
+urlpatterns += [
+    path(
+        'media/<path:path>',
+        media_serve_allow_iframe,
+        {'document_root': settings.MEDIA_ROOT},
+    ),
+]

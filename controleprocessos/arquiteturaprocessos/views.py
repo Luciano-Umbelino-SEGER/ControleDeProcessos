@@ -74,19 +74,52 @@ def make_username_from_names(first_name: str, last_name: str) -> str:
     username = re.sub(r"[^a-z0-9\.]", "", username)
     return username
 
-# ---------------------------
+## ---------------------------
 # PDF visualizer (secure)
 # ---------------------------
+@login_required
 @xframe_options_sameorigin
 def visualizar_pdf(request, path):
     media_root = Path(settings.MEDIA_ROOT).resolve()
     file_path = (media_root / path).resolve()
 
-    if (not file_path.is_relative_to(media_root)
+    if (
+        not file_path.is_relative_to(media_root)
         or not file_path.exists()
         or not file_path.is_file()
     ):
         raise Http404("Arquivo não encontrado")
+
+    # ========================================================
+    # CONTROLE DE PERMISSÃO DE VISUALIZAÇÃO
+    # ========================================================
+    permissoes_documentos = {
+        "modelos_processo": (
+            "Estrutura de Documentos → Processos",
+            "Definição → Modelos de Processo",
+        ),
+        "normas_procedimento": (
+            "Estrutura de Documentos → Normas de Procedimento",
+            "Normas",
+        ),
+    }
+
+    diretorio = Path(path).parts[0] if Path(path).parts else None
+
+    contexto = permissoes_documentos.get(diretorio)
+
+    if not contexto:
+        raise Http404("Documento não encontrado")
+
+    modulo, funcionalidade = contexto
+
+    if not tem_permissao(
+        request.user,
+        modulo,
+        funcionalidade,
+        "Visualizar",
+    ):
+        raise PermissionDenied
 
     ctype, _ = mimetypes.guess_type(str(file_path))
     if ctype != 'application/pdf':
