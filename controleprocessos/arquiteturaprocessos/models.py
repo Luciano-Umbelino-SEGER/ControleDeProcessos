@@ -211,6 +211,14 @@ class Usuario(AbstractUser):
     setor = models.CharField(max_length=100, null=True, blank=True)
     cargo = models.CharField(max_length=100, null=True, blank=True)
     funcao = models.CharField(max_length=100, null=True, blank=True)
+    cpf = models.CharField(
+        "CPF",
+        max_length=11,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="Somente os 11 dígitos, sem pontos ou traço.",
+    )
     perfil = models.ForeignKey(
         "Perfil",
         null=True,
