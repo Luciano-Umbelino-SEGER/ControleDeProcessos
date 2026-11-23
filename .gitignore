@@ -221,3 +221,6 @@ controleprocessos/media/
 # Static gerado
 staticfiles/
 controleprocessos/staticfiles/
+
+# Outputs de ferramentas de desenvolvimento
+Claude outputs/
