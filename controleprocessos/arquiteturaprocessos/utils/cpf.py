@@ -50,3 +50,25 @@ def formatar_cpf(cpf):
         return cpf or ""
 
     return f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}"
+
+
+def mascarar_cpf(cpf):
+    """
+    Mascara o CPF no formato ***.182.917-** (exibe só os 6 dígitos do meio).
+
+    - Nulo ou vazio: devolvido sem alteração.
+    - Valor já mascarado (contém "*"): devolvido sem alteração.
+    - Valor fora do padrão de 11 dígitos: totalmente ocultado ("***").
+    """
+    if cpf is None or cpf == "":
+        return cpf
+
+    texto = str(cpf)
+    if "*" in texto:
+        return texto
+
+    numeros = somente_digitos(texto)
+    if len(numeros) != 11:
+        return "***"
+
+    return f"***.{numeros[3:6]}.{numeros[6:9]}-**"

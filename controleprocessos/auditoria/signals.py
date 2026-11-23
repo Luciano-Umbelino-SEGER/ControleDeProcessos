@@ -10,12 +10,20 @@ from auditoria.middleware import get_current_user
 from .utils import gerar_diff, obter_usuario_log
 from django.contrib.auth.models import AnonymousUser
 from django.db import connection
+from arquiteturaprocessos.utils.cpf import mascarar_cpf
 
 # 🔥 MODELOS QUE NÃO DEVEM SER LOGADOS
 MODELOS_IGNORADOS = [
     "LogAcaoSistema",
     "Session",
 ]
+
+# 🔐 CAMPOS QUE NUNCA SÃO GRAVADOS NOS LOGS
+CAMPOS_REMOVIDOS_LOG = ("password",)
+
+# Marcador usado quando o CPF muda, mas a máscara permanece igual
+# (ex.: correção apenas dos dígitos verificadores)
+MARCADOR_ALTERADO = " (alterado)"
 
 # -----------------------------------------
 # Verifica existencia da tabela
@@ -38,11 +46,68 @@ def get_usuario_logado_seguro():
 # SERIALIZAÇÃO
 # -----------------------------------------
 def serializar(instancia):
+    """
+    Serializa a instância para comparação e registro.
+
+    O hash da senha (password) nunca é serializado. O CPF permanece
+    completo aqui, para que a comparação antes/depois seja feita com os
+    valores reais; a máscara é aplicada somente na gravação do log
+    (ver proteger_dados_sensiveis).
+    """
     try:
         dados = model_to_dict(instancia)
+        for campo in CAMPOS_REMOVIDOS_LOG:
+            dados.pop(campo, None)
         return json.loads(json.dumps(dados, cls=DjangoJSONEncoder))
     except Exception as e:
         return {"erro_serializacao": str(e)}
+
+
+# -----------------------------------------
+# PROTEÇÃO DE DADOS SENSÍVEIS (gravação do log)
+# -----------------------------------------
+def proteger_dados_sensiveis(dados_antes, dados_depois):
+    """
+    Prepara os dados para gravação no log, DEPOIS da comparação antes/depois.
+
+    - Remove campos que nunca devem ser gravados (password).
+    - Mascara o CPF (***.182.917-**).
+    - Se o CPF mudou, mas as máscaras ficaram iguais (correção dos dígitos
+      verificadores), marca o valor novo com "(alterado)".
+
+    Trabalha com cópias: os dicionários recebidos não são modificados.
+    Valores que não sejam dicionários são devolvidos sem alteração.
+    """
+    antes = dict(dados_antes) if isinstance(dados_antes, dict) else dados_antes
+    depois = dict(dados_depois) if isinstance(dados_depois, dict) else dados_depois
+
+    for dados in (antes, depois):
+        if isinstance(dados, dict):
+            for campo in CAMPOS_REMOVIDOS_LOG:
+                dados.pop(campo, None)
+
+    antes_tem_cpf = isinstance(antes, dict) and "cpf" in antes
+    depois_tem_cpf = isinstance(depois, dict) and "cpf" in depois
+
+    cpf_antes = antes.get("cpf") if antes_tem_cpf else None
+    cpf_depois = depois.get("cpf") if depois_tem_cpf else None
+
+    if antes_tem_cpf:
+        antes["cpf"] = mascarar_cpf(cpf_antes)
+
+    if depois_tem_cpf:
+        depois["cpf"] = mascarar_cpf(cpf_depois)
+
+        if (
+            antes_tem_cpf
+            and cpf_antes
+            and cpf_depois
+            and cpf_antes != cpf_depois
+            and antes["cpf"] == depois["cpf"]
+        ):
+            depois["cpf"] = f"{depois['cpf']}{MARCADOR_ALTERADO}"
+
+    return antes, depois
 
 
 # -----------------------------------------
@@ -104,6 +169,9 @@ def log_create_update(sender, instance, created, **kwargs):
     else:
         descricao = f"{sender.__name__} {'criado' if created else 'atualizado'}"
 
+    # 🔐 Máscara/remoção de dados sensíveis somente após a comparação
+    dados_antes, dados_depois = proteger_dados_sensiveis(dados_antes, dados_depois)
+
     if tabela_existe("log_acao_sistema"):
         LogAcaoSistema.objects.create(
             usuario=get_usuario_logado_seguro(),
@@ -129,12 +197,14 @@ def log_delete(sender, instance, **kwargs):
         descricao = f"{sender.__name__} excluído"
 
     if tabela_existe("log_acao_sistema"):
+        dados_antes, _ = proteger_dados_sensiveis(serializar(instance), {})
+
         LogAcaoSistema.objects.create(
             usuario=get_usuario_logado_seguro(),
             acao="DELETE",
             modelo_afetado=sender.__name__,
             descricao=descricao,
-            dados_antes=serializar(instance),
+            dados_antes=dados_antes,
             dados_depois={},
         )
 
