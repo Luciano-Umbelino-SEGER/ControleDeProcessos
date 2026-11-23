@@ -40,6 +40,7 @@ import mimetypes
 from arquiteturaprocessos.utils.utils import tem_permissao, definir_senha_e_enviar_email, parse_date
 from arquiteturaprocessos.utils.utils_db import Unaccent, remover_acentos
 from arquiteturaprocessos.utils.mixins import PermissaoRequiredMixin
+from arquiteturaprocessos.utils.usuarios import gerar_username_unico
 from arquiteturaprocessos.utils.status_utils import contar_status, normalizar_status
 from arquiteturaprocessos.utils.documentos import contar_documentos_associados
 from arquiteturaprocessos.utils.exportacao import (csv_exporter, txt_exporter, xlsx_exporter, pdf_exporter,)
@@ -65,15 +66,6 @@ from .forms import (
 # ---------------------------------------------------
 # Utility to safely generate a username from names
 # ---------------------------------------------------
-def make_username_from_names(first_name: str, last_name: str) -> str:
-    # cria nome.sobrenome em lowercase, sem espaços, mantendo apenas alfanumérico + ponto
-    base = f"{(first_name or '').strip()}.{(last_name or '').strip()}"
-    username = base.lower()
-    # remove acentos/normalização simples (opcional: aqui apenas remove espaços e não-alphanum exceto '.')
-    username = re.sub(r"\s+", "", username)
-    username = re.sub(r"[^a-z0-9\.]", "", username)
-    return username
-
 ## ---------------------------
 # PDF visualizer (secure)
 # ---------------------------
@@ -3946,19 +3938,13 @@ class CriarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
         user.is_master = False
         user.set_unusable_password()
 
-        # Username automático
-        username = make_username_from_names(user.first_name, user.last_name)
+        # Username automático (nome.sobrenome, sem duplicidade)
+        username = gerar_username_unico(user.first_name, user.last_name)
         if not username:
-            messages.error(
-                self.request,
-                "Nome e Sobrenome são necessários para gerar o username."
-            )
-            return self.render_to_response(self.get_context_data(form=form))
-
-        if Usuario.objects.filter(username=username).exists():
-            messages.error(
-                self.request,
-                f"Não foi possível criar o usuário: o username '{username}' já existe."
+            form.add_error(
+                None,
+                "Não foi possível gerar o nome de usuário a partir do "
+                "Primeiro nome e do Último nome informados."
             )
             return self.render_to_response(self.get_context_data(form=form))
 
@@ -3987,7 +3973,8 @@ class CriarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, CreateView):
 
         messages.success(
             self.request,
-            f"Usuário {user.get_full_name()} criado com sucesso!"
+            f"Usuário {user.get_full_name()} criado com sucesso! "
+            f"Nome de usuário: {user.username}"
         )
         return redirect(self.get_success_url())
 
@@ -4110,13 +4097,6 @@ class EditarUsuario(LoginRequiredMixin, PermissaoRequiredMixin, UpdateView):
         )
 
         return redirect(self.get_success_url())
-
-    def form_invalid(self, form):
-        messages.error(
-            self.request,
-            "Não foi possível atualizar o usuário. Corrija os erros abaixo."
-        )
-        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('arquiteturaprocessos:cadastrousuarios')

@@ -20,6 +20,7 @@ from .models import (
 from django.db.models import Q
 from django.db.models.functions import Lower
 from arquiteturaprocessos.utils.processos import validar_normas_processo
+from arquiteturaprocessos.utils.cpf import somente_digitos, cpf_valido, formatar_cpf
 
 UserModel = get_user_model()
 
@@ -335,19 +336,120 @@ class Form_PerfilForm(forms.ModelForm):
 
 
 # ============================================================
+# CPF — TRATAMENTO COMPARTILHADO NOS FORMULÁRIOS DE USUÁRIO
+# ============================================================
+def campo_cpf():
+    """
+    Campo de CPF dos formulários de usuário.
+
+    Aceita até 14 caracteres para permitir a digitação com máscara
+    (000.000.000-00). O valor é normalizado para 11 dígitos em clean_cpf().
+    """
+    return forms.CharField(
+        label="CPF",
+        max_length=14,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "placeholder": "000.000.000-00",
+            "inputmode": "numeric",
+            "data-mascara": "cpf",
+        }),
+    )
+
+
+class CPFUsuarioMixin:
+    """
+    Regras do CPF nos formulários de usuário.
+
+    - Exibe o CPF já cadastrado no formato 000.000.000-00.
+    - Normaliza o valor para 11 dígitos antes de salvar.
+    - Valida os dígitos verificadores e a unicidade, desconsiderando
+      o próprio usuário em edição.
+    - CPF em branco é salvo como nulo.
+
+    A obrigatoriedade é definida por cada formulário em configurar_campo_cpf().
+    """
+
+    def configurar_campo_cpf(self, obrigatorio):
+        campo = self.fields.get("cpf")
+        if campo is None:
+            return
+
+        campo.required = obrigatorio
+
+        if self.instance and self.instance.cpf and not self.is_bound:
+            self.initial["cpf"] = formatar_cpf(self.instance.cpf)
+
+    def clean_cpf(self):
+        cpf = somente_digitos(self.cleaned_data.get("cpf"))
+
+        if not cpf:
+            if self.fields["cpf"].required:
+                raise ValidationError("Informe o CPF.")
+            return None
+
+        if not cpf_valido(cpf):
+            raise ValidationError("CPF inválido.")
+
+        duplicados = Usuario.objects.filter(cpf=cpf)
+        if self.instance and self.instance.pk:
+            duplicados = duplicados.exclude(pk=self.instance.pk)
+
+        if duplicados.exists():
+            raise ValidationError(
+                "Este CPF já está cadastrado para outro usuário."
+            )
+
+        return cpf
+
+
+# ============================================================
+# REGRAS DOS CAMPOS DOS FORMULÁRIOS DE USUÁRIO
+# ============================================================
+CAMPOS_OBRIGATORIOS_USUARIO = ("first_name", "last_name", "perfil")
+
+
+def aplicar_regras_campos_usuario(form, editavel):
+    """
+    Regras comuns aos formulários de usuário.
+
+    - Usuário (username): sempre desabilitado. Na criação é gerado
+      automaticamente (nome.sobrenome); na edição não pode ser alterado,
+      pois é a chave de acesso ao sistema.
+    - Primeiro nome, Último nome e Perfil: obrigatórios quando o
+      formulário é editável (criação e edição).
+    """
+    campo_username = form.fields.get("username")
+    if campo_username is not None:
+        campo_username.disabled = True
+        campo_username.required = False
+        campo_username.widget.attrs["placeholder"] = "Gerado automaticamente"
+
+    if editavel:
+        for nome in CAMPOS_OBRIGATORIOS_USUARIO:
+            if nome in form.fields:
+                form.fields[nome].required = True
+
+    if "funcao" in form.fields:
+        form.fields["funcao"].label = "Função"
+        form.fields["funcao"].widget.attrs["placeholder"] = "Função"
+
+
+# ============================================================
 # FORMULÁRIO DE USUÁRIO (CRIAÇÃO) — versão estável (username editável)
 # ============================================================
-class Form_UsuarioForm(forms.ModelForm):
+class Form_UsuarioForm(CPFUsuarioMixin, forms.ModelForm):
     """
     Formulário para criação de usuário (mantém username editável).
     Desabilita campos nos modos visualização/exclusão.
     """
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
+    cpf = campo_cpf()
 
     class Meta:
         model = Usuario
         fields = (
-            "username", "first_name", "last_name", "email",
+            "username", "first_name", "last_name", "cpf", "email",
             "setor", "cargo", "funcao", "perfil",
         )
 
@@ -357,6 +459,11 @@ class Form_UsuarioForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
+
+        # CPF obrigatório somente na criação
+        self.configurar_campo_cpf(
+            obrigatorio=not (modo_visualizacao or modo_exclusao)
+        )
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -403,23 +510,39 @@ class Form_UsuarioForm(forms.ModelForm):
             self.instance.is_active = False
             self.instance.data_ativacaodesativacao = timezone.now()
 
+        # Username automático e campos obrigatórios
+        aplicar_regras_campos_usuario(
+            self,
+            editavel=not (modo_visualizacao or modo_exclusao),
+        )
+
 
 # ============================================================
 # EDITAR USUÁRIO (mantém username editável)
 # ============================================================
-class EditarUsuarioForm(forms.ModelForm):
+class EditarUsuarioForm(CPFUsuarioMixin, forms.ModelForm):
     email = forms.EmailField(label='E-mail', widget=forms.EmailInput(attrs={'placeholder': 'E-mail'}))
+    cpf = campo_cpf()
 
     class Meta:
         model = Usuario
         fields = (
-            "username", "first_name", "last_name", "email",
+            "username", "first_name", "last_name", "cpf", "email",
             "setor", "cargo", "funcao", "perfil",
         )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.label_suffix = ""
+
+        # CPF na edição: obrigatório somente se o usuário já possui CPF.
+        # Preserva usuários antigos sem CPF e impede apagar um CPF cadastrado.
+        possui_cpf = bool(self.instance and self.instance.cpf)
+        self.configurar_campo_cpf(obrigatorio=possui_cpf)
+        if possui_cpf:
+            self.fields["cpf"].error_messages["required"] = (
+                "O CPF já cadastrado não pode ser removido."
+            )
 
         base = (
             "w-full border border-gray-300 rounded-md px-3 py-2 "
@@ -450,6 +573,9 @@ class EditarUsuarioForm(forms.ModelForm):
                 choices = list(f.choices)
                 if not choices or choices[0][0] != "":
                     f.choices = [("", "Selecione...")] + choices
+
+        # Username desabilitado (chave de acesso) e campos obrigatórios
+        aplicar_regras_campos_usuario(self, editavel=True)
 
 # ============================================================
 # FORMULÁRIO — PERMISSÕES INDIVIDUAIS
