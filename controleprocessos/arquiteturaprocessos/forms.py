@@ -1081,6 +1081,11 @@ class Form_MacroProcessoNivel1Form(forms.ModelForm):
     class Meta:
         model = MacroprocessoNivel1
         fields = ['nome', 'descricao', 'classificacao']
+        labels = {
+            "nome": "Nome",
+            "descricao": "Descrição",
+            "classificacao": "Classificação",
+        }
 
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop('modo_visualizacao', False)
@@ -1131,6 +1136,11 @@ class Form_MacroProcessoNivel2Form(forms.ModelForm):
     class Meta:
         model = MacroprocessoNivel2
         fields = ["classificacao", "macroprocesso_nivel1", "nome", "descricao"]
+        labels = {
+            "macroprocesso_nivel1": "Macroprocesso Nível 1",
+            "nome": "Nome",
+            "descricao": "Descrição",
+        }
 
     def __init__(self, *args, **kwargs):
         modo_visualizacao = kwargs.pop("modo_visualizacao", False)
