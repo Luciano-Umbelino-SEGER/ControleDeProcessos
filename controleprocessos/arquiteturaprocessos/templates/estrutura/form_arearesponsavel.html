@@ -51,7 +51,7 @@
     </div>
     {% endif %}
 
-    <form method="post" novalidate>
+    <form method="post" id="form-arearesponsavel" novalidate>
         {% csrf_token %}
         <fieldset {% if modo_visualizacao or modo_exclusao or not form.instance.ativo %}disabled{% endif %}>
 
