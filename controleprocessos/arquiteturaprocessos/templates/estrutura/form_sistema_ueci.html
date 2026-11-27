@@ -33,7 +33,7 @@
     </div>
 {% endif %}
 
-<form method="post" id="form-exclusao">
+<form method="post" id="form-sistema-ueci">
     {% csrf_token %}
 
     <div class="grid grid-cols-12 gap-6 items-start">
@@ -147,7 +147,7 @@
             <strong>{{ sistema_ueci.sistema_completo }}</strong>?
         </h2>
         <div class="flex justify-center gap-4">
-            <button type="submit" form="form-exclusao" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
+            <button type="submit" form="form-sistema-ueci" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">Sim</button>
             <a href="{% url 'arquiteturaprocessos:sistemas_ueci' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded text-center">Não</a>
         </div>
     </div>
